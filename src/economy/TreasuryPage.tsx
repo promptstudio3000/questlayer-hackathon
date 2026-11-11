@@ -750,8 +750,108 @@ const SAFETY = [
   "No paid chance anywhere: randomness in the game is free or earned.",
 ];
 
+type DaoPollView = { poll: string; kind: string; title: string; closesAt: number | null; open: boolean; winner: string; voters: number; options: { proposalId: number; label: string; recommended: boolean; approvals: number }[] };
+type Dao = {
+  dao: string;
+  exists: boolean;
+  network: string;
+  trezu: string | null;
+  council?: string[];
+  approvals?: number | null;
+  keeper?: string;
+  explorers?: number;
+  rule: { minLevel: number; activeDays: number };
+  week?: string;
+  weeklyMix?: DaoPollView | null;
+  extras?: DaoPollView[];
+  adopted?: { proposalId: number; option: string; poll: string; targets: { lst: number; stable: number; near: number } } | null;
+  today?: { id: number; status: string; approvals: number; action: string } | null;
+  decisions?: { id: number; type: string; title: string; status: string; approvals: number; submittedAt: number }[];
+};
+
+function DaoPoll({ p }: { p: DaoPollView }) {
+  const most = Math.max(1, ...p.options.map((o) => o.approvals));
+  return (
+    <div className="tr-dao-poll">
+      <h3>
+        {p.title}
+        <small className="eco-muted"> · {p.open && p.closesAt ? `closes ${new Date(p.closesAt).toISOString().slice(0, 16).replace("T", " ")} UTC` : "closed"} · {p.voters} voters</small>
+      </h3>
+      <ul>
+        {p.options.map((o) => (
+          <li key={o.proposalId}>
+            <span>
+              {o.label}
+              {o.recommended ? <small className="eco-muted"> · recommended, gets the automatic vote</small> : null}
+            </span>
+            <span className="tr-dao-bar" style={{ width: `${(o.approvals / most) * 100}%` }} aria-hidden="true" />
+            <b>{o.approvals}</b>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function DaoSection({ d, error }: { d: Dao | null; error: string | null }) {
+  const explorer = (id: string) => `https://${d?.network === "mainnet" ? "" : "testnet."}nearblocks.io/address/${id}`;
+  // Hosts without the DAO (TREASURY_DAO_DISABLED) show nothing.
+  if (!d && error) return null;
+  return (
+    <section className="eco-card" id="dao" aria-labelledby="tr-dao">
+      <h2 id="tr-dao">Who decides: the treasury DAO</h2>
+      {d && !d.exists ? <p className="eco-muted">The DAO {d.dao} is not created yet.</p> : null}
+      {d?.exists ? (
+        <>
+          <p>
+            The treasury follows a Sputnik DAO on NEAR,{" "}
+            <a href={explorer(d.dao)} rel="noreferrer" target="_blank">
+              {d.dao}
+            </a>
+            . Every week explorers at level {d.rule.minLevel}+ who played in the last {d.rule.activeDays} days vote on the mix; the option with the most votes is adopted. The
+            recommended option gets one automatic vote, so it wins when nobody votes. Each morning the keeper files the day's run and two council keys approve it after checking it
+            against the adopted mix and the safety limits; only then does the run happen.
+          </p>
+          <div className="tr-tiles" aria-label="DAO numbers">
+            <Tile label="Council" value={String(d.council?.length ?? 0)} unit="members" note={`${d.approvals ?? "?"} approvals pass a proposal`} />
+            <Tile label="Explorer voters" value={String(d.explorers ?? 0)} note="synced once a day" />
+            <Tile label="Mix in force" value={d.adopted ? `${d.adopted.targets.lst / 100}/${d.adopted.targets.stable / 100}/${d.adopted.targets.near / 100}` : "…"} note={d.adopted ? `staking / stables / reserve, proposal #${d.adopted.proposalId}` : "not adopted yet"} />
+            <Tile label="Today's run" value={d.today ? d.today.status : "not filed"} note={d.today ? `proposal #${d.today.id}, ${d.today.approvals} approvals` : "filed at 06:30"} />
+          </div>
+          {d.weeklyMix ? <DaoPoll p={d.weeklyMix} /> : <p className="eco-muted">This week's vote opens with the next morning run.</p>}
+          {d.extras?.map((p) => <DaoPoll key={p.poll} p={p} />)}
+          {d.decisions?.length ? (
+            <>
+              <h3>Recent decisions</h3>
+              <ol className="tr-dao-log">
+                {d.decisions.map((x) => (
+                  <li key={x.id}>
+                    #{x.id} {x.title} <small className="eco-muted">· {x.status}</small>
+                  </li>
+                ))}
+              </ol>
+            </>
+          ) : null}
+          <p className="eco-small eco-muted">
+            Roles use Trezu's names (Requestor, Admin, Approver), so the DAO opens in Trezu as a normal treasury{d.trezu ? (
+              <>
+                :{" "}
+                <a href={d.trezu} rel="noreferrer" target="_blank">
+                  open in Trezu
+                </a>
+              </>
+            ) : null}
+            . Custody of the funds stays with the operator account on testnet for now; the DAO approves every run.
+          </p>
+        </>
+      ) : null}
+    </section>
+  );
+}
+
 export default function TreasuryPage() {
   const mix = useJson<Mix>("/api/treasury/mix");
+  const dao = useJson<Dao>("/api/treasury/dao");
   const ledger = useJson<Ledger>("/api/economy/ledger");
   const qgold = useJson<Qgold>("/api/economy/qgold");
   const day = useJson<MapDay>("/api/map/rewards/day");
@@ -792,10 +892,10 @@ export default function TreasuryPage() {
           <span className="eco-tldr-tag">TL;DR</span>
           <ol>
             <li>
-              <b>The treasury holds NEAR-based assets</b> (staking tokens, lent stablecoins, NEAR) and never spends them.
+              <b>The treasury holds NEAR-based assets</b> (staking tokens, lent stablecoins, NEAR) in the mix explorers vote on each week, and never spends them.
             </li>
             <li>
-              <b>Only their yield</b> becomes the daily map budget: the coins and zone prizes players collect.
+              <b>Only yield is spent:</b> the treasury's own and the share stakers give from theirs (their principal stays theirs) become the daily map budget.
             </li>
             <li>
               <b>Collected coins become QGOLD</b> in the player's own NEAR account within minutes, each backed by NEAR in the vault.
@@ -809,6 +909,7 @@ export default function TreasuryPage() {
         <nav className="eco-jump" aria-label="On this page">
           <a href="#tr-flow">Money flow</a>
           <a href="#tr-mix">Mix</a>
+          <a href="#tr-dao">Who decides</a>
           <a href="#tr-budget">Today's budget</a>
           <a href="#tr-qgold">QGOLD backing</a>
           <a href="#tr-model">Model</a>
@@ -913,6 +1014,8 @@ export default function TreasuryPage() {
           <p className="eco-muted">Reading the chain…</p>
         ) : null}
       </section>
+
+      <DaoSection d={dao.data} error={dao.error} />
 
       <section className="eco-card" aria-labelledby="tr-budget">
         <h2 id="tr-budget">Daily map budget</h2>

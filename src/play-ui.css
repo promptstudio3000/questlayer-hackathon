@@ -529,6 +529,8 @@
 }
 .coverage-note.unverified {
   border-left: 4px solid var(--gold, #c29222);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   padding-left: 12px;
 }
 @media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {

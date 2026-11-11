@@ -8,13 +8,16 @@ import {
   ArrowsClockwise,
   Backpack,
   ChatsCircle,
-  Clock,
+  Coins,
   Compass,
   Fire,
   GearSix,
+  Key,
   MapPin,
   NotePencil,
   Smiley,
+  Sparkle,
+  Stack,
   UserCircle,
   UsersThree,
   Vault,
@@ -23,6 +26,7 @@ import {
 import { GameObjectArt, gameObjectRects, type GameObjectKind } from "../game-object-art";
 import { STARTER_SPRITE } from "../character-art";
 import { useMotion } from "./viz";
+import { EDITIONS, PLACE_BADGES } from "./chapters";
 
 // ------------------------------------------------------- big picture ----
 
@@ -30,33 +34,95 @@ type Step = { icon: React.ReactNode; title: string; text: string };
 
 const STEPS: Step[] = [
   {
+    icon: <Vault size={36} weight="duotone" />,
+    title: "Stake, lose nothing",
+    text: "Stake NEAR if you like: the principal stays yours, only the share of its yield you choose goes to the game.",
+  },
+  {
+    icon: <Coins size={36} weight="duotone" />,
+    title: "One treasury",
+    text: "All that yield lands in one global treasury and becomes each day's rewards, spread across the map.",
+  },
+  {
     icon: <img className="wk-bp-ghost" src={STARTER_SPRITE} alt="" width={44} height={50} draggable={false} />,
-    title: "Walk",
-    text: "Real streets with your phone's GPS, or the city demo with a joystick. No wallet, no deposit.",
+    title: "Play and create",
+    text: "Walk real streets, solve quests at real places, meet NPCs, post tasks and hide Secrets.",
   },
   {
     icon: <GameObjectArt kind="coin" size={40} />,
-    title: "Collect",
-    text: "Coins, street finds, zone chests, quests, NPCs and monsters give XP, Auras and backed GOLD.",
-  },
-  {
-    icon: <Clock size={36} weight="duotone" />,
-    title: "Get paid in minutes",
-    text: "Every 5 minutes a payout round mints your GOLD as QGOLD to your own NEAR account.",
+    title: "Paid in QGOLD",
+    text: "Rewards arrive within minutes as QGOLD, fully backed by NEAR, in your own NEAR account.",
   },
   {
     icon: <Fire size={36} weight="duotone" />,
     title: "Spend = burn",
-    text: "Cosmetics burn QGOLD. Its NEAR stays in the vault, so each remaining QGOLD is backed by more.",
-  },
-  {
-    icon: <Vault size={36} weight="duotone" />,
-    title: "Yield refills the map",
-    text: "One treasury earns staking and lending yield. Only that yield becomes the next coins.",
+    text: "Spending QGOLD burns it, so the NEAR behind every remaining token rises for all holders.",
   },
 ];
 
-/** The TL;DR of the whole game: five steps, a coin hands over from one to the next. */
+/** **bold** only: the fact cards are data, not chapter markup. */
+const bold = (text: string) =>
+  text
+    .replace(/ %/g, "\u00a0%")
+    .split(/\*\*([^*]+)\*\*/g)
+    .map((t, i) => (i % 2 ? <b key={i}>{t}</b> : t));
+
+type FactCard = { icon: Icon; title: string; facts: string[] };
+
+const CARDS: FactCard[] = [
+  {
+    icon: MapPin,
+    title: "Real streets",
+    facts: [
+      "**6** prize zones open in the city every day",
+      "daily tasks at real places in every map cell, Wikidata riddles at landmarks",
+      "NPCs out **07–22**, talking through NEAR AI Cloud; the rules set rewards, never the AI",
+      `**${PLACE_BADGES}** notable places give a soulbound badge NFT`,
+    ],
+  },
+  {
+    icon: UsersThree,
+    title: "Players create",
+    facts: [
+      "tasks paid in QGOLD through an on-chain escrow",
+      "Secrets: the finder pays to reveal, the author gets **90 %**",
+      "map notes that fade after a day or a week, topics, recommended places",
+      "encrypted mail stored on NEAR Social",
+    ],
+  },
+  {
+    icon: Sparkle,
+    title: "Collect and trade",
+    facts: [
+      `Auras: **${EDITIONS.length}** NFT editions on NEAR, each with a capped supply`,
+      "peer-to-peer trades through NEAR Intents, **2 %** to the treasury",
+      "NPC traders buy and sell the same way and send their profit to the treasury",
+      "planned: real Aavegotchi wearables through the Aavegotchi marketplace",
+    ],
+  },
+  {
+    icon: Key,
+    title: "Invisible blockchain",
+    facts: [
+      "every player gets an own NEAR account automatically",
+      "its key never leaves the device; recover with a passkey or a linked wallet",
+      "the game pays the gas for every game action",
+      "a small deposit for storage and first own payments (**0.02 NEAR** on mainnet), with a capped daily top-up",
+    ],
+  },
+  {
+    icon: Stack,
+    title: "One mechanic, many layers",
+    facts: [
+      "the theme can change; stake-to-play stays",
+      "every community can build its own layer: its own world and rules on the same mechanics and QGOLD",
+      "a layer's share of the yield follows what its players stake (planned)",
+      "first: the 3D Space Layer, on testnet behind a switch",
+    ],
+  },
+];
+
+/** The TL;DR of the whole game: five steps a coin walks through, then the facts in five cards. */
 export function BigPicture() {
   const motion = useMotion();
   return (
@@ -64,6 +130,10 @@ export function BigPicture() {
       <h2 id="wk-bp-title">
         <span className="wk-tldr-tag">TL;DR</span> QuestLayer in 30 seconds
       </h2>
+      <p className="wk-bp-lead">
+        <b>Pokémon GO + Geocaching + PoolTogether.</b> A stake-to-play game where your stake stays yours: by playing, exploring and creating, players win back the yield
+        of everyone's stake.
+      </p>
       <ol className={`wk-bp-steps${motion ? " moving" : ""}`}>
         {STEPS.map((s, i) => (
           <li key={s.title} style={{ "--i": i } as React.CSSProperties}>
@@ -85,9 +155,25 @@ export function BigPicture() {
       <p className="wk-bp-loop">
         <ArrowsClockwise size={20} weight="bold" aria-hidden="true" />
         <span>
-          Every day starts again from step 1. <strong>Nobody pays to win:</strong> no paid chance, no streaks, no energy, and players never fund the prizes.
+          Every day starts again. <strong>Nobody pays to win:</strong> no paid chance, no streaks, no pay-to-win, no stake needed to start; staker perks are only things to do or
+          wear.
         </span>
       </p>
+      <ul className="wk-bp-cards">
+        {CARDS.map((c) => (
+          <li key={c.title}>
+            <span className="wk-bp-card-head">
+              <c.icon size={22} weight="duotone" aria-hidden="true" />
+              <b>{c.title}</b>
+            </span>
+            <ul>
+              {c.facts.map((f) => (
+                <li key={f}>{bold(f)}</li>
+              ))}
+            </ul>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }

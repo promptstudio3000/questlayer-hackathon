@@ -59,7 +59,7 @@ test("numbers come from the rules files", () => {
 });
 
 test("the page names no events and leaks no secrets", () => {
-  const texts = ["src/wiki/chapters.ts", "src/wiki/diagrams.tsx", "src/wiki/WikiPage.tsx"].map(read);
+  const texts = ["src/wiki/chapters.ts", "src/wiki/diagrams.tsx", "src/wiki/WikiPage.tsx", "src/wiki/scenes.tsx"].map(read);
   for (const t of texts) {
     assert.doesNotMatch(t, /hackathon|judge|demo day|presentation|pitch/i);
     assert.doesNotMatch(t, /ed25519:[1-9A-HJ-NP-Za-km-z]{40,}|secret_key|private_key|\.pem\b|runtime\.env|\.data\//);

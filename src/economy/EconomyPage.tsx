@@ -3,6 +3,7 @@
 // realized yield, stNEAR, daily budget, payouts, the distribution audit and an
 // explorer link for every transaction. No sign-in, no actions.
 import React, { useEffect, useState } from "react";
+import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { exactNear, priceLabel, shortAccount, shortHash, shortNear } from "./format";
 import "./economy.css";
 import "../public-polish.css";
@@ -274,7 +275,7 @@ export default function EconomyPage() {
               <ul className="eco-checks">
                 {data.audit.checks.map((c) => (
                   <li key={c.name} className={c.ok ? "ok" : "bad"}>
-                    <span aria-hidden>{c.ok ? "✓" : "✗"}</span> {CHECK_LABELS[c.name] ?? c.name}
+                    {c.ok ? <CheckCircle size={18} weight="bold" aria-hidden="true" /> : <XCircle size={18} weight="bold" aria-hidden="true" />} {CHECK_LABELS[c.name] ?? c.name}
                   </li>
                 ))}
               </ul>
@@ -314,7 +315,7 @@ export default function EconomyPage() {
                       {(data.realizedYield.vaults || []).map((v) => (
                         <tr key={v.accountId}>
                           <td><a href={v.explorerUrl ?? undefined} target="_blank" rel="noreferrer">{shortAccount(v.accountId)} ↗</a></td>
-                          <td><Yocto value={v.gamePaid} /></td>
+                          <td><Amount yocto={v.gamePaid} digits={6} /> <Yocto value={v.gamePaid} /></td>
                         </tr>
                       ))}
                     </tbody>
@@ -510,7 +511,7 @@ export default function EconomyPage() {
                 <dt>Realized yield</dt>
                 <dd><Amount yocto={data.yieldCycle.realizedYieldYocto} digits={6} /> <Yocto value={data.yieldCycle.realizedYieldYocto} /></dd>
                 <dt>Pool funded before / after</dt>
-                <dd><Yocto value={data.yieldCycle.fundedBefore} /> → <Yocto value={data.yieldCycle.fundedAfter} /></dd>
+                <dd><Amount yocto={data.yieldCycle.fundedBefore} digits={6} /> → <Amount yocto={data.yieldCycle.fundedAfter} digits={6} /> <small className="eco-muted">(<Yocto value={data.yieldCycle.fundedBefore} /> → <Yocto value={data.yieldCycle.fundedAfter} />)</small></dd>
                 <dt>Prize pool</dt>
                 <dd>{data.yieldCycle.rewardsContract}</dd>
               </dl>
@@ -533,7 +534,7 @@ export default function EconomyPage() {
                     {data.yieldCycle.flushes.map((f) => (
                       <tr key={f.transactionHash}>
                         <td>{shortAccount(f.vault)}</td>
-                        <td><Yocto value={f.gamePaidYocto} /></td>
+                        <td><Amount yocto={f.gamePaidYocto} digits={6} /> <Yocto value={f.gamePaidYocto} /></td>
                         <td><Tx url={f.explorerUrl} hash={f.transactionHash} /></td>
                       </tr>
                     ))}

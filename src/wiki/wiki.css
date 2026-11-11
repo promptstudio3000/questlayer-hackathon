@@ -170,7 +170,9 @@ html.wk-root body {
 .wk-toc a[aria-current] {
   background: var(--wk-panel-2);
   color: var(--wk-text);
-  box-shadow: inset 3px 0 0 var(--wk-accent);
+  border-left: 3px solid var(--wk-accent);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 .wk-dot-status {
   flex: none;
@@ -270,6 +272,8 @@ html.wk-root body {
   margin: 14px 0;
   background: rgba(92, 200, 255, 0.1);
   border-left: 4px solid var(--t-chain);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
 }
 .wk-note.warn {
   background: rgba(255, 138, 122, 0.1);
@@ -714,6 +718,8 @@ html.wk-root body {
 .wk-ladder-step {
   background: linear-gradient(90deg, rgba(254, 222, 93, 0.16), transparent);
   border-left: 4px solid var(--t-money);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   border-radius: 10px;
   padding: 10px 14px;
   display: grid;
@@ -1035,9 +1041,10 @@ html.wk-root body {
   align-items: flex-start;
   margin: 14px 0 12px;
   padding: 14px 16px;
-  border-radius: 14px;
+  /* A straight line on a square edge: an accent bar never follows a rounded corner. */
+  border-left: 4px solid var(--discovery, var(--wk-accent));
+  border-radius: 0 14px 14px 0;
   background: var(--surface-soft, var(--wk-panel-2));
-  box-shadow: inset 4px 0 0 var(--discovery, var(--wk-accent));
 }
 .wk-tldr p {
   margin: 0;
@@ -1668,4 +1675,53 @@ html.wk-root body {
   .wk-bp-link i {
     display: none;
   }
+}
+
+/* Big picture: the lead line and the five fact cards under the strip. */
+.wk-bp-lead {
+  margin: -6px 0 16px;
+  max-width: 860px;
+  font-size: 17px;
+  line-height: 1.5;
+  color: #e9defa;
+}
+.wk-bp-lead b {
+  color: #fff;
+}
+.wk-bp-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 10px;
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+.wk-bp-cards > li {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.07);
+}
+.wk-bp-card-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  color: var(--coin, #fef87d);
+}
+.wk-bp-card-head b {
+  color: #fff;
+  font-size: 16px;
+  font-weight: 600;
+}
+.wk-bp-cards ul {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+  color: #e9defa;
+}
+.wk-bp-cards ul b {
+  color: #fff;
 }

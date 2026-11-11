@@ -12,7 +12,7 @@ import { useLevelTable } from "./XpBar";
 import { levelProgress } from "./levels";
 import {
   ZoneActivities,
-  Gotchiverse,
+  Layer,
   DailyBoard,
   SeasonCard,
   QuestBrief,
@@ -31,6 +31,7 @@ import {
   ChainLink,
   CreatorCommunity,
   CommunityBonusVote,
+  TreasuryVote,
   MapNotes,
   PlayerCard,
   Inbox,
@@ -124,6 +125,7 @@ import {
 } from "./native-task-quote";
 import { nativeWorldView } from "./native-game-map";
 import type { NearbyExplorer } from "./types";
+import type { PublicLayer } from "./layer/Layer";
 import type { ActorView } from "./actor-types";
 import type { ActorFocusMatch } from "./GameMap";
 import type { NpcMapTask } from "./npc-client";
@@ -311,7 +313,7 @@ import { registerChainTrades } from "./chain-trades";
 import { tr } from "./i18n";
 
 type Tab =
-  | "gotchiverse"
+  | "layer"
   | "explore"
   | "inventory"
   | "market"
@@ -426,11 +428,11 @@ export default function App() {
       }
     }),
     [now, setNow] = useState(Date.now()),
-    // Server switch GOTCHIVERSE_TEST_APP: adds the workshop to the logo world picker.
-    [gotchiverseTestApp, setGotchiverseTestApp] = useState(false);
+    // Server switch LAYER_ENABLED: adds the virtual voxel Layer to the logo world picker.
+    [virtualLayer, setVirtualLayer] = useState<PublicLayer | null>(null);
   useEffect(() => {
-    void api<{ gotchiverseTestApp?: boolean }>("/config")
-      .then((c) => setGotchiverseTestApp(c.gotchiverseTestApp === true))
+    void api<{ layer?: { layers?: PublicLayer[] } | null }>("/config")
+      .then((c) => setVirtualLayer(c.layer?.layers?.[0] ?? null))
       .catch(() => {});
   }, []);
   // Read guards follow the requested mode before React commits its next render.
@@ -560,15 +562,8 @@ export default function App() {
       });
   }
   useEffect(() => {
-    if (tab === "gotchiverse") { setPresence(false); setOthers([]); }
+    if (tab === "layer") { setPresence(false); setOthers([]); }
   }, [tab]);
-  // A workshop invitation link opens the workshop once the explorer exists.
-  useEffect(() => {
-    if (gotchiverseTestApp && player && navigation.ready && /^#gotchi-invite=w_[a-f0-9]{32}\.[a-f0-9]{48}$/.test(location.hash)) {
-      setTab("gotchiverse");
-      setSheetExpanded(false);
-    }
-  }, [gotchiverseTestApp, player?.id, navigation.ready]);
   // Locked staker chips (src/LockedChip.tsx) open the stake screen.
   useEffect(() => {
     const open = () => setTab("fuel");
@@ -971,7 +966,7 @@ export default function App() {
       endsAt: state.world?.endsAt,
       nativePlay: state.nativePlay,
       loading: worldLoading.current,
-      visible: !document.hidden && !state.introOpen && state.tab !== "gotchiverse",
+      visible: !document.hidden && !state.introOpen && state.tab !== "layer",
       online: navigator.onLine,
     };
   }
@@ -2513,6 +2508,35 @@ export default function App() {
         invisible.deviceKey?.accountId ? invisible.deviceKey : null,
     });
   });
+  // Treasury DAO vote (docs/TREASURY-DAO.md): the explorer account approves
+  // one poll option on the Sputnik DAO; sponsored, no deposit, no popup.
+  async function voteTreasury(dao: string, proposalId: number): Promise<boolean> {
+    const result = await action("treasury-vote", async () => {
+      if (!onNearNetwork(dao)) throw Error(tr("The treasury vote is on another network."));
+      const { signer, accountId } = await resolveSigner(invisible.accountId || undefined);
+      await signer.send(
+        {
+          network: NEAR_NETWORK,
+          signerId: accountId,
+          receiverId: dao,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: "act_proposal",
+                args: { id: proposalId, action: "VoteApprove", proposal: "Vote" },
+                gas: "50000000000000",
+                deposit: "0",
+              },
+            },
+          ],
+        },
+        { playerId: player!.id },
+      );
+      return true;
+    });
+    return result === true;
+  }
   async function withdrawNativeReward(
     expectedAccount: string,
     contractId: string,
@@ -3557,7 +3581,7 @@ export default function App() {
           fund: tr("Game economy"),
           funding: tr("How rewards are funded"),
           fuel: tr("Fuel the prize pool"),
-          gotchiverse: "Gotchiverse-test-app",
+          layer: virtualLayer?.name ?? tr("Layer"),
           expeditions: tr("Nearby walks"),
           inventory: tr("Inventory"),
           market: tr("Inventory"),
@@ -3726,8 +3750,8 @@ export default function App() {
         </div>
       </aside>
       <header className="topbar">
-        {gotchiverseTestApp && player ? (
-          <WorldSwitcher virtual={tab === "gotchiverse"} enabled onChoose={(virtual) => { setTab(virtual ? "gotchiverse" : "explore"); setSheetExpanded(false); }} />
+        {virtualLayer && player ? (
+          <WorldSwitcher virtual={tab === "layer"} enabled layerName={virtualLayer.name} onChoose={(virtual) => { setTab(virtual ? "layer" : "explore"); setSheetExpanded(false); }} />
         ) : (
         <div className="wordmark" onClick={() => setTab("explore")}>
           <img className="wordmark-logo" src="/icon.svg" alt="" width={36} height={36} />
@@ -3745,14 +3769,14 @@ export default function App() {
         <div className="realm-label">
           <span className="status-dot" />
           <span>
-            {tab === "gotchiverse" ? tr("Virtual world") : nativePlay || !arena
+            {tab === "layer" ? tr("Virtual world") : nativePlay || !arena
               ? world?.cityName || tr("Your surroundings")
               : tr("Plzeň · city demo")}
           </span>
         </div>
         {player && (
           <div className="hud-left">
-            {!gotchiverseTestApp && (
+            {!virtualLayer && (
               <button
                 className="hud-brand"
                 aria-label={tr("QuestLayer home")}
@@ -3900,7 +3924,7 @@ export default function App() {
           tabIndex={-1}
           className={`main-panel ${tab === "explore" ? `explore-panel ${selected ? "zone-explore-panel" : ""} ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
-          {tab === "gotchiverse" && <Gotchiverse key={player.id} player={player} items={equipped} onExit={() => setTab("explore")} />}
+          {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} onExit={() => setTab("explore")} />}
           {tab === "explore" && !sheetExpanded && <div className="objective-dismiss-bar">
             <button className="objective-dismiss" aria-label={tr("Hide objective")} onClick={() => { if (objective === "coach") learning.acknowledge(coachTopic); else if (zoneQuest) learning.acknowledge(questHelpTopic(zoneQuest)); setDismissedObjective(objectiveKey); }}><X size={20} aria-hidden="true" /></button>
           </div>}
@@ -4791,6 +4815,14 @@ export default function App() {
           )}
           {tab === "community" && (
             <ScreenTabPanel idBase="community" value={communityTab}>
+              {communityTab === "quests" && (
+                <TreasuryVote
+                  key={`treasury-${player.id}`}
+                  account={invisible.status === "ready" ? invisible.accountId || null : null}
+                  vote={voteTreasury}
+                  notify={notify}
+                />
+              )}
               {communityTab === "creators" && (
                 <CommunityBonusVote
                   key={`bonus-${player.id}`}

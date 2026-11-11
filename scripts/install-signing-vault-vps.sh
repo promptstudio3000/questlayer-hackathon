@@ -23,8 +23,9 @@ ROOT=/opt/ps3000/apps/questlayer-signer
 
 # The public config: origins, RPC and the contract allowlist from the manifests.
 CONFIG="$(node --input-type=module -e '
-import { readFileSync } from "node:fs";
+import { readFileSync, existsSync } from "node:fs";
 const m = (n) => JSON.parse(readFileSync(`public/${n}-testnet.json`, "utf8"));
+const optional = (n) => (existsSync(`public/${n}-testnet.json`) ? m(n) : null);
 const config = {
   appOrigin: process.argv[1], vaultOrigin: process.argv[2], network: "testnet",
   rpcUrl: "https://test.rpc.fastnear.com",
@@ -34,6 +35,9 @@ const config = {
     collectibles: m("native-claims").contractId,
     npcGames: m("native-npc-games").contractId,
     social: "v1.social08.testnet",
+    intents: m("native-intents").verifierContract,
+    wnear: m("native-intents").wnear,
+    ...(optional("native-treasury-dao") ? { treasuryDao: optional("native-treasury-dao").contractId } : {}),
   },
 };
 const { validateVaultOrigins } = await import("./src/signing-vault/policy.ts");

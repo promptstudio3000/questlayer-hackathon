@@ -4,6 +4,9 @@ Status 4 Nov 2026: testnet only. QGOLD build plan stream 8, approved by Lubos on
 Code: `server/native/treasury-mix.mjs` (planning and read-only views), `scripts/treasury-mix-testnet.mjs`
 (Mac, operator key), card "Treasury mix" on `/economy`, API `GET /api/treasury/mix`.
 
+Governance (11 Nov 2026): once the treasury DAO exists, the target is the mix the DAO adopted from the weekly
+explorer vote, and `rebalance` runs only on a day whose run the DAO approved. See [TREASURY-DAO.md](TREASURY-DAO.md).
+
 ## Why
 
 Until now the sponsor treasury (operator `questlayer-dev-20261101.testnet`) was 100 % stNEAR. All of its yield

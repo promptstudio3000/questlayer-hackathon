@@ -1,0 +1,17 @@
+{
+  "verifiedAt": "2026-11-11T01:16:52.288Z",
+  "reports": [
+    {
+      "viewport": "phone-390",
+      "fps": 4,
+      "errors": []
+    },
+    {
+      "viewport": "desktop",
+      "fps": 4,
+      "errors": []
+    }
+  ],
+  "status": "passed",
+  "hardware": false
+}

@@ -59,7 +59,8 @@ export type VizId =
   | "wearable-rarity"
   | "inbox-seq"
   | "phone-hud"
-  | "screen-map";
+  | "screen-map"
+  | "dao-flow";
 
 export type Block =
   | { h: string }
@@ -162,12 +163,12 @@ export const CHAPTERS: Chapter[] = [
     id: "overview",
     group: "start",
     title: "What QuestLayer is",
-    tldr: "A free location game on real streets: walk, collect backed coins, meet NPCs and beat monsters. XP and levels are yours, Auras are NFTs, and coins arrive as **QGOLD** in your own NEAR account within minutes, paid from treasury yield, **never by players losing money**.",
+    tldr: "Pokémon GO, Geocaching and PoolTogether in one: **stake to play and lose nothing**. Your principal stays yours, a share of its yield goes to one global treasury, and every day that yield becomes rewards on real streets, paid as **QGOLD**, fully backed by NEAR.",
     keyFacts: [
+      ["100 %", "of your stake's principal stays yours"],
       ["0", "wallets or deposits needed to start"],
       ["5 min", "between QGOLD payout rounds"],
-      ["6", "quest zones a day in Plzeň"],
-      [String(EDITIONS.length), "Aura editions to collect"],
+      ["100 %", "of QGOLD backed by NEAR"],
     ],
     hero: "phone-hud",
     status: "live",
@@ -492,6 +493,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "Chest, roll and level Auras are secured automatically: the device key signs `redeem_aura` and the relayer pays gas. A worn Aura waits until it is taken off.",
           "Selling lists the Aura on NEAR Intents (see the Intents chapter). A 2 % NEP-199 royalty goes to the treasury on outside marketplaces such as Mintbase.",
+          "Planned: trading real Aavegotchi wearables through the Aavegotchi marketplace and its engine. Today wearables on the map are free clones and originals stay in the wallet.",
         ],
       },
     ],
@@ -622,26 +624,35 @@ export const CHAPTERS: Chapter[] = [
     ],
   },
   {
-    id: "gotchiverse-test-app",
+    id: "virtual-layer",
     group: "play",
-    title: "Gotchiverse-test-app",
-    tldr: "A free **16 × 16 voxel workshop** behind a server switch: shape terrain, place a garden lantern and build with invited friends. No QGOLD, XP, items or land.",
+    title: "The Layer (virtual voxel world)",
+    tldr: "The name says it: every community will build its own **layer**, its own world with its own rules, on the same stake-to-play mechanics and QGOLD. The first is the **Space Layer**, a shared 3D voxel world on testnet with a free home plot for every explorer.",
     keyFacts: [
-      ["16 × 16", "blocks per workshop"],
-      ["off", "unless the server switch is on"],
-      ["1 day", "invite link lifetime"],
-      ["0", "QGOLD, XP or items"],
+      ["16 × 16", "free home plot per explorer"],
+      ["10", "block types to build with"],
+      ["128 blocks", "range to see other explorers"],
+      ["0", "coins paid or spent in a layer yet"],
     ],
     status: "partial",
-    updated: "2026-11-08",
-    sources: ["docs/GOTCHIVERSE.md", "server/gotchiverse/store.mjs", "server/gotchiverse/routes.mjs", "src/Gotchiverse.tsx", "src/WorldSwitcher.tsx"],
+    updated: "2026-11-11",
+    sources: ["docs/LAYER.md", "server/layer/world.mjs", "server/layer/store.mjs", "server/layer/routes.mjs", "server/layer/layers.mjs", "src/layer/Layer.tsx", "src/layer/engine.ts", "src/WorldSwitcher.tsx"],
     blocks: [
+      { h: "Space Layer today" },
       {
         list: [
-          "**Switch:** off unless the server runs with `GOTCHIVERSE_TEST_APP=1`. When on, the logo opens a world picker with QuestLayer and Gotchiverse-test-app.",
-          "**Play:** each explorer opens one private workshop, raises and lowers blocks, paints grass, stone, sand or water and places a lantern. The first activity asks for three changed blocks and a lantern. Owners invite friends with a one-day link.",
-          "**No money:** no QGOLD, XP, item grants, land claims or permits. Virtual movement never counts as GPS; the outdoor map pauses while the workshop is open.",
-          "**Storage:** one JSON file per workshop, written under a lock with an atomic rename. Edits carry a revision and a request id, so a retry never applies twice.",
+          "**Switch:** off unless the server runs with `LAYER_ENABLED=1` (never on mainnet). Then the logo opens a world picker with QuestLayer and the **Space Layer**.",
+          "**Play:** walk and jump through one shared 3D world generated from a seed. Every explorer gets a free 16 × 16 home plot in a settlement and builds with ten blocks; only the owner can change a plot. Light pillars lead to beacons that activate when you stand on them. Daily goals: 8 blocks built, 3 beacons.",
+          "**Explorers:** others within 128 blocks appear with name and a blocky outfit (six colour sets; an equipped Aura shows as a halo). Positions are kept in memory for 15 seconds and fast jumps are corrected.",
+          "**Storage:** SQLite tables for plots, changed blocks, edit receipts and beacon activations. Edits carry a request id, so a retry never applies twice. Virtual movement never counts as GPS.",
+        ],
+      },
+      { h: "Community layers (agreed, not active)" },
+      {
+        list: [
+          "Each community gets its own layer: its own seed, name and coin name. The first is Space Layer with the coin MINECOIN.",
+          "Every layer uses the QGOLD mechanics; its share of the daily staking yield follows what its players staked, and its coin pays for tasks made in the layer.",
+          "**None of this is active.** Nothing in a layer pays or costs anything yet: no coin balance, staking, treasury, task payment, XP or items.",
         ],
       },
     ],
@@ -706,6 +717,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "A world layer is a JSON pack (default `aavegotchi-v1`) that sets actor models, object kinds and design tokens. Layers never create money: the validator refuses any pack whose rewards are not `none`.",
           "The map follows the real sun at the city (day, dusk, dawn, night), and actors have day, night or any-time casts.",
+          "Buildings rise in 3D up to 16 m so pins stay readable over the roofs. Churches, castles and monuments keep their real height from OpenStreetMap (St. Bartholomew in Plzeň: 102 m) or are lifted to at least 22–30 m, in a warmer colour, so you can find your way by them.",
         ],
       },
     ],
@@ -763,7 +775,7 @@ export const CHAPTERS: Chapter[] = [
     id: "economy",
     group: "economy",
     title: "The money model",
-    tldr: "All money flows through **one global treasury**. It earns yield and fees, releases a daily budget that players collect as coins and prizes, and never spends principal. **Nobody pays to win.**",
+    tldr: "Stake-to-play, PoolTogether style: stakers keep their principal, a chosen share of the yield goes to **one global treasury**, and its daily budget is collected by players as coins and prizes. Fees add to it; principal is never spent. **Nobody pays to win.**",
     keyFacts: [
       ["1", "global treasury, no city pots"],
       ["100 %", "of map coins backed by NEAR"],
@@ -793,7 +805,7 @@ export const CHAPTERS: Chapter[] = [
     id: "treasury-and-yield",
     group: "economy",
     title: "Treasury, yield and the mix",
-    tldr: "The treasury targets **50 % liquid staking, 40 % lent stablecoins and 10 % NEAR**. A daily job harvests growth and rebalances within hard limits; only the yield ever becomes the map budget.",
+    tldr: "The treasury holds **50 % liquid staking, 40 % lent stablecoins and 10 % NEAR**, the mix explorers adopted in the DAO vote. A daily run, approved by the DAO council, harvests growth and rebalances within hard limits; only the yield becomes the map budget.",
     keyFacts: [
       ["50 / 40 / 10", "% target: staking / stablecoins / NEAR"],
       ["40 %", "max with any one protocol"],
@@ -817,7 +829,7 @@ export const CHAPTERS: Chapter[] = [
           ],
         },
       },
-      { p: "Order of a daily run: harvest stNEAR growth above the principal, rebalance toward the target, keep the reserve. The live split comes from `/api/treasury/mix`." },
+      { p: "Order of a daily run: harvest stNEAR growth above the principal, rebalance toward the target, keep the reserve. The target is the mix the treasury DAO adopted, and a rebalance runs only on a day whose run the DAO approved (see the next chapter). The live split comes from `/api/treasury/mix`." },
       { h: "From yield to a daily budget" },
       { p: "Try it: the treasury size and the blended yield decide how much the map can pay every day without touching principal." },
       { viz: "yield-sim" },
@@ -840,6 +852,45 @@ export const CHAPTERS: Chapter[] = [
         ],
       },
       { p: "The [Treasury](/treasury) dashboard shows all of this live: the money flow, the mix, today's budget, QGOLD backing and a model." },
+    ],
+  },
+  {
+    id: "treasury-dao",
+    group: "economy",
+    title: "Who decides: the treasury DAO",
+    tldr: "Explorers vote every week on how the treasury is held, one explorer one vote. A **Sputnik DAO** council approves every daily run, and only after checking it against the adopted mix and the safety limits.",
+    keyFacts: [
+      ["2 of 3", "council approvals pass a proposal"],
+      ["L3+", "and played in the last 7 days to vote"],
+      ["3", "mix options each week"],
+      ["1 : 1", "one explorer, one vote; XP cannot be bought"],
+    ],
+    hero: "dao-flow",
+    status: "live",
+    updated: "2026-11-11",
+    sources: ["docs/TREASURY-DAO.md", "server/native/treasury-dao.mjs", "scripts/treasury-dao-testnet.mjs", "src/TreasuryVote.tsx"],
+    blocks: [
+      { p: "The treasury follows a stock **Sputnik DAO v2**, `questlayer-treasury.sputnik-v2.testnet`, with the role names Trezu uses: a keeper that only files proposals (Requestor), a council of three that approves with **2 of 3** (Admin, Approver), and **Explorers**, the players who may vote." },
+      {
+        table: {
+          head: ["Step", "Who", "On chain"],
+          rows: [
+            ["Weekly mix vote opens (Monday)", "keeper", "one `Vote` proposal per option; the recommended option gets one automatic vote"],
+            ["Explorers vote", "players at level 3+ who played in the last 7 days", "`act_proposal(VoteApprove)` from the explorer account, sponsored, no pop-up"],
+            ["Tally (next Monday)", "keeper files the result, council approves", "an approved Adopt treasury mix proposal with the counts"],
+            ["Every morning", "keeper files the day's run, two council keys approve", "the run happens only once it is approved"],
+          ],
+        },
+      },
+      {
+        list: [
+          "**Options:** Balanced 50 / 40 / 10 (recommended), More staking 70 / 20 / 10, Bigger reserve 40 / 30 / 30 (liquid staking / stablecoins / NEAR reserve). Every option stays inside the treasury limits.",
+          "**Checked automatic approval:** the council keys approve a daily run only when its target is the adopted mix and it moves at most 25 % of the treasury.",
+          "Extra votes of the week appear under the mix vote and are counted the same way. New voters join the DAO once a day.",
+          "Custody stays with the operator on testnet for now; the DAO decides the target and approves every run. The QGOLD vault council moves to the DAO next.",
+        ],
+      },
+      { p: "Vote in Community → Quests → **Treasury vote**. The live tally and the decision log are on the [Treasury](/treasury#dao) page." },
     ],
   },
   {
@@ -1061,11 +1112,11 @@ export const CHAPTERS: Chapter[] = [
     id: "accounts",
     group: "chain",
     title: "Accounts, wallets and the relayer",
-    tldr: "Play without a wallet: your explorer gets an **invisible NEAR account** whose only key is made on your device, and the game's relayer pays the gas. A wallet app is asked only when you choose one.",
+    tldr: "The blockchain is invisible: every explorer automatically gets an **own NEAR account** whose key never leaves the device, the game pays the gas for every game action, and recovery works with a passkey or a linked wallet.",
     keyFacts: [
-      ["0.1 NEAR", "funds a new explorer account"],
+      ["0.02 NEAR", "deposit per new account on mainnet (0.1 on testnet)"],
+      ["0.05 NEAR", "daily top-up cap per account on mainnet"],
       ["0", "player keys held by the server"],
-      ["1", "action per sponsored meta-transaction"],
       ["2 NEAR/day", "sponsorship cap planned for mainnet"],
     ],
     hero: "account-seq",
@@ -1076,10 +1127,10 @@ export const CHAPTERS: Chapter[] = [
       { h: "Your explorer account" },
       {
         list: [
-          "A new explorer gets `<name>.play-…testnet`, funded with 0.1 NEAR, once they earned their first XP on the map; the first steps play solo without it. New accounts per network address are capped per day.",
+          "A new explorer gets `<name>.play-…testnet` once they earned their first XP on the map; the first steps play solo without it. The account gets a small deposit for storage and its first own payments (0.1 test NEAR on testnet; 0.02 NEAR planned on mainnet) and a sponsored top-up within a daily cap (0.05 NEAR on mainnet). New accounts per network address are capped per day.",
           "Every in-game action (tasks, Secrets, Aura listings and equipment, staking, level rewards, badges, profile and note records) signs with this account, without a wallet pop-up. Before it exists, **Activate my account** prepares it.",
           "The device key lives in a separate signing origin, deployed with the game. If a browser blocks its storage, no account is created, Profile → Settings → Account and devices says so, and free play continues. Keys made before that origin are not rotated yet.",
-          "Withdrawals, asset transfers and account recovery need approval in a separate account window.",
+          "Purchases, equipment, earned mini-games and getting ready to trade sign silently. Anything that can pay someone else (a sale or purchase, a task, Secret or send, a withdrawal, an asset transfer) and account recovery ask one plain Yes / No question in a small separate window, which a compromised game page cannot answer.",
         ],
       },
       { h: "Sign-in methods" },

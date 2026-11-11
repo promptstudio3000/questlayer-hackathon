@@ -976,6 +976,31 @@ function WikiLoop() {
   );
 }
 
+function DaoFlow() {
+  return (
+    <Flow
+      title="Who decides: explorers vote on the mix each week; the council approves each daily run only after checking it."
+      width={720}
+      height={250}
+      nodes={[
+        { id: "explorers", x: 95, y: 60, w: 150, label: "Explorers (L3+)", sub: "weekly mix vote, 1 : 1", tone: "player", pulse: true },
+        { id: "keeper", x: 330, y: 60, w: 150, label: "Keeper", sub: "files polls, results, runs", tone: "core" },
+        { id: "council", x: 590, y: 60, w: 170, label: "Council 2 of 3", sub: "approves after checks", tone: "chain", pulse: true },
+        { id: "mix", x: 590, y: 190, w: 170, label: "Adopted mix", sub: "e.g. 50 / 40 / 10", tone: "money" },
+        { id: "run", x: 330, y: 190, w: 150, label: "Daily run", sub: "≤ 25 % moved", tone: "money" },
+        { id: "treasury", x: 95, y: 190, w: 150, label: "Treasury", sub: "staking · stables · NEAR", tone: "world" },
+      ]}
+      edges={[
+        { from: "explorers", to: "keeper", label: "votes", flow: true, tone: "player" },
+        { from: "keeper", to: "council", label: "proposal", flow: true, tone: "core" },
+        { from: "council", to: "mix", label: "adopt", flow: true, tone: "chain" },
+        { from: "mix", to: "run", label: "target", flow: true, tone: "money" },
+        { from: "run", to: "treasury", label: "rebalance", flow: true, tone: "money" },
+      ]}
+    />
+  );
+}
+
 const VIZ: Record<VizId, () => React.ReactElement> = {
   architecture: Architecture,
   "money-modes": MoneyModes,
@@ -1019,6 +1044,7 @@ const VIZ: Record<VizId, () => React.ReactElement> = {
   "inbox-seq": InboxSeq,
   "phone-hud": SCENES["phone-hud"],
   "screen-map": SCENES["screen-map"],
+  "dao-flow": DaoFlow,
 };
 
 export function Viz({ id }: { id: VizId }) {
