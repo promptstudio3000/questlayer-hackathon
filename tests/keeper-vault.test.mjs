@@ -120,7 +120,7 @@ test("the inner vault opens at Staker (2 NEAR matured) + level 2, and every defa
   assert.equal(l2.stakeToday.open, true);
   assert.equal(l2.gates.patron_line.open, false, "the rest of the patron line waits for level 4");
   assert.deepEqual(l2.gates.patron_line.missing.map((m) => m.label), ["Reach level 4"]);
-  assert.deepEqual(l2.gates.t2_lines.missing.map((m) => m.label), ["Reach Tier 2 (50 NEAR matured)", "Reach level 6"]);
+  assert.deepEqual(l2.gates.t2_lines.missing.map((m) => m.label), ["Reach Tier 2 (10 NEAR matured)", "Reach level 6"]);
   // 1 NEAR is not enough; the chip names the stake and the level.
   const poor = setup().view(state({ principal: 1n * N, epoch: 100 }), 1).inner;
   assert.deepEqual(poor.missing, ["Stake 2 NEAR", "Reach level 2"]);

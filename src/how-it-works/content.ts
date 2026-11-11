@@ -37,8 +37,8 @@ export const LEVEL_LADDER: readonly LevelRung[] = levelTable.levels.map((l) => (
 export const MAX_LEVEL = levelTable.maxLevel;
 
 export const STAKER_MIN_NEAR = Number(stakerGates.stakerMinNear);
-/** Vault tiers (weighted stake), owner decision 11 Nov 2026: Tier 2 = 10 NEAR, Tier 3 = 50 NEAR. */
-export const TIER_NEAR = Object.freeze({ tier2: 10, tier3: 50 });
+/** Vault tiers (weighted stake), owner decision 11 Nov 2026: Tier 2 = 10 NEAR, Tier 3 = 50 NEAR (src/tier-stake.ts). */
+export { TIER_NEAR } from "../tier-stake.ts";
 
 type Step = "staker" | "tier2" | "tier3";
 const STEP_LABEL: Record<Step, string> = {
