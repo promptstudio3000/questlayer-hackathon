@@ -3206,7 +3206,6 @@
  "Staking {0} NEAR…": "{0} NEAR स्टेक हो रहा है…",
  "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "तुम्हारी तिजोरी तैयार है। एक बार फिर {0} NEAR स्टेक करें पर टैप करो।",
  "Connect a NEAR wallet": "NEAR वॉलेट जोड़ें",
- "Connect it and stake from it; your wallet asks you to approve each step.": "इसे जोड़ें और इससे स्टेक करें; आपका वॉलेट हर कदम पर मंज़ूरी माँगेगा।",
  "Explorer account": "एक्सप्लोरर खाता",
  "Install one, create an account, then come back and connect it.": "एक इंस्टॉल करें, खाता बनाएँ, फिर लौटकर उसे जोड़ें।",
  "No NEAR wallet yet?": "अभी तक NEAR वॉलेट नहीं है?",
@@ -3221,5 +3220,17 @@
  "Your account isn't ready to stake yet. What can I do?": "आपका खाता अभी स्टेक के लिए तैयार नहीं है। मैं क्या कर सकता हूँ?",
  "Your explorer account is still being prepared. You can wait a moment, or connect a NEAR wallet you already have.": "आपका एक्सप्लोरर खाता अभी तैयार हो रहा है। थोड़ा इंतज़ार करें, या पहले से मौजूद NEAR वॉलेट जोड़ें।",
  "Your explorer account opens with your first find. Collect a coin or finish a quest on the map, or connect a NEAR wallet you already have.": "आपका एक्सप्लोरर खाता आपकी पहली खोज के साथ खुलता है। मैप पर एक सिक्का उठाएँ या कोई क्वेस्ट पूरा करें, या पहले से मौजूद NEAR वॉलेट जोड़ें।",
- "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "{0} के पास {1} टेस्ट NEAR है। स्टेकिंग के लिए लगभग {2} चाहिए (वॉल्ट सेटअप, स्टेक और थोड़ी गैस)।"
+ "About {0} NEAR is missing.": "लगभग {0} NEAR कम है।",
+ "Buying it needs about {0} NEAR (the price and a little gas).": "खरीदने के लिए लगभग {0} NEAR चाहिए (कीमत और थोड़ी गैस)।",
+ "Connect it and pay from it; your wallet asks you to approve each step.": "इसे जोड़ें और इससे भुगतान करें; आपका वॉलेट हर कदम पर मंज़ूरी माँगेगा।",
+ "Gold you collect on the map becomes QGOLD in the nightly payout. QGOLD can be swapped for NEAR.": "नक्शे पर इकट्ठा किया सोना रात के भुगतान में QGOLD बन जाता है। QGOLD को NEAR से बदला जा सकता है।",
+ "No QGOLD to swap yet": "बदलने के लिए अभी QGOLD नहीं है",
+ "Send NEAR to this account": "इस खाते में NEAR भेजें",
+ "Staking needs about {0} NEAR (vault setup, the stake and a little gas).": "स्टेकिंग के लिए लगभग {0} NEAR चाहिए (वॉल्ट बनाना, स्टेक और थोड़ी गैस)।",
+ "Swap QGOLD for NEAR": "QGOLD को NEAR से बदलें",
+ "This device doesn't hold your explorer account's key yet. Restore it with your passkey in Profile → Account and devices, or connect a NEAR wallet you already have.": "इस डिवाइस में अभी आपके एक्सप्लोरर खाते की कुंजी नहीं है। प्रोफ़ाइल → खाता और डिवाइस में पासकी से इसे वापस लाएँ, या अपना मौजूदा NEAR वॉलेट जोड़ें।",
+ "Why you can't buy this yet": "आप इसे अभी क्यों नहीं खरीद सकते",
+ "You have {0} QGOLD, worth about {1} NEAR. Swap part of it for NEAR at the QGOLD vault, then come back and buy.": "आपके पास {0} QGOLD है, लगभग {1} NEAR के बराबर। QGOLD वॉल्ट में इसका कुछ हिस्सा NEAR से बदलें, फिर लौटकर खरीदें।",
+ "You have {0} QGOLD, worth about {1} NEAR. That is not enough to cover the missing {2} NEAR yet; collect more on the map or add NEAR.": "आपके पास {0} QGOLD है, लगभग {1} NEAR के बराबर। यह कमी वाले {2} NEAR के लिए अभी काफ़ी नहीं है; नक्शे पर और इकट्ठा करें या NEAR जोड़ें।",
+ "{0} has {1} NEAR.": "{0} के पास {1} NEAR है।"
 }

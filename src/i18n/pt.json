@@ -3206,7 +3206,6 @@
  "Staking {0} NEAR…": "A fazer stake de {0} NEAR…",
  "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "O teu cofre está pronto. Toca mais uma vez em Fazer stake de {0} NEAR.",
  "Connect a NEAR wallet": "Conectar uma carteira NEAR",
- "Connect it and stake from it; your wallet asks you to approve each step.": "Conecte-a e faça stake a partir dela; sua carteira pede aprovação em cada passo.",
  "Explorer account": "Conta de explorador",
  "Install one, create an account, then come back and connect it.": "Instale uma, crie uma conta e volte para conectá-la.",
  "No NEAR wallet yet?": "Ainda não tem carteira NEAR?",
@@ -3221,5 +3220,17 @@
  "Your account isn't ready to stake yet. What can I do?": "Sua conta ainda não está pronta para stake. O que posso fazer?",
  "Your explorer account is still being prepared. You can wait a moment, or connect a NEAR wallet you already have.": "Sua conta de explorador ainda está sendo preparada. Aguarde um momento ou conecte uma carteira NEAR que você já tem.",
  "Your explorer account opens with your first find. Collect a coin or finish a quest on the map, or connect a NEAR wallet you already have.": "Sua conta de explorador abre com seu primeiro achado. Colete uma moeda ou conclua uma missão no mapa, ou conecte uma carteira NEAR que você já tem.",
- "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "{0} tem {1} NEAR de teste. O stake precisa de cerca de {2} (criação do cofre, o stake e um pouco de gas)."
+ "About {0} NEAR is missing.": "Faltam cerca de {0} NEAR.",
+ "Buying it needs about {0} NEAR (the price and a little gas).": "A compra precisa de cerca de {0} NEAR (o preço e um pouco de gas).",
+ "Connect it and pay from it; your wallet asks you to approve each step.": "Conecte-a e pague a partir dela; sua carteira pede aprovação em cada passo.",
+ "Gold you collect on the map becomes QGOLD in the nightly payout. QGOLD can be swapped for NEAR.": "O ouro que você coleta no mapa vira QGOLD no pagamento noturno. QGOLD pode ser trocado por NEAR.",
+ "No QGOLD to swap yet": "Ainda sem QGOLD para trocar",
+ "Send NEAR to this account": "Envie NEAR para esta conta",
+ "Staking needs about {0} NEAR (vault setup, the stake and a little gas).": "O stake precisa de cerca de {0} NEAR (criar o cofre, o stake e um pouco de gas).",
+ "Swap QGOLD for NEAR": "Trocar QGOLD por NEAR",
+ "This device doesn't hold your explorer account's key yet. Restore it with your passkey in Profile → Account and devices, or connect a NEAR wallet you already have.": "Este dispositivo ainda não tem a chave da sua conta de explorador. Restaure-a com sua passkey em Perfil → Conta e dispositivos, ou conecte uma carteira NEAR que você já tem.",
+ "Why you can't buy this yet": "Por que você ainda não pode comprar",
+ "You have {0} QGOLD, worth about {1} NEAR. Swap part of it for NEAR at the QGOLD vault, then come back and buy.": "Você tem {0} QGOLD, cerca de {1} NEAR. Troque uma parte por NEAR no cofre de QGOLD e volte para comprar.",
+ "You have {0} QGOLD, worth about {1} NEAR. That is not enough to cover the missing {2} NEAR yet; collect more on the map or add NEAR.": "Você tem {0} QGOLD, cerca de {1} NEAR. Ainda não cobre os {2} NEAR que faltam; colete mais no mapa ou adicione NEAR.",
+ "{0} has {1} NEAR.": "{0} tem {1} NEAR."
 }

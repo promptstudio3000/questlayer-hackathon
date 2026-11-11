@@ -2464,13 +2464,21 @@ export default function App() {
     signerId: string,
   ): Promise<string | null> {
     let hash: string | null = null;
+    let failure: unknown = null;
     const result = await action("native-market", async () => {
-      hash = (await send(signerId)) || null;
+      try {
+        hash = (await send(signerId)) || null;
+      } catch (e) {
+        failure = e;
+        throw e;
+      }
       await refreshNative(true);
       return true;
     });
     if (result !== true)
-      throw Error("The action was not sent. Nothing changed.");
+      throw failure instanceof Error && failure.message
+        ? failure
+        : Error("The action was not sent. Nothing changed.");
     return hash;
   }
   const walletForOrders = useRef<{
@@ -4909,6 +4917,9 @@ export default function App() {
                 key={player.id}
                 player={player}
                 orderSigner={orderSigner}
+                explorerAccount={invisible.accountId || ""}
+                explorerStatus={invisible.status}
+                onLinkWallet={() => connectNear()}
                 busy={busy}
                 onConnect={activateExplorer}
                 onTrade={tradeNative}
