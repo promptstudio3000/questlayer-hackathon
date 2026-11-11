@@ -4,7 +4,6 @@
  "Password": "Contraseña",
  "Tester sign-in": "Acceso de tester",
  "Signing in…": "Accediendo…",
- "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "Este lugar necesita el nivel {0}: {1} NEAR de stake madurado en la bóveda. Los lugares libres cercanos están abiertos para todos.",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " (como máximo {0} al día para todos; después, la tirada paga el premio garantizado)",
  " (create one above first).": " (primero crea uno arriba).",
  " (held by the market)": " (en manos del mercado)",
@@ -3217,5 +3216,9 @@
  "Write to {0}…": "Escribe a {0}…",
  "Messages need your explorer account. Sign in with it to write.": "Los mensajes necesitan tu cuenta de explorador. Inicia sesión con ella para escribir.",
  "Your note: {0}": "Tu nota: {0}",
- "Note: {0}": "Nota: {0}"
+ "Note: {0}": "Nota: {0}",
+ "{0} is a Tier {1} zone. It opens with {2} NEAR of matured stake in the vault (at a 100 % prize-pool share). Free places nearby are open to everyone.": "{0} es una zona de nivel {1}. Se abre con {2} NEAR de stake madurado en el vault (con un 100 % para el fondo de premios). Los lugares libres cercanos están abiertos a todos.",
+ "Already staking less? One stake per explorer: withdraw it and stake {0} NEAR at once.": "¿Ya haces stake de menos? Un stake por explorador: retíralo y haz stake de {0} NEAR de una vez.",
+ "Stake {0} NEAR": "Hacer stake de {0} NEAR",
+ "Tier {0} zone": "Zona de nivel {0}"
 }

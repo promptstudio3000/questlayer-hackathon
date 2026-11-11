@@ -4,7 +4,6 @@
  "Password": "Пароль",
  "Tester sign-in": "Вход тестера",
  "Signing in…": "Вход…",
- "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "Для этого места нужен уровень {0}: {1} NEAR созревшего стейка в хранилище. Бесплатные места рядом открыты для всех.",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " (не больше {0} в день на всех; после этого розыгрыш даёт гарантированный приз)",
  " (create one above first).": " (сначала создай его выше).",
  " (held by the market)": " (удерживается рынком)",
@@ -3217,5 +3216,9 @@
  "Write to {0}…": "Напиши {0}…",
  "Messages need your explorer account. Sign in with it to write.": "Для сообщений нужен твой аккаунт исследователя. Войди с ним, чтобы писать.",
  "Your note: {0}": "Ваша заметка: {0}",
- "Note: {0}": "Заметка: {0}"
+ "Note: {0}": "Заметка: {0}",
+ "{0} is a Tier {1} zone. It opens with {2} NEAR of matured stake in the vault (at a 100 % prize-pool share). Free places nearby are open to everyone.": "{0} — зона уровня {1}. Она открывается при {2} NEAR зрелого стейка в хранилище (при 100 % доле для призового фонда). Свободные места рядом открыты для всех.",
+ "Already staking less? One stake per explorer: withdraw it and stake {0} NEAR at once.": "Уже стейкаете меньше? Один стейк на исследователя: выведите его и застейкайте сразу {0} NEAR.",
+ "Stake {0} NEAR": "Застейкать {0} NEAR",
+ "Tier {0} zone": "Зона уровня {0}"
 }

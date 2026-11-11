@@ -4,7 +4,6 @@
  "Password": "पासवर्ड",
  "Tester sign-in": "टेस्टर साइन-इन",
  "Signing in…": "साइन इन हो रहा है…",
- "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "इस जगह के लिए टियर {0} चाहिए: वॉल्ट में {1} NEAR का परिपक्व स्टेक। पास की मुफ़्त जगहें सबके लिए खुली हैं।",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " (सबके लिए दिन में ज़्यादा से ज़्यादा {0}; उसके बाद रोल पक्का इनाम देता है)",
  " (create one above first).": " (पहले ऊपर एक बनाओ)।",
  " (held by the market)": " (मार्केट के पास)",
@@ -3217,5 +3216,9 @@
  "Write to {0}…": "{0} को लिखें…",
  "Messages need your explorer account. Sign in with it to write.": "संदेशों के लिए आपका खोजकर्ता खाता चाहिए। लिखने के लिए उससे साइन इन करें।",
  "Your note: {0}": "आपका नोट: {0}",
- "Note: {0}": "नोट: {0}"
+ "Note: {0}": "नोट: {0}",
+ "{0} is a Tier {1} zone. It opens with {2} NEAR of matured stake in the vault (at a 100 % prize-pool share). Free places nearby are open to everyone.": "{0} टियर {1} ज़ोन है। यह वॉल्ट में {2} NEAR परिपक्व स्टेक (पुरस्कार पूल के लिए 100 % हिस्सा) से खुलता है। पास की मुफ़्त जगहें सभी के लिए खुली हैं।",
+ "Already staking less? One stake per explorer: withdraw it and stake {0} NEAR at once.": "पहले से कम स्टेक कर रहे हैं? हर खोजकर्ता का एक स्टेक: उसे निकालें और एक बार में {0} NEAR स्टेक करें।",
+ "Stake {0} NEAR": "{0} NEAR स्टेक करें",
+ "Tier {0} zone": "टियर {0} ज़ोन"
 }

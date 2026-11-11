@@ -653,10 +653,24 @@ export function GameMap(props: GameMapProps) {
         id: "zones-line",
         type: "line",
         source: "zones",
+        filter: ["!", ["get", "locked"]],
         paint: {
           "line-color": ["get", "color"],
           "line-width": ["case", ["get", "inside"], 4, 2],
           "line-opacity": 0.7,
+        },
+      });
+      // A zone above the player's tier: dashed edge, shown but locked.
+      m.addLayer({
+        id: "zones-locked-line",
+        type: "line",
+        source: "zones",
+        filter: ["get", "locked"],
+        paint: {
+          "line-color": ["get", "color"],
+          "line-width": ["case", ["get", "inside"], 4, 2.5],
+          "line-opacity": 0.85,
+          "line-dasharray": [2, 1.5],
         },
       });
       // Ordered objective guidance, explicitly dashed and labelled as non-routed.
@@ -901,6 +915,7 @@ export function GameMap(props: GameMapProps) {
           color: zoneAuraColor(z.tier),
           inside: z.id === props.insideZoneId,
           lit: zoneCountdown(z, zoneQuests, zoneNow).phase === "open",
+          locked: Number.isFinite(props.playerTier) && z.tier > props.playerTier!,
         },
         geometry: z.geometry || {
           type: "Polygon",
@@ -950,7 +965,8 @@ export function GameMap(props: GameMapProps) {
       const selected = props.focusZone?.id === z.id;
       const next = !selected && props.nextZoneId === z.id;
       const countdown = zoneCountdown(z, zoneQuests, zoneNow);
-      wrap.className = `zone-totem-marker tier-${z.tier} phase-${countdown.phase}${props.overview ? " map-overview" : ""}${props.globe ? " hidden" : ""}`;
+      const locked = Number.isFinite(props.playerTier) && z.tier > props.playerTier!;
+      wrap.className = `zone-totem-marker tier-${z.tier} phase-${countdown.phase}${locked ? " is-locked" : ""}${props.overview ? " map-overview" : ""}${props.globe ? " hidden" : ""}`;
       node.className = `zone-map-pin game-object-map-pin tier-${z.tier}${next ? " zone-map-pin-next" : ""}${props.overview ? " map-overview-pin" : ""}`;
       node.dataset.zoneId = z.id;
       node.style.setProperty("--zone-aura", zoneAuraColor(z.tier));
@@ -977,8 +993,9 @@ export function GameMap(props: GameMapProps) {
       chip.className = "zone-countdown";
       chip.setAttribute("aria-hidden", "true");
       chip.dataset.zoneId = z.id;
-      chip.textContent = countdown.text;
-      chip.hidden = !countdown.text;
+      // A locked zone says which tier opens it; its timer would only tease.
+      chip.textContent = locked ? `🔒 ${tr("Tier {0}", { 0: z.tier })}` : countdown.text;
+      chip.hidden = !locked && !countdown.text;
       const stem = document.createElement("span");
       stem.className = "zone-totem-stem";
       stem.setAttribute("aria-hidden", "true");
@@ -998,6 +1015,7 @@ export function GameMap(props: GameMapProps) {
     props.focusZone?.id,
     props.nextZoneId,
     props.selectedQuestId,
+    props.playerTier,
     zoneArtKey,
   ]);
   // Lazy shared-context GLBs. Mount once; individual failures keep the extrusion.
@@ -1029,6 +1047,8 @@ export function GameMap(props: GameMapProps) {
         .querySelector<HTMLElement>(".zone-countdown");
       const zone = chip && world.zones.find((z) => z.id === chip.dataset.zoneId);
       if (!chip || !zone) continue;
+      // The locked tier label stays put (see the zone pin loop).
+      if (chip.closest(".is-locked")) continue;
       const text = zoneCountdown(zone, world.quests, now).text;
       if (chip.textContent !== text) chip.textContent = text;
       chip.hidden = !text;

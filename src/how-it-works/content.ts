@@ -39,7 +39,7 @@ export const MAX_LEVEL = levelTable.maxLevel;
 
 export const STAKER_MIN_NEAR = Number(stakerGates.stakerMinNear);
 /** Vault tiers from docs/GAME-RULES.md E04 (1 NEAR = 1,000 GOLD, weighted by contribution). */
-export const TIER_NEAR = Object.freeze({ tier2: 50, tier3: 100 });
+export { TIER_NEAR } from "../tier-stake.ts";
 
 type Step = "staker" | "tier2" | "tier3";
 const STEP_LABEL: Record<Step, string> = {

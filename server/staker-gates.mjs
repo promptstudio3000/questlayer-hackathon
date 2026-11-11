@@ -233,14 +233,22 @@ export function playerStakeTier(db, player) {
 }
 
 /**
- * Tier for opening Tier 2/3 places on the map. Owner decision 8 Nov 2026:
- * places are open to everyone until launch, so this is 3 unless
- * TIER_PLACES=stake, which gates them by the real vault tier instead.
+ * Tier for opening Tier 2/3 places on the map.
+ * Owner decisions: 8 Nov 2026 every place was open until launch; 11 Nov 2026
+ * (Lubos) Tier 3 places stay locked until the player really reaches Tier 3.
+ * So by default Tier 2 places are open to everyone and Tier 3 needs the
+ * vault contract's Tier 3. TIER_PLACES=stake gates Tier 2 by the vault tier
+ * too; TIER_PLACES=open opens every place (the old 8 Nov behaviour).
  * Staker gates (NPC menus, patron content) always use playerStakeTier.
  */
 export function placeTier(db, player, env = process.env) {
-  return env.TIER_PLACES === "stake" ? playerStakeTier(db, player) : 3;
+  if (env.TIER_PLACES === "open") return 3;
+  const real = playerStakeTier(db, player);
+  return env.TIER_PLACES === "stake" ? real : Math.max(2, real);
 }
+
+/** NEAR of matured weighted stake each tier needs (the vault contract's tiers). */
+export const TIER_STAKE_NEAR = Object.freeze({ ...TIER_NEAR });
 
 /** Access for a player from the cache plus the world's tier and level. */
 export function playerStakerAccess(db, player, { worldTier = 1, level = 1, settings = defaultStakerGates() } = {}) {

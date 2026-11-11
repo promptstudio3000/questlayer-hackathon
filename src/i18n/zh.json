@@ -4,7 +4,6 @@
  "Password": "密码",
  "Tester sign-in": "测试者登录",
  "Signing in…": "正在登录…",
- "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "此地点需要等级 {0}：金库中已成熟的 {1} NEAR 质押。附近的免费地点对所有人开放。",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": "（所有人每天最多 {0} 次；之后掷骰只发放保底奖励）",
  " (create one above first).": "（请先在上方创建一个）。",
  " (held by the market)": "（由市场托管）",
@@ -3217,5 +3216,9 @@
  "Write to {0}…": "写给{0}…",
  "Messages need your explorer account. Sign in with it to write.": "发消息需要你的探索者账户。请用它登录后再写。",
  "Your note: {0}": "你的留言：{0}",
- "Note: {0}": "留言：{0}"
+ "Note: {0}": "留言：{0}",
+ "{0} is a Tier {1} zone. It opens with {2} NEAR of matured stake in the vault (at a 100 % prize-pool share). Free places nearby are open to everyone.": "{0}是{1}级区域。金库中有{2} NEAR已成熟质押(奖池分成100 %)即可开启。附近的免费地点对所有人开放。",
+ "Already staking less? One stake per explorer: withdraw it and stake {0} NEAR at once.": "已经质押得较少?每位探索者只能有一笔质押:先取出,再一次质押{0} NEAR。",
+ "Stake {0} NEAR": "质押{0} NEAR",
+ "Tier {0} zone": "{0}级区域"
 }

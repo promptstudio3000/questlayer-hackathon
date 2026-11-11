@@ -4,7 +4,6 @@
  "Password": "كلمة المرور",
  "Tester sign-in": "دخول المختبر",
  "Signing in…": "جارٍ الدخول…",
- "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "يحتاج هذا المكان إلى المستوى {0}: {1} NEAR من الحصة المستحقة في الخزنة. الأماكن المجانية القريبة مفتوحة للجميع.",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " ({0} مرات يوميًا كحد أقصى للجميع؛ بعدها يمنح السحب الجائزة المضمونة)",
  " (create one above first).": " (أنشئ واحدة في الأعلى أولًا).",
  " (held by the market)": " (يحتفظ بها السوق)",
@@ -3217,5 +3216,9 @@
  "Write to {0}…": "اكتب إلى {0}…",
  "Messages need your explorer account. Sign in with it to write.": "تحتاج الرسائل إلى حساب المستكشف الخاص بك. سجّل الدخول به لتكتب.",
  "Your note: {0}": "ملاحظتك: {0}",
- "Note: {0}": "ملاحظة: {0}"
+ "Note: {0}": "ملاحظة: {0}",
+ "{0} is a Tier {1} zone. It opens with {2} NEAR of matured stake in the vault (at a 100 % prize-pool share). Free places nearby are open to everyone.": "{0} منطقة من المستوى {1}. تُفتح بـ {2} NEAR من الحصة الناضجة في الخزنة (بنسبة 100 % لصندوق الجوائز). الأماكن المجانية القريبة مفتوحة للجميع.",
+ "Already staking less? One stake per explorer: withdraw it and stake {0} NEAR at once.": "تراهن بأقل بالفعل؟ حصة واحدة لكل مستكشف: اسحبها وراهن بـ {0} NEAR دفعة واحدة.",
+ "Stake {0} NEAR": "راهن بـ {0} NEAR",
+ "Tier {0} zone": "منطقة المستوى {0}"
 }

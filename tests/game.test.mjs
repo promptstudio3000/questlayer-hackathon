@@ -340,14 +340,19 @@ test("city snapshots share a fixed public center and never record the first visi
   db.close();
 });
 
-test("Tier places open to everyone until launch; TIER_PLACES=stake uses only the vault tier", async () => {
+test("Tier 2 places are open to everyone, Tier 3 needs the vault's Tier 3; TIER_PLACES=stake uses only the vault tier", async () => {
   const { placeTier, recordStakerStatus } = await import("../server/staker-gates.mjs");
   const { db, a } = setup();
   stake(db, a, 100_000 * GOLD, 50, "meadow", now);
-  assert.equal(placeTier(db, a, {}), 3);
+  // Simulated positions never open Tier 3 either.
+  assert.equal(placeTier(db, a, {}), 2);
+  assert.equal(placeTier(db, a, { TIER_PLACES: "open" }), 3);
   // Simulated positions never count toward the real tier.
   assert.equal(placeTier(db, a, { TIER_PLACES: "stake" }), 1);
   recordStakerStatus(db, a, { tier: 2 });
   assert.equal(placeTier(db, a, { TIER_PLACES: "stake" }), 2);
+  assert.equal(placeTier(db, a, {}), 2);
+  recordStakerStatus(db, a, { tier: 3 });
+  assert.equal(placeTier(db, a, {}), 3);
   db.close();
 });

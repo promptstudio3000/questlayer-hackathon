@@ -99,6 +99,27 @@
 .zone-totem-marker.phase-done > .zone-countdown {
   background: #6f6478;
 }
+/* Above the player's tier: shown, but locked (dashed edge on the map too). */
+.zone-totem-marker.is-locked > .zone-countdown {
+  background: #7a5a12;
+}
+.zone-totem-marker.is-locked > .zone-map-pin {
+  filter: saturate(0.55);
+}
+.zone-totem-marker.is-locked > .zone-map-pin::after {
+  content: "🔒";
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1a0335e6;
+  font-size: 12px;
+  line-height: 22px;
+  text-align: center;
+  pointer-events: none;
+}
 .zone-totem-marker.phase-closed > .zone-map-pin,
 .zone-totem-marker.phase-done > .zone-map-pin {
   opacity: 0.75;
