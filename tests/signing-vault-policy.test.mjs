@@ -7,6 +7,7 @@ import {
   trustedVaultMessage,
   describeReview,
   formatUnits,
+  reviewQuestion,
 } from "../src/signing-vault/policy.ts";
 import {
   signingVaultOrigin,
@@ -474,4 +475,73 @@ test("signed messages show their content; NEAR Intents are decoded with target a
     ),
     /Action: Remove device key[\s\S]*Public key to remove: ed25519:abc/,
   );
+});
+
+// Lubos 11 Nov: setting up a trade must not open the approval window. Only
+// the device key the vault holds and deposits into the player's own verifier
+// account sign silently; anything that can reach another account still asks.
+test("Intents setup on the player's own account signs silently", async () => {
+  const c = {
+    ...config,
+    contracts: { ...config.contracts, intents: "intents.testnet", wnear: "wrap.testnet" },
+  };
+  const device = "ed25519:" + "B".repeat(44),
+    other = "ed25519:" + "C".repeat(44);
+  const silent = (a, receiver) => needsProtection(call(a, receiver), c, undefined, device);
+  assert.equal(await silent(action("add_public_key", { public_key: device }), "intents.testnet"), false);
+  assert.equal(await silent(action("remove_public_key", { public_key: other }), "intents.testnet"), false);
+  // A key the game names that the vault does not hold could sign intents.
+  assert.equal(await silent(action("add_public_key", { public_key: other }), "intents.testnet"), true);
+  assert.equal(await needsProtection(call(action("add_public_key", { public_key: device }), "intents.testnet"), c), true);
+  assert.equal(await silent(action("add_public_key", { public_key: device }, "0"), "intents.testnet"), true);
+  assert.equal(await silent(action("mt_transfer", { receiver_id: "bob.testnet" }), "intents.testnet"), true);
+  const deposit = (msg, receiver_id = "intents.testnet") =>
+    action("nft_transfer_call", { receiver_id, token_id: "aura:polar:3", approval_id: null, memo: null, msg });
+  assert.equal(await silent(deposit(""), "nft.testnet"), false);
+  assert.equal(await silent(deposit("alice.testnet"), "nft.testnet"), false);
+  // Crediting someone else's verifier account, or another receiver, asks.
+  assert.equal(await silent(deposit("bob.testnet"), "nft.testnet"), true);
+  assert.equal(await silent(deposit("", "bob.testnet"), "nft.testnet"), true);
+  assert.equal(await silent(action("near_deposit", {}, "5000000000000000000000000"), "wrap.testnet"), false);
+  assert.equal(
+    await silent(action("storage_deposit", { account_id: "alice.testnet", registration_only: true }, "1250000000000000000000"), "wrap.testnet"),
+    false,
+  );
+  assert.equal(
+    await silent(action("storage_deposit", { account_id: "bob.testnet", registration_only: true }, "1250000000000000000000"), "wrap.testnet"),
+    true,
+  );
+  const wrapIn = (msg, receiver_id = "intents.testnet") => action("ft_transfer_call", { receiver_id, amount: "1000", msg });
+  assert.equal(await silent(wrapIn(""), "wrap.testnet"), false);
+  assert.equal(await silent(wrapIn("bob.testnet"), "wrap.testnet"), true);
+  assert.equal(await silent(wrapIn("", "bob.testnet"), "wrap.testnet"), true);
+  assert.equal(await silent(action("ft_transfer", { receiver_id: "bob.testnet", amount: "1" }), "wrap.testnet"), true);
+  // Without a configured verifier nothing changes.
+  assert.equal(await needsProtection(call(deposit(""), "nft.testnet"), config, undefined, device), true);
+});
+
+test("the approval window asks one plain question", () => {
+  const c = { ...config, contracts: { ...config.contracts, qgoldEscrow: "escrow.testnet" } };
+  const intents = (diff) => ({
+    account: "alice.testnet",
+    recipient: "intents.testnet",
+    authorization: JSON.stringify({ signer_id: "alice.testnet", intents: [{ intent: "token_diff", diff }] }),
+  });
+  assert.equal(
+    reviewQuestion(intents({ "nep171:nft.testnet:aura:polar:3": "-1", "nep141:wrap.testnet": "500000000000000000000000" }), c),
+    "Sell your Aura polar #3 for 0.5 NEAR?",
+  );
+  assert.equal(
+    reviewQuestion(intents({ "nep171:nft.testnet:aura:polar:3": "1", "nep141:wrap.testnet": "-510000000000000000000000" }), c),
+    "Buy Aura polar #3 for 0.51 NEAR?",
+  );
+  assert.equal(
+    reviewQuestion(
+      call(action("ft_transfer_call", { receiver_id: "escrow.testnet", amount: "2500000", msg: JSON.stringify({ kind: "transfer", to: "bob.testnet" }) })),
+      c,
+    ),
+    "Send 2.5 GOLD to bob.testnet?",
+  );
+  assert.equal(reviewQuestion({ operation: "setupRecovery", account: "alice.testnet" }, c), "Create recovery passkey?");
+  assert.equal(reviewQuestion(call(action("odd_method")), c), "Allow this account action?");
 });

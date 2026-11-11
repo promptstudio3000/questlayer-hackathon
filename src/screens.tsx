@@ -19,8 +19,6 @@ import {
   UserCircle,
   Coins,
   Translate,
-  Compass,
-  MapPinArea,
   type Icon,
 } from "@phosphor-icons/react";
 import type { ScreenTab } from "./ScreenTabs";
@@ -41,12 +39,6 @@ export const PROFILE_TABS: readonly ScreenTab<ProfileTab>[] = [
 export function profileTabOf(tab: string, view: ProfileView): ProfileTab {
   return tab === "fuel" || tab === "wallet" ? "stake" : view === "settings" ? "settings" : "character";
 }
-
-export type ExploreTab = "discoveries" | "nearby";
-export const EXPLORE_TABS: readonly ScreenTab<ExploreTab>[] = [
-  { id: "discoveries", get label() { return tr("Discoveries"); }, icon: Compass },
-  { id: "nearby", get label() { return tr("Nearby"); }, icon: MapPinArea },
-];
 
 /** Inventory: what you own and wear, then everything you can buy. */
 export type BagTab = "wardrobe" | "shop";
