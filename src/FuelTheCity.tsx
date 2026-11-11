@@ -237,8 +237,8 @@ export function FuelTheCity({
   }
 
   /** Waits until the factory shows the vault as ready (create registers it in the same transaction). */
-  async function waitForVault(match: (p: FuelPosition) => boolean): Promise<FuelPosition | null> {
-    for (let i = 0; i < 20; i++) {
+  async function waitForVault(match: (p: FuelPosition) => boolean, tries = 20): Promise<FuelPosition | null> {
+    for (let i = 0; i < tries; i++) {
       const snap = await readVaults();
       const p = ((snap?.positions || []) as FuelPosition[]).find(match);
       if (p?.position) return p;
@@ -280,8 +280,9 @@ export function FuelTheCity({
           contributionBps: contribution * 100,
           setupDeposit: snap.config.setup_deposit,
         });
-        if (!ok) return fail();
-        const p = await waitForVault((x) => !known.has(x.id));
+        // A sent setup whose confirmation timed out still shows its new vault.
+        const p = await waitForVault((x) => !known.has(x.id), ok ? 20 : 4);
+        if (!p && !ok) return fail(tr("It didn't finish. If it was sent, your vault shows here in a minute."));
         if (!p) return fail(tr("Your vault is still being set up. Check again in a minute."));
         now = p.position ? { kind: "empty", position: p } : { kind: "setup", position: p };
       }
@@ -304,8 +305,13 @@ export function FuelTheCity({
         return;
       }
       setOutcome({ kind: "pending", text: tr("Staking {0} NEAR…", { 0: amount }) });
-      const ok = await sign({ action: "deposit", vaultId: now.position.account_id, amount: deposit });
-      if (!ok) return fail();
+      const vaultId = now.position.account_id;
+      const ok = await sign({ action: "deposit", vaultId, amount: deposit });
+      if (!ok) {
+        // A sent stake whose confirmation timed out still shows in the vault.
+        const after = await waitForVault((x) => x.account_id === vaultId && nearOf(x.position?.principal) > 0, 4);
+        if (!after) return fail(tr("It didn't finish. If it was sent, your stake shows here in a minute."));
+      }
       setOutcome({ kind: "done", text: tr("Staked. It counts after about two epochs; then you are a Staker.") });
       await readVaults();
     } catch (e) {
@@ -405,7 +411,8 @@ export function FuelTheCity({
           <>
             <button
               className="primary-button fuel-stake-button"
-              disabled={busy || (!!vaults?.config && vaults.config.created >= vaults.config.capacity && phase.kind === "none")}
+              // Visible at once, tappable once the vault read says there is no stake yet.
+              disabled={busy || loading || (!!vaults?.config && vaults.config.created >= vaults.config.capacity && phase.kind === "none")}
               onClick={() => void stake()}
             >
               {busy && outcome.kind === "pending" ? outcome.text : tr("Stake {0} NEAR", { 0: amount })}

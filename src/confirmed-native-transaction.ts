@@ -496,23 +496,29 @@ async function verify(
       result = await context.confirm(transactionHash);
       ok = true; status = 200;
     } else {
-    const response = await fetch("/api/native/transactions/confirm", {
-      method: "POST",
-      credentials: "same-origin",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        accountId: entry.accountId,
-        transactionHash,
-        quote: entry.quote,
-        ...(entry.afterBlock !== undefined
-          ? { afterBlock: entry.afterBlock }
-          : {}),
-      }),
-      signal: AbortSignal.timeout(30000),
-    });
-    ok = response.ok;
-    status = response.status;
-    result = await response.json();
+    // A busy RPC answers 503 while the transaction is already final: ask again
+    // a couple of times before telling the player to check it by hand.
+    for (let attempt = 0; ; attempt++) {
+      const response = await fetch("/api/native/transactions/confirm", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          accountId: entry.accountId,
+          transactionHash,
+          quote: entry.quote,
+          ...(entry.afterBlock !== undefined
+            ? { afterBlock: entry.afterBlock }
+            : {}),
+        }),
+        signal: AbortSignal.timeout(30000),
+      });
+      ok = response.ok;
+      status = response.status;
+      result = await response.json();
+      if (status !== 503 || attempt >= 2) break;
+      await new Promise((resolve) => setTimeout(resolve, 3000));
+    }
     }
   } catch (error) {
     if (context.confirm && (error as { code?: string })?.code === "BURN_REJECTED") {
