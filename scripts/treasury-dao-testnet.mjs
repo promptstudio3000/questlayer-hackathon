@@ -19,7 +19,7 @@
 import { readFileSync, writeFileSync, statSync, existsSync, renameSync } from "node:fs";
 import assert from "node:assert/strict";
 import { Account, KeyPair, KeyPairSigner } from "near-api-js";
-import { createNearProvider } from "../server/near-provider.mjs";
+import { createNearProvider, rpcErrorText } from "../server/near-provider.mjs";
 import { mixSettings, readMix } from "../server/native/treasury-mix.mjs";
 import {
   DAO_FACTORY,
@@ -95,7 +95,8 @@ async function exists(accountId) {
     await provider.viewAccount({ accountId });
     return true;
   } catch (e) {
-    if (/does not exist|unknown_account/i.test(String(e?.message || e) + JSON.stringify(e?.data || ""))) return false;
+    // The failover provider wraps AccountDoesNotExist; rpcErrorText unwraps it.
+    if (/does not exist|unknown_account/i.test(rpcErrorText(e))) return false;
     throw e;
   }
 }
