@@ -22,6 +22,8 @@ CREATE TABLE IF NOT EXISTS treasury_history(
 
 export const HISTORY_BUCKETS = ["staked", "lst", "stable", "near"];
 const DAY = /^\d{4}-\d{2}-\d{2}$/;
+/** 31 Oct 2026 was a one-off pilot test; the public history starts on 1 Nov (owner, 11 Nov). */
+export const HISTORY_START = "2026-11-01";
 const U128 = /^(0|[1-9]\d{0,38})$/;
 const utcDay = (ms) => new Date(ms).toISOString().slice(0, 10);
 
@@ -83,7 +85,7 @@ export function createTreasuryHistory(db, { records = () => ({}), clock = Date.n
       const live = recent.all(n).map((r) => ({ day: r.day, at: Number(r.at), total: r.total, buckets: { ...bucketValues([]), ...JSON.parse(r.buckets) }, source: "live" }));
       const have = new Set(live.map((p) => p.day));
       const seeded = seedPoints(records() || {}).filter((p) => !have.has(p.day));
-      const all = [...seeded, ...live].filter((p) => DAY.test(p.day)).sort((a, b) => a.day.localeCompare(b.day));
+      const all = [...seeded, ...live].filter((p) => DAY.test(p.day) && p.day >= HISTORY_START).sort((a, b) => a.day.localeCompare(b.day));
       return { buckets: HISTORY_BUCKETS, points: all.slice(-n) };
     },
   };

@@ -37,7 +37,7 @@ try {
   browser = await chromium.launch({ headless: true });
   for (const [name, width, height] of [["phone-360",360,780],["phone-390",390,844],["landscape",844,390],["desktop",1440,900]]) {
     if (process.env.E2E_VIEWPORT && name !== process.env.E2E_VIEWPORT) continue;
-    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
+    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     const page = await context.newPage();
     const faults = []; const resources = []; page.on("requestfailed", r => resources.push({ url: r.url().split("?")[0], error: r.failure()?.errorText })); page.on("pageerror", e => faults.push(e.message));
     await page.goto(url);
@@ -186,7 +186,7 @@ try {
   const ios = await webkit.launch();
   try {
     const {defaultBrowserType,...profile}=devices["iPhone 15"];
-    const context=await ios.newContext({...profile,reducedMotion:"reduce"});
+    const context=await ios.newContext({...profile,reducedMotion:"reduce"});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     const page=await context.newPage();await page.clock.install();await page.goto(url);
     await page.locator("#nickname").fill("Install explorer");
     await page.getByRole("button",{name:"Start exploring",exact:true}).click();

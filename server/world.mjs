@@ -4,7 +4,8 @@ import { placeTier, playerStakeTier } from "./staker-gates.mjs";
 import { preparedActivityWorld, assertGlobalActivityReady } from "./global-activities.mjs";
 import { decorateGlobalRewardWorld,globalPrizeForQuest } from './global-rewards.mjs';
 import { localDateBounds } from "./spatial/calendar.mjs";
-import { isInCzechia } from "./map-rewards/czechia.mjs";
+import { isCzechiaCell, isInCzechia } from "./map-rewards/czechia.mjs";
+import { combinedPoiSource, liveOverpassPoiSource } from "./poi/live-source.mjs";
 import tzLookup from "tz-lookup";
 import { latLngToCell, cellToLatLng, cellToBoundary } from "h3-js";
 import {
@@ -221,12 +222,38 @@ function publicManifest(db, w) {
 // task W6), from the local POI file only. City worlds (auto and reviewed, the
 // city demo too) get them per H3 cell: the player's cell, or `cellAt` when the
 // player asks to search another spot of the same city ("Search this area").
+const poiSources = new WeakMap();
+/**
+ * The imported POI file inside Czechia, live OpenStreetMap places everywhere
+ * else (server/poi/live-source.mjs). One live source per database.
+ */
+function worldPoiSource(db, mapData = {}) {
+  const file = defaultPoiSource();
+  if (!file) return null;
+  if (!poiSources.has(db))
+    poiSources.set(
+      db,
+      combinedPoiSource(
+        file,
+        liveOverpassPoiSource(db, {
+          covers: (cell) => !isCzechiaCell(cell),
+          ...(mapData.poiFetcher ? { fetcher: mapData.poiFetcher } : {}),
+        }),
+      ),
+    );
+  return poiSources.get(db);
+}
+/** Where a spot without a prepared day falls back to its street world. */
+export function streetFallbackScope(env = process.env) {
+  if (env.GLOBAL_CZECHIA_FALLBACK === "off" || env.GLOBAL_STREET_FALLBACK === "off") return "off";
+  return env.GLOBAL_STREET_FALLBACK === "czechia" ? "czechia" : "world";
+}
 export async function ensureWorld(
   db,
   location = HOME,
   arena = true,
   now = Date.now(),
-  { mapData = {}, poiSource, cellAt = null, globalActivities = !!process.env.GLOBAL_ACTIVITY_DAYS_DIR, czechiaFallback = process.env.GLOBAL_CZECHIA_FALLBACK !== "off" } = {},
+  { mapData = {}, poiSource, cellAt = null, globalActivities = !!process.env.GLOBAL_ACTIVITY_DAYS_DIR, streetFallback = streetFallbackScope() } = {},
 ) {
   // An installed global day is read-only on player arrival. Plzen retains its
   // reviewed citywide six-slot world; the arena remains its existing simulation.
@@ -235,14 +262,15 @@ export async function ensureWorld(
     try {
       return preparedActivityWorld(db, at, now);
     } catch (error) {
-      // Czechia keeps its street world (POI quests, landmark clues, errand
-      // targets, coins) whenever no ready prepared day covers the spot, so a
-      // missed daily manifest never empties the country. Elsewhere the
-      // prepared catalog stays the only source (docs/GLOBAL-WORLD-PREPARATION.md).
+      // Every spot keeps its street world (POI quests, landmark clues, errand
+      // targets, backed coins) whenever no ready prepared day covers it, so a
+      // missing daily manifest never empties the map anywhere on Earth.
+      // GLOBAL_STREET_FALLBACK=czechia limits that to Czechia, =off keeps the
+      // prepared catalog as the only source (docs/GLOBAL-WORLD-PREPARATION.md).
       if (
         error?.code !== "GLOBAL_COVERAGE_UNAVAILABLE" ||
-        !czechiaFallback ||
-        !isInCzechia(at.lat, at.lng)
+        streetFallback === "off" ||
+        (streetFallback === "czechia" && !isInCzechia(at.lat, at.lng))
       )
         throw error;
     }
@@ -257,8 +285,11 @@ export async function ensureWorld(
   const cell = world.cityId ? latLngToCell(at.lat, at.lng, 7) : world.region;
   let current = world;
   try {
+    const source = poiSource === undefined ? worldPoiSource(db, mapData) : poiSource;
+    // Outside the POI import a cell asks OpenStreetMap once (live source).
+    await source?.prepare?.(cell);
     current = materializePoiQuests(db, world, {
-      source: poiSource === undefined ? defaultPoiSource() : poiSource,
+      source,
       now,
       cell: world.cityId ? cell : null,
     });

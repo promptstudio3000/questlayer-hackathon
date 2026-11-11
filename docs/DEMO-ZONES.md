@@ -48,3 +48,16 @@ Delete the `Environment=DEMO_ZONES=plzen-compact` line (or set
 `DEMO_ZONES=off`) and deploy. The next world uses the citywide zones with
 their rarity windows. `/api/health` shows `demoZones: "off"`. Mainnet refuses
 to start with the flag.
+
+## Start where you are (11 Nov 2026)
+
+The compact layout only changes Plzeň. Everywhere else the GPS world is the
+normal one: POI quests, funded cell zones and backed coins of the day's map
+plan for every street cell (`ensureWorld` in `server/world.mjs`; the plan
+covers Czechia for now).
+
+The game starts in that world (`src/play-here.ts`): after sign-in it asks for
+location and loads the player's own cell right away. The Plzeň city demo is the
+fallback when location is refused or unavailable, and when the player picks
+Demo in Map settings (`questlayer.playMode=demo` in localStorage, kept until
+they pick Use GPS again). A refused start-up request shows no warning.

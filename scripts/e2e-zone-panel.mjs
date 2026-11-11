@@ -21,6 +21,7 @@ try {
       viewport: { width, height },
       reducedMotion: "reduce",
     });
+    await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});  // Start in the city demo (src/play-here.ts).
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));

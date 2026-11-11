@@ -221,6 +221,7 @@ async function newExplorerContext(browser, profile) {
     acceptDownloads: true,
     locale: "en-GB",
   });
+  await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});  // Start in the city demo (src/play-here.ts).
   await shiftBrowserClock(context, CLOCK_OFFSET_MS);
   // Against a live server a new explorer's invisible NEAR account is paid
   // from the shared daily sponsorship budget (about 0.12 test NEAR each).

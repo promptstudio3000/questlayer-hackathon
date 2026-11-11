@@ -178,7 +178,7 @@ async function runLanguage(browser, url, lang) {
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   const report = { lang, screens: [], problems: [] };
-  const context = await browser.newContext({ ...PHONE_390, reducedMotion: "reduce", locale: "en-GB" });
+  const context = await browser.newContext({ ...PHONE_390, reducedMotion: "reduce", locale: "en-GB" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
   const page = await context.newPage();
   page.on("pageerror", (e) => report.problems.push(`page error: ${e.message}`));
   await page.goto(`${url}/?lang=${lang}`);

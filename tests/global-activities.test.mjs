@@ -90,12 +90,12 @@ test("a failed live import identifies its corrupt region without exposing privat
   assert.ok(!JSON.stringify(status).includes(root));assert.ok(!JSON.stringify(status).includes(broken.server.path));
 });
 
-test("uncovered places outside Czechia and missing next days never generate a fallback world",async(t)=>{
+test("with the street fallback limited to Czechia, uncovered places abroad and missing next days never generate a fallback world",async(t)=>{
   const root=workspace(t), catalogFile=catalogAt(resolve(root,"input"),sites.slice(0,1)), outputDir=resolve(root,"days");
   await prepareGeographicDay({catalogFile,outputDir,day});
   const db=openDatabase(":memory:");t.after(()=>db.close());installGlobalActivityDay(db,resolve(outputDir,day,"manifest.json"));
   assert.throws(()=>preparedActivityWorld(db,{lat:0,lng:0},now),/No prepared discoveries/);
-  await assert.rejects(ensureWorld(db,{lat:0,lng:0},false,now,{globalActivities:true}),/No prepared discoveries/);
+  await assert.rejects(ensureWorld(db,{lat:0,lng:0},false,now,{globalActivities:true,streetFallback:"czechia"}),/No prepared discoveries/);
   assert.throws(()=>preparedActivityWorld(db,{lat:sites[0][0],lng:sites[0][1]},now+86400000),/No prepared discoveries/);
   assert.equal(db.prepare("SELECT COUNT(*) n FROM worlds").get().n,1);
 });
