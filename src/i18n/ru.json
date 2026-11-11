@@ -3194,6 +3194,11 @@
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "Добавь свои NEAR: отправь их с любого кошелька или биржи на {0}.",
  "Refuelled. Your account has NEAR for its next payments.": "Пополнено. На аккаунте есть NEAR для следующих платежей.",
  "Could not refuel right now. Try again later.": "Сейчас пополнить не удалось. Попробуй позже.",
+ "Chat with {0}": "Чат с {0}",
+ "Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.": "Демо-чат: {0} отвечает готовыми фразами. Ничего не сохраняется и не отправляется в блокчейн; настоящим исследователям доступна зашифрованная почта.",
+ "{0} is typing…": "{0} печатает…",
+ "Write to {0}…": "Напиши {0}…",
+ "Messages need your explorer account. Sign in with it to write.": "Для сообщений нужен твой аккаунт исследователя. Войди с ним, чтобы писать.",
  "Your note: {0}": "Ваша заметка: {0}",
  "Note: {0}": "Заметка: {0}"
 }

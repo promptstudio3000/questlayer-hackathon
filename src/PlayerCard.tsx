@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import { ChatCircleText, HandWaving, Prohibit, SealCheck, X } from "@phosphor-icons/react";
 import { api } from "./api";
 import { tr } from "./i18n";
@@ -18,6 +18,78 @@ export const WAVE_TEXT: Record<string, () => string> = {
   "see-you": () => tr("See you around!"),
 };
 const waveText = (key: string, fallback: string) => WAVE_TEXT[key]?.() || fallback;
+
+/**
+ * A short demo conversation with a test-world bot. Bots have no NEAR account
+ * and no inbox key, so the encrypted inbox cannot reach them; the server
+ * answers from fixed in-character lines and stores nothing (server/demo-bot-chat.mjs).
+ */
+function DemoBotChat({ botId, name }: { botId: string; name: string }) {
+  const [lines, setLines] = useState<{ mine: boolean; text: string }[]>([]);
+  const [text, setText] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const input = useRef<HTMLTextAreaElement>(null);
+  const list = useRef<HTMLOListElement>(null);
+  useEffect(() => input.current?.focus(), []);
+  // Keep the newest line in view.
+  useEffect(() => {
+    if (list.current) list.current.scrollTop = list.current.scrollHeight;
+  }, [lines, busy]);
+  async function send(e: FormEvent) {
+    e.preventDefault();
+    const message = text.trim();
+    if (!message || busy) return;
+    setBusy(true);
+    setError("");
+    setLines((l) => [...l, { mine: true, text: message }]);
+    setText("");
+    try {
+      const r = await api<{ reply: string }>("/players/bot-chat", { playerId: botId, text: message });
+      setLines((l) => [...l, { mine: false, text: r.reply }]);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <section className="player-card-botchat" aria-label={tr("Chat with {0}", { 0: name })}>
+      <p className="player-card-hint">
+        {tr("Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.", { 0: name })}
+      </p>
+      {lines.length > 0 && (
+        <ol ref={list} aria-live="polite">
+          {lines.map((l, i) => (
+            <li key={i} className={l.mine ? "mine" : "theirs"}>
+              <span className="sr-only">{l.mine ? tr("You") : name}: </span>
+              {l.text}
+            </li>
+          ))}
+          {busy && <li className="theirs typing">{tr("{0} is typing…", { 0: name })}</li>}
+        </ol>
+      )}
+      {error && <p role="alert">{error}</p>}
+      <form onSubmit={(e) => void send(e)}>
+        <textarea
+          ref={input}
+          value={text}
+          maxLength={500}
+          rows={2}
+          aria-label={tr("Message to {0}", { 0: name })}
+          placeholder={tr("Write to {0}…", { 0: name })}
+          onChange={(e) => setText(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) void send(e);
+          }}
+        />
+        <button type="submit" disabled={busy || !text.trim()}>
+          {tr("Send")}
+        </button>
+      </form>
+    </section>
+  );
+}
 const SLOT_LABEL: Record<string, () => string> = {
   body: () => tr("Body"),
   face: () => tr("Face"),
@@ -170,6 +242,7 @@ export function PlayerCard({
     }
   }
   const [waving, setWaving] = useState(false);
+  const [botChat, setBotChat] = useState(false);
   const progress = card ? levelProgress(card.xp) : null;
   const ratio = progress
     ? Math.min(1, (card!.xp - progress.levelStartXp) / Math.max(1, progress.nextLevelXp - progress.levelStartXp))
@@ -258,9 +331,21 @@ export function PlayerCard({
                 {tr("A demo bot from the test world. It walks the map so you can see how other explorers look.")}
               </p>
             )}
+            {card.demoBot && !card.self && (
+              <div className="player-card-actions">
+                <button aria-expanded={botChat} onClick={() => setBotChat((v) => !v)}>
+                  <ChatCircleText size={18} aria-hidden="true" /> {tr("Message")}
+                </button>
+              </div>
+            )}
+            {card.demoBot && botChat && <DemoBotChat botId={card.id} name={card.name} />}
             {!card.self && !card.demoBot && (
               <div className="player-card-actions">
-                <button disabled={!onMessage} onClick={() => onMessage?.(card.id, card.name)}>
+                <button
+                  disabled={!onMessage}
+                  title={onMessage ? undefined : tr("Messages need your explorer account. Sign in with it to write.")}
+                  onClick={() => onMessage?.(card.id, card.name)}
+                >
                   <ChatCircleText size={18} aria-hidden="true" /> {tr("Message")}
                 </button>
                 <button aria-expanded={waving} onClick={() => setWaving((v) => !v)}>
@@ -279,6 +364,9 @@ export function PlayerCard({
                   </button>
                 )}
               </div>
+            )}
+            {!card.self && !card.demoBot && !onMessage && (
+              <p className="player-card-hint">{tr("Messages need your explorer account. Sign in with it to write.")}</p>
             )}
             {waving && !card.self && !card.demoBot && (
               card.canWave ? (

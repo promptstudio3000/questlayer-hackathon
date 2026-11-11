@@ -3194,6 +3194,11 @@
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "Ajoute tes propres NEAR : envoie-les depuis n'importe quel portefeuille ou plateforme d'échange vers {0}.",
  "Refuelled. Your account has NEAR for its next payments.": "Rechargé. Ton compte a des NEAR pour ses prochains paiements.",
  "Could not refuel right now. Try again later.": "Recharge impossible pour l'instant. Réessaie plus tard.",
+ "Chat with {0}": "Discuter avec {0}",
+ "Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.": "Chat de démo : {0} répond avec des phrases prêtes. Rien n’est enregistré ni envoyé sur la chaîne ; les vrais explorateurs ont la messagerie chiffrée.",
+ "{0} is typing…": "{0} écrit…",
+ "Write to {0}…": "Écris à {0}…",
+ "Messages need your explorer account. Sign in with it to write.": "Les messages nécessitent ton compte d’explorateur. Connecte-toi avec lui pour écrire.",
  "Your note: {0}": "Ta note : {0}",
  "Note: {0}": "Note : {0}"
 }
