@@ -3183,5 +3183,17 @@
   "Your free home plot has a gold border. Tap Build, pick a block and tap where it goes.": "आपके मुफ़्त घर-प्लॉट की सीमा सुनहरी है। बनाएँ पर टैप करें, ब्लॉक चुनें और जहाँ रखना है वहाँ टैप करें।",
   "Your last blocks were not saved and were undone. Try again.": "आपके पिछले ब्लॉक सहेजे नहीं गए और वापस ले लिए गए। फिर से कोशिश करें।",
   "Your plot": "आपका प्लॉट",
-  "{0} m": "{0} मी"
+  "{0} m": "{0} मी",
+  "NEAR for your payments": "आपके भुगतानों के लिए NEAR",
+  "Running low": "कम हो रहा है",
+  "The game pays the gas for every action. This small balance covers your account's storage and your own payments, such as buying an Aura.": "हर कार्रवाई का गैस खेल देता है। यह छोटा बैलेंस आपके खाते के स्टोरेज और आपके अपने भुगतानों, जैसे ऑरा खरीदने, के लिए है।",
+  "Refuel to {0} NEAR": "{0} NEAR तक भरें",
+  "Convert QGOLD to NEAR": "QGOLD को NEAR में बदलें",
+  "Account name copied": "खाते का नाम कॉपी हुआ",
+  "Add your own NEAR": "अपना NEAR जोड़ें",
+  "You already refuelled today. Tomorrow you can again.": "आज आप भर चुके हैं। कल फिर भर सकते हैं।",
+  "Refuel opens when your balance drops below {0} NEAR, once a day.": "बैलेंस {0} NEAR से नीचे जाने पर दिन में एक बार भर सकते हैं।",
+  "Add your own NEAR: send it from any wallet or exchange to {0}.": "अपना NEAR जोड़ें: किसी भी वॉलेट या एक्सचेंज से {0} पर भेजें।",
+  "Refuelled. Your account has NEAR for its next payments.": "भर दिया गया। आपके खाते में अगले भुगतानों के लिए NEAR है।",
+  "Could not refuel right now. Try again later.": "अभी भरना संभव नहीं हुआ। बाद में फिर कोशिश करें।"
 }

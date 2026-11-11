@@ -33,6 +33,11 @@ Environment=LEVEL_ITEM_EDITIONS=1
 # Virtual voxel Layer (docs/LAYER.md): shared nonfinancial 3D world in the world
 # picker. Testnet only (ignored on mainnet); delete this line to hide it.
 Environment=LAYER_ENABLED=1
+# New explorer funding, the same as mainnet (Lubos, 11 Nov 2026): 0.02 NEAR covers
+# account storage and a first self-paid trade; gas is sponsored separately. Top-ups
+# (storage shortfalls and the once-a-day Refuel) stay under 0.05 NEAR per account a day.
+Environment=PLAYER_FACTORY_FUND_YOCTO=20000000000000000000000
+Environment=RELAY_TOPUP_CAP_YOCTO=50000000000000000000000
 EnvironmentFile=-/opt/ps3000/apps/questlayer-hackathon/runtime.env
 Restart=on-failure
 RestartSec=3

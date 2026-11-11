@@ -3183,5 +3183,17 @@
   "Your free home plot has a gold border. Tap Build, pick a block and tap where it goes.": "你的免费家园地块有金色边框。点“建造”，选一个方块，再点要放的位置。",
   "Your last blocks were not saved and were undone. Try again.": "你最近的方块没有保存，已撤销。请重试。",
   "Your plot": "你的地块",
-  "{0} m": "{0} 米"
+  "{0} m": "{0} 米",
+  "NEAR for your payments": "用于付款的 NEAR",
+  "Running low": "余额不足",
+  "The game pays the gas for every action. This small balance covers your account's storage and your own payments, such as buying an Aura.": "每个操作的 gas 都由游戏支付。这笔小额余额用于支付账户存储和你自己的付款,例如购买光环。",
+  "Refuel to {0} NEAR": "补充到 {0} NEAR",
+  "Convert QGOLD to NEAR": "将 QGOLD 换成 NEAR",
+  "Account name copied": "已复制账户名",
+  "Add your own NEAR": "添加你自己的 NEAR",
+  "You already refuelled today. Tomorrow you can again.": "你今天已经补充过了。明天可以再补充。",
+  "Refuel opens when your balance drops below {0} NEAR, once a day.": "余额低于 {0} NEAR 时,每天可补充一次。",
+  "Add your own NEAR: send it from any wallet or exchange to {0}.": "添加你自己的 NEAR:从任意钱包或交易所发送到 {0}。",
+  "Refuelled. Your account has NEAR for its next payments.": "已补充。你的账户有 NEAR 用于接下来的付款。",
+  "Could not refuel right now. Try again later.": "现在无法补充。请稍后再试。"
 }

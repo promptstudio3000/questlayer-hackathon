@@ -26,6 +26,18 @@ export function createRelayerRoutes({ relayer = null, accounts = null, authorize
       );
       return true;
     }
+    if (path === "/api/account/fuel" && method === "GET") {
+      assert(accounts, "Managed accounts are disabled on this host.", 503, "ACCOUNT_DISABLED");
+      respond(res, await accounts.fuel(player));
+      return true;
+    }
+    if (path === "/api/account/refuel" && method === "POST") {
+      // The game session is enough: it can only top up the player's own
+      // account, once a UTC day, inside the cap and the shared budget.
+      assert(accounts?.factory, "Managed accounts are disabled on this host.", 503, "ACCOUNT_DISABLED");
+      respond(res, await accounts.refuel(player));
+      return true;
+    }
     if (path === "/api/account/create" && method === "POST") {
       assert(
         accounts?.factory,
