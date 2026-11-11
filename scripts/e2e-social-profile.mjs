@@ -173,7 +173,7 @@ async function startServer(baseRpcUrl) {
 }
 
 async function newContext(browser, profile) {
-  const context = await browser.newContext({ ...profile, reducedMotion: "reduce", locale: "en-GB" });
+  const context = await browser.newContext({ ...profile, reducedMotion: "reduce", locale: "en-GB" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
   await shiftBrowserClock(context, CLOCK_OFFSET_MS);
   // The map (and the explorer markers on it) loads offline, the same on every run.
   await serveBlankMapStyle(context);

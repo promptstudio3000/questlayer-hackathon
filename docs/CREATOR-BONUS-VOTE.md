@@ -1,5 +1,9 @@
 # Community vote on the daily creator bonus (W08, testnet pilot)
 
+> **Not shown in the app since 11 Nov 2026** (owner decision): the ballot was removed from
+> Community · Creators. Creators earn XP from the game instead (server/creators/creator-xp.mjs).
+> The server module stays; without votes it gates nothing, so every community quest counts.
+
 Active explorers choose which community quests earn the next UTC day's creator
 round ("daily creator bonus"). Module: `server/creators/bonus-vote.mjs`
 (schema module `creator-bonus-vote` v1, created lazily on first use).

@@ -37,7 +37,7 @@ try {
   browser = await engine.launch();
   for (const [name, width, height] of [["phone-360", 360, 780], ["phone-390", 390, 844], ["landscape", 844, 390], ["desktop", 1440, 900]]) {
     if (process.env.E2E_VIEWPORT && process.env.E2E_VIEWPORT !== name) continue;
-    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
+    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     const page = await context.newPage();
     const faults = [];
     page.on("pageerror", e => faults.push(e.message));
@@ -110,7 +110,7 @@ try {
     await capture("community-unavailable");
     if (phase !== "before") {
       await page.locator(".community-available-actions").getByRole("button", { name: "Local chat", exact: true }).click();
-      await page.getByRole("button", { name: "Write a note", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Write a message", exact: true }).waitFor();
       await page.getByRole("tab", { name: "Quests", exact: true }).click();
       await page.locator(".community-available-actions").getByRole("button", { name: "Community tasks", exact: true }).click();
       assert.equal(await page.getByRole("tab", { name: "Tasks", exact: true }).getAttribute("aria-selected"), "true");
@@ -121,9 +121,9 @@ try {
       await capture("community-" + section.toLowerCase());
     }
     await page.getByRole("tab", { name: "Local chat", exact: true }).click();
-    await page.getByRole("button", { name: "Write a note", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Write a message", exact: true }).waitFor();
     await capture("community-empty");
-    await page.getByRole("button", { name: "Write a note", exact: true }).click();
+    await page.getByRole("button", { name: "Write a message", exact: true }).click();
     await page.locator("#map-note-text").fill("The fountain is a quiet place to pause between discoveries.");
     await page.getByText("Public at this pin", { exact: false }).waitFor();
     await capture("note-compose");
@@ -137,9 +137,9 @@ try {
         el.style.setProperty("font-size", `${size * 2}px`, "important");
       }));
       await capture("note-enlarged-text");
-      await page.getByRole("button", { name: "Leave the note here", exact: true }).scrollIntoViewIfNeeded();
+      await page.getByRole("button", { name: "Post to local chat", exact: true }).scrollIntoViewIfNeeded();
       await capture("note-enlarged-text-actions");
-      assert.ok(await page.getByRole("button", { name: "Leave the note here", exact: true }).isVisible(), "Publication remains reachable with 200% text");
+      assert.ok(await page.getByRole("button", { name: "Post to local chat", exact: true }).isVisible(), "Publication remains reachable with 200% text");
       await page.locator(".quick-create [data-qa-font]").evaluateAll(els => els.forEach(el => {
         el.style.removeProperty("font-size");
         if (el.dataset.qaFont) el.style.fontSize = el.dataset.qaFont;
@@ -155,7 +155,7 @@ try {
     if (await resume.isVisible()) await resume.click();
     await page.locator("#map-note-text").waitFor();
     assert.equal(await page.locator("#map-note-text").inputValue(), "The fountain is a quiet place to pause between discoveries.", "Draft survives returning to the map");
-    await page.getByRole("button", { name: "Leave the note here", exact: true }).click();
+    await page.getByRole("button", { name: "Post to local chat", exact: true }).click();
     await page.locator(".map-note").first().waitFor();
     assert.equal(await page.locator(".map-note").count(), 1, "One server-confirmed local public note");
     await page.locator(".app-shell > .toast").waitFor({ state: "detached" });

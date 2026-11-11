@@ -114,6 +114,7 @@ import {
   wornWearables,
 } from "./gotchi-wearables.mjs";
 import { isDemoBot, playerCard, profileOriginal, sendWave, takeWaves } from "./player-waves.mjs";
+import { demoBotReply } from "./demo-bot-chat.mjs";
 import { PlayerInbox, socialInboxReader } from "./inbox/service.mjs";
 import { createInboxRoutes } from "./inbox/routes.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
@@ -143,6 +144,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { monitorEventLoopDelay, performance } from "node:perf_hooks";
 import { ensureMapReadIndexes } from "./map-read-indexes.mjs";
 import { ensureHotPathIndexes } from "./hot-path-indexes.mjs";
+import { ensureCoinSpots, spotWorlds } from "./coin-spots.mjs";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -201,6 +203,7 @@ import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
 import { createLiquidStake, liquidStakeSettings } from "./native/liquid-stake.mjs";
 import { createTreasuryView } from "./native/stnear-treasury.mjs";
 import { createTreasuryMixView, mixSettings } from "./native/treasury-mix.mjs";
+import { createTreasuryHistory } from "./native/treasury-history.mjs";
 import { createTreasuryDaoView, daoManifest, eligibleExplorers, EXPLORER_RULE } from "./native/treasury-dao.mjs";
 import { createRheaMarkets, rheaSettings } from "./native/rhea-markets.mjs";
 import { combineStakeReaders, createYieldVaultReader, yieldVaultSettings } from "./native/yield-vault-reader.mjs";
@@ -266,6 +269,7 @@ const layerRoutes = layerEnabled
   : null;
 ensureMapReadIndexes(db);
 ensureHotPathIndexes(db);
+ensureCoinSpots(db);
 // Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
 const testSeedMode = readTestSeedMode(process.env, NETWORK);
 // Compact always-open demo zones (docs/DEMO-ZONES.md); throws on mainnet.
@@ -742,8 +746,8 @@ const stnearTreasury = createTreasuryView({
     return p ? JSON.parse(readFileSync(p, "utf8")) : null;
   },
 });
-// Treasury mix 50 % LST / 40 % stablecoins on Rhea Lend / 10 % NEAR
-// (docs/TREASURY-MIX.md): live holdings, targets and the next run's plan. The
+// Treasury mix (docs/TREASURY-MIX.md): live holdings (wallet, yield vault and
+// the treasury staking vaults), the DAO's target and the next run's plan. The
 // Mac worker writes the public record of runs; this never signs.
 const treasuryMixRecordPaths = [
   process.env.TREASURY_MIX_RECORD,
@@ -768,6 +772,22 @@ const treasuryMix = treasuryMixConfig.enabled
         : null,
     })
   : null;
+// Treasury history (docs/TREASURY-PAGE.md): one point per UTC day for /treasury.
+const treasuryHistory = treasuryMix
+  ? createTreasuryHistory(db, {
+      records: () => ({ mixRecord: readJsonRecord(treasuryMixRecordPaths), stnearRecord: readJsonRecord(treasuryRecordPaths) }),
+    })
+  : null;
+const readTreasuryMix = async () => {
+  const view = await treasuryMix();
+  try {
+    treasuryHistory?.note(view);
+  } catch (error) {
+    console.error("treasury history:", error?.message || error);
+  }
+  return view;
+};
+if (treasuryHistory) setInterval(() => void readTreasuryMix().catch(() => {}), 60 * 60_000).unref();
 const liquidStakeConfig = liquidStakeSettings(process.env, NETWORK);
 const liquidStake =
   liquidStakeConfig.enabled && liquidStakeConfig.tokens.length
@@ -1605,7 +1625,12 @@ async function api(req, res, url) {
   }
   if (path === "/api/treasury/mix" && method === "GET") {
     assert(treasuryMix, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
-    return respond(res, await treasuryMix(), 200, { "Cache-Control": "public, max-age=60" });
+    return respond(res, await readTreasuryMix(), 200, { "Cache-Control": "public, max-age=60" });
+  }
+  if (path === "/api/treasury/history" && method === "GET") {
+    assert(treasuryHistory, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
+    await readTreasuryMix().catch(() => null); // today's point, when the chain answers
+    return respond(res, treasuryHistory.read({ days: Number(url.searchParams.get("days")) || 90 }), 200, { "Cache-Control": "public, max-age=300" });
   }
   if (path === "/api/economy/ledger" && method === "GET")
     return respond(res, await publicLedger(), 200, {
@@ -3036,7 +3061,12 @@ async function api(req, res, url) {
     limit("coin", player, 240, "Please slow down collecting coins.");
     const input = await body(req),
       result = game.claimCoin(db, player, input.coinId, input.fix);
-    if (!result.alreadyClaimed) emit("coin", { id: input.coinId }, coinWorld(input.coinId));
+    if (!result.alreadyClaimed) {
+      // Copies of this coin in other worlds (same spot, same day) go too.
+      const claimed = db.prepare("SELECT lat,lng FROM coins WHERE id=?").get(String(input.coinId));
+      for (const world of [coinWorld(input.coinId), ...spotWorlds(db, input.coinId)])
+        emit("coin", { id: input.coinId, ...(claimed ? { lat: claimed.lat, lng: claimed.lng } : {}) }, world);
+    }
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/checkpoint" && method === "POST") {
@@ -3147,6 +3177,7 @@ async function api(req, res, url) {
         lat: Number(url.searchParams.get("lat") ?? HOME.lat),
         lng: Number(url.searchParams.get("lng") ?? HOME.lng),
         arena: url.searchParams.get("arena") !== "0",
+        radiusKm: url.searchParams.has("radiusKm") ? Number(url.searchParams.get("radiusKm")) : null,
       }),
     );
   if (path === "/api/messages" && method === "POST") {
@@ -3435,6 +3466,13 @@ async function api(req, res, url) {
       if (row) look = await publicAppearance(db, row, nativeCollectibles);
     }
     return respond(res, playerCard(db, player, target, look));
+  }
+  // Demo bots answer from fixed lines; nothing is stored or sent on chain.
+  if (path === "/api/players/bot-chat" && method === "POST") {
+    limit("bot-chat", player, 12, "Please wait a moment before writing again.");
+    const i = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    return respond(res, demoBotReply(db, player, i.playerId, i.text));
   }
   if (path === "/api/players/wave" && method === "POST") {
     limit("wave", player, 20, "Please wait before waving again.");

@@ -63,6 +63,7 @@
 .zone-totem-marker > .zone-map-pin,
 .zone-totem-marker > .zone-countdown {
   pointer-events: auto;
+  cursor: pointer;
 }
 .zone-totem-stem {
   display: block;
@@ -98,6 +99,27 @@
 .zone-totem-marker.phase-closed > .zone-countdown,
 .zone-totem-marker.phase-done > .zone-countdown {
   background: #6f6478;
+}
+/* Above the player's tier: shown, but locked (dashed edge on the map too). */
+.zone-totem-marker.is-locked > .zone-countdown {
+  background: #7a5a12;
+}
+.zone-totem-marker.is-locked > .zone-map-pin {
+  filter: saturate(0.55);
+}
+.zone-totem-marker.is-locked > .zone-map-pin::after {
+  content: "🔒";
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #1a0335e6;
+  font-size: 12px;
+  line-height: 22px;
+  text-align: center;
+  pointer-events: none;
 }
 .zone-totem-marker.phase-closed > .zone-map-pin,
 .zone-totem-marker.phase-done > .zone-map-pin {
@@ -166,3 +188,28 @@ img.game-object-art-img.shared-state[data-object-state="locked"] {
 img.game-object-art-img.shared-state[data-object-state="completed"] {
   opacity: 0.55;
 }
+
+/* Tapped zone item (Aura or GOLD floating inside a zone). */
+.zone-loot-popup .maplibregl-popup-content {
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: var(--surface, #fff);
+  color: var(--text, #2c0a56);
+  box-shadow: 0 8px 24px #2c0a5633;
+}
+.zone-loot-info strong { display: block; font-size: 15px; }
+.zone-loot-info p { margin: 6px 0 10px; font-size: 14px; line-height: 1.35; }
+.zone-loot-open {
+  width: 100%;
+  min-height: 44px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--action, #672eeb);
+  color: var(--on-action, #fff);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.zone-loot-popup .maplibregl-popup-close-button { width: 32px; height: 32px; font-size: 20px; }
+/* Above explorer and zone markers, which share the marker pane. */
+.maplibregl-popup.zone-loot-popup { z-index: 20; }

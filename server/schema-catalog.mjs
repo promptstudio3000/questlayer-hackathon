@@ -23,6 +23,7 @@ for (const relative of [
   "./fair-play.mjs",
   "./map-read-indexes.mjs",
   "./hot-path-indexes.mjs",
+  "./coin-spots.mjs",
   "./identity/schema.mjs",
   "./identity/test-login.mjs",
   "./creators/completion.mjs",
@@ -56,8 +57,10 @@ for (const relative of [
   "./spatial/place-safety.mjs",
   "./social-note-expiry.mjs",
   "./community-places.mjs",
+  "./creators/creator-xp.mjs",
   "./staker-gates.mjs",
   "./task-evidence.mjs",
+  "./native/treasury-history.mjs",
 ]) {
   const url = new URL(relative, import.meta.url);
   if (existsSync(url)) await import(url.href);

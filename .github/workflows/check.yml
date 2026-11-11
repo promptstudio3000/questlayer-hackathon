@@ -40,17 +40,15 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps ${{ matrix.browser }}
+      # Ubuntu mirrors sometimes stop resolving; the runner image already has
+      # most browser libraries, so fall back to installing the browser alone.
+      - run: |
+          timeout 240 npx playwright install --with-deps ${{ matrix.browser }} \
+            || npx playwright install ${{ matrix.browser }}
       - run: npm run build
       - run: npm run e2e:first-session -- --device=${{ matrix.device }}
         env:
           E2E_SHOTS: ${{ runner.temp }}/first-session
-      # Chromium-only script; once is enough, so it rides the phone-390 row
-      # (the iphone row installs only WebKit).
-      - run: npm run e2e:bonus-vote
-        if: matrix.device == 'phone-390'
-        env:
-          E2E_SHOTS: ${{ runner.temp }}/first-session/bonus-vote
       # First session in Brno, a village and an empty cell on the Czechia
       # POI fixture (docs/WORLD-COVERAGE.md), on every device row.
       - run: npm run e2e:world -- --device=${{ matrix.device }}
@@ -86,7 +84,9 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - run: npx playwright install --with-deps chromium
+      - run: |
+          timeout 240 npx playwright install --with-deps chromium \
+            || npx playwright install chromium
       - run: npm run build
       - run: npm run e2e:languages
         env:

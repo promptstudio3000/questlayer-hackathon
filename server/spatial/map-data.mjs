@@ -27,17 +27,17 @@ function pathsFrom(value) {
     });
   });
 }
-async function boundedJson(response) {
+export async function boundedJson(response, maxBytes = MAX_BYTES) {
   assert(response.ok, "Map provider unavailable.");
   assert(
-    Number(response.headers.get("content-length") || 0) <= MAX_BYTES,
+    Number(response.headers.get("content-length") || 0) <= maxBytes,
     "Map snapshot too large.",
   );
   const chunks = [];
   let size = 0;
   for await (const chunk of response.body || []) {
     size += chunk.byteLength;
-    assert(size <= MAX_BYTES, "Map snapshot too large.");
+    assert(size <= maxBytes, "Map snapshot too large.");
     chunks.push(chunk);
   }
   return JSON.parse(Buffer.concat(chunks).toString());

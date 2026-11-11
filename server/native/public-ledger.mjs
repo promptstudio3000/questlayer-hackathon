@@ -10,6 +10,9 @@ import { EXPLORER_BASE, NETWORK } from "./network.mjs";
 
 export const LEDGER_DAYS = 14;
 export const LEDGER_PAYOUTS = 50;
+/** The public history starts here: 31 Oct 2026 was a one-off pilot test (owner, 11 Nov). */
+export const PUBLIC_HISTORY_START = "2026-11-01";
+const HISTORY_START_MS = Date.parse(`${PUBLIC_HISTORY_START}T00:00:00Z`);
 
 const txUrl = (hash) =>
   typeof hash === "string" && /^[1-9A-HJ-NP-Za-km-z]{32,64}$/.test(hash)
@@ -20,14 +23,14 @@ const accountUrl = (id) =>
 const iso = (ms) => (Number.isFinite(ms) ? new Date(ms).toISOString() : null);
 
 /** Published (and recently closed) prize days with their exact budget. */
-export function publishedDays(db, limit = LEDGER_DAYS) {
+export function publishedDays(db, limit = LEDGER_DAYS, since = PUBLIC_HISTORY_START) {
   let rows;
   try {
     rows = db
       .prepare(
-        "SELECT * FROM native_days WHERE state!='prepared' ORDER BY day DESC,id DESC LIMIT ?",
+        "SELECT * FROM native_days WHERE state!='prepared' AND day>=? ORDER BY day DESC,id DESC LIMIT ?",
       )
-      .all(limit);
+      .all(since, limit);
   } catch {
     return [];
   }
@@ -85,19 +88,19 @@ export function budgetByDate(days) {
 }
 
 /** Confirmed on-chain claims, newest first; the account is already public on chain. */
-export function confirmedPayouts(db, limit = LEDGER_PAYOUTS) {
+export function confirmedPayouts(db, limit = LEDGER_PAYOUTS, sinceMs = 0) {
   let rows, totals;
   try {
     rows = db
       .prepare(
-        "SELECT day_id,kind,account_id,amount,transaction_hash,confirmed_at FROM native_reward_claims WHERE state='confirmed' ORDER BY confirmed_at DESC,seq DESC LIMIT ?",
+        "SELECT day_id,kind,account_id,amount,transaction_hash,confirmed_at FROM native_reward_claims WHERE state='confirmed' AND confirmed_at>=? ORDER BY confirmed_at DESC,seq DESC LIMIT ?",
       )
-      .all(limit);
+      .all(sinceMs, limit);
     totals = db
       .prepare(
-        "SELECT kind,COUNT(*) AS n,GROUP_CONCAT(amount) AS amounts FROM native_reward_claims WHERE state='confirmed' GROUP BY kind",
+        "SELECT kind,COUNT(*) AS n,GROUP_CONCAT(amount) AS amounts FROM native_reward_claims WHERE state='confirmed' AND confirmed_at>=? GROUP BY kind",
       )
-      .all();
+      .all(sinceMs);
   } catch {
     return { count: 0, total: "0", byKind: {}, recent: [] };
   }
@@ -343,7 +346,7 @@ export function createPublicLedger({
       budget: budgetByDate(days),
       days,
       payouts: native
-        ? confirmedPayouts(native.db)
+        ? confirmedPayouts(native.db, LEDGER_PAYOUTS, HISTORY_START_MS)
         : { count: 0, total: "0", byKind: {}, recent: [] },
       yieldCycle: yieldCycle(cycleProof()),
       tradeFees: tradeFees(feeRecord()),

@@ -7,15 +7,15 @@ import {
   DotsThree,
   Flag,
   MapPin,
+  PaperPlaneRight,
   PencilSimple,
-  Plus,
   Prohibit,
   Trash,
   X,
 } from "@phosphor-icons/react";
 import { ArrowLeft } from "./dir-icons";
 import { Dialog } from "./Dialog";
-import { Ghost } from "./Ghost";
+import { ChatAvatar, timeAgo } from "./ChatAvatar";
 import type { Fix, Point } from "./types";
 import { useFormDraft } from "./useFormDraft";
 import { browserDraftStorage } from "./form-draft";
@@ -42,6 +42,8 @@ export type MapNote = Point & {
   arena: boolean;
   own: boolean;
   state: "published";
+  /** Metres from the reader, when the list was read with a radius. */
+  distance_m?: number;
 };
 type BlockedPerson = { playerId: string; name: string; createdAt: number };
 type Publication = Point & {
@@ -161,6 +163,10 @@ export function MapNotes({
   onRecord,
   quick = false,
   onDone,
+  onChange,
+  openId,
+  onOpened,
+  radiusKm,
 }: {
   playerId: string;
   position: Point;
@@ -175,6 +181,13 @@ export function MapNotes({
   /** Only the compact create dialog (Actions button); onDone closes it. */
   quick?: boolean;
   onDone?: () => void;
+  /** A note was published, edited or removed: the map redraws its note pins. */
+  onChange?: () => void;
+  /** A map note pin was tapped: show and highlight this note in the list. */
+  openId?: string | null;
+  onOpened?: () => void;
+  /** Local chat distance filter; without it the small box around the player. */
+  radiusKm?: number;
 }) {
   const [recordNote, setRecordNote] = useState<MapNote | null>(null);
   const identity = `${playerId}:${arena ? "arena" : "physical"}`;
@@ -246,6 +259,18 @@ export function MapNotes({
     [reason, setReason] = useState("spam"),
     [detail, setDetail] = useState("");
   const coordinates = `${position.lat.toFixed(2)}:${position.lng.toFixed(2)}`;
+  // A tapped map pin: once the list holds that note, scroll to it and mark it.
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!openId || loading) return;
+    if (notes.some((n) => n.id === openId)) {
+      setFocusedId(openId);
+      requestAnimationFrame(() =>
+        document.getElementById(`map-note-${openId}`)?.scrollIntoView({ block: "center", behavior: "smooth" }),
+      );
+    }
+    onOpened?.();
+  }, [openId, loading, notes]);
   const current = (who: string) => mounted.current && latest.current === who;
 
   useEffect(() => {
@@ -305,7 +330,9 @@ export function MapNotes({
     setError("");
     try {
       const value = await call<{ messages: MapNote[] }>(
-        `/messages?lat=${place.lat.toFixed(2)}&lng=${place.lng.toFixed(2)}&arena=${arena ? 1 : 0}`,
+        radiusKm
+          ? `/messages?lat=${place.lat.toFixed(3)}&lng=${place.lng.toFixed(3)}&arena=${arena ? 1 : 0}&radiusKm=${radiusKm}`
+          : `/messages?lat=${place.lat.toFixed(2)}&lng=${place.lng.toFixed(2)}&arena=${arena ? 1 : 0}`,
       );
       if (current(who) && version === generation.current)
         setNotes(value.messages);
@@ -320,7 +347,7 @@ export function MapNotes({
   }
   useEffect(() => {
     void load();
-  }, [identity, coordinates]);
+  }, [identity, coordinates, radiusKm]);
   async function loadBlocks() {
     const who = identity;
     const value = await call<{ blocks: BlockedPerson[] }>("/social/blocks");
@@ -367,6 +394,8 @@ export function MapNotes({
       return false;
     const intent = pendingRef.current;
     clearIntent();
+    // Before setView: in the quick dialog, leaving compose closes (unmounts) it.
+    onChange?.();
     if (receipt.state !== "abandoned") {
       if (intent?.draftRevision !== undefined)
         draft.discard(intent.draftRevision);
@@ -517,6 +546,7 @@ export function MapNotes({
     setDetail("");
     if (selected.kind === "block") {
       onBlockChange?.();
+      onChange?.();
       await load();
       if (!current(who)) return;
       heading.current?.focus();
@@ -525,6 +555,7 @@ export function MapNotes({
       );
     }
     if (selected.kind === "remove") {
+      onChange?.();
       await load();
       if (!current(who)) return;
       heading.current?.focus();
@@ -563,6 +594,7 @@ export function MapNotes({
     if (!current(who)) return;
     setEditing(null);
     setNotice(tr("Note updated."));
+    onChange?.();
     await load();
   }
   const pendingCard = pending && (
@@ -633,7 +665,7 @@ export function MapNotes({
   // button. The map stays where it was.
   const composeDialog = view === "compose" && (
     <Dialog
-      label={tr("Leave a note")}
+      label={quick ? tr("Leave a note") : tr("Write to local chat")}
       onClose={() => {
         if (!busy) setView("browse");
       }}
@@ -655,7 +687,7 @@ export function MapNotes({
           <X size={22} aria-hidden="true" />
         </button>
         <NotePinArt />
-        <h2 ref={heading} tabIndex={-1}>{tr("Leave a note")}</h2>
+        <h2 ref={heading} tabIndex={-1}>{quick ? tr("Leave a note") : tr("Write to local chat")}</h2>
         {feedback}
         {pendingCard}
         <label className="sr-only" htmlFor="map-note-text">{tr("What did you discover?")}</label>
@@ -752,7 +784,7 @@ export function MapNotes({
           type="submit"
           disabled={locked || reading || !text.trim() || (shareGps && !freshFix(fix))}
         >
-          {busy ? tr("Publishing…") : tr("Leave the note here")}
+          {busy ? tr("Publishing…") : quick ? tr("Leave the note here") : tr("Post to local chat")}
         </button>
       </form>
     </Dialog>
@@ -760,47 +792,32 @@ export function MapNotes({
   if (quick)
     return <>{composeDialog}</>;
   return (
-    <section className="map-notes" aria-label={tr("Local chat")}>
+    <section className="map-notes is-chat" aria-label={tr("Chat")}>
       <div className="map-notes-heading">
         {view === "blocked" && (
           <button
             className="panel-back"
-            aria-label={tr("Back to nearby notes")}
-            title={tr("Back to nearby notes")}
+            aria-label={tr("Back to local chat")}
+            title={tr("Back to local chat")}
             disabled={busy}
             onClick={() => setView("browse")}
           >
             <ArrowLeft size={20} />
           </button>
         )}
-        <h2 ref={view === "compose" ? undefined : heading} tabIndex={-1} title={arena ? tr("Demo arena") : tr("Real-world map")}>
-          {view === "blocked" ? tr("Blocked players") : tr("Around you")}
-        </h2>
+        <h3 ref={view === "compose" ? undefined : heading} tabIndex={-1} title={arena ? tr("Demo arena") : tr("Real-world map")}>
+          {view === "blocked" ? tr("Blocked players") : tr("Chat")}
+        </h3>
         {view !== "blocked" && (
-          <>
-            <button
-              className="map-notes-icon"
-              aria-label={tr("Refresh nearby notes")}
-              title={tr("Refresh nearby notes")}
-              disabled={busy || loading}
-              onClick={() => void load()}
-            >
-              <ArrowClockwise size={20} />
-            </button>
-            <button
-              className="map-notes-primary"
-              disabled={locked}
-              onClick={() => {
-                if (!text && !image) setAnchor({ ...position });
-                setShareGps(false);
-                setView("compose");
-                setError("");
-              }}
-            >
-              <Plus size={20} />
-              {draft.hasDraft ? tr("Resume draft") : tr("Write a note")}
-            </button>
-          </>
+          <button
+            className="map-notes-icon"
+            aria-label={tr("Refresh chat")}
+            title={tr("Refresh chat")}
+            disabled={busy || loading}
+            onClick={() => void load()}
+          >
+            <ArrowClockwise size={20} />
+          </button>
         )}
       </div>
       {view !== "compose" && feedback}
@@ -809,22 +826,29 @@ export function MapNotes({
       {view !== "blocked" && (
         <>
           {loading ? (
-            <p role="status">{tr("Looking for nearby notes…")}</p>
+            <p role="status">{tr("Loading the chat…")}</p>
           ) : notes.length ? (
-            <ul className="map-notes-list">
-              {notes.map((note) => (
-                <li key={note.id} className={`map-note${note.own ? " is-own" : ""}`}>
-                  <Ghost className="map-note-ghost" />
+            <ul className="map-notes-list" aria-live="polite">
+              {[...notes].reverse().map((note) => (
+                <li
+                  key={note.id}
+                  id={`map-note-${note.id}`}
+                  className={`map-note${note.own ? " is-own" : ""}${focusedId === note.id ? " is-focused" : ""}`}
+                >
+                  <ChatAvatar name={note.author} own={note.own} />
                   <div className="map-note-body">
                     <div className="map-note-meta">
                       <b>{note.own ? tr("You") : note.author}</b>
-                      <time dateTime={new Date(note.created_at).toISOString()}>
-                        {new Date(note.created_at).toLocaleString("en-US", {
+                      <time
+                        dateTime={new Date(note.created_at).toISOString()}
+                        title={new Date(note.created_at).toLocaleString("en-US", {
                           day: "numeric",
                           month: "short",
                           hour: "2-digit",
                           minute: "2-digit",
                         })}
+                      >
+                        {timeAgo(note.created_at)}
                       </time>
                       {note.expires_at && (
                         <span className="map-note-expiry">· {tr("{0} left", { 0: timeLeft(note.expires_at) })}</span>
@@ -949,10 +973,27 @@ export function MapNotes({
             </ul>
           ) : (
             !error && (
-              <EmptyState art="ghost" title={tr("No notes nearby yet")}>
-                {tr("Leave something for the next ghost passing through.")}</EmptyState>
+              <EmptyState art="ghost" title={radiusKm ? tr("No messages within {0} km yet", { 0: radiusKm }) : tr("No messages nearby yet")}>
+                {tr("Say hi to the explorers around you.")}</EmptyState>
             )
           )}
+          <button
+            type="button"
+            className="chat-composer-bar"
+            disabled={locked}
+            onClick={() => {
+              if (!text && !image) setAnchor({ ...position });
+              setShareGps(false);
+              setView("compose");
+              setError("");
+            }}
+          >
+            <ChatAvatar name={tr("You")} own />
+            <span className="chat-composer-field">
+              {draft.hasDraft ? tr("Resume draft") : tr("Write a message")}
+            </span>
+            <PaperPlaneRight size={22} weight="fill" aria-hidden="true" />
+          </button>
           <button
             className="map-notes-secondary-action"
             disabled={busy}

@@ -602,3 +602,21 @@ test("a fresh process retains hidden receipts, permanent abandonment and bilater
     rmSync(directory, { recursive: true, force: true });
   }
 });
+
+test("Local chat reads notes within the chosen radius and reports their distance", async () => {
+  const f = fixture();
+  await f.social.create(f.author, f.input());
+  // ~16 km east (Rokycany) and ~85 km north-east (Prague).
+  await f.social.create(f.author, f.input({ clientId: "note-two", text: "Rokycany square.", lng: place.lng + 0.217 }));
+  await f.social.create(f.author, f.input({ clientId: "note-three", text: "Prague crew.", lat: place.lat + 0.328, lng: place.lng + 1.06 }));
+  const read = (radiusKm) =>
+    f.social.list(f.viewer, { ...place, arena: true, ...(radiusKm ? { radiusKm } : {}) }).messages.map((m) => m.text).sort();
+  assert.deepEqual(read(), ["A quiet public garden."], "without a radius only the small box around the player");
+  assert.deepEqual(read(1), ["A quiet public garden."]);
+  assert.deepEqual(read(25), ["A quiet public garden.", "Rokycany square."]);
+  assert.deepEqual(read(100), ["A quiet public garden.", "Prague crew.", "Rokycany square."]);
+  const far = f.social.list(f.viewer, { ...place, arena: true, radiusKm: 25 }).messages.find((m) => m.text === "Rokycany square.");
+  assert.ok(far.distance_m > 15_000 && far.distance_m < 17_000, String(far.distance_m));
+  assert.throws(() => f.social.list(f.viewer, { ...place, arena: true, radiusKm: 7 }), /Pick a radius/);
+  assert.throws(() => f.social.list(f.viewer, { ...place, arena: true, radiusKm: 500 }), /Pick a radius/);
+});

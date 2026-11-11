@@ -17,6 +17,7 @@ import { shiftDate } from "../spatial/calendar.mjs";
 import { atomic } from "../database.mjs";
 import { distance } from "../domain.mjs";
 import { isCzechiaCell } from "./czechia.mjs";
+import { payoutsEnabled } from "../payouts/worker.mjs";
 import {
   cellSeed,
   ensureDayPlan,
@@ -35,6 +36,7 @@ import {
   WAVES,
 } from "./policy.mjs";
 import { ensureMapRewardsSchema } from "./schema.mjs";
+import { organicRing } from "../spatial/organic-shape.mjs";
 
 export const PIONEER_CHEST_XP = 80;
 
@@ -49,22 +51,10 @@ export function waveCount(env = process.env) {
 
 const cellOf = (p) => latLngToCell(p.lat, p.lng, 7);
 
-function circle(p, radius, steps = 20) {
-  const ring = [];
-  for (let i = 0; i <= steps; i++) {
-    const a = ((i % steps) / steps) * Math.PI * 2;
-    ring.push([
-      Number(
-        (
-          p.lng +
-          (Math.cos(a) * radius) / (111320 * Math.cos((p.lat * Math.PI) / 180))
-        ).toFixed(7),
-      ),
-      Number((p.lat + (Math.sin(a) * radius) / 110540).toFixed(7)),
-    ]);
-  }
-  return ring;
-}
+// Cell zones and pioneer chests are irregular blobs, not circles (Lubos,
+// 11 Nov 2026); the spot seeds the shape, so it is the same on every read.
+const circle = (p, radius, steps = 20) =>
+  organicRing(p, radius, `${p.lat},${p.lng}:${radius}`, steps);
 
 /** Promote 1-3 of the cell's POI quests to funded cell zones. Returns zone ids. */
 function promoteCellZones(db, world, cell, count, zonesU, seed) {
@@ -76,6 +66,8 @@ function promoteCellZones(db, world, cell, count, zonesU, seed) {
       (z) =>
         z.source === "poi" &&
         !z.cellZone &&
+        // A Tier 3 place stays locked; its prize would sit out of reach.
+        (z.tier || 1) === 1 &&
         Number.isFinite(z.lat) &&
         cellOf(z) === cell,
     )
@@ -214,7 +206,10 @@ export async function materializeCellRewards(
     return row ? JSON.parse(row.manifest) : world;
   }
   const inPlan = isCzechiaCell(cell);
-  const plan = inPlan ? ensureDayPlan(db, now) : null;
+  // A street cell outside the Czech day plan draws backed coins from the
+  // day's unplaced coin budget (worldCoinCount); it needs payouts to be paid.
+  const abroad = !inPlan && !world.arena && worldCoinsEnabled();
+  const plan = inPlan || abroad ? ensureDayPlan(db, now) : null;
   const points = await samples();
   if (!Array.isArray(points)) return world;
   const inCell = points.filter((p) => cellOf(p) === cell);
@@ -235,7 +230,7 @@ export async function materializeCellRewards(
     )
       return current;
     const day = plan?.day || current.day;
-    const leaf = plan ? readCell(db, plan.day, cell) : null;
+    const leaf = plan && inPlan ? readCell(db, plan.day, cell) : null;
     const seed = plan
       ? cellSeed(plan.seed, cell)
       : cellSeed(`outside|${current.day}`, cell);
@@ -247,10 +242,12 @@ export async function materializeCellRewards(
     // Backed coins only: a cell outside the plan gets none. The city demo
     // behaves like the real map (only movement differs): its coins carry the
     // same backed value and are paid in QGOLD, at a fixed count per cell.
-    const count = current.arena ? CELL_COINS : leaf?.coins || 0;
-    const valueU = !leaf
-      ? 0
-      : (plan.summary.coinValueU || 0) * (pioneer ? PIONEER_MULT : 1);
+    const worldCoins = abroad && plan ? worldCoinCount(db, plan) : 0;
+    const count = current.arena ? CELL_COINS : leaf?.coins || worldCoins;
+    const valueU =
+      leaf || worldCoins
+        ? (plan.summary.coinValueU || 0) * (pioneer ? PIONEER_MULT : 1)
+        : 0;
     // Zones first, so coins gather around them.
     const zoneIds = promoteCellZones(
       db,
@@ -339,6 +336,29 @@ export async function materializeCellRewards(
     );
     return current;
   });
+}
+
+/**
+ * Backed coins outside the Czech day plan (docs/MAP-REWARDS.md, "Outside
+ * Czechia"): every street cell elsewhere gets up to CELL_COINS coins of the
+ * day's coin value, paid from the day's unplaced coin budget, until that
+ * budget is spent. MAP_WORLD_COINS=off turns it off; it needs MAP_PAYOUTS.
+ */
+export function worldCoinsEnabled(env = process.env) {
+  return env.MAP_WORLD_COINS !== "off" && payoutsEnabled(env);
+}
+export function worldCoinCount(db, plan) {
+  const valueU = plan?.summary?.coinValueU || 0,
+    reserveU = plan?.summary?.unplacedU?.coins || 0;
+  if (valueU <= 0 || reserveU <= 0) return 0;
+  let spentU = 0;
+  for (const r of db
+    .prepare(
+      "SELECT d.cell,d.coins_u FROM map_cell_drops d JOIN worlds w ON w.id=d.world_id WHERE d.day=? AND json_extract(w.manifest,'$.arena')=0",
+    )
+    .all(plan.day))
+    if (!isCzechiaCell(r.cell)) spentU += r.coins_u;
+  return Math.max(0, Math.min(CELL_COINS, Math.floor((reserveU - spentU) / valueU)));
 }
 
 /** Coin ids of a world whose wave has not opened yet at `now`. */

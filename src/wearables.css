@@ -297,3 +297,75 @@ button.wearable-tile {
 .player-card-verified { position: absolute; top: 4px; right: 4px; color: #e0a100; }
 .player-card-aura { display: block; border-radius: 50%; }
 .player-card-slots li.filled .player-card-aura { box-shadow: inset 0 0 0 5px var(--aura); }
+/* Demo-bot chat (test world): ready-line answers, nothing stored. */
+.player-card-botchat {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface-soft, #f6f1ff);
+}
+.player-card-botchat ol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  margin: 8px 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.player-card-botchat li {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.player-card-botchat li.mine {
+  align-self: flex-end;
+  background: #8348ff;
+  color: #fff;
+}
+.player-card-botchat li.theirs {
+  align-self: flex-start;
+  background: var(--surface, #fff);
+  color: var(--ink, #2c0a56);
+  border: 1px solid var(--decorative-border, #d9ccf5);
+}
+.player-card-botchat li.typing {
+  opacity: 0.7;
+  font-style: italic;
+}
+.player-card-botchat form {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.player-card-botchat textarea {
+  flex: 1;
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--decorative-border, #d9ccf5);
+  background: var(--surface, #fff);
+  color: var(--ink, #2c0a56);
+  font: inherit;
+  font-size: 16px;
+  resize: none;
+}
+.player-card-botchat button {
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 2px solid #8348ff;
+  background: #8348ff;
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.player-card-botchat button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}

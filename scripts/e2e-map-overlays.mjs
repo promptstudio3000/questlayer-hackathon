@@ -32,7 +32,7 @@ try {
   browser=await chromium.launch();
   for(const [name,width,height] of [["phone-360",360,780],["phone-390",390,844],["landscape",844,390],["desktop",1440,900]]){
     if(process.env.E2E_VIEWPORT&&process.env.E2E_VIEWPORT!==name)continue;
-    const context=await browser.newContext({viewport:{width,height},reducedMotion:"reduce"});const page=await context.newPage();
+    const context=await browser.newContext({viewport:{width,height},reducedMotion:"reduce"});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});const page=await context.newPage();
     const faults=[];page.on("pageerror",e=>faults.push(e.message));
     const post=async(path,data)=>{const response=await context.request.post(url+"/api"+path,{headers:{Origin:url},data});const out=await response.json();assert.ok(response.ok(),JSON.stringify(out));return out;};
     await post("/session",{name:`Overlay ${name}`});await page.goto(url);
@@ -91,7 +91,7 @@ try {
     assert.deepEqual(violations,[]);assert.deepEqual(faults,[]);results.push({name,anchors,bounds,violations});console.log(`${name}: overlay and fixed controls passed`);await context.close();
   }
   // A separate explorer stands at a real generated actor. The browser GPS is synthetic.
-  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:"reduce"});
+  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:"reduce"});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
   const post=async(path,data)=>{const r=await context.request.post(url+"/api"+path,{headers:{Origin:url},data});assert.ok(r.ok(),await r.text());return r.json();};
   await post("/session",{name:"Nearby actor"});const world=await post("/world",{arena:false,location:{lat:49.74745,lng:13.3774}});
   const response=await(await context.request.get(url+`/api/actors?worldId=${encodeURIComponent(world.id)}&lat=49.74745&lng=13.3774`)).json();

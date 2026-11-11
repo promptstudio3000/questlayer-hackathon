@@ -297,7 +297,8 @@ test("payout rounds mint within minutes, and the city demo pays like the map", a
     );
 
     // Within the round interval nothing new is built.
-    const c = coins[0];
+    // (Not the demo coin's twin: one spot pays once, in either world.)
+    const c = coins.find((x) => x.lat !== demoCoins[0].lat || x.lng !== demoCoins[0].lng);
     claimCoin(db, walker, c.id, fix(c, NOW + 3 * 60_000), NOW + 3 * 60_000);
     const quiet = await runPayoutWorker(db, { ...chain, now: NOW + 4 * 60_000, roundMs });
     assert.equal(quiet.prepared, null);

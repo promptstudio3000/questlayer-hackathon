@@ -19,11 +19,18 @@ function onGraph(g, [lng, lat]) {
   return g.nodes.some((i) => g.lng[i] === lng && g.lat[i] === lat);
 }
 
+test("Plzeň NPCs walk around the clock (owner decision 11 Nov 2026)", () => {
+  assert.deepEqual(city.hours, ["00:00", "23:59"]);
+});
+
+// The schedule mechanics below are checked against a shorter opening window.
+const SHORT_HOURS = ["07:00", "22:00"];
+
 test("day plans are deterministic, contiguous and stay on mapped paths", () => {
   const g = pathGraph(PLZEN);
   for (const def of city.actors.filter((a) => a.home && a.enabled)) {
-    const a = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: city.hours });
-    const b = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: city.hours });
+    const a = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS });
+    const b = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS });
     assert.deepEqual(a, b, def.id);
     assert.ok(a.length >= 1, def.id);
     assert.equal(a[0].from, dayStart + 7 * 3600_000);
@@ -38,19 +45,19 @@ test("day plans are deterministic, contiguous and stay on mapped paths", () => {
       assert.ok(m / ((s.to - s.from) / 1000) <= def.speedMps + 0.01, def.id);
     }
   }
-  const other = planDay(city.actors[1], PLZEN, "seed", "2026-11-03", { dayStart, hours: city.hours });
-  assert.notDeepEqual(other.map((s) => s.path), planDay(city.actors[1], PLZEN, "seed", DAY, { dayStart, hours: city.hours }).map((s) => s.path));
+  const other = planDay(city.actors[1], PLZEN, "seed", "2026-11-03", { dayStart, hours: SHORT_HOURS });
+  assert.notDeepEqual(other.map((s) => s.path), planDay(city.actors[1], PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS }).map((s) => s.path));
 });
 
 test("positions interpolate inside segments and are null outside hours", () => {
   const def = city.actors.find((a) => a.id === "kupec-vojtech");
-  const segs = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: city.hours });
+  const segs = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS });
   assert.equal(positionAt(segs, dayStart + 3600_000), null);
   const walk = segs.find((s) => !s.dwell);
   const start = positionAt(segs, walk.from), mid = positionAt(segs, (walk.from + walk.to) / 2);
   assert.deepEqual([start.lng, start.lat], walk.path[0]);
   assert.equal(mid.dwell, false);
-  const practice = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: city.hours, allDay: true });
+  const practice = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS, allDay: true });
   assert.ok(positionAt(practice, dayStart + 3600_000));
 });
 
@@ -140,6 +147,7 @@ test("a monster with nothing on offer says when to come back", async () => {
   const beaten = await service.encounter({ player: "p2", actorId: roamer.id, worldId: gps.id, location: fix });
   assert.deepEqual(beaten.menu, []);
   assert.equal(beaten.comeBack.reason, "beaten");
-  // Tomorrow at the city's 07:00 opening, local Prague time.
-  assert.equal(beaten.comeBack.at, localDateStart("2026-11-03", "Europe/Prague") + 7 * 3600_000);
+  // Tomorrow, inside the city's 07:00-22:00 hours (a day creature waits for sunrise).
+  const tomorrow = localDateStart("2026-11-03", "Europe/Prague");
+  assert.ok(beaten.comeBack.at >= tomorrow + 7 * 3600_000 && beaten.comeBack.at < tomorrow + 22 * 3600_000, String(beaten.comeBack.at));
 });

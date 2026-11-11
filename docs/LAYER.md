@@ -68,7 +68,10 @@ says so, and turning it on needs its own reviewed change.
   edits. The server checks the owner, the plot bounds, the height range and the
   block, and keeps the last 64 request ids per plot so a retry never applies twice
   and a reused id with other edits fails. A plot holds at most 8 192 changed blocks.
-  The browser places blocks at once and undoes them if the server refuses.
+  The browser places blocks at once and undoes them only if the server refuses
+  (4xx). A lost connection or a server error keeps the blocks and retries the same
+  request id with backoff; leaving the layer, hiding the app or closing the page
+  sends unsaved blocks with `keepalive`.
 - **Presence:** `POST /api/layer/presence` once a second reports the position and
   outfit and returns nearby explorers (opaque keys, names, outfits, positions) and
   today's goals. Positions live only in memory for 15 seconds. A move faster than

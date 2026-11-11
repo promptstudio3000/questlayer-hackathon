@@ -8,6 +8,13 @@ import {
   creatorFields as fields,
   createCreatorOperations,
 } from "./operations.mjs";
+import { publicLook } from "../public-look.mjs";
+import {
+  CREATOR_XP,
+  creatorQuestKind,
+  creatorXpEarned,
+  publishXp,
+} from "./creator-xp.mjs";
 
 // Public projections always select approved fields. Never serialize lifecycle rows.
 export function createCreatorCommunity(db, { clock = Date.now } = {}) {
@@ -67,10 +74,35 @@ export function createCreatorCommunity(db, { clock = Date.now } = {}) {
   // A bilateral block hides discovery in both directions, independent of who set it.
   const unblocked = (column) => `NOT EXISTS(SELECT 1 FROM social_blocks b WHERE
     (b.actor_id=:viewer AND b.target_id=${column}) OR (b.target_id=:viewer AND b.actor_id=${column}))`;
+  const count = (sql, ...args) => {
+    try {
+      return db.prepare(sql).get(...args)?.n || 0;
+    } catch {
+      return 0; // optional table not created yet
+    }
+  };
+  // What a public creator card shows: the explorer's look, level and how their
+  // quests do. Counts only, never who follows or who played.
   const profileView = (row) => ({
     id: row.id,
     displayName: row.display_name,
     bio: row.bio,
+    look: publicLook(db, row.id),
+    stats: {
+      quests: count(
+        "SELECT COUNT(*) AS n FROM creator_quests WHERE author=? AND state='published'",
+        row.id,
+      ),
+      followers: count(
+        "SELECT COUNT(*) AS n FROM creator_follows WHERE creator=?",
+        row.id,
+      ),
+      completions: count(
+        "SELECT COUNT(*) AS n FROM creator_completion_receipts c JOIN creator_quests q ON q.id=c.quest_id WHERE q.author=?",
+        row.id,
+      ),
+      xp: creatorXpEarned(db, row.id),
+    },
   });
   const creationView = (row) => ({
     id: row.id,
@@ -92,7 +124,13 @@ export function createCreatorCommunity(db, { clock = Date.now } = {}) {
     ...(row.requirement ? { requirement: JSON.parse(row.requirement) } : {}),
     ...(row.place ? { place: JSON.parse(row.place) } : {}),
     ...(row.price && row.price !== "0" ? { price: row.price } : {}),
-    creator: { id: row.author, displayName: row.display_name },
+    creator: {
+      id: row.author,
+      displayName: row.display_name,
+      look: publicLook(db, row.author),
+    },
+    kind: creatorQuestKind(row.place ? JSON.parse(row.place) : null),
+    creatorXp: publishXp(row.place ? JSON.parse(row.place) : null),
     access: "free",
     rewardStatus: "not-configured",
     domain: "demo",
@@ -152,6 +190,11 @@ export function createCreatorCommunity(db, { clock = Date.now } = {}) {
   return {
     profile,
     listQuests,
+    /** The game's XP table for building quests, and what this creator earned. */
+    myCreatorXp(actor) {
+      player(actor);
+      return { ...CREATOR_XP, earned: creatorXpEarned(db, actor) };
+    },
     publicQuest(actor, questId) {
       player(actor);
       key(questId);
@@ -174,7 +217,13 @@ export function createCreatorCommunity(db, { clock = Date.now } = {}) {
         ORDER BY p.player_id LIMIT :take`,
         )
         .all({ viewer: actor, cursor, take: limit + 1 });
-      return page(rows, limit, profileView);
+      const follows = db.prepare(
+        "SELECT 1 FROM creator_follows WHERE follower=? AND creator=?",
+      );
+      return page(rows, limit, (row) => ({
+        ...profileView(row),
+        following: !!follows.get(actor, row.id),
+      }));
     },
     myCreations(actor, options = {}) {
       player(actor);

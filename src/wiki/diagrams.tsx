@@ -490,15 +490,15 @@ function MoneyFlow() {
 type Mix = { total: string; buckets: { bucket: string; currentBps: number; targetBps: number }[] } | null;
 function TreasuryMix() {
   const mix = useJson<Mix>("/api/treasury/mix");
-  const names: Record<string, string> = { lst: "Liquid staking", stable: "Stablecoins on Rhea", near: "NEAR reserve" };
-  const tones: Record<string, Tone> = { lst: "money", stable: "world", near: "chain" };
+  const names: Record<string, string> = { staked: "Staked NEAR", lst: "Liquid staking", stable: "Stablecoins on Rhea", near: "NEAR reserve" };
+  const tones: Record<string, Tone> = { staked: "core", lst: "money", stable: "world", near: "chain" };
   const target = [
-    { label: names.lst, value: 50, tone: tones.lst },
-    { label: names.stable, value: 40, tone: tones.stable },
-    { label: names.near, value: 10, tone: tones.near },
+    { label: names.staked, value: 90, tone: tones.staked },
+    { label: "USDC on Rhea", value: 5, tone: tones.stable },
+    { label: "USDT on Rhea", value: 5, tone: "money" as Tone },
   ];
   const live = mix?.buckets?.length
-    ? mix.buckets.map((b) => ({ label: names[b.bucket] ?? b.bucket, value: b.currentBps / 100, tone: tones[b.bucket] ?? "core" }))
+    ? mix.buckets.filter((b) => b.currentBps > 0).map((b) => ({ label: names[b.bucket] ?? b.bucket, value: b.currentBps / 100, tone: tones[b.bucket] ?? "core" }))
     : null;
   return (
     <div className="wk-pair">
@@ -514,10 +514,16 @@ function TreasuryMix() {
   );
 }
 
+// The treasury mix the DAO adopted (11 Nov 2026): 90 % staked NEAR, 5 % USDC,
+// 5 % USDT. On testnet only validator staking earns; the stablecoins earn 0.
+const MIX_STAKED = 0.9,
+  MIX_STABLE = 0.1;
 function YieldSim() {
   const [treasury, setTreasury] = useState(1000);
-  const [apr, setApr] = useState(6);
+  const [stakeApr, setStakeApr] = useState(9.8);
+  const [stableApr, setStableApr] = useState(0);
   const [share, setShare] = useState(100);
+  const apr = MIX_STAKED * stakeApr + MIX_STABLE * stableApr;
   const daily = (treasury * (apr / 100) * (share / 100)) / 365;
   const coins = daily * 0.5,
     zones = daily * 0.5;
@@ -530,8 +536,12 @@ function YieldSim() {
           <input type="range" min={10} max={20000} step={10} value={treasury} onChange={(e) => setTreasury(Number(e.target.value))} />
         </label>
         <label>
-          Blended yield <b>{apr} % a year</b>
-          <input type="range" min={1} max={14} step={0.5} value={apr} onChange={(e) => setApr(Number(e.target.value))} />
+          Staking yield on 90 % <b>{stakeApr} % a year</b>
+          <input type="range" min={1} max={14} step={0.1} value={stakeApr} onChange={(e) => setStakeApr(Number(e.target.value))} />
+        </label>
+        <label>
+          Stablecoin yield on 5 % + 5 % <b>{stableApr} % a year</b>
+          <input type="range" min={0} max={12} step={0.5} value={stableApr} onChange={(e) => setStableApr(Number(e.target.value))} />
         </label>
         <label>
           Share released <b>{share} %</b>
@@ -540,7 +550,7 @@ function YieldSim() {
       </div>
       <div className="wk-kpis">
         <span>
-          <small>Daily budget</small>
+          <small>Daily budget ({apr.toFixed(1)} % blended)</small>
           <b>{daily.toFixed(3)} NEAR</b>
         </span>
         <span>
@@ -986,7 +996,7 @@ function DaoFlow() {
         { id: "explorers", x: 95, y: 60, w: 150, label: "Explorers (L3+)", sub: "weekly mix vote, 1 : 1", tone: "player", pulse: true },
         { id: "keeper", x: 330, y: 60, w: 150, label: "Keeper", sub: "files polls, results, runs", tone: "core" },
         { id: "council", x: 590, y: 60, w: 170, label: "Council 2 of 3", sub: "approves after checks", tone: "chain", pulse: true },
-        { id: "mix", x: 590, y: 190, w: 170, label: "Adopted mix", sub: "e.g. 50 / 40 / 10", tone: "money" },
+        { id: "mix", x: 590, y: 190, w: 170, label: "Adopted mix", sub: "e.g. 90 / 5 / 5", tone: "money" },
         { id: "run", x: 330, y: 190, w: 150, label: "Daily run", sub: "≤ 25 % moved", tone: "money" },
         { id: "treasury", x: 95, y: 190, w: 150, label: "Treasury", sub: "staking · stables · NEAR", tone: "world" },
       ]}
