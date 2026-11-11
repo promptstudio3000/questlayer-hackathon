@@ -99,7 +99,6 @@ test("existing private WAL backup restores creator publication/obligations and h
     walker = createPlayer(db, "Solo walker", NOW),
     hidden = createPlayer(db, "Hidden account", NOW);
   db.prepare("UPDATE players SET xp=1000 WHERE id=?").run(author);
-  const originalBacking = backing(db);
   const profileInput = {
     actor: author,
     operationId: "public-profile",
@@ -185,14 +184,18 @@ test("existing private WAL backup restores creator publication/obligations and h
     expectedVersion: 4,
   };
   const closeReceipt = l.close(closeInput);
+  // 1000 XP plus the game's creator XP for two published story quests (2 x 100).
   const expectedProgression = {
-    earnedXp: 1000,
+    earnedXp: 1200,
     lockedXp: 400,
-    availableXp: 600,
+    availableXp: 800,
     level: 3,
   };
   assert.deepEqual(demoProgression(db, author), expectedProgression);
   assert.equal(existsSync(join(state, "auratrail.sqlite-wal")), true);
+  // Publication added the game's creator XP (players, history); from here on
+  // nothing in the creator flow may touch the backing rows.
+  const originalBacking = backing(db);
   const before = snapshot(db);
 
   function backup(sourceState) {
@@ -336,10 +339,10 @@ test("existing private WAL backup restores creator publication/obligations and h
   );
   const finalReceipt = restored.lifecycle.finalize(finalizeInput);
   assert.deepEqual(demoProgression(restored.db, author), {
-    earnedXp: 1000,
+    earnedXp: 1200,
     lockedXp: 200,
-    availableXp: 800,
-    level: 3,
+    availableXp: 1000,
+    level: 4,
   });
   assert.equal(
     restored.community.myParticipation(walker, "closing-quest").state,

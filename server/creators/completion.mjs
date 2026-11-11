@@ -37,7 +37,12 @@ CREATE TABLE IF NOT EXISTS creator_completion_receipts(
 
 export function createCreatorCompletion(
   db,
-  { clock = Date.now, isCompletionAuthority = () => false } = {},
+  {
+    clock = Date.now,
+    isCompletionAuthority = () => false,
+    // Host hook, inside the review transaction: the creator's XP for an accepted completion.
+    onCompleted = null,
+  } = {},
 ) {
   ensureModuleVersion(db, CREATOR_COMPLETION_SCHEMA);
   const operation = createCreatorOperations(db, { clock });
@@ -290,6 +295,15 @@ export function createCreatorCompletion(
               now,
             );
           }
+          // The creator's XP for another explorer finishing their quest.
+          if (receipt)
+            onCompleted?.({
+              questId: s.quest_id,
+              author: s.author,
+              participant: s.participant,
+              title: JSON.parse(p.content).title,
+              now,
+            });
           if (receipt || s.attempt === OBSERVATION_POLICY.maxAttempts)
             db.prepare(
               "UPDATE creator_participations SET state='resolved',resolved_at=?,resolved_by=?,resolution_reference=? WHERE quest_id=? AND participant=?",

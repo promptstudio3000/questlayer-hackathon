@@ -73,10 +73,6 @@ export const CreatorCommunity = lazyNamed(
   () => import("./CreatorCommunity"),
   "CreatorCommunity",
 );
-export const CommunityBonusVote = lazyNamed(
-  () => import("./CommunityBonusVote"),
-  "CommunityBonusVote",
-);
 export const TreasuryVote = lazyNamed(
   () => import("./TreasuryVote"),
   "TreasuryVote",
@@ -171,6 +167,8 @@ export const FundPanel = lazyNamed(walletScreens, "FundPanel");
 export const Bounties = lazyNamed(walletScreens, "Bounties");
 // Explorer · Nearby: player tasks, Secrets and conditional sends.
 export const NearbyList = lazyNamed(() => import("./NearbyList"), "NearbyList");
+// Community · Tasks reuses the Nearby chunk (NearbyList re-exports NearbyMarket).
+export const NearbyMarket = lazyNamed(() => import("./NearbyList"), "NearbyMarket");
 export const GoldShop = lazyNamed(() => import("./GoldShop"), "GoldShop");
 export const PlaceMessages = lazyNamed(
   () => import("./PlaceMessages"),
