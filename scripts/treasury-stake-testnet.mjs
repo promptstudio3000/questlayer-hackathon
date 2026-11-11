@@ -303,7 +303,10 @@ assert.ok(Number.isInteger(count) && count >= 1 && count <= 6, "stagger <near-ea
 const base = VAULT_ID.split(".")[0];
 const ids = Array.from({ length: count }, (_, i) => VAULT_ID.replace(base, `${base}-${String.fromCharCode(98 + i)}`));
 const op = BigInt((await accountOf(operator.accountId)).amount);
-const need = BigInt(count) * (amount + VAULT_RESERVE + NEAR / 2n);
+// Only vaults that are not staked yet need funds, so a rerun with a higher count adds vaults.
+let open = 0n;
+for (const id of ids) if (!(await accountOf(id)) || (await view(id, "get_state")).deposited === "0") open += 1n;
+const need = open * (amount + VAULT_RESERVE + NEAR / 2n);
 assert.ok(op >= need, `Operator has ${near(op)} NEAR, stagger needs ${near(need)}; run faucet first.`);
 const poolOf = (i) => STAGGER_POOLS[i % STAGGER_POOLS.length];
 for (const [i, id] of ids.entries()) {
