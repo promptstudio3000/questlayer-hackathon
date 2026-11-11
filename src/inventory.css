@@ -197,6 +197,8 @@
 .inventory-dialog .inventory-notice {
   padding: 12px;
   border-left: 3px solid var(--inventory-action);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   background: var(--inventory-soft);
   color: var(--inventory-ink);
   font-size: 14px;
@@ -204,6 +206,8 @@
 .inventory-error {
   padding: 12px;
   border-left: 3px solid var(--inventory-error);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   background: var(--inventory-error-surface);
   color: var(--inventory-error);
 }
