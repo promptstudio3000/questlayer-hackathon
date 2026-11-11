@@ -552,7 +552,7 @@ function CreatorCommunitySession({
   const data = state.data;
   const allTabs = [
     { page: "community", label: tr("All"), section: "quests" },
-    { page: "near", label: tr("Near me"), section: "quests" },
+    { page: "near", label: tr("Nearby"), section: "quests" },
     { page: "following", label: tr("Following"), section: "quests" },
     { page: "participations", label: tr("Started"), section: "quests" },
     { page: "creators", label: tr("Creators"), section: "creators" },
