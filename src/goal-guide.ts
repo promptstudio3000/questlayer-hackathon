@@ -31,7 +31,7 @@ export function goalTarget(
       const m = meters(position, point(q));
       if (m < bestM) [best, bestM] = [q, m];
     }
-    return best ? { kind: "quest", quest: best } : { kind: "none", text: tr("No quest is open near you right now. Check Discoveries for opening times.") };
+    return best ? { kind: "quest", quest: best } : { kind: "none", text: tr("No quest is open near you right now. Check Nearby for opening times.") };
   }
   const find = goal === "finds";
   let best: Coin | null = null, bestM = Infinity;

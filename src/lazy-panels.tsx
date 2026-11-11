@@ -166,7 +166,7 @@ export const WalletPanel = lazyNamed(walletScreens, "WalletPanel");
 export const FundPanel = lazyNamed(walletScreens, "FundPanel");
 export const Bounties = lazyNamed(walletScreens, "Bounties");
 // Explorer · Nearby: player tasks, Secrets and conditional sends.
-export const NearbyMarket = lazyNamed(() => import("./NearbyMarket"), "NearbyMarket");
+export const NearbyList = lazyNamed(() => import("./NearbyList"), "NearbyList");
 export const GoldShop = lazyNamed(() => import("./GoldShop"), "GoldShop");
 export const PlaceMessages = lazyNamed(
   () => import("./PlaceMessages"),
