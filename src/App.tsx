@@ -61,7 +61,7 @@ import {
   NearbyList,
   NearbyMarket,
   GoldShop,
-  PlaceMessages,
+  LocalChat,
   PlaceCompose,
   CommunityPlaces,
   AddPlaceDialog,
@@ -69,6 +69,8 @@ import {
   CharacterJourney,
   StakeEarnSwitch,
   EarningsPanel,
+  LockedZoneCard,
+  LockedZoneDialog,
 } from "./lazy-panels";
 import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
 import type { NotePin } from "./gold-map-layer";
@@ -245,8 +247,6 @@ import {
   BAG_TABS,
   COMMUNITY_TABS,
   SHOP_TABS,
-  LOCAL_CHAT_TABS,
-  type LocalChatView,
   PROFILE_TABS,
   ProfileHero,
   ProfileTile,
@@ -409,7 +409,6 @@ export default function App() {
     [mapNotes, setMapNotes] = useState<NotePin[]>([]),
     [noteOpenId, setNoteOpenId] = useState<string | null>(null),
     [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
-    [chatView, setChatView] = useState<LocalChatView>("notes"),
     [quickCreate, setQuickCreate] = useState<"note" | "topic" | "place" | null>(null),
     [emotePicker, setEmotePicker] = useState(false),
     // The camera turns with the explorer unless switched off in Map settings.
@@ -1449,8 +1448,13 @@ export default function App() {
     s.addEventListener("coin", (e) => {
       if (latest.current.player?.id !== owner) return;
       const d = JSON.parse((e as MessageEvent).data);
+      // The same street coin can sit in several worlds: drop it by spot too.
+      const spot = (c: { lat: number; lng: number }) =>
+        typeof d.lat === "number" && c.lat === d.lat && c.lng === d.lng;
       setWorld((w) =>
-        w ? { ...w, coins: w.coins.filter((c) => c.id !== d.id) } : w,
+        w
+          ? { ...w, coins: w.coins.filter((c) => c.id !== d.id && !spot(c)) }
+          : w,
       );
     });
     // Every explorer's discovery is broadcast: coalesce bursts into one map
@@ -2468,13 +2472,21 @@ export default function App() {
     signerId: string,
   ): Promise<string | null> {
     let hash: string | null = null;
+    let failure: unknown = null;
     const result = await action("native-market", async () => {
-      hash = (await send(signerId)) || null;
+      try {
+        hash = (await send(signerId)) || null;
+      } catch (e) {
+        failure = e;
+        throw e;
+      }
       await refreshNative(true);
       return true;
     });
     if (result !== true)
-      throw Error("The action was not sent. Nothing changed.");
+      throw failure instanceof Error && failure.message
+        ? failure
+        : Error("The action was not sent. Nothing changed.");
     return hash;
   }
   const walletForOrders = useRef<{
@@ -3432,6 +3444,17 @@ export default function App() {
     : player?.inventory || [];
   const equipped = appearanceItems.filter((x) => !!x.equipped);
   const zonePresence = !nativePlay && online ? currentZone(world, position, fix, arena, player?.tier || 1, now) : null;
+  // Entering a zone above the player's tier opens the locked-zone dialog once
+  // per visit (src/LockedZone.tsx); leaving and coming back shows it again.
+  const lockedHereId = zonePresence?.state === "locked" ? zonePresence.zone.id : null;
+  const [lockedZoneDialog, setLockedZoneDialog] = useState<Zone | null>(null);
+  const lockedShown = useRef<string | null>(null);
+  useEffect(() => {
+    if (lockedHereId === lockedShown.current) return;
+    lockedShown.current = lockedHereId;
+    const zone = lockedHereId ? world?.zones.find((z) => z.id === lockedHereId) : null;
+    if (zone) setLockedZoneDialog(zone);
+  }, [lockedHereId, world]);
   const recommendation = world
     ? nearestDiscovery({
         position,
@@ -3739,7 +3762,6 @@ export default function App() {
           route={questRoute}
           onPlacePin={(id) => {
             setPlaceOpenId(id);
-            setChatView("topics");
             setTab("messages");
             setSheetExpanded(true);
           }}
@@ -3747,7 +3769,6 @@ export default function App() {
           onNotePin={(id) => {
             setNoteOpenId(id);
             setNotesView("browse");
-            setChatView("notes");
             setTab("messages");
             setSheetExpanded(true);
           }}
@@ -4295,9 +4316,9 @@ export default function App() {
                     if (distanceM <= 35) setActorOpen(actor);
                     else showActor({ actorId: actor.id });
                   }}
-                  onPlace={(id) => { setPlaceOpenId(id); setChatView("topics"); setTab("messages"); }}
+                  onPlace={(id) => { setPlaceOpenId(id); setTab("messages"); }}
                   onSpot={() => setTab("places")}
-                  onNotes={() => { setNotesView("browse"); setChatView("notes"); setTab("messages"); }}
+                  onNotes={() => { setNotesView("browse"); setTab("messages"); }}
                   onCommunityTasks={() => setTab("bounties")}
                   market={{
                     fix: () =>
@@ -4330,20 +4351,7 @@ export default function App() {
                   else { setSelected(detailZone, q.id); setCatalogView(null); }
                 }}
                 onPoint={() => { setCatalogView(null); guideToQuest(q); }} onLocate={() => void locate()} onComplete={() => void complete(q.id)} onMap={q.completed ? closeZone : closeMapPanel} />}
-              lockedContent={
-                <div className="locked-panel">
-                  <LockKey size={25} />
-                  <h3>{tr("Opens at Tier")}{" "}{detailZone.tier}</h3>
-                  <p>
-                    {tr("This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.", { 0: detailZone.tier, 1: detailZone.tier === 2 ? 50 : 100 })}</p>
-                  <button
-                    className="primary-button"
-                    onClick={() => setTab("fuel")}
-                  >
-                    {tr("Staking")}{" "}<ArrowRight />
-                  </button>
-                </div>
-              }
+              lockedContent={<LockedZoneCard zone={detailZone} />}
             />
           )}
           {(tab === "wallet" || tab === "fuel") && (
@@ -4845,8 +4853,10 @@ export default function App() {
                     : player.wallets[0]?.account_id || ""
                 }
                 managed={invisible.status === "ready" && !!invisible.accountId}
+                explorerStatus={invisible.status}
                 cityName={world?.cityName}
                 onConnect={activateExplorer}
+                onLinkWallet={() => connectNear()}
                 onTransaction={operateNativeVault}
               />
             </ScreenTabPanel>
@@ -4908,6 +4918,9 @@ export default function App() {
                 key={player.id}
                 player={player}
                 orderSigner={orderSigner}
+                explorerAccount={invisible.accountId || ""}
+                explorerStatus={invisible.status}
+                onLinkWallet={() => connectNear()}
                 busy={busy}
                 onConnect={activateExplorer}
                 onTrade={tradeNative}
@@ -4931,55 +4944,40 @@ export default function App() {
           )}
           {tab === "messages" && (
             <ScreenTabPanel idBase="community" value="notes">
-            <div className="local-chat">
-            <ScreenTabs
-              label={tr("Local chat")}
-              idBase="chat"
-              variant="sub"
-              sticky={false}
-              tabs={LOCAL_CHAT_TABS}
-              value={chatView}
-              onChange={setChatView}
-            />
-            <ScreenTabPanel idBase="chat" value={chatView}>
-            {chatView === "topics" ? (
-              <PlaceMessages
-                key={player.id}
-                position={position}
-                fix={fix}
-                arena={arena && !nativePlay}
-                notify={notify}
-                onSpent={() => {
+            <LocalChat
+              places={{
+                position,
+                fix,
+                arena: arena && !nativePlay,
+                notify,
+                onSpent: () => {
                   void me();
                   void refreshGoldMap();
-                }}
-                openId={placeOpenId}
-                onOpened={clearPlaceOpen}
-                onPublish={recordAccount ? publishPlace : undefined}
-              />
-            ) : (
-            <MapNotes
-              key={player.id}
-              playerId={player.id}
-              position={position}
-              fix={fix}
-              arena={arena}
-              view={notesView}
-              notify={notify}
-              onViewChange={setNotesView}
-              recordAccount={recordAccount}
-              onRecord={recordNote}
-              onChange={() => void refreshMapNotes()}
-              openId={noteOpenId}
-              onOpened={clearNoteOpen}
-              onBlockChange={() => {
-                setOthers([]);
-                window.dispatchEvent(new Event("questlayer:social-blocks"));
+                },
+                openId: placeOpenId,
+                onOpened: clearPlaceOpen,
+                onPublish: recordAccount ? publishPlace : undefined,
               }}
+              chat={{
+                playerId: player.id,
+                position,
+                fix,
+                arena,
+                view: notesView,
+                notify,
+                onViewChange: setNotesView,
+                recordAccount,
+                onRecord: recordNote,
+                onChange: () => void refreshMapNotes(),
+                openId: noteOpenId,
+                onOpened: clearNoteOpen,
+                onBlockChange: () => {
+                  setOthers([]);
+                  window.dispatchEvent(new Event("questlayer:social-blocks"));
+                },
+              }}
+              key={player.id}
             />
-            )}
-            </ScreenTabPanel>
-            </div>
             </ScreenTabPanel>
           )}
           {tab === "bounties" && (
@@ -5186,6 +5184,9 @@ export default function App() {
           <strong>{tr("Connecting your explorer…")}</strong>
           <span>{tr("Approve the request in your wallet app.")}</span>
         </div>
+      )}
+      {lockedZoneDialog && player && !walletChoices && (
+        <LockedZoneDialog zone={lockedZoneDialog} onClose={() => setLockedZoneDialog(null)} />
       )}
       {walletChoices && (
         <Dialog label={walletChoiceKind === "evm" ? tr("Choose an Ethereum wallet") : tr("Choose a NEAR wallet")} onClose={() => chooseWallet(null)}>

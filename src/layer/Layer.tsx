@@ -33,9 +33,18 @@ export type PublicLayer = {
 };
 type Progress = { day: string; beacons: string[]; beaconGoal: number; built: number; buildGoal: number };
 type Home = { plot: LayerPlot; spawn: { x: number; y: number; z: number }; progress: Progress };
-type Notice = "own-plot" | "too-far" | "occupied" | "depth" | "saved-failed" | "activated";
+type Notice = "own-plot" | "too-far" | "occupied" | "depth" | "saved-failed" | "save-retry" | "activated";
+/** A batch of block edits with its request id, kept for a retry with the same id. */
+type EditBatch = { requestId: string; edits: BlockEdit[] };
 
 const OUTFIT_KEY = "questlayer.layer.outfit";
+/** Server limit per /api/layer/edit request (server/layer/store.mjs). */
+const LAYER_EDITS_PER_REQUEST = 32;
+const editBody = (plotId: string, b: EditBatch) => ({
+  plotId,
+  requestId: b.requestId,
+  edits: b.edits.map(({ x, y, z, block }) => ({ x, y, z, block })),
+});
 const HELP_KEY = "questlayer.layer.help-seen";
 const readLocal = (k: string) => {
   try {
@@ -90,6 +99,7 @@ const noticeText = (n: Notice) =>
     occupied: tr("You are standing there."),
     depth: tr("That is too deep or too high for your plot."),
     "saved-failed": tr("Your last blocks were not saved and were undone. Try again."),
+    "save-retry": tr("Connection problem. Your blocks are kept and will be saved when it is back."),
     activated: tr("Beacon activated!"),
   })[n];
 
@@ -147,6 +157,9 @@ export function Layer({
   const host = useRef<HTMLDivElement>(null),
     engine = useRef<LayerEngine | null>(null),
     pending = useRef<BlockEdit[]>([]),
+    retry = useRef<EditBatch | null>(null),
+    retryAt = useRef(0),
+    retries = useRef(0),
     inFlight = useRef(false),
     homeRef = useRef<Home | null>(null);
   const [home, setHome] = useState<Home | null>(null),
@@ -173,30 +186,63 @@ export function Layer({
     window.setTimeout(() => setNotice((v) => (v === n ? null : v)), 2600);
   }, []);
 
-  // Send queued edits in small batches; undo locally when the server refuses.
+  // Send queued edits in small batches. A refusal (4xx) undoes the batch; a
+  // lost connection or a server error keeps the blocks and retries the same
+  // request id, which the server applies at most once.
   const flush = useCallback(async () => {
     const h = homeRef.current;
-    if (inFlight.current || !h || !pending.current.length) return;
-    const batch = pending.current.splice(0, 32);
+    if (inFlight.current || !h) return;
+    if (retry.current && Date.now() < retryAt.current) return;
+    const batch: EditBatch | null =
+      retry.current ??
+      (pending.current.length
+        ? { requestId: crypto.randomUUID(), edits: pending.current.splice(0, LAYER_EDITS_PER_REQUEST) }
+        : null);
+    if (!batch) return;
+    retry.current = null;
     inFlight.current = true;
     setSaving("saving");
     try {
-      const result = await api<{ plot: LayerPlot }>("/layer/edit", {
-        plotId: h.plot.id,
-        requestId: crypto.randomUUID(),
-        edits: batch.map(({ x, y, z, block }) => ({ x, y, z, block })),
-      });
+      const result = await api<{ plot: LayerPlot }>("/layer/edit", editBody(h.plot.id, batch));
       h.plot = result.plot;
+      retries.current = 0;
       setProgress((p) => (p ? { ...p, built: result.plot.blocks ?? p.built } : p));
-      setSaving("saved");
-    } catch {
-      for (const e of [...batch].reverse()) engine.current?.applyLocal(e.x, e.y, e.z, e.previous);
-      flash("saved-failed");
-      setSaving("idle");
+      setSaving(pending.current.length ? "saving" : "saved");
+    } catch (e) {
+      const refused = e instanceof ApiError && e.status >= 400 && e.status < 500 && e.status !== 408 && e.status !== 429;
+      if (refused) {
+        for (const edit of [...batch.edits].reverse()) engine.current?.applyLocal(edit.x, edit.y, edit.z, edit.previous);
+        flash("saved-failed");
+        setSaving(pending.current.length ? "saving" : "idle");
+      } else {
+        retry.current = batch;
+        retries.current += 1;
+        retryAt.current = Date.now() + Math.min(10_000, 500 * 2 ** Math.min(retries.current, 5));
+        if (retries.current === 1 || retries.current % 5 === 0) flash("save-retry");
+      }
     } finally {
       inFlight.current = false;
     }
   }, [flash]);
+
+  /** Hands every unsaved block to the browser so it is sent even while the page closes. */
+  const flushOnLeave = useCallback(() => {
+    const h = homeRef.current;
+    if (!h) return;
+    const batches: EditBatch[] = [];
+    if (retry.current) batches.push(retry.current);
+    retry.current = null;
+    while (pending.current.length)
+      batches.push({ requestId: crypto.randomUUID(), edits: pending.current.splice(0, LAYER_EDITS_PER_REQUEST) });
+    for (const b of batches)
+      void fetch("/api/layer/edit", {
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(editBody(h.plot.id, b)),
+        keepalive: true,
+      }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -235,11 +281,12 @@ export function Layer({
         for (const p of plots) {
           const mine = p.id === data.plot.id;
           if (known.get(p.id) === p.revision) continue;
-          if (mine && known.has(p.id) && (pending.current.length || inFlight.current)) continue;
+          if (mine && known.has(p.id) && (pending.current.length || inFlight.current || retry.current)) continue;
+          // One failed plot must not keep every other plot stale.
           const full = await api<{ plot: LayerPlot; blocks: [number, number, number, number][] }>(
             `/layer/plot?id=${encodeURIComponent(p.id)}`,
-          );
-          if (active) view.setPlot(full.plot, full.blocks);
+          ).catch(() => null);
+          if (active && full) view.setPlot(full.plot, full.blocks);
         }
       };
       await syncPlots();
@@ -278,9 +325,15 @@ export function Layer({
     })().catch((e) => {
       if (active) setError(e instanceof ApiError || e instanceof Error ? e.message : tr("The layer could not open."));
     });
+    const hidden = () => document.visibilityState === "hidden" && flushOnLeave();
+    window.addEventListener("pagehide", flushOnLeave);
+    document.addEventListener("visibilitychange", hidden);
     return () => {
       active = false;
       timers.forEach((t) => clearInterval(t));
+      window.removeEventListener("pagehide", flushOnLeave);
+      document.removeEventListener("visibilitychange", hidden);
+      flushOnLeave();
       void fetch("/api/layer/leave", {
         method: "POST",
         credentials: "same-origin",

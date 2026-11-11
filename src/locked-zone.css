@@ -1,0 +1,35 @@
+/* Locked zone card and dialog (src/LockedZone.tsx). */
+.locked-zone-dialog .panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+.locked-zone-dialog .locked-zone-card {
+  border: 0;
+  padding: 0;
+  background: none;
+}
+.locked-zone-dialog .panel-heading h2 {
+  font-size: 18px;
+  margin: 0;
+}
+.locked-zone-card .locked-zone-note {
+  font-size: 14px;
+}
+.locked-zone-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+}
+.locked-zone-actions .primary-button {
+  width: 100%;
+  justify-content: center;
+}
+.locked-zone-how {
+  font-weight: 700;
+  color: #672eeb;
+}

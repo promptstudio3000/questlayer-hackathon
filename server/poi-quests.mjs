@@ -17,6 +17,7 @@ import { DatabaseSync } from "node:sqlite";
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { cellToParent, isValidCell, getResolution } from "h3-js";
 import { assert, distance, hash } from "./domain.mjs";
+import { organicRing } from "./spatial/organic-shape.mjs";
 import { atomic } from "./database.mjs";
 import { localDateBounds, shiftDate } from "./spatial/calendar.mjs";
 import { poiQuestActivity } from "./quest-templates.mjs";
@@ -367,16 +368,24 @@ export function planCellPoiQuests({
 // ---------------------------------------------------------------------------
 // Materialisation into a street world.
 
-function circle(p, radius = POI_TARGET_RADIUS_M, steps = 16) {
-  const ring = [];
-  for (let i = 0; i <= steps; i++) {
-    const a = ((i % steps) / steps) * Math.PI * 2;
-    ring.push([
-      Number((p.lng + (Math.cos(a) * radius) / (111320 * Math.cos((p.lat * Math.PI) / 180))).toFixed(7)),
-      Number((p.lat + (Math.sin(a) * radius) / 110540).toFixed(7)),
-    ]);
+// POI zones are irregular blobs, not circles (Lubos, 11 Nov 2026). The blob
+// stays at least ~0.73× the radius from the spot, wider than the 25 m visit check.
+const blob = (p, seed, radius = POI_TARGET_RADIUS_M) => organicRing(p, radius, seed, 20);
+
+// One place per street-world cell is a Tier 3 zone (Lubos, 11 Nov 2026): shown
+// on the map but locked until the explorer reaches Tier 3 in the vault
+// (server/staker-gates.mjs placeTier). It is a plain visit, never the chest,
+// a hunt or a clue, and only when the cell has at least three quests so the
+// free places stay. Tier 3 zones are bigger and pay double visit XP.
+export const POI_TIER3_RADIUS_M = 70;
+export const POI_TIER3_XP_FACTOR = 2;
+export function tier3PoiIndex(quests) {
+  if (quests.length < 3) return -1;
+  for (let i = quests.length - 1; i >= 0; i--) {
+    const q = quests[i];
+    if (!q.chest && q.template !== "poi-category-hunt" && q.template !== "landmark-clue") return i;
   }
-  return ring;
+  return -1;
 }
 
 export function isStreetWorld(manifest) {
@@ -480,6 +489,7 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
     const { opensAt, closesAt } = playWindow(current.day, current.timezone);
     const zones = [];
     const tag = street ? "" : `${target}-`;
+    const tier3 = street ? tier3PoiIndex(plan.quests) : -1;
     plan.quests.forEach((q, i) => {
       const slot = 100 + existing + i,
         zoneId = `${current.id}:zone:poi-${tag}${i}`,
@@ -491,14 +501,15 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
       const name = hunt
         ? `${label(q.category, true)[0].toUpperCase()}${label(q.category, true).slice(1)} hunt`
         : first.name || `${label(q.category)[0].toUpperCase()}${label(q.category).slice(1)}`;
+      const tier = i === tier3 ? 3 : 1;
       const geometry = hunt
-        ? { type: "MultiPolygon", coordinates: targets.map((t) => [circle(t)]) }
-        : { type: "Polygon", coordinates: [circle(first)] };
+        ? { type: "MultiPolygon", coordinates: targets.map((t, n) => [blob(t, `${zoneId}:${n}`)]) }
+        : { type: "Polygon", coordinates: [blob(first, zoneId, tier === 3 ? POI_TIER3_RADIUS_M : POI_TARGET_RADIUS_M)] };
       zones.push({
         id: zoneId,
         slot,
         name,
-        tier: 1,
+        tier,
         lat: first.lat,
         lng: first.lng,
         radius: 0,
@@ -511,7 +522,7 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
         poi: { category: q.category, ids: q.pois.map((p) => p.id) },
         opensAt,
         closesAt,
-        color: "#258b73",
+        color: tier === 3 ? "#c29222" : "#258b73",
       });
       const kind = q.chest ? "chest" : hunt ? "route" : "visit";
       const title = hunt
@@ -551,9 +562,9 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
         objective.slice(0, 280),
         targets.at(-1).lat,
         targets.at(-1).lng,
-        1,
+        tier,
         0,
-        q.chest ? POI_XP.chest : hunt ? POI_XP.hunt : clue ? POI_XP.clue : POI_XP.visit,
+        q.chest ? POI_XP.chest : hunt ? POI_XP.hunt : clue ? POI_XP.clue : POI_XP.visit * (tier === 3 ? POI_TIER3_XP_FACTOR : 1),
         kind,
         opensAt,
         closesAt,

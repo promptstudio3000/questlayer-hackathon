@@ -4,6 +4,7 @@ import { ChatsCircle, Flag, Megaphone, PaperPlaneRight, Trash, UserPlus, X } fro
 import { Dialog } from "./Dialog";
 import { NotePinArt } from "./NotePinArt";
 import { PinLine } from "./PinLine";
+import { ChatAvatar, distanceLabel } from "./ChatAvatar";
 import { remaining } from "./api";
 import { tr } from "./i18n";
 import {
@@ -27,7 +28,7 @@ import { EmptyState } from "./EmptyState";
 // Place messages (QGOLD stream 4): a shout is a short bubble at a place, paid
 // per day (at most 7). A topic is a discussion anyone can write in from
 // level 2; once enough different players have written it stays free for good.
-// The feed lists everything within 1–10 km.
+// The feed lists everything within the Local chat distance (1–100 km).
 const SORTS: { id: PlaceSort; label: () => string }[] = [
   { id: "latest", label: () => tr("Latest") },
   { id: "following", label: () => tr("Following") },
@@ -44,6 +45,8 @@ export function PlaceMessages({
   openId,
   onOpened,
   onPublish,
+  radiusKm = 3,
+  onOpenChange,
 }: {
   position: { lat: number; lng: number };
   fix: Fix | null;
@@ -55,9 +58,14 @@ export function PlaceMessages({
   onOpened?: () => void;
   /** Keep a message as a public record on NEAR Social (own account). */
   onPublish?: (targetId: string) => Promise<boolean>;
+  /** Local chat distance filter (1–100 km). */
+  radiusKm?: number;
+  /** A thread opened or closed: Local chat hides the chat under it meanwhile. */
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [radiusKm, setRadius] = useState(3);
-  const [sort, setSort] = useState<PlaceSort>("latest");
+  // The strip shows the most active first; "See all" lists every sort.
+  const [sort, setSort] = useState<PlaceSort>("popular");
+  const [all, setAll] = useState(false);
   const [feed, setFeed] = useState<PlaceFeed | null>(null);
   const [loadError, setLoadError] = useState("");
   const [open, setOpen] = useState<PlaceThread | null>(null);
@@ -77,6 +85,9 @@ export function PlaceMessages({
   useEffect(() => {
     void load();
   }, [load]);
+  useEffect(() => {
+    onOpenChange?.(!!open || all);
+  }, [open, all, onOpenChange]);
   useEffect(() => {
     if (!openId) return;
     placeOpen(openId).then((r) => setOpen(r.thread), (e) => notify(e.message, true));
@@ -98,7 +109,7 @@ export function PlaceMessages({
     return (
       <div className="place-thread">
         <button type="button" className="place-back" onClick={() => setOpen(null)}>
-          ← {tr("All messages")}
+          ← {all ? tr("All shouts and topics") : tr("Local chat")}
         </button>
         <header>
           <span className={`place-kind place-kind-${open.kind}`}>{open.kind === "shout" ? <Megaphone weight="duotone" /> : <ChatsCircle weight="duotone" />}</span>
@@ -176,8 +187,11 @@ export function PlaceMessages({
             )}
             <ul className="place-replies">
               {(open.replies || []).map((r) => (
-                <li key={r.id}>
-                  <b>{r.author.name}</b> {r.text}
+                <li key={r.id} className="place-reply-row">
+                  <ChatAvatar name={r.author.name} own={r.mine} size={28} />
+                  <span>
+                    <b>{r.mine ? tr("You") : r.author.name}</b> {r.text}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -205,55 +219,104 @@ export function PlaceMessages({
       </div>
     );
 
+  const openThread = (id: string) => run(async () => setOpen((await placeOpen(id)).thread));
+  const composeDialog = compose && (
+    <PlaceCompose
+      kind={compose}
+      position={position}
+      fix={fix}
+      arena={arena}
+      prices={prices}
+      notify={notify}
+      onClose={() => setCompose(null)}
+      onCreated={(thread) => {
+        setCompose(null);
+        onSpent();
+        setOpen(thread);
+        void load();
+      }}
+    />
+  );
+  const createButtons = (
+    <div className="community-head-actions">
+      <button type="button" className="is-quiet" onClick={() => setCompose("shout")}>
+        <Megaphone weight="duotone" aria-hidden="true" /> {tr("Shout")}
+      </button>
+      <button type="button" onClick={() => setCompose("topic")}>
+        <ChatsCircle weight="duotone" aria-hidden="true" /> {tr("Topic")}
+      </button>
+    </div>
+  );
+  const errorState = loadError && (
+    <div className="secondary-load-error" role="alert">
+      <EmptyState title={tr("Shouts & topics")} action={{ label: tr("Try again"), onClick: () => { setLoadError(""); void load(); } }}>{loadError}</EmptyState>
+    </div>
+  );
+
+  // Local chat top (Lubos, 11 Nov 2026): the most active shouts and topics
+  // around you as a swipeable strip above the chat.
+  if (!all)
+    return (
+      <section className="place-messages place-strip" aria-label={tr("Active around you")}>
+        <div className="community-head">
+          <h3>{tr("Active around you")}</h3>
+          {createButtons}
+        </div>
+        {composeDialog}
+        {errorState}
+        {!feed ? (
+          !loadError && <p className="place-strip-loading" role="status">{tr("Loading…")}</p>
+        ) : !feed.items.length ? (
+          <p className="place-strip-empty">{tr("No shouts or topics within {0} km yet. Start one.", { 0: radiusKm })}</p>
+        ) : (
+          <>
+            <ul className="place-strip-cards">
+              {feed.items.slice(0, 12).map((t) => (
+                <li key={t.id} className={`place-card place-kind-${t.kind}${t.mine ? " is-own" : ""}`}>
+                  <button type="button" onClick={() => openThread(t.id)}>
+                    <span className="place-card-kind">
+                      {t.kind === "shout" ? <Megaphone weight="fill" size={16} aria-hidden="true" /> : <ChatsCircle weight="fill" size={16} aria-hidden="true" />}
+                      {t.kind === "shout" ? tr("Shout") : tr("Topic")}
+                      {t.kind === "topic" && <span className="place-card-count">{tr("{0} posts", { 0: t.posts })}</span>}
+                    </span>
+                    <b>{t.title || t.text}</b>
+                    <span className="place-card-meta">
+                      <ChatAvatar name={t.author.name} own={t.mine} size={22} />
+                      <span>{t.mine ? tr("You") : t.author.name}</span>
+                      {t.distanceM !== undefined && <span>· {distanceLabel(t.distanceM)}</span>}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <button type="button" className="place-strip-all" onClick={() => setAll(true)}>
+              {tr("See all ({0})", { 0: feed.items.length })}
+            </button>
+          </>
+        )}
+      </section>
+    );
+
   return (
     <div className="place-messages">
+      <button type="button" className="place-back" onClick={() => setAll(false)}>
+        ← {tr("Local chat")}
+      </button>
       <div className="community-head">
-        <h2>{tr("Around you")}</h2>
-        <div className="community-head-actions">
-          <button type="button" className="is-quiet" onClick={() => setCompose("shout")}>
-            <Megaphone weight="duotone" aria-hidden="true" /> {tr("Shout")}
-          </button>
-          <button type="button" onClick={() => setCompose("topic")}>
-            <ChatsCircle weight="duotone" aria-hidden="true" /> {tr("Topic")}
-          </button>
-        </div>
+        <h3>{tr("Shouts & topics")}</h3>
+        {createButtons}
       </div>
-      {compose && (
-        <PlaceCompose
-          kind={compose}
-          position={position}
-          fix={fix}
-          arena={arena}
-          prices={prices}
-          notify={notify}
-          onClose={() => setCompose(null)}
-          onCreated={(thread) => {
-            setCompose(null);
-            onSpent();
-            setOpen(thread);
-            void load();
-          }}
-        />
-      )}
+      {composeDialog}
       <div className="place-filters" role="group" aria-label={tr("Feed")}>
         {SORTS.map((s) => (
           <button type="button" key={s.id} aria-pressed={sort === s.id} onClick={() => setSort(s.id)}>
             {s.label()}
           </button>
         ))}
-        <select value={radiusKm} onChange={(e) => setRadius(Number(e.target.value))} aria-label={tr("Radius")}>
-          {[1, 3, 10].map((k) => (
-            <option key={k} value={k}>
-              {tr("{0} km", { 0: k })}
-            </option>
-          ))}
-        </select>
       </div>
-      {loadError && <div className="secondary-load-error" role="alert">
-        <EmptyState title={tr("Places")} action={{ label: tr("Try again"), onClick: () => { setLoadError(""); void load(); } }}>{loadError}</EmptyState>
-      </div>}
+      {errorState}
       {!feed ? (!loadError && <EmptyState title={tr("Loading…")} status />) : !feed.items.length ? (
-        <EmptyState title={tr("No shouts or topics around you yet. Open the first one.")} />
+        <EmptyState title={tr("No shouts or topics within {0} km yet. Start one.", { 0: radiusKm })} />
       ) : (
         <ul className="community-rows place-feed-rows">
           {feed.items.map((t) => (
@@ -262,12 +325,13 @@ export function PlaceMessages({
                 {t.kind === "shout" ? <Megaphone weight="duotone" size={20} /> : <ChatsCircle weight="duotone" size={20} />}
               </span>
               <span className="community-row-body">
-                <button type="button" className="community-row-open" onClick={() => run(async () => setOpen((await placeOpen(t.id)).thread))}>
+                <button type="button" className="community-row-open" onClick={() => openThread(t.id)}>
                   <b>{t.title || t.text}</b>
                   {t.title && <p>{t.text}</p>}
                   <span className="community-row-meta">
                     {t.mine ? tr("You") : t.author.name}
                     {t.kind === "topic" ? ` · ${tr("{0} posts", { 0: t.posts })}` : ` · ${tr("Shout")}`}
+                    {t.distanceM !== undefined && ` · ${distanceLabel(t.distanceM)}`}
                   </span>
                 </button>
                 <PinLine at={t} you={position} title={t.title || t.text} />

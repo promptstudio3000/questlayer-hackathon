@@ -36,6 +36,7 @@ import {
   WAVES,
 } from "./policy.mjs";
 import { ensureMapRewardsSchema } from "./schema.mjs";
+import { organicRing } from "../spatial/organic-shape.mjs";
 
 export const PIONEER_CHEST_XP = 80;
 
@@ -50,22 +51,10 @@ export function waveCount(env = process.env) {
 
 const cellOf = (p) => latLngToCell(p.lat, p.lng, 7);
 
-function circle(p, radius, steps = 20) {
-  const ring = [];
-  for (let i = 0; i <= steps; i++) {
-    const a = ((i % steps) / steps) * Math.PI * 2;
-    ring.push([
-      Number(
-        (
-          p.lng +
-          (Math.cos(a) * radius) / (111320 * Math.cos((p.lat * Math.PI) / 180))
-        ).toFixed(7),
-      ),
-      Number((p.lat + (Math.sin(a) * radius) / 110540).toFixed(7)),
-    ]);
-  }
-  return ring;
-}
+// Cell zones and pioneer chests are irregular blobs, not circles (Lubos,
+// 11 Nov 2026); the spot seeds the shape, so it is the same on every read.
+const circle = (p, radius, steps = 20) =>
+  organicRing(p, radius, `${p.lat},${p.lng}:${radius}`, steps);
 
 /** Promote 1-3 of the cell's POI quests to funded cell zones. Returns zone ids. */
 function promoteCellZones(db, world, cell, count, zonesU, seed) {
@@ -77,6 +66,8 @@ function promoteCellZones(db, world, cell, count, zonesU, seed) {
       (z) =>
         z.source === "poi" &&
         !z.cellZone &&
+        // A Tier 3 place stays locked; its prize would sit out of reach.
+        (z.tier || 1) === 1 &&
         Number.isFinite(z.lat) &&
         cellOf(z) === cell,
     )

@@ -309,7 +309,7 @@ test("locked staker chips: Tier 2/3 lines show to free players, never as offers"
     assert.deepEqual(locked.map((c) => c.locked.tier), liveTiers, "one chip per higher tier");
     assert.deepEqual(
       locked.map((c) => c.locked.missing),
-      liveTiers.map((tier) => [`Reach Tier ${tier} (${tier === 2 ? 50 : 100} NEAR matured)`, "Reach level 6"]),
+      liveTiers.map((tier) => [`Reach Tier ${tier} (${tier === 2 ? 10 : 50} NEAR matured)`, "Reach level 6"]),
       "each chip says exactly what is missing (step and level)",
     );
     const lockedQuest = new Set(w.quests.filter((q) => q.tier > 1).map((q) => q.id));
