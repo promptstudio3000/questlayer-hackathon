@@ -2,7 +2,7 @@
   "version": 1,
   "cityId": "_generic",
   "note": "Generic cast for any city without its own reviewed file and for every active street cell (docs/WORLDS-PLAN.md C.6 W7). Original QuestLayer characters. No traders, keepers, guardians or bosses here: those touch the treasury or a reviewed zone, so they stay in reviewed city files. NPC homes resolve from safe POIs at plan time (homeFrom: poi). phase picks day (sunrise to sunset), night (after sunset) or any; per-cell caps hold separately for the day and night cast.",
-  "hours": ["07:00", "22:00"],
+  "hours": ["00:00", "23:59"],
   "actors": [
     {
       "id": "wayfinder-lenka",

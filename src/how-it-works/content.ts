@@ -1,7 +1,7 @@
 // Content for the "How it works" one-pager (docs/HOW-IT-WORKS-PLAN.md).
 // Numbers are read from the same rules files the server uses, so the page
 // cannot drift from the game: the level table, the staker gates and the
-// curated place badges. Season numbers mirror docs/SEASON.md defaults.
+// curated place badges.
 import levelTable from "../../server/data/level-table.json" with { type: "json" };
 import stakerGates from "../../server/data/staker-gates.json" with { type: "json" };
 import placeBadges from "../../server/data/place-badges.json" with { type: "json" };
@@ -16,7 +16,6 @@ export const CHAPTERS = [
   { id: "badges", get label() { return tr("Badges"); } },
   { id: "npcs", get label() { return tr("NPCs and traders"); } },
   { id: "staking", get label() { return tr("Staking"); } },
-  { id: "seasons", get label() { return tr("Seasons"); } },
   { id: "fair-play", get label() { return tr("Fair play"); } },
   { id: "join", get label() { return tr("How to join"); } },
 ] as const;
@@ -38,7 +37,7 @@ export const LEVEL_LADDER: readonly LevelRung[] = levelTable.levels.map((l) => (
 export const MAX_LEVEL = levelTable.maxLevel;
 
 export const STAKER_MIN_NEAR = Number(stakerGates.stakerMinNear);
-/** Vault tiers from docs/GAME-RULES.md E04 (1 NEAR = 1,000 GOLD, weighted by contribution). */
+/** Vault tiers (weighted stake), owner decision 11 Nov 2026: Tier 2 = 10 NEAR, Tier 3 = 50 NEAR (src/tier-stake.ts). */
 export { TIER_NEAR } from "../tier-stake.ts";
 
 type Step = "staker" | "tier2" | "tier3";
@@ -80,18 +79,7 @@ export const SAMPLE_PLACES = ["peak-snezka", "peak-lysa-hora", "landmark-prague-
   .slice(0, 4)
   .map((b) => ({ id: b.id, name: b.name, kind: b.kind }));
 
-export const SEASON = Object.freeze({
-  goal: 30,
-  points: [
-    { id: "hunt", get label() { return tr("Hunt"); }, points: 1 },
-    { id: "visit", get label() { return tr("Zone visit"); }, points: 2 },
-    { id: "line", get label() { return tr("NPC line"); }, points: 3 },
-  ],
-  ranks: ["Explorer", "Season finisher", "Trailblazer", "Season legend"],
-  lengthDays: 14,
-});
-
-/** Daily zones: 3 free, 2 Tier 2, 1 Tier 3 (docs/GAME-LOOPS.md §3). */
+/** Daily zones: 3 free, 2 Tier 2, 1 Tier 3 (server/spatial/city-pack.mjs). */
 export const DAILY_ZONES = [
   { id: "z1", tier: 1 },
   { id: "z2", tier: 1 },
