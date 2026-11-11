@@ -3,7 +3,11 @@ import { JsonRpcProvider, FailoverRpcProvider } from "near-api-js";
 export const TESTNET_RPC = "https://test.rpc.fastnear.com";
 export function createNearProvider(url = TESTNET_RPC) {
   const urls =
-    url === TESTNET_RPC ? [TESTNET_RPC, "https://testnet-rpc.intea.rs"] : [url];
+    // fastnear rate-limits the VPS under load (11 Nov 2026), so a second
+    // fallback keeps reads working; both answer the same JSON-RPC.
+    url === TESTNET_RPC
+      ? [TESTNET_RPC, "https://testnet-rpc.intea.rs", "https://near-testnet.drpc.org"]
+      : [url];
   const providers = urls.map(
     (url) =>
       new JsonRpcProvider({ url }, { retries: 2, wait: 250, backoff: 1.5 }),
