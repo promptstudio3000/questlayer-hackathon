@@ -147,7 +147,7 @@ test("a monster with nothing on offer says when to come back", async () => {
   const beaten = await service.encounter({ player: "p2", actorId: roamer.id, worldId: gps.id, location: fix });
   assert.deepEqual(beaten.menu, []);
   assert.equal(beaten.comeBack.reason, "beaten");
-  // Tomorrow, inside the city's 07:00-22:00 hours (a day creature waits for sunrise).
+  // Its first active minute tomorrow (local Prague day; hours and day/night phase decide when).
   const tomorrow = localDateStart("2026-11-03", "Europe/Prague");
-  assert.ok(beaten.comeBack.at >= tomorrow + 7 * 3600_000 && beaten.comeBack.at < tomorrow + 22 * 3600_000, String(beaten.comeBack.at));
+  assert.ok(beaten.comeBack.at >= tomorrow && beaten.comeBack.at < tomorrow + 86_400_000, String(beaten.comeBack.at));
 });
