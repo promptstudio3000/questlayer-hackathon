@@ -4846,8 +4846,10 @@ export default function App() {
                     : player.wallets[0]?.account_id || ""
                 }
                 managed={invisible.status === "ready" && !!invisible.accountId}
+                explorerStatus={invisible.status}
                 cityName={world?.cityName}
                 onConnect={activateExplorer}
+                onLinkWallet={() => connectNear()}
                 onTransaction={operateNativeVault}
               />
             </ScreenTabPanel>
