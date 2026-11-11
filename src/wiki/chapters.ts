@@ -167,7 +167,7 @@ export const CHAPTERS: Chapter[] = [
     tldr: "Pokémon GO, Geocaching and PoolTogether in one: **stake to play and lose nothing**. Your principal stays yours, a share of its yield goes to one global treasury, and every day that yield becomes rewards on real streets, paid as **QGOLD**, fully backed by NEAR.",
     keyFacts: [
       ["100 %", "of your stake's principal stays yours"],
-      ["0", "wallets or deposits needed to start"],
+      ["1 coin", "QGOLD in every layer, whatever a layer names it"],
       ["5 min", "between QGOLD payout rounds"],
       ["100 %", "of QGOLD backed by NEAR"],
     ],
@@ -385,16 +385,16 @@ export const CHAPTERS: Chapter[] = [
     id: "npcs-and-monsters",
     group: "play",
     title: "NPCs, monsters and mini-games",
-    tldr: "NPCs walk real paths from 07:00 to 22:00 and offer quests, errands, trades and stories. **The server decides every offer; the AI only phrases it.** Monsters are beaten by skill, never by paying or wagering.",
+    tldr: "NPCs walk real paths **around the clock** and offer quests, errands, trades and stories. **The server decides every offer; the AI only phrases it.** Monsters are beaten by skill, never by paying or wagering.",
     keyFacts: [
-      ["07–22", "NPCs and monsters out, local time"],
+      ["24/7", "NPCs and monsters on the map, day and night"],
       ["1 h", "cooldown after a lost duel"],
       ["1,200 HP", "weekly shared boss"],
       ["12", "element shards a day at most"],
     ],
     hero: "actor-dialog",
     status: "live",
-    updated: "2026-11-09",
+    updated: "2026-11-11",
     sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs"],
     blocks: [
       { h: "Who walks the map" },
@@ -402,7 +402,7 @@ export const CHAPTERS: Chapter[] = [
         table: {
           head: ["Archetype", "What it does"],
           rows: [
-            ["Quest giver", "Quest lines and one errand a day; patron lines for stakers. Out day and night (07:00–22:00)"],
+            ["Quest giver", "Quest lines and one errand a day; patron lines for stakers. Out day and night, around the clock"],
             ["Storyteller", "Story chapters; a patron chapter for stakers"],
             ["Trader", "Buys and sells Auras on NEAR Intents with a purse that must grow"],
             ["Keeper", "Shows your stake, ceremonies and the inner vault (read-only)"],
@@ -433,7 +433,7 @@ export const CHAPTERS: Chapter[] = [
         ],
       },
       { h: "Golden Altar" },
-      { p: "Shards plus common Auras craft rarer existing editions: Wardbreaker (10 shards + 1 common + a guardian win), Polar (6 frost + 1 common), Comet, Storm and Moon (8 element shards + 2 commons + a guardian win). The daily offering limit rises at L6." },
+      { p: "The Golden Altar is a crafting spot. An **offering** is what you lay on it: shards plus common Auras, which the altar consumes and turns into one rarer existing edition. Recipes: Wardbreaker (10 shards + 1 common + a guardian win), Polar (6 frost + 1 common), Comet, Storm and Moon (8 element shards + 2 commons + a guardian win). You can make a few offerings a day; the limit rises at L6." },
       { h: "Wisp rolls" },
       { viz: "wisp-roll" },
       { p: "A lurker quiz win earns a roll ticket. The roll runs on chain with commit-reveal and NEAR block randomness, so neither the server nor the player can bias it. Tickets are earned only; nothing can be bought or wagered." },
@@ -452,10 +452,10 @@ export const CHAPTERS: Chapter[] = [
     id: "collectibles",
     group: "play",
     title: "Auras and collectibles",
-    tldr: `Auras are wearable effects in two slots: ${EDITIONS.length} editions, capped at ${SUPPLY_PER_EDITION} each, minted as NFTs on NEAR. Chest, level and roll Auras are **secured to your account automatically**, with no wallet pop-up.`,
+    tldr: `Auras are wearable effects in two slots, ${EDITIONS.length} designs minted as NFTs on NEAR. They **come as rewards**: for quests, from zone chests and monsters, and waiting on the map, more of them in harder places. Chest, level and roll Auras are **secured to your account automatically**, with no wallet pop-up.`,
     keyFacts: [
       [String(EDITIONS.length), "Aura editions"],
-      [String(SUPPLY_PER_EDITION), "at most per edition"],
+      ["Rewards", "the only way Auras enter the game"],
       ["2", "slots: above and below the character"],
       ["2 %", "royalty to the treasury on resales"],
     ],
@@ -490,6 +490,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "Claim-only editions mint only for their claim prefix; chests never drop them.",
+          `Auras are not meant to have a capped supply: they keep appearing as rewards. Today the testnet collectibles contract still numbers serials up to ${SUPPLY_PER_EDITION} per edition; lifting that limit needs a contract upgrade.`,
           "Earned editions are awarded **once per player ever** (`earned_editions` ledger). Set bonuses are cosmetic.",
           "Confirmed results show the set, serial and edition limit; that limit is never labelled as remaining stock.",
         ],
@@ -528,6 +529,15 @@ export const CHAPTERS: Chapter[] = [
           "Picking one up is a normal street claim (GPS check, travel guard, XP caps). The clone is a database row, never an NFT: not tradable, no GOLD value. It lands in Inventory → Wardrobe.",
           "One item per slot (head, face, eyes, body, hand, pet), drawn at its official canvas place.",
           "**Verified originals:** link a Base wallet with a signed message and every clone whose original is in that wallet gets a gold check for 24 hours after the last read. Others see only verified, never the address.",
+        ],
+      },
+      { h: "Why Aavegotchi" },
+      {
+        list: [
+          "**Open dataset.** Every wearable, its slot, rarity and pixel art lives openly in the Aavegotchi contract on Base, so the game reads it live instead of drawing or licensing its own catalogue.",
+          "**A community that makes games.** Aavegotchi players already build and play games together (the Gotchiverse and many community titles), so QuestLayer joins an ecosystem instead of starting one. The team behind QuestLayer is part of that community.",
+          "**It looks good.** The pixel ghosts and wearables read well on a small phone map and match the game's style.",
+          "**Room to grow.** Real ownership (originals verified in a wallet), a working renderer for restyled looks, and a marketplace that later lets real wearables move between games. The same ghosts can walk the map, a voxel layer and other community games.",
         ],
       },
       { h: "Your own Aavegotchis" },
@@ -674,6 +684,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "Each community gets its own layer: its own seed, name and coin name. The first is Space Layer with the coin MINECOIN.",
           "Every layer uses the QGOLD mechanics; its share of the daily staking yield follows what its players staked, and its coin pays for tasks made in the layer.",
+          "A layer can call its coin whatever it likes (MINECOIN, for example), but it is always the same coin: QGOLD, backed by the same vault, at the same rate R.",
           "**None of this is active.** Nothing in a layer pays or costs anything yet: no coin balance, staking, treasury, task payment, XP or items.",
         ],
       },
@@ -854,7 +865,7 @@ export const CHAPTERS: Chapter[] = [
       { p: "**Staked NEAR** sits in the treasury's keyless staking vaults (validator pools, 100 % of the yield to the prize pool). The mix counts these positions, valued at staked + unstaked, but never moves them: new stake goes through the staking script, spread over several validators. The liquid rest (stablecoins, liquid staking tokens, wNEAR) is what a daily run rebalances; with most of the treasury staked, its drift is measured against the liquid part. The stablecoin share is split evenly between USDC and USDT." },
       { p: "Order of a daily run: harvest stNEAR growth above the principal, rebalance toward the target, keep the reserve. The target is the mix the treasury DAO adopted, and a rebalance runs only on a day whose run the DAO approved (see the next chapter). The live split comes from `/api/treasury/mix`." },
       { h: "From yield to a daily budget" },
-      { p: "Try it: the treasury size and the blended yield decide how much the map can pay every day without touching principal." },
+      { p: "Try it: the treasury size and the yield of the 90 / 5 / 5 mix decide how much the map can pay every day without touching principal. On testnet only validator staking earns (about 9.8 % a year), so the stablecoin slider starts at 0." },
       { viz: "yield-sim" },
       { h: "Three yield sources" },
       {
@@ -933,6 +944,7 @@ export const CHAPTERS: Chapter[] = [
     updated: "2026-11-11",
     sources: ["docs/QGOLD-VAULT.md", "docs/QGOLD-MARKET.md", "contracts/qgold/src/lib.rs", "server/qgold/keeper.mjs", "server/qgold/token-page.mjs"],
     blocks: [
+      { p: "**One coin, many names.** The game shows QGOLD as GOLD, and every layer may give it its own name (Space Layer plans MINECOIN). Whatever the label, it is the same QGOLD token with the same backing and the same rate R." },
       { h: "Actions" },
       {
         table: {
@@ -1030,7 +1042,7 @@ export const CHAPTERS: Chapter[] = [
     tldr: `Stake **${STAKER_MIN_NEAR} NEAR** (about 5 €) to become a Staker; Tier 2 and Tier 3 follow your weighted stake. Perks open by step **and** level, are things to do or wear, and never change odds or payouts. Your principal stays yours.`,
     keyFacts: [
       [`${STAKER_MIN_NEAR} NEAR`, "matured stake for the Staker step"],
-      ["50 / 100 NEAR", "for Tier 2 / Tier 3"],
+      ["10 / 50 NEAR", "for Tier 2 / Tier 3"],
       ["0–100 %", "of your yield you choose to give"],
       ["60 epochs", "to the top patron rank, Hearthfire"],
     ],
@@ -1145,8 +1157,8 @@ export const CHAPTERS: Chapter[] = [
     title: "Accounts, wallets and the relayer",
     tldr: "The blockchain is invisible: every explorer automatically gets an **own NEAR account** whose key never leaves the device, the game pays the gas for every game action, and recovery works with a passkey or a linked wallet.",
     keyFacts: [
-      ["0.02 NEAR", "deposit per new account, testnet and mainnet"],
-      ["1 × a day", "Refuel back to 0.02 NEAR when below half"],
+      ["1 ×", "small NEAR deposit, only when the account is created"],
+      ["0", "gas paid by the player for game actions"],
       ["0", "player keys held by the server"],
       ["2 NEAR/day", "sponsorship cap planned for mainnet"],
     ],
@@ -1158,8 +1170,8 @@ export const CHAPTERS: Chapter[] = [
       { h: "Your explorer account" },
       {
         list: [
-          "A new explorer gets `<name>.play-…testnet`, funded with 0.02 NEAR (the same on mainnet), once they earned their first XP on the map; the first steps play solo without it. New accounts per network address are capped per day.",
-          "Gas is always sponsored. The small balance only covers the account's storage and the player's own payments (Aura buys, deposits), which the relayer never sponsors. When it drops below half, Profile → Stake → Earnings offers **Refuel** back to 0.02 NEAR once a UTC day (inside the 0.05 NEAR per-account daily top-up cap and the shared sponsorship budget), **Convert QGOLD to NEAR** at the vault, or **Add your own NEAR** from any wallet.",
+          "A new explorer gets `<name>.play-…testnet`, funded with a small NEAR deposit once, when the account is created, after they earned their first XP on the map; the first steps play solo without it. New accounts per network address are capped per day.",
+          "Gas is always sponsored. The small balance only covers the account's storage and the player's own payments (Aura buys, deposits), which the relayer never sponsors. When it drops below half, Profile → Stake → Earnings offers **Refuel** once a UTC day (inside a per-account daily top-up cap and the shared sponsorship budget), **Convert QGOLD to NEAR** at the vault, or **Add your own NEAR** from any wallet.",
           "Every in-game action (tasks, Secrets, Aura listings and equipment, staking, level rewards, badges, profile and note records) signs with this account, without a wallet pop-up. Before it exists, **Activate my account** prepares it.",
           "The device key lives in a separate signing origin, deployed with the game. If a browser blocks its storage, no account is created, Profile → Settings → Account and devices says so, and free play continues. Keys made before that origin are not rotated yet.",
           "Purchases, equipment, earned mini-games and getting ready to trade sign silently. Anything that can pay someone else (a sale or purchase, a task, Secret or send, a withdrawal, an asset transfer) and account recovery ask one plain Yes / No question in a small separate window, which a compromised game page cannot answer.",
@@ -1313,34 +1325,6 @@ export const CHAPTERS: Chapter[] = [
         ],
       },
       { viz: "ci-gates" },
-    ],
-  },
-  {
-    id: "maintaining",
-    group: "platform",
-    title: "How this wiki stays current",
-    tldr: "A mechanism change is not done until its chapter is: **CI fails** when a source doc changed but the chapter was not reviewed and stamped.",
-    keyFacts: [
-      ["1 PR", "mechanism and chapter change together"],
-      ["`wiki:stamp`", "records the reviewed docs"],
-      ["TL;DR first", "short text, key numbers, one picture"],
-      ["0", "secrets, keys or private hosts (tested)"],
-    ],
-    hero: "wiki-loop",
-    status: "live",
-    updated: "2026-11-11",
-    sources: ["docs/WIKI.md", "AGENTS.md", "scripts/wiki-check.mjs", "tests/wiki.test.mjs"],
-    blocks: [
-      {
-        list: [
-          "Each chapter lists its sources; a hash of every source doc is kept in `docs/wiki-stamps.json`.",
-          "When a mechanism doc changes, `npm test` fails until the chapter is reviewed and `npm run wiki:stamp` records the new hashes.",
-          "A new doc must join a chapter's sources or be marked as not a mechanism (plans, audits, hand-offs) in `docs/wiki-coverage.json`.",
-          "Every chapter has a short TL;DR, at most four key numbers and details folded below; the test enforces the limits.",
-          "Rule tables are imported from their owning files. The page never names events or contains secrets, keys or private hosts; the test checks the copy.",
-          "Outside coding agents work from `docs/HANDOFF-WEEKEND.md`; a protected-paths CI guard lists protected files a pull request touches and fails anything that looks like a secret.",
-        ],
-      },
     ],
   },
 ];
