@@ -186,6 +186,7 @@ import * as game from "./game.mjs";
 import { createActorRoutes } from "./actors/routes.mjs";
 import { actorsAllDay, actorsEnabled, createActorService } from "./actors/service.mjs";
 import { testSeedMode as readTestSeedMode } from "./test-seed/config.mjs";
+import { demoZoneMode } from "./demo-zones.mjs";
 import { createTestSeed } from "./test-seed/seed.mjs";
 import "./npc/menu-builder.mjs";
 import { createNpcService } from "./npc/service.mjs";
@@ -266,6 +267,8 @@ ensureMapReadIndexes(db);
 ensureHotPathIndexes(db);
 // Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
 const testSeedMode = readTestSeedMode(process.env, NETWORK);
+// Compact always-open demo zones (docs/DEMO-ZONES.md); throws on mainnet.
+const demoZones = demoZoneMode(process.env, NETWORK);
 const testSeedKit = process.env.TEST_SEED_KIT === "1";
 const adventureResults = createAdventureResults(db);
 const socialContent = new SocialContent(db);
@@ -1515,6 +1518,7 @@ async function api(req, res, url) {
         ? socialRecords.workerStatus()
         : { status: "not-configured" },
       testSeed: testSeedActive ? testSeed.status() : { status: "off" },
+      demoZones: demoZones || "off",
       npcRolls: npcRolls
         ? {
             status: (await npcRolls.readiness()).ok ? "ready" : "off",

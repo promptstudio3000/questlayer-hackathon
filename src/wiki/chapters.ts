@@ -223,11 +223,14 @@ export const CHAPTERS: Chapter[] = [
     title: "Zones, quests and the daily board",
     summary: "Six city zones a day, POI quests in every street cell, landmark clues, NPC errands and three daily goals.",
     status: "live",
-    updated: "2026-11-09",
-    sources: ["docs/WORLD-GENERATION.md", "docs/LANDMARK-ERRANDS.md", "docs/DAILY-BOARD.md", "docs/QUEST-TEMPLATES.md", "server/world-planner.mjs", "server/poi-quests.mjs", "server/landmark-clue.mjs", "server/npc/routes.mjs", "src/DailyBoard.tsx", "src/actors-layer.ts"],
+    updated: "2026-11-11",
+    sources: ["docs/WORLD-GENERATION.md", "docs/DEMO-ZONES.md", "server/demo-zones.mjs", "docs/LANDMARK-ERRANDS.md", "docs/DAILY-BOARD.md", "docs/QUEST-TEMPLATES.md", "server/world-planner.mjs", "server/poi-quests.mjs", "server/landmark-clue.mjs", "server/npc/routes.mjs", "src/DailyBoard.tsx", "src/actors-layer.ts"],
     blocks: [
       {
         p: "A reviewed city (Plzeň today) gets **six citywide zone slots** every day: varied, non-overlapping polygons that need real movement between them. A zone is marked by a tall 3D totem showing its type, a translucent wall, an aura on the ground and the loot it holds. Rarer zones open for a shorter window, and the countdown is visible to everybody.",
+      },
+      {
+        p: "**Demo layout (testnet now).** For the demo, Plzeň runs a compact layout: all six zones sit on the ring of parks around náměstí Republiky (náměstí Republiky, sady Pětatřicátníků North and West, Smetanovy sady, Šafaříkovy sady, sady 5. května), each within about 400 m of the start, and every zone, the rarer ones too, is open the whole day with no countdown. Zone chests, their guardians, NPCs and monsters stay near the centre too. The table below is the normal rule, which returns when `DEMO_ZONES` is switched off.",
       },
       { viz: "day-clock" },
       {
