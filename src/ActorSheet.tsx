@@ -35,7 +35,7 @@ const MonsterChallenge = optional(import.meta.glob("./MonsterChallenge.tsx"), "M
 const BossFight = lazy(async () => ({ default: (await import("./BossFight")).BossFight }));
 
 const PROBLEM: Record<string, string> = {
-  get OUT_OF_RANGE() { return tr("Too far away. Walk closer: you need to be within about 35 m."); },
+  get OUT_OF_RANGE() { return tr("Too far. Get within 35 m."); },
   get GPS_ACCURACY() { return tr("Your GPS is not precise enough yet. Step into the open and try again."); },
   get GPS_STALE() { return tr("Waiting for a fresh location. Try again in a moment."); },
   get IMPLAUSIBLE_MOVE() { return tr("Your location jumped too fast. Wait for a steady GPS fix."); },
@@ -52,8 +52,11 @@ export function ActorSheet({
   worldId,
   location,
   onQuest,
+  onGo,
   onClose,
 }: {
+  /** Too far to meet: one tap marks the character on the map instead. */
+  onGo?: () => void;
   actor: ActorView;
   playerId: string;
   worldId: string;
@@ -64,7 +67,7 @@ export function ActorSheet({
   const [state, setState] = useState<
     | { kind: "loading" }
     | { kind: "ready"; encounter: ActorEncounter }
-    | { kind: "error"; message: string; retry: boolean }
+    | { kind: "error"; message: string; retry: boolean; far?: boolean }
   >({ kind: "loading" });
   const [handoff, setHandoff] = useState<"npc" | "challenge" | "boss" | null>(null);
   // The format picked here starts right away: the challenge sheet never asks again.
@@ -94,6 +97,7 @@ export function ActorSheet({
         kind: "error",
         message: PROBLEM[code] || (e instanceof ApiError ? e.message : tr("Could not reach the game. Try again.")),
         retry: code !== "ACTORS_DISABLED",
+        far: code === "OUT_OF_RANGE",
       });
     }
   }
@@ -158,7 +162,9 @@ export function ActorSheet({
         {state.kind === "error" && (
           <div className="actor-status actor-problem" role="alert">
             <p>{state.message}</p>
-            {state.retry && (
+            {state.far && onGo ? (
+              <button className="primary-button" onClick={() => { onClose(); onGo(); }}>{tr("Go")}</button>
+            ) : state.retry && (
               <button className="secondary-button" onClick={() => void meet()}>
                 {tr("Try again")}</button>
             )}
@@ -166,11 +172,9 @@ export function ActorSheet({
         )}
         {ready && (
           <>
-            <p className="actor-status" role="status">
-              {tr("You are")}{" "}{ready.distanceM} {" "}{tr("m away. This meeting lasts 5 minutes.")}</p>
             {ready.actor.boss && (
               <p className="actor-note">
-                {tr("Shared boss health:")}{" "}{ready.actor.boss.hp} / {ready.actor.boss.maxHp} · {ready.actor.boss.participants} {" "}{tr("hunters this week.")}</p>
+                {tr("HP {0}/{1} · {2} hunters", { 0: ready.actor.boss.hp, 1: ready.actor.boss.maxHp, 2: ready.actor.boss.participants })}</p>
             )}
             {ready.actor.state === "defeated" && (
               <p className="actor-note">{tr("You already beat this one today.")}</p>

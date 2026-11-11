@@ -14,6 +14,12 @@ import { extraQuestLines, extraStoryChapters } from "../levels.mjs";
 import { MAX_PATRON_LINES_PER_DAY, PATRON_PATH_LINES, patronEditionLive, patronGateKey } from "./patron-path.mjs";
 import { checkGate, defaultStakerGates, stakerAccess } from "../staker-gates.mjs";
 
+// Short offer names: the places a walk visits, never a sentence.
+function placesOf(line, zones) {
+  const names = [...new Set(line.map((q) => zones.get(q.zone_id)?.name).filter(Boolean))];
+  return (names.length ? names : line.map((q) => q.title)).join(" → ");
+}
+
 export const NPC_OFFER_POLICY = "npc-offers-v1";
 export const LINE_XP_PER_STEP = 20;
 export const LINE_BONUS_XP = 10;
@@ -125,7 +131,7 @@ export function lockedOffers({
           {
             id: `locked:${hash(`${actor.id}|${world.id}|patron-path`).slice(0, 16)}`,
             kind: "patron_path",
-            label: `Patron's Path, step ${Math.min(patronDone + 1, PATRON_PATH_LINES)} of ${PATRON_PATH_LINES}: ${quest ? "a patron walk" : "a patron chapter"}`,
+            label: `Patron's Path ${Math.min(patronDone + 1, PATRON_PATH_LINES)}/${PATRON_PATH_LINES}`,
             perk: "A patron story chapter and XP; the last step earns the patron Aura",
             locked: {
               step: pathGate.need?.step || "staker",
@@ -155,7 +161,7 @@ export function lockedOffers({
       return {
         id: `locked:${hash(`${seed}|${q.id}`).slice(0, 16)}`,
         kind: quest ? "patron_quest" : "patron_chapter",
-        label: `${quest ? "Patron walk" : "Patron chapter"}: ${q.title}${zone ? ` in ${zone}` : ""}`.slice(0, 120),
+        label: `${quest ? "Patron walk" : "Patron chapter"}: ${zone || q.title}`.slice(0, 120),
         perk: quest ? "A walk into a patron zone, XP and an Aura" : "A patron chapter in a patron zone, with XP",
         locked: {
           tier: q.tier,
@@ -232,12 +238,11 @@ export function buildMenu({
       const offerId = `quest:${hash(`${seed}|patron|${line.map((q) => q.id).join(",")}`).slice(0, 16)}`;
       line.forEach((q) => used.add(q.id));
       if (!done.has(offerId)) {
-        const where = line.map((q) => `${q.title}${zones.get(q.zone_id) ? ` in ${zones.get(q.zone_id).name}` : ""}`);
         const pathLine = Math.min(patronDone + 1, PATRON_PATH_LINES);
         offers.push({
           id: offerId,
           kind: "quest",
-          label: `Patron walk: ${where.join(", then ")}`.slice(0, 120),
+          label: `Patron walk: ${placesOf(line, zones)}`.slice(0, 120),
           terms: {
             steps: line.map((q) => stepView(q, zones)),
             xp: LINE_XP_PER_STEP * line.length + LINE_BONUS_XP,
@@ -266,7 +271,7 @@ export function buildMenu({
         offers.push({
           id: offerId,
           kind: "quest",
-          label: `Errand: ${errand.clue ? "find out about" : "check on"} ${zone.name} and come back`.slice(0, 120),
+          label: `Errand: ${zone.name}`.slice(0, 120),
           terms: {
             steps: [stepView(errand, zones)],
             xp: ERRAND_XP,
@@ -297,11 +302,15 @@ export function buildMenu({
       line.forEach((q) => used.add(q.id));
       if (done.has(offerId)) continue;
       const xp = LINE_XP_PER_STEP * line.length + LINE_BONUS_XP;
-      const where = line.map((q) => `${q.title}${zones.get(q.zone_id) ? ` in ${zones.get(q.zone_id).name}` : ""}`);
+      // Two walks through the same places differ by what the last stop is.
+      const walkLabel = (steps) => {
+        const base = `Walk: ${placesOf(steps, zones)}`;
+        return (offers.some((o) => o.label === base) ? `${base} · ${steps[steps.length - 1].title}` : base).slice(0, 120);
+      };
       offers.push({
         id: offerId,
         kind: "quest",
-        label: `Walk: ${where.join(", then ")}`.slice(0, 120),
+        label: walkLabel(line),
         terms: {
           steps: line.map((q) => stepView(q, zones)),
           xp,
@@ -321,7 +330,7 @@ export function buildMenu({
         offers.push({
           id: offerId,
           kind: "chapter",
-          label: `Patron chapter: ${scene.title}${zones.get(scene.zone_id) ? ` in ${zones.get(scene.zone_id).name}` : ""}`.slice(0, 120),
+          label: `Patron chapter: ${zones.get(scene.zone_id)?.name || scene.title}`.slice(0, 120),
           terms: {
             steps: [stepView(scene, zones)],
             xp: CHAPTER_XP,
@@ -345,7 +354,7 @@ export function buildMenu({
       offers.push({
         id: offerId,
         kind: "chapter",
-        label: `Chapter: ${q.title}${zones.get(q.zone_id) ? ` in ${zones.get(q.zone_id).name}` : ""}`.slice(0, 120),
+        label: `Chapter: ${zones.get(q.zone_id)?.name || q.title}`.slice(0, 120),
         terms: {
           steps: [stepView(q, zones)],
           xp: CHAPTER_XP,

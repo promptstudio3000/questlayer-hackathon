@@ -1,45 +1,14 @@
 .game-dialog-map .quest-brief { display: grid; gap: 16px; text-align: center; }
-.game-dialog-map .quest-brief .quest-detail-art { float: none; margin: 0 auto; width: 80px; height: 80px; display: grid; place-items: center; }
-.game-dialog-map .quest-brief .quest-detail-art .game-object-art { max-width: 100%; max-height: 100%; object-fit: contain; }
-.game-dialog-map .quest-brief h2 { margin: 0; font-size: 28px; line-height: 1.2; }
 .game-dialog-map .quest-brief > p { margin: 0; }
 .game-dialog-map .quest-brief .quest-brief-status { font-size: 14px; color: var(--ink-secondary); }
 .quest-brief-progress strong { font-size: 16px; color: var(--ink); }
 .quest-brief-rewards { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px 16px; padding: 12px; border-radius: 12px; background: var(--surface-soft); }
 .quest-brief-rewards > span { display: inline-flex; align-items: center; gap: 6px; font-size: 16px; }
 .quest-brief-rewards svg { width: 22px; height: 22px; flex: none; color: var(--action); }
-.quest-brief-facts { list-style: none; padding: 0; margin: 0; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px 20px; color: var(--ink-secondary); }
-.quest-brief-facts li, .quest-brief-next { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 14px; }
-.quest-brief-facts svg, .quest-brief-next svg { flex: none; width: 20px; height: 20px; }
 .quest-brief .quest-brief-requirement { font-size: 14px; color: var(--ink-secondary); }
 .quest-brief .primary-button { width: 100%; justify-content: center; gap: 12px; }
-.quest-brief-more { text-align: start; font-size: 14px; color: var(--ink-secondary); }
-.quest-brief-more > summary { display: flex; min-height: 48px; align-items: center; justify-content: center; cursor: pointer; color: var(--action); text-decoration: underline; }
-.quest-brief-more > summary::-webkit-details-marker { display: none; }
-.quest-brief-more p { font-size: 14px; line-height: 1.5; }
-.quest-brief .activity-picker { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; }
-.quest-brief .activity-picker button { flex: 1 1 88px; min-width: 0; min-height: 48px; display: flex; align-items: center; justify-content: center; gap: 8px; padding: 8px; border: 1px solid var(--control-border); border-radius: var(--radius-control); color: var(--ink); background: var(--surface-soft); font-size: 14px; }
-.quest-brief .activity-picker button[aria-pressed="true"] { color: var(--on-action); background: var(--action); border-color: var(--action); }
-.quest-brief .activity-picker button .game-object-art { flex: none; width: 28px; height: 28px; }
 .activity-step-diagram { display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: center; gap: 8px; list-style: none; padding: 0; margin: 0; }
 .activity-step-diagram li { display: grid; justify-items: center; gap: 4px; min-width: 36px; }
 .activity-step-diagram li > span { display: grid; place-items: center; min-width: 32px; height: 32px; border: 1px solid var(--control-border); border-radius: 8px; background: var(--surface-soft); font-size: 16px; }
 .activity-step-diagram li[data-done] > span { background: var(--success-surface); color: var(--success); }
 .activity-step-diagram small { font-size: 14px; }
-.zone-activity-kinds { margin: 4px 0; font-size: 14px; line-height: 1.4; color: var(--ink-secondary); }
-.game-dialog-map:has(.quest-brief) .panel-heading h1 { font-size: 16px; color: var(--ink-secondary); font-weight: 400; }
-@media (max-height: 500px) and (min-width: 600px) {
-  .game-dialog-map .quest-brief { grid-template-columns: 80px minmax(0, 1fr) minmax(144px, .65fr); gap: 12px; text-align: start; }
-  .game-dialog-map .quest-brief .quest-detail-art { grid-column: 1; grid-row: 2 / 5; width: 80px; height: 80px; }
-  .game-dialog-map .quest-brief .activity-picker { grid-column: 1 / -1; }
-  .quest-brief > :not(.quest-detail-art) { grid-column: 2; }
-  .game-dialog-map .quest-brief .quest-brief-status { grid-column: 2; grid-row: 2; }
-  .game-dialog-map .quest-brief h2 { grid-column: 2; grid-row: 3; font-size: 24px; }
-  .game-dialog-map .quest-brief .quest-brief-description { grid-column: 2; grid-row: 4; }
-  .game-dialog-map .quest-brief > .primary-button { grid-column: 3; grid-row: 2 / 4; align-self: center; }
-  .game-dialog-map .quest-brief .quest-brief-rewards { grid-column: 3; grid-row: 4; }
-  .game-dialog-map .quest-brief .activity-step-diagram { grid-column: 1; grid-row: 5; }
-  .game-dialog-map .quest-brief .quest-brief-facts { grid-column: 2 / -1; grid-row: 5; }
-  .game-dialog-map .quest-brief .quest-brief-more, .game-dialog-map .quest-brief .quest-brief-prize { grid-column: 1 / -1; }
-  .quest-brief-rewards, .quest-brief-facts { justify-content: flex-start; }
-}

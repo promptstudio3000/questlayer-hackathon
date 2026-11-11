@@ -10,7 +10,7 @@
       "id": "kronikarka-bela",
       "kind": "npc",
       "archetype": "storyteller",
-      "name": "Běla the Chronicler",
+      "name": "Běla",
       "title": "Keeper of the city's stories",
       "model": "chronicler",
       "home": {
@@ -31,7 +31,7 @@
       "id": "kupec-vojtech",
       "kind": "npc",
       "archetype": "trader",
-      "name": "Vojtěch the Merchant",
+      "name": "Vojtěch",
       "title": "Travelling trader",
       "model": "merchant",
       "home": {
@@ -73,7 +73,7 @@
       "id": "poutnice-rada",
       "kind": "npc",
       "archetype": "quest_giver",
-      "name": "Ráda the Pilgrim",
+      "name": "Ráda",
       "title": "Wanderer with errands",
       "model": "pilgrim",
       "home": {
@@ -94,7 +94,7 @@
       "id": "bludicka",
       "kind": "npc",
       "archetype": "wandering_rare",
-      "name": "Bludička",
+      "name": "Wisp",
       "title": "Will-o'-the-wisp",
       "model": "wisp",
       "rangeM": 3000,

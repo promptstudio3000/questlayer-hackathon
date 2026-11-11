@@ -1,5 +1,4 @@
 import { ArrowRight } from "./dir-icons";
-import { ActivityHelp } from "./ActivityHelp";
 import { useLearning } from "./useLearning";
 import { helpText } from "./activity-help";
 import { tr } from "./i18n";
@@ -163,9 +162,18 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
       }
       await npcAccept(actorId, token, offer.id);
       learning.acknowledge("npc");
+      const fresh = await npcGreet(actorId, token);
+      setReply(fresh);
+      // Accepting is the whole decision: straight back to the map, guided
+      // to the first stop.
+      const first = fresh.active?.find((line) => line.offerId === offer.id)?.steps.find((step) => !step.done);
+      if (first?.questId && onQuest) {
+        onClose();
+        onQuest(first.questId);
+        return;
+      }
       setNotice(t.accepted(offer.label));
       setSelectedOffer(offer);
-      await refresh();
       setFlow("accepted");
     });
   const turnIn = (line: NpcActiveLine) =>
@@ -243,20 +251,10 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
         {reply && flow === "greeting" && (ready.length > 0 || active.length > 0) && <button className="primary-button npc-continue" disabled={busy} onClick={() => openServices("tasks")}>{tr("Your tasks")}<ArrowRight aria-hidden="true" /></button>}
         {reply && flow === "greeting" && !questOffers.length && !active.length && <button className="primary-button npc-continue" disabled={busy} onClick={() => openServices(vault ? "vault" : "talk")}>{vault ? tr("Open vault") : tr("Continue")}<ArrowRight aria-hidden="true" /></button>}
         {reply && (flow === "greeting" || flow === "choices") && questOffers.length > 0 && <section className="npc-story-step" aria-label={tr("Choose a quest")}>
-          <h3 tabIndex={-1}>{tr("Choose a quest")}</h3>
-          {questOffers.slice(0, 2).map((offer) => <button key={offer.id} className="npc-choice" disabled={busy} onClick={() => { setSelectedOffer(offer); setFlow("offer"); }}>
+          {questOffers.slice(0, 2).map((offer) => <button key={offer.id} className="npc-choice" disabled={busy} onClick={() => accept(offer)}>
             <span>{offer.label}</span><small>{offerMeta(offer)}</small><ArrowRight aria-hidden="true" />
           </button>)}
         </section>}
-        {flow === "offer" && selectedOffer && <section className="npc-story-step npc-offer-brief" aria-label={selectedOffer.label}>
-          <h3 tabIndex={-1}>{selectedOffer.label}</h3>
-          <p className="npc-offer-reward"><Sparkle aria-hidden="true" />{offerMeta(selectedOffer)}</p>
-          {learning.visible("npc") && <p className="learning-hint">{helpText("npc")}</p>}
-          {offerSteps.length > 0 && <ol>{offerSteps.map((step, i) => <li key={i}>{step.title}</li>)}</ol>}
-          <button className="primary-button" disabled={busy} onClick={() => accept(selectedOffer)}>{busy ? tr("Saving…") : tr("Start quest")}<ArrowRight aria-hidden="true" /></button>
-          <button className="text-button" disabled={busy} onClick={() => setFlow("choices")}>{tr("Back")}</button>
-        </section>}
-        {flow === "offer" && <ActivityHelp topic="npc" onAcknowledge={() => learning.acknowledge("npc")} />}
         {flow === "accepted" && nextAcceptedStep && <p className="npc-next-step">{nextAcceptedStep.title}</p>}
         {flow === "accepted" && <button className="primary-button npc-continue" onClick={() => { onClose(); if (nextAcceptedStep) onQuest?.(nextAcceptedStep.questId); }}>{tr("Back to map")}<ArrowRight aria-hidden="true" /></button>}
         {notice && flow !== "accepted" && <p className="npc-notice" role="status">{notice}</p>}
@@ -264,7 +262,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
           {!reply && <button className="secondary-button" disabled={busy} onClick={() => run(refresh)}>{t.retry}</button>}
         </div>}
         <details className="npc-more" open={detailsOpen} onToggle={(e) => setDetailsOpen(e.currentTarget.open)}>
-          <summary>{tr("Learn more")}</summary>
+          <summary>{tr("More")}</summary>
         <ScreenTabs label={t.talkTo(name)} idBase={`npc-${actorId}`} tabs={tabs} value={tab} onChange={setTab} sticky={false} />
 
         {tab === "talk" && (

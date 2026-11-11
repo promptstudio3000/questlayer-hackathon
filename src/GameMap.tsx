@@ -1862,7 +1862,7 @@ export function GameMap(props: GameMapProps) {
           )}
         </div>
       )}
-      {!props.globe && guidePoints.length > 1 && (
+      {!props.globe && guidePoints.length > 1 && !props.focusZone && (
         <div className="map-guide-key" role="note" title={tr("Straight-line direction, not a walking route")}>
           <img src={mapKitUrl("navigation/arrow-forward.png")} width="24" height="24" alt="" aria-hidden />
           <span>{tr("Direction guide")}</span>
