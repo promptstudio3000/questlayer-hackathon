@@ -1227,7 +1227,6 @@
  "Nothing moved. You can try again.": "Nada se moveu. Você pode tentar de novo.",
  "Nothing on NEAR yet. Secured Auras, badges, wisp rolls and trades appear here.": "Ainda não há nada na NEAR. Auras protegidas, insígnias, sorteios do fogo-fátuo e trocas aparecem aqui.",
  "Nothing open right here yet": "Nada aberto bem aqui ainda",
- "Nothing to do here right now.": "Nada para fazer aqui agora.",
  "Nothing to offer right now. Ask me something!": "Nada para oferecer agora. Me pergunte algo!",
  "Nothing to secure yet": "Nada para proteger ainda",
  "Nothing to wager. Rolls and rewards are earned by playing.": "Nada para apostar. Rolagens e recompensas são ganhas jogando.",
@@ -3193,5 +3192,17 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "A recarga abre uma vez por dia quando o saldo desce abaixo de {0} NEAR.",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "Adiciona os teus próprios NEAR: envia-os de qualquer carteira ou exchange para {0}.",
  "Refuelled. Your account has NEAR for its next payments.": "Recarregado. A tua conta tem NEAR para os próximos pagamentos.",
- "Could not refuel right now. Try again later.": "Não foi possível recarregar agora. Tenta mais tarde."
+ "Could not refuel right now. Try again later.": "Não foi possível recarregar agora. Tenta mais tarde.",
+ "today at {0}": "hoje às {0}",
+ "tomorrow at {0}": "amanhã às {0}",
+ "on {0} at {1}": "{0} às {1}",
+ "It is resting after your last try. Come back {0} for another go.": "Está descansando após sua última tentativa. Volte {0} para tentar de novo.",
+ "Nothing for you today.": "Nada para você hoje.",
+ "Nothing to win here right now.": "Nada para ganhar aqui agora.",
+ "This week's boss is beaten. A new one rises {0}.": "O chefe desta semana foi derrotado. Um novo surge {0}.",
+ "You already beat it today. Come back {0} to win something again.": "Você já o venceu hoje. Volte {0} para ganhar algo de novo.",
+ "Nothing for you today. Come back {0} for new tasks.": "Nada para você hoje. Volte {0} para novas tarefas.",
+ "It has nothing for you today. Come back {0} to win something.": "Ele não tem nada para você hoje. Volte {0} para ganhar algo.",
+ "Come back later": "Volte mais tarde",
+ "You can still ask me anything.": "Você ainda pode me perguntar qualquer coisa."
 }

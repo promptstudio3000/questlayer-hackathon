@@ -1227,7 +1227,6 @@
  "Nothing moved. You can try again.": "कुछ नहीं बदला। तुम फिर से कोशिश कर सकते हो।",
  "Nothing on NEAR yet. Secured Auras, badges, wisp rolls and trades appear here.": "NEAR पर अभी कुछ नहीं है। सुरक्षित ऑरा, बैज, जुगनू रोल और ट्रेड यहाँ दिखेंगे।",
  "Nothing open right here yet": "यहाँ अभी कुछ खुला नहीं है",
- "Nothing to do here right now.": "अभी यहाँ करने को कुछ नहीं।",
  "Nothing to offer right now. Ask me something!": "अभी देने को कुछ नहीं। मुझसे कुछ पूछो!",
  "Nothing to secure yet": "अभी सुरक्षित करने को कुछ नहीं",
  "Nothing to wager. Rolls and rewards are earned by playing.": "दाँव पर लगाने को कुछ नहीं। रोल और इनाम खेलकर कमाए जाते हैं।",
@@ -3193,5 +3192,17 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "बैलेंस {0} NEAR से नीचे जाने पर दिन में एक बार भर सकते हैं।",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "अपना NEAR जोड़ें: किसी भी वॉलेट या एक्सचेंज से {0} पर भेजें।",
  "Refuelled. Your account has NEAR for its next payments.": "भर दिया गया। आपके खाते में अगले भुगतानों के लिए NEAR है।",
- "Could not refuel right now. Try again later.": "अभी भरना संभव नहीं हुआ। बाद में फिर कोशिश करें।"
+ "Could not refuel right now. Try again later.": "अभी भरना संभव नहीं हुआ। बाद में फिर कोशिश करें।",
+ "today at {0}": "आज {0} बजे",
+ "tomorrow at {0}": "कल {0} बजे",
+ "on {0} at {1}": "{0} को {1} बजे",
+ "It is resting after your last try. Come back {0} for another go.": "तुम्हारी पिछली कोशिश के बाद यह आराम कर रहा है। फिर से कोशिश के लिए {0} आना।",
+ "Nothing for you today.": "आज तुम्हारे लिए कुछ नहीं है।",
+ "Nothing to win here right now.": "अभी यहाँ जीतने को कुछ नहीं है।",
+ "This week's boss is beaten. A new one rises {0}.": "इस हफ़्ते का बॉस हार चुका है। नया बॉस {0} आएगा।",
+ "You already beat it today. Come back {0} to win something again.": "आज तुम इसे हरा चुके हो। फिर कुछ जीतने के लिए {0} आना।",
+ "Nothing for you today. Come back {0} for new tasks.": "आज तुम्हारे लिए कुछ नहीं है। नए काम के लिए {0} आना।",
+ "It has nothing for you today. Come back {0} to win something.": "आज इसके पास तुम्हारे लिए कुछ नहीं है। कुछ जीतने के लिए {0} आना।",
+ "Come back later": "बाद में आना",
+ "You can still ask me anything.": "फिर भी तुम मुझसे कुछ भी पूछ सकते हो।"
 }

@@ -1227,7 +1227,6 @@
  "Nothing moved. You can try again.": "Ничего не перемещено. Можно попробовать снова.",
  "Nothing on NEAR yet. Secured Auras, badges, wisp rolls and trades appear here.": "В NEAR пока ничего нет. Здесь появятся защищённые Ауры, значки, броски у огонька и сделки.",
  "Nothing open right here yet": "Прямо здесь пока ничего не открыто",
- "Nothing to do here right now.": "Сейчас здесь нечего делать.",
  "Nothing to offer right now. Ask me something!": "Сейчас мне нечего предложить. Спроси меня о чём-нибудь!",
  "Nothing to secure yet": "Пока нечего закреплять",
  "Nothing to wager. Rolls and rewards are earned by playing.": "Ставить нечего. Броски и награды зарабатываются игрой.",
@@ -3193,5 +3192,17 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "Пополнение доступно раз в день, когда баланс опускается ниже {0} NEAR.",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "Добавь свои NEAR: отправь их с любого кошелька или биржи на {0}.",
  "Refuelled. Your account has NEAR for its next payments.": "Пополнено. На аккаунте есть NEAR для следующих платежей.",
- "Could not refuel right now. Try again later.": "Сейчас пополнить не удалось. Попробуй позже."
+ "Could not refuel right now. Try again later.": "Сейчас пополнить не удалось. Попробуй позже.",
+ "today at {0}": "сегодня в {0}",
+ "tomorrow at {0}": "завтра в {0}",
+ "on {0} at {1}": "в {0} в {1}",
+ "It is resting after your last try. Come back {0} for another go.": "Отдыхает после твоей последней попытки. Приходи {0}, чтобы попробовать снова.",
+ "Nothing for you today.": "Сегодня для тебя ничего нет.",
+ "Nothing to win here right now.": "Сейчас здесь нечего выиграть.",
+ "This week's boss is beaten. A new one rises {0}.": "Босс этой недели повержен. Новый появится {0}.",
+ "You already beat it today. Come back {0} to win something again.": "Сегодня ты уже победил его. Приходи {0}, чтобы снова что-то выиграть.",
+ "Nothing for you today. Come back {0} for new tasks.": "Сегодня для тебя ничего нет. Приходи {0} за новыми заданиями.",
+ "It has nothing for you today. Come back {0} to win something.": "Сегодня у него ничего для тебя нет. Приходи {0}, чтобы что-то выиграть.",
+ "Come back later": "Приходи позже",
+ "You can still ask me anything.": "Спросить меня можно о чём угодно."
 }

@@ -1227,7 +1227,6 @@
  "Nothing moved. You can try again.": "لم يتحرك شيء. يمكنك المحاولة مجددًا.",
  "Nothing on NEAR yet. Secured Auras, badges, wisp rolls and trades appear here.": "لا شيء على NEAR بعد. ستظهر هنا الهالات المؤمَّنة والشارات ورميات الطيف والصفقات.",
  "Nothing open right here yet": "لا شيء مفتوح هنا بعد",
- "Nothing to do here right now.": "لا شيء لتفعله هنا الآن.",
  "Nothing to offer right now. Ask me something!": "لا شيء لأعرضه الآن. اسألني شيئًا!",
  "Nothing to secure yet": "لا شيء لتأمينه بعد",
  "Nothing to wager. Rolls and rewards are earned by playing.": "لا شيء للمراهنة. الرميات والمكافآت تُكسب باللعب.",
@@ -3193,5 +3192,17 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "تُتاح إعادة التعبئة مرة يوميًا عندما ينخفض رصيدك عن {0} NEAR.",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "أضف NEAR خاصًا بك: أرسله من أي محفظة أو منصة تداول إلى {0}.",
  "Refuelled. Your account has NEAR for its next payments.": "تمت إعادة التعبئة. لدى حسابك NEAR لمدفوعاته التالية.",
- "Could not refuel right now. Try again later.": "تعذّرت إعادة التعبئة الآن. حاول لاحقًا."
+ "Could not refuel right now. Try again later.": "تعذّرت إعادة التعبئة الآن. حاول لاحقًا.",
+ "today at {0}": "اليوم الساعة {0}",
+ "tomorrow at {0}": "غدًا الساعة {0}",
+ "on {0} at {1}": "يوم {0} الساعة {1}",
+ "It is resting after your last try. Come back {0} for another go.": "إنه يستريح بعد محاولتك الأخيرة. عد {0} لمحاولة أخرى.",
+ "Nothing for you today.": "لا شيء لك اليوم.",
+ "Nothing to win here right now.": "لا شيء لتربحه هنا الآن.",
+ "This week's boss is beaten. A new one rises {0}.": "هُزم زعيم هذا الأسبوع. يظهر زعيم جديد {0}.",
+ "You already beat it today. Come back {0} to win something again.": "لقد هزمته اليوم بالفعل. عد {0} لتربح شيئًا مجددًا.",
+ "Nothing for you today. Come back {0} for new tasks.": "لا شيء لك اليوم. عد {0} لمهام جديدة.",
+ "It has nothing for you today. Come back {0} to win something.": "ليس لديه شيء لك اليوم. عد {0} لتربح شيئًا.",
+ "Come back later": "عد لاحقًا",
+ "You can still ask me anything.": "لا يزال بإمكانك أن تسألني أي شيء."
 }

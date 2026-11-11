@@ -11,6 +11,7 @@ import { ScreenTabs, type ScreenTab } from "./ScreenTabs";
 // (they always work without AI) and a box to write to them. Everything else
 // (open tasks, the keeper's vault, the character profile) lives in tabs.
 import { NpcGear } from "./NpcGear";
+import { comeBackLine } from "./come-back";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   BookOpen,
@@ -307,7 +308,11 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
                 />
               ))}
               {archetype === "trader" && <NpcGear actorId={actorId} encounter={token} />}
-              {reply && !reply.menu.length && !ready.length && !reply.locked?.length && archetype !== "trader" && <p className="npc-empty">{t.noActions}</p>}
+              {reply && !reply.menu.length && !ready.length && !reply.locked?.length && archetype !== "trader" && (
+                <p className="npc-empty" data-testid={encounter.comeBack ? "npc-come-back" : undefined}>
+                  {encounter.comeBack ? `${comeBackLine(encounter.actor, encounter.comeBack)} ${tr("You can still ask me anything.")}` : t.noActions}
+                </p>
+              )}
               {active.length > ready.length && (
                 <button type="button" className="npc-link" onClick={() => setTab("tasks")}>
                   {t.moreTasks(active.length - ready.length)} →

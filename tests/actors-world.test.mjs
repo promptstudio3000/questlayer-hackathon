@@ -8,6 +8,7 @@ import { loadCityActors } from "../server/actors/definitions.mjs";
 import { pathGraph, planDay, positionAt } from "../server/actors/schedule.mjs";
 import { planSpawns, GUARDIAN_CHEST_RADIUS_M } from "../server/actors/spawns.mjs";
 import { createActorService } from "../server/actors/service.mjs";
+import { registerMenuBuilder } from "../server/actors/menu.mjs";
 
 const DAY = "2026-11-02",
   dayStart = localDateStart(DAY, "Europe/Prague"),
@@ -120,4 +121,25 @@ test("practice worlds skip GPS checks and monsters offer a challenge", async () 
   const result = await service.encounter({ player: "p1", actorId: moth.id, worldId: arena.id, location: { lat: pos.lat, lng: pos.lng } });
   assert.equal(result.menu[0].kind, "challenge");
   await assert.rejects(service.encounter({ player: "p1", actorId: "nobody-here", worldId: arena.id, location: pos }), (e) => e.code === "ACTOR_NOT_FOUND");
+});
+
+// Keep last: it registers a roamer menu override for the rest of this file.
+test("a monster with nothing on offer says when to come back", async () => {
+  const db = new DatabaseSync(":memory:");
+  const now = noon;
+  const service = createActorService(db, { clock: () => now });
+  const gps = world(db, { arena: false });
+  registerMenuBuilder("roamer", ({ actor }) => (actor.state === "defeated" ? [] : [{ id: "c", kind: "challenge", label: "Fight", terms: {}, expiresAt: now + 60_000 }]));
+  const list = await service.list({ player: "p1", worldId: gps.id, location: { lat: 49.7474, lng: 13.3774 } });
+  const roamer = list.actors.find((a) => a.archetype === "roamer" && positionAt(a.segments, now));
+  const pos = positionAt(roamer.segments, now);
+  const fix = { lat: pos.lat, lng: pos.lng, accuracy: 5, timestamp: now };
+  const open = await service.encounter({ player: "p1", actorId: roamer.id, worldId: gps.id, location: fix });
+  assert.equal(open.comeBack, undefined, "a full menu needs no come-back time");
+  db.prepare("INSERT INTO actor_progress(player_id,actor_id,day_id,defeats,updated_at) VALUES('p2',?,?,1,?)").run(roamer.id, DAY, now);
+  const beaten = await service.encounter({ player: "p2", actorId: roamer.id, worldId: gps.id, location: fix });
+  assert.deepEqual(beaten.menu, []);
+  assert.equal(beaten.comeBack.reason, "beaten");
+  // Tomorrow at the city's 07:00 opening, local Prague time.
+  assert.equal(beaten.comeBack.at, localDateStart("2026-11-03", "Europe/Prague") + 7 * 3600_000);
 });

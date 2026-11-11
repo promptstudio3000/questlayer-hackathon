@@ -1227,7 +1227,6 @@
  "Nothing moved. You can try again.": "没有任何变动。你可以重试。",
  "Nothing on NEAR yet. Secured Auras, badges, wisp rolls and trades appear here.": "NEAR 上还没有内容。受保护的光环、徽章、精灵抽取和交易会显示在这里。",
  "Nothing open right here yet": "这里暂时没有开放的内容",
- "Nothing to do here right now.": "这里暂时没什么可做的。",
  "Nothing to offer right now. Ask me something!": "现在没有可提供的东西。问我点什么吧！",
  "Nothing to secure yet": "暂无可上链的内容",
  "Nothing to wager. Rolls and rewards are earned by playing.": "无需下注。掷骰机会和奖励都靠游玩获得。",
@@ -3193,5 +3192,17 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "余额低于 {0} NEAR 时,每天可补充一次。",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "添加你自己的 NEAR:从任意钱包或交易所发送到 {0}。",
  "Refuelled. Your account has NEAR for its next payments.": "已补充。你的账户有 NEAR 用于接下来的付款。",
- "Could not refuel right now. Try again later.": "现在无法补充。请稍后再试。"
+ "Could not refuel right now. Try again later.": "现在无法补充。请稍后再试。",
+ "today at {0}": "今天{0}",
+ "tomorrow at {0}": "明天{0}",
+ "on {0} at {1}": "{0}{1}",
+ "It is resting after your last try. Come back {0} for another go.": "它在你上次尝试后休息。{0}再来试一次。",
+ "Nothing for you today.": "今天没有给你的东西。",
+ "Nothing to win here right now.": "这里现在没有可赢的东西。",
+ "This week's boss is beaten. A new one rises {0}.": "本周的首领已被击败。新的首领将于{0}出现。",
+ "You already beat it today. Come back {0} to win something again.": "你今天已经打败它了。{0}再来就能再赢东西。",
+ "Nothing for you today. Come back {0} for new tasks.": "今天没有给你的东西。{0}再来领取新任务。",
+ "It has nothing for you today. Come back {0} to win something.": "它今天没有给你的东西。{0}再来就能赢到东西。",
+ "Come back later": "稍后再来",
+ "You can still ask me anything.": "你仍然可以问我任何问题。"
 }

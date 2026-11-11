@@ -13,7 +13,7 @@ thread instead of forking them.
 | Movement | `server/actors/schedule.mjs` | Pure. `pathGraph(pack, closed)` joins the city pack's mapped footways (path ends within 15 m are linked, fragments under 60 points dropped, closed places removed). `planDay(def, pack, seed, dayId, {dayStart, hours, home, allDay})` → contiguous `ActorSegment[]` (3–8 stations within `rangeM`, dwell between walks at `speedMps`); `positionAt(segments, t)`. Practice worlds plan all day. |
 | Spawns | `server/actors/spawns.mjs` | Pure. `planSpawns(city, pack, seed, dayId, {zones, closed})`: guardians at today's open zones, roamers and lurkers on seeded path points, monsters ≥ 150 m apart, disabled definitions skipped. Seed = `sha256(actors-v1 ‖ city ‖ world blueprint)`. |
 | Service | `server/actors/service.mjs` | `createActorService(db)` → `list`, `encounter`, `requireEncounter({token, player, actorId})` → `{encounterId, actor, def, worldId, dayId, seed, menu, menuHash}` or a 403/404/410 error. |
-| Routes | `server/actors/routes.mjs` | `GET /api/actors?worldId=&lat=&lng=`, `POST /api/actors/:id/encounter {worldId, location}`. |
+| Routes | `server/actors/routes.mjs` | `GET /api/actors?worldId=&lat=&lng=`, `POST /api/actors/:id/encounter {worldId, location}`. An empty menu (not a trader) also carries `comeBack: {reason: "beaten" | "boss_beaten" | "nothing_today", at}`: the actor's first active minute tomorrow (next Monday for a beaten weekly boss); the client words it via `src/come-back.ts`. |
 | Flag | `ACTORS_ENABLED=1` | Off by default (tests, mainnet); on for the testnet VPS. |
 
 Encounter rules: distance ≤ 35 m (≤ 50 m while the actor dwells at a station), GPS accuracy ≤ 30 m and a fix at most

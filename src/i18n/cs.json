@@ -1227,7 +1227,6 @@
  "Nothing moved. You can try again.": "Nic se nepřesunulo. Můžeš to zkusit znovu.",
  "Nothing on NEAR yet. Secured Auras, badges, wisp rolls and trades appear here.": "Na NEAR zatím nic není. Zabezpečené Aury, odznaky, losování u bludičky a obchody se objeví tady.",
  "Nothing open right here yet": "Tady zatím nic otevřeného není",
- "Nothing to do here right now.": "Teď tu není co dělat.",
  "Nothing to offer right now. Ask me something!": "Teď ti nemám co nabídnout. Zeptej se mě na něco!",
  "Nothing to secure yet": "Zatím není co zajistit",
  "Nothing to wager. Rolls and rewards are earned by playing.": "Nic se nesází. Hody a odměny se získávají hraním.",
@@ -3193,5 +3192,17 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "Doplnění se otevře, když zůstatek klesne pod {0} NEAR, jednou denně.",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "Přidej vlastní NEAR: pošli ho z libovolné peněženky nebo burzy na {0}.",
  "Refuelled. Your account has NEAR for its next payments.": "Doplněno. Tvůj účet má NEAR na další platby.",
- "Could not refuel right now. Try again later.": "Teď se doplnit nepodařilo. Zkus to později."
+ "Could not refuel right now. Try again later.": "Teď se doplnit nepodařilo. Zkus to později.",
+ "today at {0}": "dnes v {0}",
+ "tomorrow at {0}": "zítra v {0}",
+ "on {0} at {1}": "{0} v {1}",
+ "It is resting after your last try. Come back {0} for another go.": "Po tvém posledním pokusu odpočívá. Přijď znovu {0} a zkus to znovu.",
+ "Nothing for you today.": "Dnes pro tebe nic nemám.",
+ "Nothing to win here right now.": "Teď se tu nedá nic vyhrát.",
+ "This week's boss is beaten. A new one rises {0}.": "Boss tohoto týdne je poražen. Nový se objeví {0}.",
+ "You already beat it today. Come back {0} to win something again.": "Dnes už jsi ji porazil. Přijď znovu {0} a zase něco vyhraješ.",
+ "Nothing for you today. Come back {0} for new tasks.": "Dnes pro tebe nic nemám. Přijď {0} pro nové úkoly.",
+ "It has nothing for you today. Come back {0} to win something.": "Dnes pro tebe nic nemá. Přijď {0} a něco vyhraješ.",
+ "Come back later": "Přijď později",
+ "You can still ask me anything.": "Zeptat se mě můžeš pořád."
 }

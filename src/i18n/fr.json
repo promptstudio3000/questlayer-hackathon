@@ -1227,7 +1227,6 @@
  "Nothing moved. You can try again.": "Rien n'a bougé. Tu peux réessayer.",
  "Nothing on NEAR yet. Secured Auras, badges, wisp rolls and trades appear here.": "Rien sur NEAR pour l'instant. Les Auras sécurisées, badges, lancers du feu follet et échanges apparaîtront ici.",
  "Nothing open right here yet": "Rien d'ouvert ici pour l'instant",
- "Nothing to do here right now.": "Rien à faire ici pour le moment.",
  "Nothing to offer right now. Ask me something!": "Rien à proposer pour l'instant. Pose-moi une question !",
  "Nothing to secure yet": "Rien à sécuriser pour l'instant",
  "Nothing to wager. Rolls and rewards are earned by playing.": "Rien à miser. Les lancers et récompenses se gagnent en jouant.",
@@ -3193,5 +3192,17 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "La recharge s'ouvre une fois par jour quand ton solde passe sous {0} NEAR.",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "Ajoute tes propres NEAR : envoie-les depuis n'importe quel portefeuille ou plateforme d'échange vers {0}.",
  "Refuelled. Your account has NEAR for its next payments.": "Rechargé. Ton compte a des NEAR pour ses prochains paiements.",
- "Could not refuel right now. Try again later.": "Recharge impossible pour l'instant. Réessaie plus tard."
+ "Could not refuel right now. Try again later.": "Recharge impossible pour l'instant. Réessaie plus tard.",
+ "today at {0}": "aujourd'hui à {0}",
+ "tomorrow at {0}": "demain à {0}",
+ "on {0} at {1}": "{0} à {1}",
+ "It is resting after your last try. Come back {0} for another go.": "Il se repose après ta dernière tentative. Reviens {0} pour réessayer.",
+ "Nothing for you today.": "Rien pour toi aujourd'hui.",
+ "Nothing to win here right now.": "Rien à gagner ici pour l'instant.",
+ "This week's boss is beaten. A new one rises {0}.": "Le boss de la semaine est vaincu. Un nouveau surgit {0}.",
+ "You already beat it today. Come back {0} to win something again.": "Tu l'as déjà battu aujourd'hui. Reviens {0} pour gagner à nouveau.",
+ "Nothing for you today. Come back {0} for new tasks.": "Rien pour toi aujourd'hui. Reviens {0} pour de nouvelles tâches.",
+ "It has nothing for you today. Come back {0} to win something.": "Il n'a rien pour toi aujourd'hui. Reviens {0} pour gagner quelque chose.",
+ "Come back later": "Reviens plus tard",
+ "You can still ask me anything.": "Tu peux quand même tout me demander."
 }
