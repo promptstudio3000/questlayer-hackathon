@@ -17,6 +17,10 @@ import {
   daoManifest,
   MIX_PRESETS,
   RECOMMENDED_MIX,
+  sameTargets,
+  LEGACY_MIX_PRESETS,
+  mixPreset,
+  mixShort,
   NEVER,
 } from "../server/native/treasury-dao.mjs";
 import { HARD_LIMITS, mixSettings } from "../server/native/treasury-mix.mjs";
@@ -50,12 +54,22 @@ test("the policy uses Trezu's role names, 2 of 3 council approvals and explorer 
 test("every mix option stays inside the treasury-mix hard limits", () => {
   const s = mixSettings({}, "testnet");
   assert.ok(MIX_PRESETS.some((p) => p.id === RECOMMENDED_MIX));
-  for (const { targets } of MIX_PRESETS) {
-    assert.equal(targets.lst + targets.stable + targets.near, 10_000);
-    // Stables are all one protocol (Rhea Lend); LSTs split across two providers.
+  for (const { targets } of [...MIX_PRESETS, ...LEGACY_MIX_PRESETS]) {
+    assert.equal(targets.staked + targets.lst + targets.stable + targets.near, 10_000);
+    // Stables are all one protocol (Rhea Lend); LSTs split across two providers;
+    // staked NEAR spreads over the treasury's validator pools (3+ at 40 % each).
     assert.ok(targets.stable <= HARD_LIMITS.maxProtocolBps && targets.stable <= s.maxProtocolBps);
     assert.ok(targets.lst <= 2 * s.maxProtocolBps);
+    assert.ok(targets.staked <= 3 * s.maxProtocolBps);
   }
+  // Lubos 11 Nov 2026: on testnet only validator staking earns: 90 % staked, 5 % USDC, 5 % USDT.
+  assert.equal(RECOMMENDED_MIX, "staking-first");
+  assert.deepEqual(mixPreset("staking-first").targets, { staked: 9000, lst: 0, stable: 1000, near: 0 });
+  assert.equal(mixPreset("balanced").targets.lst, 5000, "polls filed before the change still tally");
+  assert.equal(mixShort(mixPreset("staking-first").targets), "90/10/0");
+  // Mixes adopted before "staked" existed compare as staked = 0.
+  assert.ok(sameTargets({ lst: 5000, stable: 4000, near: 1000 }, mixPreset("balanced").targets));
+  assert.ok(!sameTargets(mixPreset("balanced").targets, mixPreset("staking-first").targets));
 });
 
 const raw = (id, description, { proposer = KEEPER, votes = {}, status = "InProgress", kind = "Vote" } = {}) => ({
@@ -87,7 +101,7 @@ test("polls tally by approvals, ties go to the recommended option, and only the 
 
 test("the adopted mix is the newest approved adopt proposal; today's run is found by date", () => {
   const adopt = (id, option, status) =>
-    normalizeProposal(raw(id, describe(`Adopt ${option}`, { t: "adopt", kind: "mix", poll: "x", option, targets: MIX_PRESETS.find((m) => m.id === option).targets }), { status }), KEEPER);
+    normalizeProposal(raw(id, describe(`Adopt ${option}`, { t: "adopt", kind: "mix", poll: "x", option, targets: mixPreset(option).targets }), { status }), KEEPER);
   const p = [adopt(1, "balanced", "Approved"), adopt(2, "staking", "Approved"), adopt(3, "reserve", "InProgress")];
   assert.equal(adoptedMix(p).option, "staking");
   const run = normalizeProposal(raw(4, describe("Run", { t: "daily", date: "2026-11-11", target: {}, action: "hold" }), { status: "Approved" }), KEEPER);

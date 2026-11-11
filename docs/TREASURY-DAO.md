@@ -133,3 +133,20 @@ never in git or chat. `TREASURY_DAO_ENABLED=0` hides the DAO on a host.
 - The Explorers role lists every voter in the policy: fine for hundreds, for thousands the vote moves to token weight
   or to one DAO per community layer (the long-term plan: each layer gets its own DAO and share of the yield).
 - All three council keys sit on one Mac today; adding Lubos's own wallet as the third seat is one Admin proposal.
+
+## Staking first (11 Nov 2026)
+
+The weekly options are now staked NEAR / stablecoins / NEAR reserve:
+**Staking first 90 / 10 / 0** (recommended; the stables are 5 % USDC + 5 % USDT),
+More stables 70 / 20 / 10 and Bigger reserve 60 / 20 / 20. Polls filed before
+the change keep their own targets (`LEGACY_MIX_PRESETS`; a tally uses the
+targets stored in the poll first).
+
+Owner decision: `node scripts/treasury-dao-testnet.mjs adopt staking-first --execute`
+has the keeper file an adopt proposal and the two council keys approve it. It
+lists the open mix poll of the week in `supersedes`, so the Monday tally does
+not override it, and then runs `daily`, which re-files today's run because the
+one filed earlier has another target. Next Monday opens a fresh vote with the
+new options.
+
+The vote itself moved to the **/treasury page, tab Vote** (see TREASURY-PAGE.md).

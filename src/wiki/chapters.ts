@@ -16,6 +16,7 @@ import goldSpend from "../../server/data/gold-spend.json" with { type: "json" };
 import auraCatalog from "../../server/data/aura-catalog.json" with { type: "json" };
 import placeBadges from "../../server/data/place-badges.json" with { type: "json" };
 import cities from "../../server/data/cities.json" with { type: "json" };
+import CREATOR_XP from "../../server/data/creator-xp.json" with { type: "json" };
 
 export type VizId =
   | "architecture"
@@ -518,7 +519,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "wearable-rarity",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx", "server/player-journey.mjs", "src/CharacterJourney.tsx", "src/StakeEarn.tsx", "server/gotchi-models.mjs"],
+    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "server/demo-bot-chat.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx", "server/player-journey.mjs", "src/CharacterJourney.tsx", "src/StakeEarn.tsx", "server/gotchi-models.mjs"],
     blocks: [
       { h: "Wearable finds" },
       {
@@ -544,7 +545,8 @@ export const CHAPTERS: Chapter[] = [
           "Tap any explorer for their profile: name, level, the original Aavegotchi they wear with its BRS, play stats and equipment slots. A gold seal marks an original their wallet holds. A profile never shows a position, a wallet or the rest of a collection.",
           "Waves are six ready phrases. Limits: one per pair per minute, 20 sent and 30 received per hour; deleted after an hour.",
           "**Write a message** opens the encrypted inbox. Block hides presence, notes, waves, messages and the card both ways.",
-          "Demo bots in the test world carry a **demo-bot** tag; they take no waves and cannot be blocked.",
+          "Demo bots in the test world carry a **demo-bot** tag; they take no waves and cannot be blocked. **Message** on a demo bot opens a short demo chat: the bot answers with ready in-character lines, nothing is stored and nothing goes on chain (bots have no inbox key). At most 12 lines a minute.",
+          "Without your explorer account (for example signed in only with a wallet) **Message** stays off and the card says why.",
         ],
       },
       { h: "Your Profile" },
@@ -573,7 +575,7 @@ export const CHAPTERS: Chapter[] = [
     ],
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/MapNotes.tsx", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx"],
+    sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/MapNotes.tsx", "src/gold-map-layer.ts", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx"],
     blocks: [
       { h: "Create from the map" },
       {
@@ -582,10 +584,20 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**Map notes** are free. The author picks 1 day, 1 week (default) or Keep until removed; expired notes leave every list. Authors can edit their own text; pin, photo and time stay.",
+          "Every note near you also stands **on the map** as a small paper pin with its text (your own with a coloured edge), refreshed every 30 seconds and right after you leave, edit or remove one. Tapping a pin opens Local chat · Notes with that note highlighted.",
           "Every row shows author, time, time left, the text and a **GPS line** with the pin and its distance. Tapping it shows the spot on a plain map with only the pin and your position.",
           "**Shouts** are short paid bubbles for up to 7 days; a **topic** becomes free for good once 6 different players wrote in it (see Fees and spending).",
           "**Community places** are free recommendations: nearest first within 10 km, with a kind (view, nature, history, art, food & drink, hidden gem, walk & play), filters and sorting. Three reports from different players hide a place until a moderator looks. No links, contacts or private addresses; no GOLD or XP moves.",
           "Demo maps and the real GPS map keep separate notes and places. The test world seeds a few of each around náměstí Republiky.",
+        ],
+      },
+      { h: "Quests, tasks and creators" },
+      {
+        list: [
+          "**Quests** is one compact list with filter chips: All, Near me (5 km), Following and Started. Each row shows the quest's pixel icon (visit, trail, chest or story), the creator's own avatar and name, the distance and type on one line, and the price or Free.",
+          "**Tasks** lists the QGOLD tasks explorers post for each other in the same rows, with a type badge, who posted it, the reward and places left.",
+          "**Creators** shows each creator's avatar (their map character), short bio, quests and followers, and a Follow button. Tapping a creator opens their profile as a dialog: level, quests, followers, finished runs and creator XP, a large Follow button, an (i) button with the safety notes and Block, and their quests in the same rows as the Quests list.",
+          "The test world adds demo-bot creators, quests and example tasks labelled demo-bot; example tasks hold no QGOLD and cannot be taken.",
         ],
       },
     ],
@@ -811,9 +823,9 @@ export const CHAPTERS: Chapter[] = [
     id: "treasury-and-yield",
     group: "economy",
     title: "Treasury, yield and the mix",
-    tldr: "The treasury holds **50 % liquid staking, 40 % lent stablecoins and 10 % NEAR**, the mix explorers adopted in the DAO vote. A daily run, approved by the DAO council, harvests growth and rebalances within hard limits; only the yield becomes the map budget.",
+    tldr: "The treasury holds **90 % staked NEAR, 5 % USDC and 5 % USDT** (on Rhea Lend), the mix the DAO adopted on 11 Nov 2026 because on testnet only validator staking earns. A daily run, approved by the DAO council, harvests growth and rebalances within hard limits; only the yield becomes the map budget.",
     keyFacts: [
-      ["50 / 40 / 10", "% target: staking / stablecoins / NEAR"],
+      ["90 / 5 / 5", "% target: staked NEAR / USDC / USDT"],
       ["40 %", "max with any one protocol"],
       ["25 %", "of the treasury moved per run at most"],
       ["3 points", "of drift before a rebalance"],
@@ -828,13 +840,14 @@ export const CHAPTERS: Chapter[] = [
         table: {
           head: ["Limit", "Value"],
           rows: [
-            ["Max per protocol", "40 % (USDC + USDT both count as Rhea Lend)"],
+            ["Max per protocol", "40 % (each validator pool is its own protocol; USDC + USDT both count as Rhea Lend)"],
             ["No supply when market utilization is", "≥ 95 %"],
             ["Max moved per run", "25 % of the treasury"],
             ["Rebalance when drift exceeds", "3 percentage points"],
           ],
         },
       },
+      { p: "**Staked NEAR** sits in the treasury's keyless staking vaults (validator pools, 100 % of the yield to the prize pool). The mix counts these positions, valued at staked + unstaked, but never moves them: new stake goes through the staking script, spread over several validators. The liquid rest (stablecoins, liquid staking tokens, wNEAR) is what a daily run rebalances; with most of the treasury staked, its drift is measured against the liquid part. The stablecoin share is split evenly between USDC and USDT." },
       { p: "Order of a daily run: harvest stNEAR growth above the principal, rebalance toward the target, keep the reserve. The target is the mix the treasury DAO adopted, and a rebalance runs only on a day whose run the DAO approved (see the next chapter). The live split comes from `/api/treasury/mix`." },
       { h: "From yield to a daily budget" },
       { p: "Try it: the treasury size and the blended yield decide how much the map can pay every day without touching principal." },
@@ -857,7 +870,7 @@ export const CHAPTERS: Chapter[] = [
           "A keyless vault never changes code after creation; the yield vault gets fixes only by an in-place upgrade that must leave every position byte for byte unchanged.",
         ],
       },
-      { p: "The [Treasury](/treasury) dashboard shows all of this live: the money flow, the mix, today's budget, QGOLD backing and a model." },
+      { p: "The [Treasury](/treasury) page shows all of this live: one headline card with the treasury and its mix, then tabs for Overview, Vote, Money flow, QGOLD, Model and Safety." },
     ],
   },
   {
@@ -874,7 +887,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "dao-flow",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/TREASURY-DAO.md", "server/native/treasury-dao.mjs", "scripts/treasury-dao-testnet.mjs", "src/TreasuryVote.tsx"],
+    sources: ["docs/TREASURY-DAO.md", "server/native/treasury-dao.mjs", "scripts/treasury-dao-testnet.mjs", "src/economy/TreasuryVoteCard.tsx"],
     blocks: [
       { p: "The treasury follows a stock **Sputnik DAO v2**, `questlayer-treasury.sputnik-v2.testnet`, with the role names Trezu uses: a keeper that only files proposals (Requestor), a council of three that approves with **2 of 3** (Admin, Approver), and **Explorers**, the players who may vote." },
       {
@@ -890,13 +903,14 @@ export const CHAPTERS: Chapter[] = [
       },
       {
         list: [
-          "**Options:** Balanced 50 / 40 / 10 (recommended), More staking 70 / 20 / 10, Bigger reserve 40 / 30 / 30 (liquid staking / stablecoins / NEAR reserve). Every option stays inside the treasury limits.",
+          "**Options** (staked NEAR / stablecoins / NEAR reserve): Staking first 90 / 10 / 0 (recommended, the stables split 5 % USDC + 5 % USDT), More stables 70 / 20 / 10, Bigger reserve 60 / 20 / 20. Every option stays inside the treasury limits. Polls filed before 11 Nov 2026 (50 / 40 / 10 and friends) still tally to their own targets.",
+          "**Owner decision:** `treasury-dao-testnet.mjs adopt <preset> --execute` has the council adopt a preset at once (used on 11 Nov 2026 for 90 / 5 / 5); it closes this week's open mix poll and re-files today's run with the new target.",
           "**Checked automatic approval:** the council keys approve a daily run only when its target is the adopted mix and it moves at most 25 % of the treasury.",
           "Extra votes of the week appear under the mix vote and are counted the same way. New voters join the DAO once a day.",
           "Custody stays with the operator on testnet for now; the DAO decides the target and approves every run. The QGOLD vault council moves to the DAO next.",
         ],
       },
-      { p: "Vote in Community → Quests → **Treasury vote**. The live tally and the decision log are on the [Treasury](/treasury#dao) page." },
+      { p: "Vote on the [Treasury](/treasury#vote) page, tab **Vote**: each option shows its mix, votes and tags, and an explorer signed in on that device votes right there with no wallet popup. The same tab shows who decides and the decision log." },
     ],
   },
   {
@@ -966,7 +980,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "fees",
     status: "partial",
     updated: "2026-11-11",
-    sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json", "src/signing-vault/policy.ts", "src/GameMap.tsx"],
+    sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "server/data/creator-xp.json", "server/creators/creator-xp.mjs", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json", "src/signing-vault/policy.ts", "src/GameMap.tsx"],
     blocks: [
       { h: "What GOLD buys (every spend is a burn)" },
       { viz: "gold-prices" },
@@ -991,11 +1005,18 @@ export const CHAPTERS: Chapter[] = [
           "One escrow task pays at most 50 completions, each account once. A proof waiting for review holds its slot, so a poster cannot cancel it away.",
           "Failed transfers keep the credit and retry after verification; only payments with an unknown outcome pause the queue.",
           "The funder holds a small NEAR storage deposit on the escrow (about 0.01 NEAR per agreement record); the relayer can top it up in 0.05 NEAR steps, at most 0.5 NEAR.",
-          "Sponsored NEAR tasks run on a separate escrow contract that holds each sponsor's exact reward until a reviewed completion; it never touches stake, yield or prize money.",
+          "**Community · Tasks** is one list of these player tasks: open nearby, the ones you are taking, the ones you posted, and a type filter. Every row shows who posted it with their avatar. The older practice-GOLD tasks and the separate sponsored NEAR task contract are no longer in the app.",
         ],
       },
       { h: "Creators" },
-      { p: "Players can publish their own quests by committing earned XP (200 on testnet) while a quest is live. Verified explorers vote each UTC day on which community quests earn the next day's creator bonus (3 votes each, top 3 win). Creator money is paid from a bounded on-chain round." },
+      {
+        list: [
+          "Players publish their own quests after a moderator review. A live quest holds 200 earned XP (testnet), returned when it closes.",
+          `**The game pays creators in XP, never in QGOLD:** a first publication earns ${CREATOR_XP.publish.story} XP for a story, ${CREATOR_XP.publish.visit} for a visit, ${CREATOR_XP.publish.chest} for a chest and ${CREATOR_XP.publish.trail} for a trail (+${CREATOR_XP.trailStopBonus} per stop after the second), and every completion by another explorer adds ${CREATOR_XP.completion} XP, up to ${CREATOR_XP.completionsPerDay} a day. That makes building quests the best XP source in the game.`,
+          "A creator earns QGOLD only from QGOLD they put into a quest themselves (a paid task or a sponsored Secret).",
+          "The daily creator-bonus vote is no longer shown in the app (11 Nov 2026). Without votes the server gates nothing, so every community quest counts the same.",
+        ],
+      },
     ],
   },
   {

@@ -115,6 +115,8 @@ test("profiles publish only with explicit consent and never borrow the private a
     "domain",
     "following",
     "id",
+    "look",
+    "stats",
   ]);
   assert.equal(value.displayName, "Riverkeeper");
   assert.ok(!JSON.stringify(value).includes("Private account name"));

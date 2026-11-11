@@ -50,6 +50,8 @@ export function createCreatorLifecycle(
     isCompletionAuthority = () => false,
     authorizeAdmission = () => true,
     clock = Date.now,
+    // Host hook, inside the review transaction: the game's XP for a first publication.
+    onPublished = null,
   } = {},
 ) {
   fail(
@@ -436,6 +438,15 @@ export function createCreatorLifecycle(
             db.prepare(
               "UPDATE creator_quests SET published_revision=? WHERE id=?",
             ).run(row.latest_revision, questId);
+          // The game's XP for building a quest, once, at first publication.
+          if (decision === "approve" && row.published_revision === null)
+            onPublished?.({
+              questId,
+              author: row.author,
+              place: candidate.content.place,
+              title: candidate.content.title,
+              now,
+            });
           touch(
             questId,
             decision === "approve" || row.published_revision !== null
