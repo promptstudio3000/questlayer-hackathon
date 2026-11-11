@@ -169,9 +169,11 @@
 }
 .layer-actions {
   display: grid;
-  grid-template-columns: repeat(2, 48px);
+  /* Wide enough for the 64 px jump button, so it never covers Build. */
+  grid-template-columns: repeat(2, 64px);
   gap: 8px;
-  justify-items: end;
+  justify-items: center;
+  align-items: center;
   margin-left: auto;
 }
 .layer-icon.jump {

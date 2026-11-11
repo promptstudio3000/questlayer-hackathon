@@ -3076,6 +3076,7 @@
  "You can build only on your own plot (gold border).": "يمكنك البناء على قطعتك فقط (الحافة الذهبية).",
  "Your free home plot has a gold border. Tap Build, pick a block and tap where it goes.": "لقطعتك المنزلية المجانية حافة ذهبية. اضغط بناء، واختر كتلة، واضغط حيث تريد وضعها.",
  "Your last blocks were not saved and were undone. Try again.": "لم تُحفظ كتلك الأخيرة وتم التراجع عنها. حاول مرة أخرى.",
+ "Connection problem. Your blocks are kept and will be saved when it is back.": "مشكلة في الاتصال. مكعباتك محفوظة وستُحفظ عند عودة الاتصال.",
  "Your plot": "قطعتك",
  "{0} m": "{0} م",
  "NEAR for your payments": "NEAR لمدفوعاتك",

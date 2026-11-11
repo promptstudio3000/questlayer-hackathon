@@ -3076,6 +3076,7 @@
  "You can build only on your own plot (gold border).": "Stavět můžeš jen na svém pozemku (zlatý okraj).",
  "Your free home plot has a gold border. Tap Build, pick a block and tap where it goes.": "Tvůj domácí pozemek zdarma má zlatý okraj. Klepni na Stavět, vyber blok a klepni, kam patří.",
  "Your last blocks were not saved and were undone. Try again.": "Tvoje poslední bloky se neuložily a byly vráceny. Zkus to znovu.",
+ "Connection problem. Your blocks are kept and will be saved when it is back.": "Problém se spojením. Tvoje bloky zůstávají a uloží se, jakmile se spojení vrátí.",
  "Your plot": "Tvůj pozemek",
  "{0} m": "{0} m",
  "NEAR for your payments": "NEAR na tvoje platby",
