@@ -3175,5 +3175,14 @@
  "Top reward": "Наибольшая награда",
  "Walk a little or check back later: places, NPCs and community posts change during the day.": "Пройдись немного или загляни позже: места, NPC и посты сообщества меняются в течение дня.",
  "Zones": "Зоны",
- "Community place": "Место сообщества"
+ "Community place": "Место сообщества",
+ "The treasury vote is on another network.": "Голосование по казне идёт в другой сети.",
+ "Vote saved on chain.": "Голос сохранён в блокчейне.",
+ "Treasury vote": "Голосование по казне",
+ "Explorers choose how the shared treasury is held. The council carries out the result.": "Исследователи решают, как хранится общая казна. Совет исполняет результат.",
+ "In force now: {0}": "Сейчас действует: {0}",
+ "Reach level 3 and play this week to vote. New voters join once a day.": "Достигните 3 уровня и играйте на этой неделе, чтобы голосовать. Новые участники добавляются раз в день.",
+ "Other votes this week": "Другие голосования этой недели",
+ "{0} votes": "Голосов: {0}",
+ "See the treasury DAO": "Открыть DAO казны"
 }

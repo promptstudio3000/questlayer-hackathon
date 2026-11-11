@@ -3175,5 +3175,14 @@
  "Top reward": "Mayor recompensa",
  "Walk a little or check back later: places, NPCs and community posts change during the day.": "Camina un poco o vuelve más tarde: los lugares, los PNJ y las publicaciones de la comunidad cambian durante el día.",
  "Zones": "Zonas",
- "Community place": "Lugar de la comunidad"
+ "Community place": "Lugar de la comunidad",
+ "The treasury vote is on another network.": "La votación del tesoro está en otra red.",
+ "Vote saved on chain.": "Voto guardado en la cadena.",
+ "Treasury vote": "Votación del tesoro",
+ "Explorers choose how the shared treasury is held. The council carries out the result.": "Los exploradores deciden cómo se guarda el tesoro común. El consejo ejecuta el resultado.",
+ "In force now: {0}": "Vigente ahora: {0}",
+ "Reach level 3 and play this week to vote. New voters join once a day.": "Llega al nivel 3 y juega esta semana para votar. Los nuevos votantes se añaden una vez al día.",
+ "Other votes this week": "Otras votaciones de esta semana",
+ "{0} votes": "{0} votos",
+ "See the treasury DAO": "Ver la DAO del tesoro"
 }
