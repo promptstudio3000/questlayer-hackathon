@@ -672,12 +672,16 @@ svg {
 .primary-button:hover {
   background: #695488;
 }
-.primary-button > svg:last-child {
-  margin-left: auto;
-  width: 18px;
+/* Label and its icon sit together in the middle of the button. An arrow
+   right after the label must never push the label to the left edge.
+   (svg:only-child also matched "text + arrow" buttons, since text nodes are
+   not elements, and its auto margins shoved the label left.) */
+.primary-button > svg {
+  flex: none;
+  margin: 0;
 }
-.primary-button > svg:only-child {
-  margin: auto;
+.primary-button > svg:last-child {
+  width: 18px;
 }
 .secondary-button {
   display: inline-flex;
