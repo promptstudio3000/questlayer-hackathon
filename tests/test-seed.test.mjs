@@ -78,7 +78,7 @@ test("apply builds the whole test world idempotently", () => {
     assert.equal(first.creatorQuests, SEED_CREATOR_QUESTS.length);
     assert.equal(first.openListings, 4);
     assert.equal(first.openTasks, SEED_TASKS.length);
-    assert.equal(first.notes, 12);
+    assert.equal(first.notes, 24);
     now += 1000;
     assert.deepEqual(
       { ...seed.apply(), creators: null },
