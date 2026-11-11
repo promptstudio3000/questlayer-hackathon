@@ -835,7 +835,7 @@ export const CHAPTERS: Chapter[] = [
     id: "treasury-and-yield",
     group: "economy",
     title: "Treasury, yield and the mix",
-    tldr: "The treasury holds **90 % staked NEAR, 5 % USDC and 5 % USDT** (on Rhea Lend), the mix the DAO adopted on 11 Nov 2026 because on testnet only validator staking earns. A daily run, approved by the DAO council, harvests growth and rebalances within hard limits; only the yield becomes the map budget.",
+    tldr: "Target since 11 Nov 2026: **90 % staked NEAR, 5 % USDC, 5 % USDT** (on Rhea Lend), because on testnet only validator staking earns; it applies once the DAO council adopts it. A DAO-approved daily run rebalances within hard limits; only the yield becomes the map budget.",
     keyFacts: [
       ["90 / 5 / 5", "% target: staked NEAR / USDC / USDT"],
       ["40 %", "max with any one protocol"],
@@ -883,7 +883,7 @@ export const CHAPTERS: Chapter[] = [
           "A keyless vault never changes code after creation; the yield vault gets fixes only by an in-place upgrade that must leave every position byte for byte unchanged.",
         ],
       },
-      { p: "The [Treasury](/treasury) page shows all of this live: one headline card with the treasury and its mix, then tabs for Overview, Vote, Money flow, QGOLD, Model and Safety." },
+      { p: "The [Treasury](/treasury) page shows all of this live. The headline adds up the three on-chain accounts that hold the game's NEAR (treasury, prize pool, QGOLD vault), each linked to the NEAR explorer, next to a QGOLD ⇄ NEAR swap card. Overview has a four-step animated loop, a one-year projection at today's yield (staked NEAR at an estimated validator rate after the pool fee, stablecoins at Rhea's live rate), the mix, the treasury history from 1 Nov 2026 (the 31 Oct pilot test is left out of all public history) and an FAQ accordion; numbers carry an info button that explains them. Further tabs: Vote, Money flow, QGOLD, Model and Safety." },
     ],
   },
   {
@@ -917,7 +917,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**Options** (staked NEAR / stablecoins / NEAR reserve): Staking first 90 / 10 / 0 (recommended, the stables split 5 % USDC + 5 % USDT), More stables 70 / 20 / 10, Bigger reserve 60 / 20 / 20. Every option stays inside the treasury limits. Polls filed before 11 Nov 2026 (50 / 40 / 10 and friends) still tally to their own targets.",
-          "**Owner decision:** `treasury-dao-testnet.mjs adopt <preset> --execute` has the council adopt a preset at once (used on 11 Nov 2026 for 90 / 5 / 5); it closes this week's open mix poll and re-files today's run with the new target.",
+          "**Owner decision:** `treasury-dao-testnet.mjs adopt <preset> --execute` has the council adopt a preset at once (prepared on 11 Nov 2026 for 90 / 5 / 5); it closes this week's open mix poll and re-files today's run with the new target.",
           "**Checked automatic approval:** the council keys approve a daily run only when its target is the adopted mix and it moves at most 25 % of the treasury.",
           "Extra votes of the week appear under the mix vote and are counted the same way. New voters join the DAO once a day.",
           "Custody stays with the operator on testnet for now; the DAO decides the target and approves every run. The QGOLD vault council moves to the DAO next.",
@@ -930,7 +930,7 @@ export const CHAPTERS: Chapter[] = [
     id: "qgold",
     group: "economy",
     title: "QGOLD token and vault",
-    tldr: "QGOLD is the gold you earn, always fully backed by NEAR in one vault contract. **R = backing ÷ supply**: mints keep R flat, burns and fees raise it, and there is **no admin withdraw**.",
+    tldr: "QGOLD is the gold you earn, always fully backed by NEAR in one vault contract. **R = backing ÷ supply**: mints keep R flat, burns and fees raise it, and there is **no admin withdraw**. New QGOLD's NEAR comes from treasury yield; stablecoins steady the treasury, not the vault.",
     keyFacts: [
       ["0.001 NEAR", "starting rate R per QGOLD"],
       ["±1 %", "to buy from or sell to the vault"],
