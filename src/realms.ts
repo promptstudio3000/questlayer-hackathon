@@ -5,10 +5,10 @@ export const REALMS = {
     name: "QuestLayer",
     movement: "gps-or-labelled-arena",
   },
-  gotchiverse: {
-    id: "gotchiverse",
-    name: "Gotchiverse",
-    movement: "virtual-workshop",
+  layer: {
+    id: "layer",
+    name: "Layer",
+    movement: "virtual-voxel",
   },
 } as const;
 export type RealmId = keyof typeof REALMS;

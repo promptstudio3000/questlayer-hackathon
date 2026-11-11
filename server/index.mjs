@@ -1,5 +1,6 @@
-import { createWorkshopStore } from "./gotchiverse/store.mjs";
-import { createWorkshopRoutes } from "./gotchiverse/routes.mjs";
+import { createLayerStore } from "./layer/store.mjs";
+import { createLayerRoutes } from "./layer/routes.mjs";
+import { LAYER_REGISTRY, publicLayer } from "./layer/layers.mjs";
 import { defaultDatabasePath } from "./state-path.mjs";
 import {
   cellProof,
@@ -249,14 +250,12 @@ const nativeAttestationsDisabled =
 const backgroundWorkersDisabled =
   process.env.DISABLE_BACKGROUND_WORKERS === "1";
 const db = openDatabase();
-// Gotchiverse-test-app (docs/GOTCHIVERSE.md): a nonfinancial private workshop,
-// off unless GOTCHIVERSE_TEST_APP=1. Its JSON files live next to the database.
-const gotchiverseTestApp = process.env.GOTCHIVERSE_TEST_APP === "1";
-const workshopRoutes = gotchiverseTestApp
-  ? createWorkshopRoutes({
-      store: createWorkshopStore({
-        directory: resolve(dirname(db.prepare("PRAGMA database_list").get().file), "gotchiverse"),
-      }),
+// Layer (docs/LAYER.md): the shared virtual voxel world, nonfinancial and
+// testnet-only, off unless LAYER_ENABLED=1. Its tables live in the game database.
+const layerEnabled = process.env.LAYER_ENABLED === "1" && NETWORK !== "mainnet";
+const layerRoutes = layerEnabled
+  ? createLayerRoutes({
+      store: createLayerStore(db),
       authenticate: auth,
       actorFor: (playerId) => {
         const row = db.prepare("SELECT name FROM players WHERE id=?").get(playerId);
@@ -1622,7 +1621,7 @@ async function api(req, res, url) {
       network: NETWORK,
       signingVaultOrigin: secureSigningOrigin,
       features: ENABLED_FEATURES,
-      gotchiverseTestApp,
+      layer: layerEnabled ? { layers: LAYER_REGISTRY.map(publicLayer) } : null,
       rpcUrl: browserRpc,
       coinValue: 0.01,
       coinSplit: 50,
@@ -2190,7 +2189,7 @@ async function api(req, res, url) {
   const player = auth(req);
   req.questlayerPlayer = player;
   originSync.touch(player);
-  if (workshopRoutes && (await workshopRoutes.handle(req, res, url, { player, body, respond, assert }))) return;
+  if (layerRoutes && (await layerRoutes.handle(req, res, url, { player, body, respond, assert }))) return;
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
   )

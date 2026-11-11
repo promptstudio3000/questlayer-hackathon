@@ -200,8 +200,8 @@ export const LandmarkClue = lazyNamed(() => import("./LandmarkClue"), "default")
 
 export const FindDetails = lazyNamed(() => import("./FindDetails"), "FindDetails");
 
-// Gotchiverse-test-app (docs/GOTCHIVERSE.md), shown only when the server enables it.
-const LazyGotchiverse = lazy(() => import("./Gotchiverse").then((m) => ({ default: m.Gotchiverse })));
-export function Gotchiverse(props: ComponentProps<typeof import("./Gotchiverse").Gotchiverse>) {
-  return <PanelBoundary><Suspense fallback={<EmptyState title={tr("Opening Gotchiverse…")} status />}><LazyGotchiverse {...props} /></Suspense></PanelBoundary>;
+// The virtual voxel Layer (docs/LAYER.md), shown only when the server enables it.
+const LazyLayer = lazy(() => import("./layer/Layer").then((m) => ({ default: m.Layer })));
+export function Layer(props: ComponentProps<typeof import("./layer/Layer").Layer>) {
+  return <PanelBoundary><Suspense fallback={<EmptyState title={tr("Opening the layer…")} status />}><LazyLayer {...props} /></Suspense></PanelBoundary>;
 }
