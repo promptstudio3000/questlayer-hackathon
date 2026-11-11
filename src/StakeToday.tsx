@@ -222,7 +222,7 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
       {onSeen && <StakeCeremonies card={card} onSeen={onSeen} />}
       {onRankSeen && card.rank && <PatronRankUp rank={card.rank} onSeen={onRankSeen} />}
       <header>
-        <h3 id="stake-today-title">{tr("Your stake today")}</h3>
+        <h3 id="stake-today-title">{tr("Your stake")}</h3>
         {card.patron && <span className="stake-patron">✦ {card.patron.title}</span>}
         {card.rank && card.rank.name && (
           <span className="stake-patron stake-rank">

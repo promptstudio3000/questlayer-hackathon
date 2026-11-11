@@ -89,7 +89,7 @@ try {
     ["phone-390", { width: 390, height: 844 }, true],
     ["desktop", { width: 1440, height: 900 }, false],
   ]) {
-    const context = await browser.newContext({ viewport, hasTouch: mobile, isMobile: mobile, deviceScaleFactor: 2 });
+    const context = await browser.newContext({ viewport, hasTouch: mobile, isMobile: mobile, deviceScaleFactor: 2 });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     const page = await context.newPage();
     const errors = [];
     page.on("pageerror", (e) => errors.push(e.message));

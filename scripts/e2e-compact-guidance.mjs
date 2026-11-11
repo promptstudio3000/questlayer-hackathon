@@ -30,7 +30,7 @@ try {
   browser = await (process.env.E2E_BROWSER === "webkit" ? webkit : chromium).launch();
   for (const [name, width, height] of [["phone-360",360,780],["phone-390",390,844],["landscape",844,390],["desktop",1440,900]]) {
     if (process.env.E2E_VIEWPORT && process.env.E2E_VIEWPORT !== name) continue;
-    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce", serviceWorkers: "block" });
+    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce", serviceWorkers: "block" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     const post = async (path, data) => { const r = await context.request.post(url + "/api" + path, { headers: { Origin: url }, data }); assert.ok(r.ok(), path); return r.json(); };
     await post("/session", { name: `Mira ${name}` });
     const world = await post("/world", { arena: true, location: { lat:49.74745, lng:13.3774 } });

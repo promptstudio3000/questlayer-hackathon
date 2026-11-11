@@ -301,6 +301,7 @@ import {
 } from "./feedback";
 import { QuestThumbnail } from "./QuestThumbnail";
 import { headingTo, metersBetween } from "./map-motion.ts";
+import { locationPermission, rememberMode, shouldStartWithGps } from "./play-here";
 import { advanceGpsFacing, initialGpsFacing } from "./gps-facing";
 import { useDemoWalk } from "./useDemoWalk";
 import { DemoControls } from "./DemoControls";
@@ -1387,8 +1388,19 @@ export default function App() {
     setOthers([]);
     setBusy("");
     setToast(null);
-    if (player) void loadWorld(HOME, true);
+    if (player) {
+      void loadWorld(HOME, true);
+      void resumeLocation();
+    }
   }, [player?.id]);
+  // The game starts in the world around the player (src/play-here.ts): the
+  // demo stays only when location is refused or the player chose it.
+  async function resumeLocation() {
+    const owner = ownerContext();
+    const permission = await locationPermission();
+    if (ownerContext() !== owner || !arenaIntent.current) return;
+    if (shouldStartWithGps(permission)) void locate(true);
+  }
   useEffect(() => {
     void me();
     const a = () => {
@@ -1994,11 +2006,12 @@ export default function App() {
     setGpsCourse(null);
     gpsFacing.current = initialGpsFacing();
     gpsResumeOnMovement.current = false;
+    rememberMode("demo");
     setArena(true);
     setPosition(HOME);
     void loadWorld(HOME, true);
   }
-  async function locate() {
+  async function locate(quiet = false) {
     if (!navigator.geolocation) {
       notify(
         tr("This browser cannot share your location. Keep exploring in the city demo."),
@@ -2020,7 +2033,7 @@ export default function App() {
         setFollow(true); setOverview(false);
       }
     };
-    setBusy("gps");
+    if (!quiet) setBusy("gps");
     navigator.geolocation.getCurrentPosition(
       (p) => {
         if (!current()) return;
@@ -2034,6 +2047,7 @@ export default function App() {
         setFix(f);
         gpsFacing.current = initialGpsFacing();
         turn(p, f);
+        rememberMode("gps");
         setArena(false);
         setFollow(true);
         setGlobe(false);
@@ -2065,6 +2079,8 @@ export default function App() {
       () => {
         if (!current()) return;
         setBusy("");
+        // A refused start-up request keeps the city demo without a warning.
+        if (quiet) return;
         notify(
           tr("Allow location access, or keep exploring in the city demo."),
           true,
