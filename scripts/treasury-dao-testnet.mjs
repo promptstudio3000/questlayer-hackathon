@@ -44,6 +44,7 @@ import {
   checkDailyRun,
   weekOf,
   utcDate,
+  sameTargets,
 } from "../server/native/treasury-dao.mjs";
 
 const [command = "status", ...rest] = process.argv.slice(2);
