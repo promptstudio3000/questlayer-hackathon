@@ -321,7 +321,7 @@ export const CHAPTERS: Chapter[] = [
         note: "Demo layout on testnet now (`DEMO_ZONES`): the six Plzeň zones follow their OpenStreetMap park or square outlines (an irregular blob where OpenStreetMap has no usable area), about 55–85 m across, at least 80 m apart, on the park ring around náměstí Republiky (náměstí Republiky, sady Pětatřicátníků North and West, Smetanovy sady, Šafaříkovy sady, sady 5. května), each within about 400 m of the start on a loop of about 2 km. All of them are open the whole day with no countdown, and chests, guardians, NPCs and monsters stay near the centre. Each compact day is its own world, mainnet refuses the switch, and the table above returns when it is off.",
       },
       {
-        p: "Tier 3 zones are always on the map but locked until the explorer reaches Tier 3 in the vault (100 NEAR of matured weighted stake): a dashed edge, a lock on the pin and a \"🔒 Tier 3\" plate. Walking into one opens a dialog that says which tier it needs and how much to stake, with a Stake button and a How it works link. Tier 2 places stay open to everyone. Outside reviewed cities, one plain visit per street cell is such a Tier 3 place (70 m, double visit XP, never a funded cell zone). Zones outside reviewed cities are irregular blobs, not circles.",
+        p: "Tier 3 zones are always on the map but locked until the explorer reaches Tier 3 in the vault (50 NEAR of matured weighted stake): a dashed edge, a lock on the pin and a \"🔒 Tier 3\" plate. Walking into one opens a dialog that says which tier it needs and how much to stake, with a Stake button and a How it works link. Tier 2 places stay open to everyone. Outside reviewed cities, one plain visit per street cell is such a Tier 3 place (70 m, double visit XP, never a funded cell zone). Zones outside reviewed cities are irregular blobs, not circles.",
       },
       { h: "Quest kinds" },
       { viz: "quest-kinds" },
@@ -1023,7 +1023,7 @@ export const CHAPTERS: Chapter[] = [
     tldr: `Stake **${STAKER_MIN_NEAR} NEAR** (about 5 €) to become a Staker; Tier 2 and Tier 3 follow your weighted stake. Perks open by step **and** level, are things to do or wear, and never change odds or payouts. Your principal stays yours.`,
     keyFacts: [
       [`${STAKER_MIN_NEAR} NEAR`, "matured stake for the Staker step"],
-      ["50 / 100 NEAR", "for Tier 2 / Tier 3"],
+      ["10 / 50 NEAR", "for Tier 2 / Tier 3"],
       ["0–100 %", "of your yield you choose to give"],
       ["60 epochs", "to the top patron rank, Hearthfire"],
     ],

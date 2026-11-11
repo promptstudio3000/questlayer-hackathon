@@ -54,7 +54,7 @@ test("missing parts are exact, with € only when a price exists", () => {
   const staker = stakerAccess({ matured: 2n * N, level: 4 }, settings);
   assert.equal(checkGate("patron_aura", staker, { settings }).open, true);
   const rare = checkGate("wandering_rare_patron", staker, { settings });
-  assert.deepEqual(rare.missing.map((m) => m.label), ["Reach Tier 3 (100 NEAR matured)", "Reach level 8"]);
+  assert.deepEqual(rare.missing.map((m) => m.label), ["Reach Tier 3 (50 NEAR matured)", "Reach level 8"]);
   const maturing = stakerAccess({ pending: 2n * N, level: 2 }, settings);
   assert.deepEqual(checkGate("keeper_inner", maturing, { settings }).missing.map((m) => m.kind), ["maturing"]);
   // The chip always prefills the stake sheet with the Staker minimum.

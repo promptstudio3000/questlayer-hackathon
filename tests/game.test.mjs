@@ -354,5 +354,10 @@ test("Tier 2 places are open to everyone, Tier 3 needs the vault's Tier 3; TIER_
   assert.equal(placeTier(db, a, {}), 2);
   recordStakerStatus(db, a, { tier: 3 });
   assert.equal(placeTier(db, a, {}), 3);
+  // 50 NEAR of weighted stake is Tier 3 in the game even where the contract view says 2.
+  recordStakerStatus(db, a, { tier: 2, weighted: 50n * 10n ** 24n });
+  assert.equal(placeTier(db, a, {}), 3);
+  recordStakerStatus(db, a, { tier: 1, weighted: 49n * 10n ** 24n });
+  assert.equal(placeTier(db, a, { TIER_PLACES: "stake" }), 2);
   db.close();
 });

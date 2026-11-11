@@ -4,8 +4,9 @@
 //
 // Steps, lowest first:
 //   staker  patron rank 0: matured (E+2) active stake >= STAKER_MIN_NEAR (2)
-//   tier2   the vault contract's Tier 2 (50 NEAR weighted)
-//   tier3   the vault contract's Tier 3 (100 NEAR weighted)
+//   tier2   10 NEAR weighted stake (owner decision 11 Nov 2026; the vault
+//           contract's own view still says 50)
+//   tier3   50 NEAR weighted stake (the contract's view still says 100)
 // A higher step includes the lower ones. The table lives in
 // server/data/staker-gates.json; STAKER_GATES_PATH (a JSON file) or
 // STAKER_GATES_JSON (inline JSON) override single gates, STAKER_MIN_NEAR the
@@ -18,7 +19,7 @@ import { registerModuleSchema, ensureModuleVersion } from "./schema-compatibilit
 export const STAKER_GATES_POLICY = "staker-gates-v1";
 export const STEPS = ["none", "staker", "tier2", "tier3"];
 const YOCTO = 10n ** 24n;
-const TIER_NEAR = { tier2: 50, tier3: 100 };
+const TIER_NEAR = { tier2: 10, tier3: 50 };
 const DEFAULT_PATH = fileURLToPath(new URL("./data/staker-gates.json", import.meta.url));
 
 const big = (v) => {
@@ -228,8 +229,17 @@ export function readStakerStatus(db, player) {
  * reading recorded above counts. The old simulated staking never grants a tier.
  */
 export function playerStakeTier(db, player) {
-  const t = player ? readStakerStatus(db, player)?.tier : null;
-  return Number.isInteger(t) ? Math.max(1, Math.min(3, t)) : 1;
+  const s = player ? readStakerStatus(db, player) : null;
+  const t = Number.isInteger(s?.tier) ? Math.max(1, Math.min(3, s.tier)) : 1;
+  // The game's tier amounts (TIER_NEAR, Lubos 11 Nov 2026: 10 / 50 NEAR) are
+  // below the vault contract's view (50 / 100), so the recorded weighted
+  // stake decides as well; the higher of the two counts.
+  let w = 0n;
+  try {
+    w = big(s?.weighted);
+  } catch {}
+  const byStake = w >= BigInt(TIER_NEAR.tier3) * YOCTO ? 3 : w >= BigInt(TIER_NEAR.tier2) * YOCTO ? 2 : 1;
+  return Math.max(t, byStake);
 }
 
 /**
