@@ -257,3 +257,17 @@
   margin-top: 1px;
   color: var(--action);
 }
+/* Chest Auras still in this zone today; the ring colour is the rarity. */
+.zone-schedule-auras { display: flex; flex: none; gap: 4px; margin-left: auto; }
+.zone-schedule-auras img {
+  width: 28px;
+  height: 28px;
+  padding: 2px;
+  object-fit: contain;
+  border: 2px solid #7f9a86;
+  border-radius: 50%;
+  background: #fcfaff;
+}
+.zone-schedule-auras img.rarity-rare { border-color: #3f8cff; }
+.zone-schedule-auras img.rarity-epic { border-color: #9b4dff; }
+.zone-schedule-auras img.rarity-legendary { border-color: #f3bd54; }

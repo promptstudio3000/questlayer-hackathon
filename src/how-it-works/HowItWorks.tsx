@@ -361,9 +361,6 @@ function ZonesScene({ active, reduce }: { active: boolean; reduce: boolean }) {
             {pill(z.tier)}
           </span>
         ))}
-        <span className="hiw-zone-loot" style={{ left: "24%", top: "74%" }}>
-          <AuraSprite edition="polar" slot="above" size={1} animated={false} />
-        </span>
         <span className="hiw-zone-coin" style={{ left: "38%", top: "66%" }}>
           <GameObjectArt kind="coin" size={22} />
         </span>

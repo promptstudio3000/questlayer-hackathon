@@ -55,6 +55,13 @@ export function ZoneSchedule({ zone, quests, now, timezone }: { zone: Zone; ques
               s.loot.length ? tr("chest Auras: {0}", { 0: s.loot.map((l) => l.name).join(", ") }) : "",
             ].filter(Boolean).join(" · ")}
           </span>
+          {s.loot.length > 0 && (
+            <span className="zone-schedule-auras" aria-hidden="true">
+              {s.loot.map((l) => l.src && (
+                <img key={l.id} src={l.src} alt="" title={l.name} className={`rarity-${l.rarity || "common"}`} loading="lazy" />
+              ))}
+            </span>
+          )}
         </p>
       )}
       <p>

@@ -579,19 +579,11 @@ html.hiw-root {
 .hiw-zpill.locked {
   background: #6f6478;
 }
-.hiw-zone-loot,
 .hiw-zone-coin {
   position: absolute;
   display: grid;
   place-items: center;
   translate: -50% -50%;
-}
-.hiw-zone-loot {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  background: #fcfaffe6;
-  border: 3px solid #3f8cff;
 }
 .hiw-zone-legend {
   list-style: none;
@@ -1342,7 +1334,6 @@ html.hiw-root {
       animation: hiw-altar-drop 600ms var(--hiw-pop) both;
       animation-delay: calc(700ms + var(--i) * 220ms);
     }
-    & [data-inview="true"] .hiw-zone-loot,
     & [data-inview="true"] .hiw-zone-coin {
       animation: hiw-bob 3s ease-in-out infinite;
     }

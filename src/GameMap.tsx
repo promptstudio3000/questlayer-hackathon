@@ -22,13 +22,10 @@ import {
 import {
   zoneCountdown,
   zoneLandmarkLabel,
-  zoneLoot,
-  zoneLootFeatures,
   totemHeight,
   zoneTotemFeatures,
   zoneWallFeatures,
   zoneAuraColor,
-  rarityLabel,
   beamFeatures,
 } from "./zone-landmarks";
 import type { NearbyExplorer, WornWearable } from "./types";
@@ -180,14 +177,6 @@ function phoneLayout() {
     (window.innerWidth <= 1000 && window.innerHeight <= 500)
   );
 }
-// Aura art is loaded once per edition and drawn as a loot token (a rarity
-// ring around the item) so it reads as something to pick up, not an explorer.
-const LOOT_RING = {
-  common: "#7f9a86",
-  rare: "#3f8cff",
-  epic: "#9b4dff",
-  legendary: "#f3bd54",
-} as Record<string, string>;
 /**
  * Adds a map icon for a game object: the dropped-in art/objects/<kind> image
  * when there is one (drawn at 32 CSS px), else the authored pixel raster.
@@ -212,55 +201,6 @@ function addObjectImage(m: maplibregl.Map, name: string, kind: "coin" | "discove
   img.onerror = fallback;
   img.src = url;
 }
-const lootImageLoads = new WeakMap<maplibregl.Map, Map<string, Promise<void>>>();
-function ensureLootImages(
-  m: maplibregl.Map,
-  loot: { image: string; src?: string; rarity?: string }[],
-) {
-  let loads = lootImageLoads.get(m);
-  if (!loads) lootImageLoads.set(m, (loads = new Map()));
-  const pending: Promise<void>[] = [];
-  for (const item of loot) {
-    if (!item.src || m.hasImage(item.image)) continue;
-    let load = loads.get(item.image);
-    if (!load) {
-      load = new Promise<void>((resolve) => {
-        const img = new Image();
-        img.onload = () => {
-          try {
-            const ratio = Math.min(2, window.devicePixelRatio || 1),
-              size = 56,
-              canvas = document.createElement("canvas");
-            canvas.width = canvas.height = Math.round(size * ratio);
-            const g = canvas.getContext("2d")!;
-            g.scale(ratio, ratio);
-            g.beginPath();
-            g.arc(size / 2, size / 2, size / 2 - 3, 0, Math.PI * 2);
-            g.fillStyle = "#fcfaffee";
-            g.fill();
-            g.lineWidth = 4;
-            g.strokeStyle = LOOT_RING[item.rarity || ""] || LOOT_RING.common;
-            g.stroke();
-            g.drawImage(img, 12, 8, 32, 37);
-            if (!m.hasImage(item.image))
-              m.addImage(
-                item.image,
-                g.getImageData(0, 0, canvas.width, canvas.height),
-                { pixelRatio: ratio },
-              );
-          } catch {}
-          resolve();
-        };
-        img.onerror = () => resolve();
-        img.src = item.src!;
-      });
-      loads.set(item.image, load);
-    }
-    pending.push(load);
-  }
-  return Promise.all(pending);
-}
-type LootProps = { zoneId: string; kind: "aura" | "gold"; name: string; rarity: string };
 /**
  * The zone whose altar (the 3D model at its centre) is under a tap. The altar
  * stands up from the centre, so the hit box reaches up by its drawn height.
@@ -309,8 +249,7 @@ export function GameMap(props: GameMapProps) {
   const el = useRef<HTMLDivElement>(null),
     map = useRef<maplibregl.Map | null>(null),
     avatar = useRef<maplibregl.Marker | null>(null),
-    labels = useRef<maplibregl.Marker[]>([]),
-    lootRevision = useRef(0);
+    labels = useRef<maplibregl.Marker[]>([]);
   const altars = useRef<ZoneAltarLayer | null>(null);
   const pawn = useRef<PawnScene | null>(null),
     heading = useRef(180);
@@ -557,76 +496,14 @@ export function GameMap(props: GameMapProps) {
       }
       const p = latest.current;
       if (p.globe || !p.world) return;
-      // Items floating inside a zone say what they are; the altar in the
-      // middle of a zone opens the zone detail, like its pin. An item drawn
-      // over the altar wins only when the tap is on the item itself.
+      // The altar in the middle of a zone opens the zone detail, like its pin.
       const altar = altarAt(m, p.world.zones, e.point);
-      const items = m.getLayer("zone-loot")
-        ? m.queryRenderedFeatures(
-            [
-              [e.point.x - 22, e.point.y - 22],
-              [e.point.x + 22, e.point.y + 22],
-            ],
-            { layers: ["zone-loot"] },
-          )
-        : [];
-      const item = items
-        .filter((f) => f.geometry.type === "Point")
-        .map((f) => {
-          const at = (f.geometry as { coordinates: [number, number] }).coordinates;
-          const c = m.project(at);
-          return { f, at, d: Math.hypot(c.x - e.point.x, c.y - e.point.y) };
-        })
-        .sort((a, b) => a.d - b.d)[0];
-      const itemZone = item && p.world.zones.find((z) => z.id === item.f.properties?.zoneId);
-      if (item && itemZone && (!altar || item.d <= 16)) {
-        showLootInfo(m, item.at, item.f.properties as LootProps, itemZone);
-        return;
-      }
       if (altar) {
-        lootPopup?.remove();
         p.onZone(altar);
         return;
       }
       // No tap-to-walk: real play moves with GPS, the demo with its pad.
     });
-    let lootPopup: maplibregl.Popup | null = null;
-    const showLootInfo = (
-      m: maplibregl.Map,
-      at: [number, number],
-      item: LootProps,
-      zone: Zone,
-    ) => {
-      lootPopup?.remove();
-      const box = document.createElement("div");
-      box.className = "zone-loot-info";
-      const title = document.createElement("strong");
-      title.textContent =
-        item.kind === "aura"
-          ? `${item.name} · ${tr("{0} Aura", { 0: rarityLabel(item.rarity as Parameters<typeof rarityLabel>[0]) })}`
-          : tr("GOLD in this zone");
-      const text = document.createElement("p");
-      text.textContent =
-        item.kind === "aura"
-          ? tr("The chest in {0} can hold this Aura today. Open the chest activity there to try for it.", { 0: zone.name })
-          : tr("Activities in {0} pay GOLD today.", { 0: zone.name });
-      const open = document.createElement("button");
-      open.type = "button";
-      open.className = "zone-loot-open";
-      open.textContent = tr("Show zone activities");
-      open.addEventListener("click", (event) => {
-        event.stopPropagation();
-        lootPopup?.remove();
-        latest.current.onZone(zone);
-      });
-      box.append(title, text, open);
-      lootPopup = new maplibregl.Popup({ offset: 22, maxWidth: "260px", className: "zone-loot-popup", focusAfterOpen: true })
-        .setLngLat(at)
-        .setDOMContent(box)
-        .addTo(m);
-    };
-    m.on("mouseenter", "zone-loot", () => (m.getCanvas().style.cursor = "pointer"));
-    m.on("mouseleave", "zone-loot", () => (m.getCanvas().style.cursor = ""));
     m.on("error", () => {
       if (!gone) setError(true);
     });
@@ -817,8 +694,8 @@ export function GameMap(props: GameMapProps) {
         }, m.getLayer("coin-icons") ? "coin-icons" : undefined);
       };
       chevron.src = mapKitUrl("navigation/chevron.png");
-      // Zone landmarks (src/zone-landmarks.ts): wall, totem and the items inside.
-      for (const id of ["zone-walls", "zone-totems", "zone-loot", "find-beams"])
+      // Zone landmarks (src/zone-landmarks.ts): wall and totem.
+      for (const id of ["zone-walls", "zone-totems", "find-beams"])
         m.addSource(id, {
           type: "geojson",
           data: { type: "FeatureCollection", features: [] },
@@ -861,31 +738,6 @@ export function GameMap(props: GameMapProps) {
               "fill-extrusion-vertical-gradient": false,
             },
           });
-      m.addLayer({
-        id: "zone-loot",
-        type: "symbol",
-        source: "zone-loot",
-        minzoom: 14,
-        layout: {
-          "icon-image": ["get", "image"],
-          "icon-size": [
-            "interpolate",
-            ["linear"],
-            ["zoom"],
-            14,
-            0.55,
-            16,
-            0.9,
-            18,
-            1.2,
-            19,
-            1.35,
-          ],
-          "icon-allow-overlap": true,
-          "icon-ignore-placement": true,
-        },
-        paint: { "icon-opacity": ["case", ["get", "dim"], 0.5, 1] },
-      });
       m.addSource("coins", {
         type: "geojson",
         data: { type: "FeatureCollection", features: [] },
@@ -1040,21 +892,6 @@ export function GameMap(props: GameMapProps) {
     (m.getSource("zone-totems") as GeoJSONSource)?.setData(
       collection(zoneTotemFeatures(props.world.zones, zoneQuests, objectContext)),
     );
-    const lootFeatures = zoneLootFeatures(
-      props.world.zones,
-      zoneQuests,
-      zoneNow,
-    );
-    const lootRun = ++lootRevision.current;
-    void ensureLootImages(
-      m,
-      props.world.zones.flatMap((z) => zoneLoot(z, zoneQuests)),
-    ).then(() => {
-      if (lootRun !== lootRevision.current || map.current !== m) return;
-      (m.getSource("zone-loot") as GeoJSONSource | undefined)?.setData(
-        collection(lootFeatures),
-      );
-    });
     labels.current.forEach((x) => x.remove());
     labels.current = [];
     for (const z of props.world.zones) {

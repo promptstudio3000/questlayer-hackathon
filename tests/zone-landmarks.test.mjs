@@ -3,7 +3,6 @@ import assert from "node:assert/strict";
 import {
   zoneCountdown,
   zoneLoot,
-  zoneLootFeatures,
   zoneRarity,
   zoneTotemFeatures,
   zoneWallFeatures,
@@ -110,16 +109,8 @@ test("every zone gets a totem; taller for rarer tiers; crown names the type", ()
   for (const f of chest) assert.ok(f.properties.base < f.properties.height);
 });
 
-test("loot points sit inside the zone and dim before it opens", () => {
+test("a zone label names its finds before it opens", () => {
   const z = zone({ tier: 2, opensAt: now + H });
-  const pts = zoneLootFeatures([z], [quest({ tier: 2 })], now);
-  assert.ok(pts.length >= 2);
-  for (const p of pts) {
-    const [lng, lat] = p.geometry.coordinates;
-    const d = Math.hypot((lng - z.lng) * Math.cos((z.lat * Math.PI) / 180), lat - z.lat) * 111320;
-    assert.ok(d < z.radius, `item ${d.toFixed(1)} m from centre`);
-    assert.equal(p.properties.dim, true);
-  }
   assert.match(zoneLandmarkLabel(z, [quest({ tier: 2 })], now), /opens at .* find: /);
 });
 
@@ -167,11 +158,4 @@ test("zone schedule counts progress, what is left and the reset", () => {
   assert.equal(s.gold_u, 500);
   assert.ok(s.loot.length > 0 && s.loot.every((l) => l.kind === "aura"));
   assert.equal(s.resetAt, Date.UTC(2026, 10, 3, 23));
-});
-
-test("zone items carry what the map needs to explain them on tap", () => {
-  const [item] = zoneLootFeatures([zone()], [quest()], now);
-  assert.equal(item.properties.zoneId, "w:zone:1");
-  assert.equal(item.properties.kind, "aura");
-  assert.ok(item.properties.name);
 });
