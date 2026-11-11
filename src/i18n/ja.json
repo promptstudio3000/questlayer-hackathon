@@ -3181,5 +3181,17 @@
  "Your free home plot has a gold border. Tap Build, pick a block and tap where it goes.": "無料のホーム区画は金色の枠です。「建てる」をタップし、ブロックを選んで置きたい場所をタップします。",
  "Your last blocks were not saved and were undone. Try again.": "直前のブロックは保存されず、元に戻されました。もう一度お試しください。",
  "Your plot": "自分の区画",
- "{0} m": "{0} m"
+ "{0} m": "{0} m",
+ "NEAR for your payments": "支払い用のNEAR",
+ "Running low": "残りわずか",
+ "The game pays the gas for every action. This small balance covers your account's storage and your own payments, such as buying an Aura.": "すべてのアクションのガス代はゲームが支払います。この少額の残高は、アカウントのストレージとオーラの購入などあなた自身の支払いに使われます。",
+ "Refuel to {0} NEAR": "{0} NEARまで補充",
+ "Convert QGOLD to NEAR": "QGOLDをNEARに交換",
+ "Account name copied": "アカウント名をコピーしました",
+ "Add your own NEAR": "自分のNEARを追加",
+ "You already refuelled today. Tomorrow you can again.": "今日はもう補充しました。明日また補充できます。",
+ "Refuel opens when your balance drops below {0} NEAR, once a day.": "残高が{0} NEARを下回ると、1日1回補充できます。",
+ "Add your own NEAR: send it from any wallet or exchange to {0}.": "自分のNEARを追加:任意のウォレットや取引所から{0}へ送ってください。",
+ "Refuelled. Your account has NEAR for its next payments.": "補充しました。次の支払い用のNEARがあります。",
+ "Could not refuel right now. Try again later.": "今は補充できませんでした。後でもう一度お試しください。"
 }

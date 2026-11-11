@@ -3181,5 +3181,17 @@
  "Your free home plot has a gold border. Tap Build, pick a block and tap where it goes.": "Tvůj domácí pozemek zdarma má zlatý okraj. Klepni na Stavět, vyber blok a klepni, kam patří.",
  "Your last blocks were not saved and were undone. Try again.": "Tvoje poslední bloky se neuložily a byly vráceny. Zkus to znovu.",
  "Your plot": "Tvůj pozemek",
- "{0} m": "{0} m"
+ "{0} m": "{0} m",
+ "NEAR for your payments": "NEAR na tvoje platby",
+ "Running low": "Dochází",
+ "The game pays the gas for every action. This small balance covers your account's storage and your own payments, such as buying an Aura.": "Gas za každou akci platí hra. Tento malý zůstatek kryje úložiště tvého účtu a tvoje vlastní platby, třeba nákup Aury.",
+ "Refuel to {0} NEAR": "Doplnit na {0} NEAR",
+ "Convert QGOLD to NEAR": "Převést QGOLD na NEAR",
+ "Account name copied": "Název účtu zkopírován",
+ "Add your own NEAR": "Přidat vlastní NEAR",
+ "You already refuelled today. Tomorrow you can again.": "Dnes už jsi doplnil. Zítra můžeš znovu.",
+ "Refuel opens when your balance drops below {0} NEAR, once a day.": "Doplnění se otevře, když zůstatek klesne pod {0} NEAR, jednou denně.",
+ "Add your own NEAR: send it from any wallet or exchange to {0}.": "Přidej vlastní NEAR: pošli ho z libovolné peněženky nebo burzy na {0}.",
+ "Refuelled. Your account has NEAR for its next payments.": "Doplněno. Tvůj účet má NEAR na další platby.",
+ "Could not refuel right now. Try again later.": "Teď se doplnit nepodařilo. Zkus to později."
 }
