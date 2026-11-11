@@ -157,6 +157,7 @@ async function main() {
       reducedMotion: "reduce",
       locale: "en-GB",
     });
+    await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});  // Start in the city demo (src/play-here.ts).
     await shiftBrowserClock(context, CLOCK_OFFSET_MS);
     page = await context.newPage();
     const errors = [];

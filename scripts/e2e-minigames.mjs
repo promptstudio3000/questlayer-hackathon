@@ -20,7 +20,7 @@ const browser=await chromium.launch();const results=[];
 try{
 for(const input of ["keyboard","touch"])for(const format of ["quiz","memory","rhythm","trace","duel"]){
  console.log(`${format}: ${input}`);
- const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:"reduce"});const page=await context.newPage();const errors=[];page.on("pageerror",e=>errors.push(e.message));
+ const context=await browser.newContext({viewport:{width:390,height:844},hasTouch:true,reducedMotion:"reduce"});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});const page=await context.newPage();const errors=[];page.on("pageerror",e=>errors.push(e.message));
  await page.clock.install();await page.clock.pauseAt(new Date(Date.now()+100));
  const fields=format==="trace"?createTrace("corner"):format==="rhythm"?createRhythm("input"):format==="memory"?createMemory("input"):
  format==="quiz"?{questions:[{id:"one",prompt:"Choose the rune",choices:["Rune","Stone"]}],secondsPerQuestion:20,pass:1}:

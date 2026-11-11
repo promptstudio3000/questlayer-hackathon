@@ -23,7 +23,7 @@ try{
  browser=await engine.launch();
  for(const [name,width,height] of [['phone-360',360,780],['phone-390',390,844],['landscape',844,390],['desktop',1440,900]]){
   if(process.env.E2E_VIEWPORT&&process.env.E2E_VIEWPORT!==name)continue;
-  const context=await browser.newContext({viewport:{width,height},reducedMotion:'reduce'});const page=await context.newPage();const faults=[],scans=[],measurements={};page.on('pageerror',e=>faults.push(e.message));
+  const context=await browser.newContext({viewport:{width,height},reducedMotion:'reduce'});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});const page=await context.newPage();const faults=[],scans=[],measurements={};page.on('pageerror',e=>faults.push(e.message));
   const shot=async label=>{
    await page.screenshot({path:join(shots,`${name}-${label}.png`)});
    const sideways=await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1);

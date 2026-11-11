@@ -28,6 +28,7 @@ try {
       viewport: { width, height },
       reducedMotion: "reduce",
     });
+    await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});  // Start in the city demo (src/play-here.ts).
     const page = await context.newPage(),
       errors = [],
       assets = [];
@@ -167,6 +168,7 @@ try {
       viewport: { width: 390, height: 844 },
       reducedMotion: "reduce",
     });
+    await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});  // Start in the city demo (src/play-here.ts).
     const page = await context.newPage();
     await page.route("**/art/map-kit/models/*.glb", (r) => r.abort());
     await page.route("**/art/map-kit/quests/*.png", (r) => r.abort());
@@ -198,6 +200,7 @@ try {
     viewport: { width: 1440, height: 900 },
     reducedMotion: "reduce",
   });
+  await services.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});  // Start in the city demo (src/play-here.ts).
   const servicePage = await services.newPage();
   const serviceLogs=[]; servicePage.on("pageerror",e=>serviceLogs.push(e.message)); servicePage.on("console",m=>{if(m.type()==="error")serviceLogs.push(m.text());});
   await servicePage.route("**/api/actors?*", async (route) => {

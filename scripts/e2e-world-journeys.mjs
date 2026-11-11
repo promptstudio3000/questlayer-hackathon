@@ -173,6 +173,7 @@ async function journey(browser, server, device, j, expected) {
     geolocation: { latitude: j.spot.lat, longitude: j.spot.lng, accuracy: 8 },
     permissions: ["geolocation"],
   });
+  await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});  // Start in the city demo (src/play-here.ts).
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
