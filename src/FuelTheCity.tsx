@@ -22,6 +22,7 @@ import { STAKER_SUGGEST_NEAR, takeStakePrefill } from "./LockedChip";
 import { parseTestNear, type VaultRequest } from "./native-vault-quote";
 import type { Player } from "./types";
 import "./fuel-the-city.css";
+import "./fuel-stake.css";
 import { tr } from "./i18n";
 
 type StakerGates = { minNear: string; suggestNear: string; priceEur: number | null; access: { step: string; staker: boolean } };
