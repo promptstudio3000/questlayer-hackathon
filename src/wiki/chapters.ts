@@ -301,7 +301,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "day-clock",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/WORLD-GENERATION.md", "docs/DEMO-ZONES.md", "server/demo-zones.mjs", "server/spatial/organic-shape.mjs", "src/LockedZone.tsx", "docs/LANDMARK-ERRANDS.md", "docs/DAILY-BOARD.md", "docs/QUEST-TEMPLATES.md", "server/world-planner.mjs", "server/poi-quests.mjs", "server/landmark-clue.mjs", "server/npc/routes.mjs", "src/DailyBoard.tsx", "src/actors-layer.ts"],
+    sources: ["docs/WORLD-GENERATION.md", "docs/DEMO-ZONES.md", "server/demo-zones.mjs", "docs/LANDMARK-ERRANDS.md", "docs/DAILY-BOARD.md", "docs/QUEST-TEMPLATES.md", "server/world-planner.mjs", "server/poi-quests.mjs", "server/landmark-clue.mjs", "server/npc/routes.mjs", "src/DailyBoard.tsx", "src/actors-layer.ts", "src/ZoneActivities.tsx", "src/zone-landmarks.ts", "server/spatial/organic-shape.mjs", "src/LockedZone.tsx"],
     blocks: [
       { h: "City zones" },
       {
@@ -316,6 +316,12 @@ export const CHAPTERS: Chapter[] = [
             ["Tier 3", "1 h from 18:00", "Largest prize, epic/legendary chest"],
           ],
         },
+      },
+      {
+        list: [
+          "**Tap the altar** in the middle of a zone (or its pin) to open the zone detail: whether it is open now or when it opens, how many of today's activities you have done, the XP, GOLD and chest Auras still to win, and when the zone gets new activities and rewards (the next local midnight, when the daily world swaps).",
+          "**The round icons floating inside a zone** are the chest Auras its chest can hold today (ring colour = rarity) and a gold coin when an activity there pays GOLD. Tap one to see what it is and jump to the zone's activities. They disappear once the zone is closed or cleared.",
+        ],
       },
       {
         note: "Demo layout on testnet now (`DEMO_ZONES`): the six Plzeň zones follow their OpenStreetMap park or square outlines (an irregular blob where OpenStreetMap has no usable area), about 55–85 m across, at least 80 m apart, on the park ring around náměstí Republiky (náměstí Republiky, sady Pětatřicátníků North and West, Smetanovy sady, Šafaříkovy sady, sady 5. května), each within about 400 m of the start on a loop of about 2 km. All of them are open the whole day with no countdown, and chests, guardians, NPCs and monsters stay near the centre. Each compact day is its own world, mainnet refuses the switch, and the table above returns when it is off.",
