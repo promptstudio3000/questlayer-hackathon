@@ -263,10 +263,9 @@ const webauthn = () => import("@simplewebauthn/browser");
 import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
 import { Dialog } from "./Dialog";
 import { Character } from "./Character";
-import { DeferredGameMap as GameMap, preloadGameMap } from "./DeferredGameMap";
+import { DeferredGameMap as GameMap, gameMapLoaded, preloadGameMap } from "./DeferredGameMap";
 import { useCreatorPlaces } from "./useCreatorPlaces";
 import { Ghost, AuraArt, BrandLogo } from "./Ghost";
-import { artUrl } from "./art-registry";
 import type {
   Player,
   World,
@@ -466,9 +465,14 @@ export default function App() {
   // Once there is a player, fetch the map and the split-off screens in the
   // background so later taps do not wait for the network.
   const hasPlayer = !!player;
+  // The current HUD layout ships with the map chunk. The menu and the top bar
+  // render only once it is in, so a reload never flashes the old base layout.
+  // A failed load shows them anyway, so Inventory and Profile stay reachable.
+  const [hudReady, setHudReady] = useState(gameMapLoaded);
   useEffect(() => {
     if (!hasPlayer) return;
-    void preloadGameMap().catch(() => {});
+    const ready = () => setHudReady(true);
+    void preloadGameMap().then(ready, ready);
     const idle =
       window.requestIdleCallback ??
       ((f: () => void) => window.setTimeout(f, 200));
@@ -3656,7 +3660,7 @@ export default function App() {
         "QuestLayer";
   return (
     <div
-      className={`app-shell${player && tab !== "explore" ? " sheet-open" : ""}${player && mapFullOn ? " map-full" : ""}`}
+      className={`app-shell${player && tab !== "explore" ? " sheet-open" : ""}${player && mapFullOn ? " map-full" : ""}${player && !hudReady ? " hud-loading" : ""}`}
       data-screen={tab}
       data-area={showProfileTabs ? "profile" : showCommunityTabs ? "community" : undefined}
     >
@@ -3789,16 +3793,8 @@ export default function App() {
       )}
       <div className="map-vignette" />
       </div>
+      {player && hudReady && (<>
       <aside className="nav-rail">
-        <button
-          className="brand-mark"
-          aria-label={tr("QuestLayer home")}
-          onClick={() => {
-            setTab("explore");
-          }}
-        >
-          <BrandLogo />
-        </button>
         <div className="rail-links">
           {nav.filter((n) => n.id !== "settings").map((n) => (
             <button
@@ -3822,30 +3818,9 @@ export default function App() {
         </div>
       </aside>
       <header className="topbar">
-        {virtualLayer && player ? (
+        {virtualLayer && player && (
           <WorldSwitcher virtual={tab === "layer"} enabled layerName={virtualLayer.name} onChoose={(virtual) => { setTab(virtual ? "layer" : "explore"); setSheetExpanded(false); }} />
-        ) : (
-        <div className="wordmark" onClick={() => setTab("explore")}>
-          <img className="wordmark-logo" src="/icon.svg" alt="" width={36} height={36} />
-          {artUrl("brand/wordmark") ? (
-            <span className="wordmark-text">
-              <img className="wordmark-art" src={artUrl("brand/wordmark")!} alt="QuestLayer" draggable={false} />
-            </span>
-          ) : (
-            <span>
-              QUEST<span>LAYER</span>
-            </span>
-          )}
-        </div>
         )}
-        <div className="realm-label">
-          <span className="status-dot" />
-          <span>
-            {tab === "layer" ? tr("Virtual world") : nativePlay || !arena
-              ? world?.cityName || tr("Your surroundings")
-              : tr("Plzeň · city demo")}
-          </span>
-        </div>
         {player && (
           <div className="hud-left">
             {!virtualLayer && (
@@ -3982,6 +3957,7 @@ export default function App() {
           )}
         </div>
       </header>
+      </>)}
       {player && zonePresence && !selected && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => selectZone(zonePresence.zone, zonePresence.questId)} />}
       {player && tab !== "explore" && (
         // Desktop: Inventory, Community and Profile open as a card over the

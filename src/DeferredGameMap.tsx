@@ -2,13 +2,26 @@ import { Component, lazy, Suspense, type ReactNode } from "react";
 import type { GameMapProps } from "./GameMap";
 import { tr } from "./i18n";
 let mapModule: Promise<typeof import("./GameMap")> | undefined;
+let mapLoaded = false;
+// True once the map chunk and its stylesheets (the current HUD layout:
+// map-hud.css, phone-map.css, ...) are in the page. Until then the in-game
+// chrome stays hidden, so a reload never shows the unstyled base layout.
+export function gameMapLoaded() {
+  return mapLoaded;
+}
 // Starts downloading MapLibre and the map chunk ahead of time, e.g. while the
 // player types their name. Safe to call any number of times.
 export function preloadGameMap() {
-  mapModule ??= import("./GameMap").catch((error) => {
-    mapModule = undefined;
-    throw error;
-  });
+  mapModule ??= import("./GameMap").then(
+    (module) => {
+      mapLoaded = true;
+      return module;
+    },
+    (error) => {
+      mapModule = undefined;
+      throw error;
+    },
+  );
   return mapModule;
 }
 const MapView = lazy(() =>

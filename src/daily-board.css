@@ -92,7 +92,7 @@
   color: var(--error);
 }
 /* Phones: the chip shares the top bar with GOLD and the profile, so the
-   wordmark and the GOLD label give it room (profile stays fully visible). */
+   GOLD label gives it room (profile stays fully visible). */
 @media (max-width: 430px) {
   .daily-board-chip {
     padding: 7px 9px;
@@ -101,9 +101,6 @@
   }
   .daily-board-chip b {
     font-size: 12px;
-  }
-  .topbar .wordmark > span {
-    font-size: 17px;
   }
   .topbar .balance-pill > span:not(.gold-icon) {
     display: none;
