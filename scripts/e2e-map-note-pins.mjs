@@ -20,7 +20,7 @@ try {
   while(true){try{const h=await(await fetch(url+"/api/health")).json();if(h.worldPreparation?.days?.some(d=>d.state==="ready"))break;}catch{}
     if(Date.now()>until)throw Error(errors.slice(-1200));await new Promise(r=>setTimeout(r,100));}
   browser=await chromium.launch();
-  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:"reduce"});const page=await context.newPage();
+  const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:"reduce"});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});const page=await context.newPage();
   const faults=[];page.on("pageerror",e=>faults.push(e.message));
   const session=await context.request.post(url+"/api/session",{headers:{Origin:url},data:{name:"Note pins"}});assert.ok(session.ok());
   await page.goto(url);

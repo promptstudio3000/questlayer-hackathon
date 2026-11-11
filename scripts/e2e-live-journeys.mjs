@@ -392,6 +392,7 @@ async function newPlayer(browser, device, name, spot, { account = false, cookie 
       ? { geolocation: { latitude: spot.lat, longitude: spot.lng, accuracy: 8 }, permissions: ["geolocation"] }
       : {}),
   });
+  await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});  // Start in the city demo (src/play-here.ts).
   // Every new explorer gets an invisible NEAR account funded from the
   // testnet factory (0.1 NEAR). Bot explorers skip it unless the journey
   // needs to sign (wisp roll); the app plays on without one.

@@ -246,13 +246,14 @@ export const CHAPTERS: Chapter[] = [
     hero: "core-loop",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/MAP-REWARDS.md", "docs/NATIVE-AUTO-COLLECT.md", "docs/NATIVE-GAME-MAP.md", "docs/PEER-APPEARANCES.md", "docs/FIRST-SESSION.md", "src/useDemoWalk.ts", "src/map-motion.ts", "src/gps-facing.ts", "src/quest-route.ts", "src/QuestBrief.tsx", "src/GameMap.tsx", "src/RewardBursts.tsx"],
+    sources: ["docs/MAP-REWARDS.md", "docs/NATIVE-AUTO-COLLECT.md", "docs/NATIVE-GAME-MAP.md", "docs/PEER-APPEARANCES.md", "docs/FIRST-SESSION.md", "src/useDemoWalk.ts", "src/play-here.ts", "server/poi/live-source.mjs", "src/map-motion.ts", "src/gps-facing.ts", "src/quest-route.ts", "src/QuestBrief.tsx", "src/GameMap.tsx", "src/RewardBursts.tsx"],
     blocks: [
       { h: "Movement" },
       {
         list: [
           "**GPS play:** no tap-to-walk anywhere. The character and the follow camera use your moving course; stationary jitter, stale or inaccurate fixes and big jumps never invent a turn. Manual panning pauses follow; My location or walking on restores it.",
           "**City demo:** a collapsible joystick (drag the knob: up walks the way you face, sideways turns, down steps back at 0.6× speed); arrows and WASD work too. A Run toggle, on by default, moves at 14 m/s; walking is 5 m/s. Both stay under the 15 m/s cap.",
+          "**Start where you are:** after sign-in the game asks for location and opens the world around you: POI quests and backed coins of your street cell anywhere on Earth (funded cell zones in Czechia). The Plzeň city demo is the fallback when location is refused or unavailable, or when you pick Demo in Map settings; that choice is remembered until you pick Use GPS again. A refused start-up request keeps the demo without a warning.",
           "Opening a dialog releases held movement; closing it never resumes an old key press.",
           "Quest buttons only turn the explorer toward the target; within 3 m the demo snaps onto it so thin path zones count.",
           "Multi-stop walks keep their stop numbers. Ordered walks accept only the server's next stop; any-order hunts say **Any order** and use the nearest remaining stop. Confirmation needs the 25 m range, the zone footprint and fresh GPS; the server alone advances progress.",
@@ -520,7 +521,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "wearable-rarity",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "server/demo-bot-chat.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx", "server/player-journey.mjs", "src/CharacterJourney.tsx", "src/StakeEarn.tsx", "server/gotchi-models.mjs"],
+    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "server/demo-bot-chat.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx", "server/player-journey.mjs", "src/CharacterJourney.tsx", "src/StakeEarn.tsx", "src/FuelTheCity.tsx", "server/gotchi-models.mjs"],
     blocks: [
       { h: "Wearable finds" },
       {
@@ -565,7 +566,7 @@ export const CHAPTERS: Chapter[] = [
           head: ["Tab", "What it holds"],
           rows: [
             ["Character", "Avatar, level and XP, your totals (finds, quests, tasks, monsters, wearables, badges, GOLD earned), Badges, a Messages tile for the inbox, and **Your story**: what happened, newest first (`GET /api/me/journey`)"],
-            ["Stake", "A switch: **Stake** (animated picture of your NEAR into the vault, the tier ladder, your stake, the form) and **Earnings** (QGOLD balance, the next payout, GOLD earned, the yield your stake kept)"],
+            ["Stake", "A switch: **Stake** and **Earnings**. Stake shows at once and fills its numbers as the chain answers: the tier ladder with the **yield share to the prize pool** (25 / 50 / 100 %) right under it, then one **Stake 2 NEAR** button. One tap sets up your personal vault the first time (a one-time setup fee that is not returned) and stakes. There is **one stake per explorer**: afterwards the only action is **Withdraw** (about 1–7 days, 4 epochs; the game moves the unlocked NEAR back and you withdraw it to your balance). Earnings holds the QGOLD balance, the next payout, GOLD earned and the yield your stake kept"],
             ["Settings", "Game, Help (How to play, the guide, Game economy, first-time tips), Account and devices, Sign out, then the reference links; the reward ledger switch sits in a small Developer section"],
           ],
         },
@@ -692,7 +693,7 @@ export const CHAPTERS: Chapter[] = [
     id: "world-and-places",
     group: "world",
     title: "Cities, cells and places",
-    tldr: `${cityNames} is the reviewed city; the reward map covers **all of Czechia**; prepared Atlas discoveries can open in other supplied regions with personal XP only. Every quest place sits on a public path and passes a safety filter.`,
+    tldr: `${cityNames} is the reviewed city; the reward map covers **all of Czechia** and street cells everywhere else get live OpenStreetMap quests and backed coins; prepared Atlas discoveries can open in other supplied regions with personal XP only. Every quest place sits on a public path and passes a safety filter.`,
     keyFacts: [
       [String(LIVE_CITIES.length), `reviewed live city (${cityNames})`],
       ["≈ 290,000", "places in the first Czech import"],
@@ -736,7 +737,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "With a connected geographic catalog, a background worker prepares mapped zones and Atlas quests for today and tomorrow before players load them. Only a completely imported UTC day opens; an interrupted import resumes without duplicates.",
-          "Inside Czechia the normal street world takes over whenever no prepared day covers the spot (`GLOBAL_CZECHIA_FALLBACK=off` disables this). Elsewhere missing regions stay unavailable.",
+          "Everywhere on Earth the normal street world takes over whenever no prepared day covers the spot. Outside Czechia its places come live from OpenStreetMap: one query per cell, the same taxonomy and safety filter as the import, kept for a week. `GLOBAL_STREET_FALLBACK=czechia` limits this to Czechia, `=off` disables it.",
           "Atlas visits and three-stop hunts use the normal GPS checks and give personal XP. Without a separately confirmed financial day they promise no money or item.",
           "The launch selection covers European and US extracts with national-capital footprints elsewhere (Russia, North Korea and Iran excluded). The first active phase is EU-only: all 27 member countries. Completing it never reports a complete planet.",
           "A bulk collector continues from verified map downloads to real polygon selection and isolated checks, and reports unsafe or oversized areas instead of dropping them. This is map-derived coverage, not field verification.",
@@ -775,7 +776,7 @@ export const CHAPTERS: Chapter[] = [
           "**One coin = coin budget ÷ all shares.** At a 0.05 NEAR map budget and R = 0.001 NEAR that is 50 QGOLD over 6.5–13 million shares, a few micro-QGOLD per coin. The value grows with the treasury; shares a cell cannot hold stay in the treasury.",
           "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area; what a capped cell cannot take goes to the others.",
           "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest.",
-          "The city demo pays the same backed coins. Outside Czechia a cell gets no coins until more countries have a plan.",
+          "The city demo pays the same backed coins. Outside Czechia a street cell gets up to 400 coins of the same value, drawn from the day's unplaced coin budget until it is spent, and paid through the payout rounds (`MAP_WORLD_COINS=off` stops it). Funded cell zones and pioneer bonuses stay in Czechia.",
         ],
       },
       { viz: "map-coins" },
@@ -835,7 +836,7 @@ export const CHAPTERS: Chapter[] = [
     id: "treasury-and-yield",
     group: "economy",
     title: "Treasury, yield and the mix",
-    tldr: "The treasury holds **90 % staked NEAR, 5 % USDC and 5 % USDT** (on Rhea Lend), the mix the DAO adopted on 11 Nov 2026 because on testnet only validator staking earns. A daily run, approved by the DAO council, harvests growth and rebalances within hard limits; only the yield becomes the map budget.",
+    tldr: "Target since 11 Nov 2026: **90 % staked NEAR, 5 % USDC, 5 % USDT** (on Rhea Lend), because on testnet only validator staking earns; it applies once the DAO council adopts it. A DAO-approved daily run rebalances within hard limits; only the yield becomes the map budget.",
     keyFacts: [
       ["90 / 5 / 5", "% target: staked NEAR / USDC / USDT"],
       ["40 %", "max with any one protocol"],
@@ -845,7 +846,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "treasury-mix",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/STNEAR-TREASURY.md", "docs/TREASURY-MIX.md", "docs/TREASURY-PAGE.md", "docs/YIELD-VAULT.md", "docs/YIELD-VAULT-PLAN.md", "docs/NATIVE-REWARDS-AND-VAULT.md", "docs/LIQUID-STAKE.md", "server/native/treasury-mix.mjs", "scripts/faucet-to-treasury-testnet.mjs"],
+    sources: ["docs/STNEAR-TREASURY.md", "docs/TREASURY-MIX.md", "docs/TREASURY-PAGE.md", "docs/YIELD-VAULT.md", "docs/YIELD-VAULT-PLAN.md", "docs/NATIVE-REWARDS-AND-VAULT.md", "docs/LIQUID-STAKE.md", "server/native/treasury-mix.mjs", "scripts/faucet-to-treasury-testnet.mjs", "scripts/treasury-stake-testnet.mjs"],
     blocks: [
       { h: "Limits" },
       {
@@ -877,12 +878,13 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "The first prize day paid entirely from realized staking yield was proven on testnet (day `plzen-2026-11-05-v2`, `public/native-yield-day-proof.json`).",
-          "Testnet LST prices are frozen, so stNEAR growth there is zero; mainnet LSTs earn about 4 %.",
+          "Testnet LST prices are frozen, so stNEAR growth there is zero; mainnet LSTs earn about 4 %. Testnet lending (Burrow/Rhea) pays about 0 % too.",
+          "**Treasury staking vault** `stake-20261111.questlayer-dev-20261101.testnet` (setup started 11 Nov): the one testnet asset that really earns. Faucet test NEAR is staked with the Stakely validator (3 % fee, about 9.5 % APR, rewards every ~7 h epoch) through a keyless vault that gives **100 %** of its gain to the treasury. The principal is never counted as yield; only realized validator rewards reach the prize pool, each step a public transaction (`scripts/treasury-stake-testnet.mjs`, record `public/treasury-stake-testnet.json`). The pool unlocks unstaked NEAR only after 4 epochs, so further vaults staked one epoch apart take turns and bring fresh yield about every epoch; unclaimed rewards return to the treasury and are offered again in later days, never restaked.",
           "An operator script can sweep throwaway testnet faucet accounts (12 × 10 test NEAR) into the rewards contract as sponsor funding (`fund_rewards`) and then delete them.",
           "A keyless vault never changes code after creation; the yield vault gets fixes only by an in-place upgrade that must leave every position byte for byte unchanged.",
         ],
       },
-      { p: "The [Treasury](/treasury) page shows all of this live: one headline card with the treasury and its mix, then tabs for Overview, Vote, Money flow, QGOLD, Model and Safety." },
+      { p: "The [Treasury](/treasury) page shows all of this live. The headline adds up the three on-chain accounts that hold the game's NEAR (treasury, prize pool, QGOLD vault), each linked to the NEAR explorer, next to a QGOLD ⇄ NEAR swap card. Overview has a four-step animated loop, a one-year projection at today's yield (staked NEAR at an estimated validator rate after the pool fee, stablecoins at Rhea's live rate), the mix, the treasury history from 1 Nov 2026 (the 31 Oct pilot test is left out of all public history) and an FAQ accordion; numbers carry an info button that explains them. Further tabs: Vote, Money flow, QGOLD, Model and Safety." },
     ],
   },
   {
@@ -916,7 +918,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**Options** (staked NEAR / stablecoins / NEAR reserve): Staking first 90 / 10 / 0 (recommended, the stables split 5 % USDC + 5 % USDT), More stables 70 / 20 / 10, Bigger reserve 60 / 20 / 20. Every option stays inside the treasury limits. Polls filed before 11 Nov 2026 (50 / 40 / 10 and friends) still tally to their own targets.",
-          "**Owner decision:** `treasury-dao-testnet.mjs adopt <preset> --execute` has the council adopt a preset at once (used on 11 Nov 2026 for 90 / 5 / 5); it closes this week's open mix poll and re-files today's run with the new target.",
+          "**Owner decision:** `treasury-dao-testnet.mjs adopt <preset> --execute` has the council adopt a preset at once (prepared on 11 Nov 2026 for 90 / 5 / 5); it closes this week's open mix poll and re-files today's run with the new target.",
           "**Checked automatic approval:** the council keys approve a daily run only when its target is the adopted mix and it moves at most 25 % of the treasury.",
           "Extra votes of the week appear under the mix vote and are counted the same way. New voters join the DAO once a day.",
           "Custody stays with the operator on testnet for now; the DAO decides the target and approves every run. The QGOLD vault council moves to the DAO next.",
@@ -929,7 +931,7 @@ export const CHAPTERS: Chapter[] = [
     id: "qgold",
     group: "economy",
     title: "QGOLD token and vault",
-    tldr: "QGOLD is the gold you earn, always fully backed by NEAR in one vault contract. **R = backing ÷ supply**: mints keep R flat, burns and fees raise it, and there is **no admin withdraw**.",
+    tldr: "QGOLD is the gold you earn, always fully backed by NEAR in one vault contract. **R = backing ÷ supply**: mints keep R flat, burns and fees raise it, and there is **no admin withdraw**. New QGOLD's NEAR comes from treasury yield; stablecoins steady the treasury, not the vault.",
     keyFacts: [
       ["0.001 NEAR", "starting rate R per QGOLD"],
       ["±1 %", "to buy from or sell to the vault"],

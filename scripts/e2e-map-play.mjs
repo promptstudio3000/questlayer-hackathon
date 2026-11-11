@@ -36,7 +36,7 @@ const report={phase:before?"before":"after",engine:engine.name(),provenance:"Act
 const angle=(a,b)=>Math.abs(((a-b+540)%360)-180);
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function context(motion="reduce",point=home){
- const c=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:motion,serviceWorkers:"block"});
+ const c=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:motion,serviceWorkers:"block"});await c.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
  await c.addInitScript(({offset,point})=>{
   const D=Date;window.Date=class extends D{constructor(...a){super(...(a.length?a:[D.now()+offset]));}static now(){return D.now()+offset;}};
   let p=point,course=null,speed=0,accuracy=5;

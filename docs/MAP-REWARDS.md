@@ -113,3 +113,14 @@ Worlds created before the deploy keep their coins until midnight; the next day u
 - `close_map_day(day_id)`: after a one-day grace period, returns the unclaimed budget to the available
   treasury.
 - Views: `get_map_day(day_id)` and `get_map_cell(day_id, cell)`.
+
+## Outside Czechia (11 Nov 2026)
+
+The day plan covers the 16,346 Czech cells. A street cell anywhere else gets
+backed coins too (`worldCoinCount` in `server/map-rewards/service.mjs`): up to
+`CELL_COINS` (400) coins of the day's coin value, drawn from the day's
+unplaced coin budget (`summary.unplacedU.coins`) until it is spent. The drop is
+recorded in `map_cell_drops` under the day, so the payout rounds pay it at
+that day's rate. It needs `MAP_PAYOUTS=1` (abroad cells have no Merkle leaf for
+`claim_map`); `MAP_WORLD_COINS=off` turns it off. No funded cell zones and no
+pioneer bonus outside Czechia.

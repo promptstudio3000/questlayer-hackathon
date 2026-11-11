@@ -17,7 +17,7 @@ let browser,errors="";server.stderr.on("data",d=>errors+=d);
 const engine=process.env.E2E_BROWSER==="webkit"?webkit:chromium;
 try{
  const until=Date.now()+60000;while(true){try{if((await fetch(url+"/api/health")).ok)break;}catch{}if(Date.now()>until)throw Error(errors.slice(-1000));await new Promise(r=>setTimeout(r,100));}
- browser=await engine.launch();const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:"reduce",serviceWorkers:"block"});
+ browser=await engine.launch();const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:"reduce",serviceWorkers:"block"});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
  const post=async(path,data)=>{const r=await context.request.post(url+"/api"+path,{headers:{Origin:url},data});assert.ok(r.ok());return r.json();};
  await post("/session",{name:"Mira mode"});const gpsWorld=await post("/world",{arena:false,location:home});assert.ok(gpsWorld.zones.length);
  const page=await context.newPage();await page.addInitScript(()=>localStorage.setItem("questlayer.mapAppearance","2d"));

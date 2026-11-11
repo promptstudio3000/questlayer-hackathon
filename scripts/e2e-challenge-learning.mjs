@@ -37,7 +37,7 @@ function challenge(format) {
   return {...base,format,tendency:"guard",monsterHp:10,playerHp:10,power:1,level:1,rounds:3,ringMs:2000,commitment:"fixed"};
 }
 async function setup({novice=true,boss=false,width=390,height=844}={}) {
-  const context=await browser.newContext({viewport:{width,height},hasTouch:width<=600,isMobile:width<=600,reducedMotion:"reduce",serviceWorkers:"block"});
+  const context=await browser.newContext({viewport:{width,height},hasTouch:width<=600,isMobile:width<=600,reducedMotion:"reduce",serviceWorkers:"block"});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
   await context.addInitScript(data=>{window.__challengeFixture=data;},{novice,boss});
   const page=await context.newPage();const calls=[];
   await page.route("**/api/**",async route=>{
