@@ -7,6 +7,10 @@ import { openDatabase } from "../server/database.mjs";
 import { setPotentialSource, ensureDayPlan } from "../server/map-rewards/day-plan.mjs";
 import { worldCoinCount, worldCoinsEnabled } from "../server/map-rewards/service.mjs";
 import { ensureWorld } from "../server/world.mjs";
+import { NETWORK } from "../server/native/network.mjs";
+
+// Payouts (and so world coins) are testnet-only.
+const testnetOnly = { skip: NETWORK === "mainnet" && "payouts are testnet-only" };
 
 const NOW = Date.parse("2026-11-05T12:00:00Z");
 const MUNICH = { lat: 48.1374, lng: 11.5755 };
@@ -26,13 +30,13 @@ const mapData = {
     new Response(JSON.stringify(streets(MUNICH)), { headers: { "content-type": "application/json" } }),
 };
 
-test("world coins need payouts and can be turned off", () => {
+test("world coins need payouts and can be turned off", testnetOnly, () => {
   assert.equal(worldCoinsEnabled({}), false);
   assert.equal(worldCoinsEnabled({ MAP_PAYOUTS: "1" }), true);
   assert.equal(worldCoinsEnabled({ MAP_PAYOUTS: "1", MAP_WORLD_COINS: "off" }), false);
 });
 
-test("a street cell outside Czechia gets backed coins from the unplaced budget", async (t) => {
+test("a street cell outside Czechia gets backed coins from the unplaced budget", testnetOnly, async (t) => {
   setPotentialSource(() => new Map());
   const before = process.env.MAP_PAYOUTS;
   process.env.MAP_PAYOUTS = "1";
