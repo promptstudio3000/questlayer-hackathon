@@ -2801,7 +2801,6 @@
   "You · open your profile": "Vous · ouvrir votre profil",
   "Accept": "Accepter",
   "Ask to message": "Demander à écrire",
-  "Ask {0} first. They decide whether you may write. If you both wave at each other, you can write right away.": "Demande d'abord à {0}. Cette personne décide si tu peux écrire. Si vous vous saluez mutuellement, tu peux écrire tout de suite.",
   "Conversations": "Conversations",
   "Encrypted on your device and stored on NEAR. Nobody else can read it, not even QuestLayer.": "Chiffré sur ton appareil et stocké sur NEAR. Personne d'autre ne peut le lire, pas même QuestLayer.",
   "End-to-end encrypted. Only you and the other explorer can read a message.": "Chiffré de bout en bout. Seuls toi et l'autre explorateur pouvez lire un message.",
@@ -3235,5 +3234,17 @@
   "Live on the map within about 1.5 km": "En direct sur la carte dans un rayon d’environ 1,5 km",
   "While the game is open on your screen, explorers within about 1.5 km see your name, look and position on their map. Your profile never shows where you are. Players you blocked never see you, and you never see them.": "Tant que le jeu est ouvert à l’écran, les explorateurs dans un rayon d’environ 1,5 km voient ton nom, ton apparence et ta position sur leur carte. Ton profil ne montre jamais où tu es. Les joueurs que tu as bloqués ne te voient jamais, et tu ne les vois pas.",
   "Stop showing me to nearby explorers": "Ne plus me montrer aux explorateurs proches",
-  "Visible nearby · {0} near": "Visible à proximité · {0} proches"
+  "Visible nearby · {0} near": "Visible à proximité · {0} proches",
+  "Link this device": "Associer cet appareil",
+  "Messages open with your explorer account, which you get with your first find or quest.": "Les messages s’ouvrent avec ton compte d’explorateur, obtenu avec ta première trouvaille ou quête.",
+  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "Cet appareil n’est pas encore associé à ton compte d’explorateur, il ne peut donc ni envoyer ni lire de messages. Ajoute-le avec ta passkey de récupération.",
+  "Your explorer account is being set up. Messages open in a moment.": "Ton compte d’explorateur est en préparation. Les messages s’ouvrent dans un instant.",
+  "Your explorer account is not available on this device, so messages are off here.": "Ton compte d’explorateur n’est pas disponible sur cet appareil, les messages y sont donc désactivés.",
+  "A new explorer account is being made on this device.": "Un nouveau compte d’explorateur est en cours de création sur cet appareil.",
+  "Ask {0} first. They decide whether you may write. When you are within 1 km of each other, you can write right away.": "Demande d’abord à {0}. Il ou elle décide si tu peux écrire. À moins de 1 km l’un de l’autre, tu peux écrire tout de suite.",
+  "Lost that device? Start with a new account here": "Appareil perdu ? Recommence ici avec un nouveau compte",
+  "Start with a new account": "Recommencer avec un nouveau compte",
+  "Starting over…": "Nouveau départ…",
+  "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "Réseau de test uniquement. Ton explorateur, ton XP, tes trouvailles et tes objets restent. Un nouveau compte NEAR est créé sur cet appareil ; le QGOLD et les jetons de l’ancien compte y restent et le jeu ne l’utilise plus.",
+  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Cet appareil n’est pas encore associé à ton compte d’explorateur, il ne peut donc ni envoyer ni lire de messages. Ajoute-le avec ta passkey de récupération ou recommence ici avec un nouveau compte."
 }

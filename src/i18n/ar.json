@@ -2801,7 +2801,6 @@
   "You · open your profile": "أنت · افتح ملفك الشخصي",
   "Accept": "قبول",
   "Ask to message": "اطلب المراسلة",
-  "Ask {0} first. They decide whether you may write. If you both wave at each other, you can write right away.": "اسأل {0} أولًا. هو من يقرر إن كان بإمكانك الكتابة. إذا لوّح كل منكما للآخر، يمكنك الكتابة فورًا.",
   "Conversations": "المحادثات",
   "Encrypted on your device and stored on NEAR. Nobody else can read it, not even QuestLayer.": "مشفّرة على جهازك ومحفوظة على NEAR. لا يمكن لأحد غيركما قراءتها، ولا حتى QuestLayer.",
   "End-to-end encrypted. Only you and the other explorer can read a message.": "تشفير تام بين الطرفين. لا يقرأ الرسالة إلا أنت والمستكشف الآخر.",
@@ -3235,5 +3234,17 @@
   "Live on the map within about 1.5 km": "مباشر على الخريطة ضمن نحو 1.5 كم",
   "While the game is open on your screen, explorers within about 1.5 km see your name, look and position on their map. Your profile never shows where you are. Players you blocked never see you, and you never see them.": "ما دامت اللعبة مفتوحة على شاشتك، يرى المستكشفون ضمن نحو 1.5 كم اسمك ومظهرك وموقعك على خريطتهم. ملفك الشخصي لا يُظهر أبدًا مكانك. اللاعبون الذين حظرتهم لا يرونك أبدًا، وأنت لا تراهم.",
   "Stop showing me to nearby explorers": "توقف عن إظهاري للمستكشفين القريبين",
-  "Visible nearby · {0} near": "مرئي بالقرب · {0} قريب"
+  "Visible nearby · {0} near": "مرئي بالقرب · {0} قريب",
+  "Link this device": "اربط هذا الجهاز",
+  "Messages open with your explorer account, which you get with your first find or quest.": "تعمل الرسائل مع حساب المستكشف الخاص بك، وتحصل عليه مع أول اكتشاف أو مهمة.",
+  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "هذا الجهاز غير مرتبط بحساب المستكشف بعد، لذا لا يمكنه إرسال الرسائل أو قراءتها. أضفه بمفتاح المرور الاحتياطي.",
+  "Your explorer account is being set up. Messages open in a moment.": "يجري إعداد حساب المستكشف الخاص بك. ستعمل الرسائل بعد لحظات.",
+  "Your explorer account is not available on this device, so messages are off here.": "حساب المستكشف غير متاح على هذا الجهاز، لذا الرسائل متوقفة هنا.",
+  "A new explorer account is being made on this device.": "يجري إنشاء حساب مستكشف جديد على هذا الجهاز.",
+  "Ask {0} first. They decide whether you may write. When you are within 1 km of each other, you can write right away.": "اسأل {0} أولًا. هو من يقرر إن كان بإمكانك الكتابة. عندما تكونان على بعد 1 كم أو أقل، يمكنك الكتابة فورًا.",
+  "Lost that device? Start with a new account here": "فقدت ذلك الجهاز؟ ابدأ هنا بحساب جديد",
+  "Start with a new account": "ابدأ بحساب جديد",
+  "Starting over…": "جارٍ البدء من جديد…",
+  "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "على شبكة الاختبار فقط. يبقى مستكشفك ونقاط الخبرة والاكتشافات والعناصر. يُنشأ حساب NEAR جديد على هذا الجهاز؛ يبقى QGOLD والرموز في الحساب القديم ولن تستخدمه اللعبة بعد الآن.",
+  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "هذا الجهاز غير مرتبط بحساب المستكشف بعد، لذا لا يمكنه إرسال الرسائل أو قراءتها. أضفه بمفتاح المرور الاحتياطي أو ابدأ هنا بحساب جديد."
 }

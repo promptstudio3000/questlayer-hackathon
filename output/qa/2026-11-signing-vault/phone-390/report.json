@@ -1,0 +1,35 @@
+{
+  "device": "phone-390",
+  "browser": "chromium",
+  "appOrigin": "http://127.0.0.1:36737",
+  "vaultOrigin": "http://localhost:34435",
+  "scenarios": [
+    {
+      "name": "account creation",
+      "accountId": "mira2f17fcc2.play-e2e.testnet",
+      "publicKey": "ed25519:9Fo1GzjMnn2383zDgC9GU8cGSmNW8RKbAxcV8H3TrMyx"
+    },
+    {
+      "name": "sponsored transaction",
+      "receiverId": "v1.social08.testnet",
+      "methodName": "set",
+      "delegateHash": "94c457fd70115937221905183986422f1e5e37dae6ca76d08592d111f13f8a49"
+    },
+    {
+      "name": "reload",
+      "mechanism": "third-party storage kept by chromium (partitioned per game site)",
+      "publicKey": "ed25519:9Fo1GzjMnn2383zDgC9GU8cGSmNW8RKbAxcV8H3TrMyx"
+    },
+    {
+      "name": "encrypted inbox",
+      "sent": "msg_b2b0e517-dd49-4dc7-96c0-0e3d9e536a4e",
+      "received": "msg_4c90e882-969b-437f-a4cb-e74751cc9935",
+      "via": "player card → Message; badge → list → conversation"
+    },
+    {
+      "name": "blocked vault storage",
+      "mechanism": "recovery message with Try again"
+    }
+  ],
+  "problems": []
+}
