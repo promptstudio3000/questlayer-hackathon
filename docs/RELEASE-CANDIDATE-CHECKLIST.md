@@ -85,6 +85,10 @@ native claims until it ends; play continues on the next day.
 - [ ] Test world removed: delete `Environment=TEST_SEED=1` from
   `deploy/questlayer-hackathon.service`, deploy, and `/api/health` shows
   `testSeed: {"status":"off"}` (see `docs/TEST-SEED.md`). Mainnet never runs it.
+- [ ] Demo zones off: delete `Environment=DEMO_ZONES=plzen-compact` from
+  `deploy/questlayer-hackathon.service`, deploy, and `/api/health` shows
+  `demoZones: "off"` (zones back citywide with their countdown, see
+  `docs/DEMO-ZONES.md`).
 - [ ] No open release-blocking defect (W13.5).
 - [ ] README judge path works on `questlayer.promptstudio3000.com` in a fresh
       browser profile.

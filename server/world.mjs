@@ -1,4 +1,5 @@
 import { getOrPrepareCityPlan } from "./world-planner.mjs";
+import { demoWorldSuffix } from "./demo-zones.mjs";
 import { placeTier, playerStakeTier } from "./staker-gates.mjs";
 import { preparedActivityWorld, assertGlobalActivityReady } from "./global-activities.mjs";
 import { decorateGlobalRewardWorld,globalPrizeForQuest } from './global-rewards.mjs';
@@ -291,7 +292,9 @@ async function ensureBaseWorld(
       : latLngToCell(location.lat, location.lng, 7);
   const timezone = city?.timezone || tzLookup(...cellToLatLng(region)),
     day = dayKey(now, timezone),
-    worldId = `demo:${arena ? "arena-" : ""}${region}:${day}:v2`;
+    // A compact demo day (DEMO_ZONES) is its own world, never today's
+    // citywide one with different zones.
+    worldId = `demo:${arena ? "arena-" : ""}${region}:${day}:v2${city ? demoWorldSuffix(city.id) : ""}`;
   const found = db
     .prepare("SELECT manifest FROM worlds WHERE id=?")
     .get(worldId);
@@ -340,6 +343,7 @@ async function ensureBaseWorld(
       id: worldId,
       version: 2,
       blueprintId: plan?.id || null,
+      ...(plan?.demoZones ? { demoZones: plan.demoZones } : {}),
       day,
       region,
       cityId: city?.id || null,

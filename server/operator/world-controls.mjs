@@ -17,6 +17,7 @@ import { assert, dayKey, hash } from "../domain.mjs";
 import { atomic } from "../database.mjs";
 import { shiftDate } from "../spatial/calendar.mjs";
 import { DEFAULT_CITY, LIVE_CITIES } from "../spatial/city-pack.mjs";
+import { withDemoZones } from "../demo-zones.mjs";
 import {
   baseCityPack,
   changeSystemPlace,
@@ -247,7 +248,9 @@ export function dayAdjustment(db, cityId, day) {
  */
 export function dayCityPack(db, city, day) {
   const base = baseCityPack(city),
-    effective = effectiveCityPack(db, base),
+    // DEMO_ZONES swaps in the compact demo candidates (server/demo-zones.mjs);
+    // closures and day adjustments still apply on top of them.
+    effective = withDemoZones(effectiveCityPack(db, base)),
     adjustment = isDay(day) ? dayAdjustment(db, base.id, day) : null;
   if (!adjustment) return effective;
   const excluded = new Set(adjustment.excludeCandidates);

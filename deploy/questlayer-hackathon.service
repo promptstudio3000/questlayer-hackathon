@@ -22,6 +22,11 @@ Environment=NEAR_RPC_URL=https://test.rpc.fastnear.com
 # Testnet test world (docs/TEST-SEED.md). Delete this line (or set TEST_SEED=0
 # in runtime.env) and the next start removes everything it seeded.
 Environment=TEST_SEED=1
+# Plzeň demo layout (docs/DEMO-ZONES.md): six zones on the ring of parks around
+# náměstí Republiky, all open the whole day (no countdown), NPCs and monsters
+# near the centre. Delete this line for the final product: the next world goes
+# back to citywide zones with rarity windows. Refused on mainnet.
+Environment=DEMO_ZONES=plzen-compact
 # Level item editions L5-L10 (docs/LEVELS.md, owner-approved 1 Nov). Testnet only;
 # each stays unavailable until the deployed collectibles contract lists it.
 Environment=LEVEL_ITEM_EDITIONS=1

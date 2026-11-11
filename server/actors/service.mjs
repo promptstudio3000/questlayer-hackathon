@@ -23,6 +23,7 @@ import { planDay, positionAt } from "./schedule.mjs";
 import { planSpawns } from "./spawns.mjs";
 import { skyAt } from "../sun.mjs";
 import { streetFindIds } from "../street-finds.mjs";
+import { ACTOR_HOME_RADIUS_M, compactActorCast } from "../demo-zones.mjs";
 
 export const ENCOUNTER_TTL_MS = 5 * 60_000;
 export const ENCOUNTER_RADIUS_M = 35;
@@ -158,8 +159,13 @@ export function createActorService(db, options = {}) {
     if (manifest.cityId) {
       const base = cities(manifest.cityId);
       if (!base) return null;
-      const reviewed = loadActors(manifest.cityId);
-      return { cast: reviewed || loadGeneric(), base, generic: !reviewed, packKey: "" };
+      const reviewed = loadActors(manifest.cityId),
+        cast = reviewed || loadGeneric();
+      // A compact demo world (DEMO_ZONES, server/demo-zones.mjs) keeps its
+      // cast near the centre too.
+      if (manifest.demoZones)
+        return { cast: compactActorCast(cast), base, generic: !reviewed, packKey: "compact", compact: true };
+      return { cast, base, generic: !reviewed, packKey: "" };
     }
     const region = manifest.region;
     if (manifest.arena || typeof region !== "string" || !isValidCell(region) || getResolution(region) !== 7) return null;
@@ -209,6 +215,7 @@ export function createActorService(db, options = {}) {
       finds,
       pois,
       cap: source.cell ? DENSITY_CAP_PER_CELL : null,
+      ...(source.compact ? { homeArea: { center: pack.center, radiusM: ACTOR_HOME_RADIUS_M } } : {}),
     });
     const instances = spawned.map((s) => {
       const id = `${s.id}${suffix}`,
