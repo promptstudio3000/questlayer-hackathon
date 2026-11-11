@@ -304,6 +304,7 @@ import {
 } from "./feedback";
 import { QuestThumbnail } from "./QuestThumbnail";
 import { headingTo, metersBetween } from "./map-motion.ts";
+import { awayFromDemo, gpsRemembered, locationGranted, rememberGps } from "./play-here";
 import { advanceGpsFacing, initialGpsFacing } from "./gps-facing";
 import { useDemoWalk } from "./useDemoWalk";
 import { DemoControls } from "./DemoControls";
@@ -458,6 +459,9 @@ export default function App() {
   const gpsResumeOnMovement = useRef(false);
   const [findInspect, setFindInspect] = useState<{worldId:string; coin:Coin} | null>(null);
   const [dismissedObjective, setDismissedObjective] = useState("");
+  // Demo player whose browser already allows location and who is far from
+  // Plzeň (src/play-here.ts): the map offers the world around them.
+  const [awayFix, setAwayFix] = useState<Point | null>(null);
   const [feedback, setFeedback] = useState<FeedbackPreferences>(() =>
     loadFeedbackPreferences(),
   );
@@ -1363,8 +1367,33 @@ export default function App() {
     setOthers([]);
     setBusy("");
     setToast(null);
-    if (player) void loadWorld(HOME, true);
+    setAwayFix(null);
+    if (player) {
+      void loadWorld(HOME, true);
+      void resumeLocation();
+    }
   }, [player?.id]);
+  // Joins the demo with the real world without a new permission prompt: a
+  // remembered GPS choice resumes it; otherwise a player far from Plzeň is
+  // offered "Play here".
+  async function resumeLocation() {
+    const owner = ownerContext();
+    if (!(await locationGranted())) return;
+    if (ownerContext() !== owner || !arenaIntent.current) return;
+    if (gpsRemembered()) {
+      void locate();
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (p) => {
+        if (ownerContext() !== owner || !arenaIntent.current) return;
+        const at = { lat: p.coords.latitude, lng: p.coords.longitude };
+        setAwayFix(awayFromDemo(at) ? at : null);
+      },
+      () => {},
+      { enableHighAccuracy: false, timeout: 15_000, maximumAge: 600_000 },
+    );
+  }
   useEffect(() => {
     void me();
     const a = () => {
@@ -1970,6 +1999,8 @@ export default function App() {
     setGpsCourse(null);
     gpsFacing.current = initialGpsFacing();
     gpsResumeOnMovement.current = false;
+    rememberGps(false);
+    setAwayFix(null);
     setArena(true);
     setPosition(HOME);
     void loadWorld(HOME, true);
@@ -2010,6 +2041,8 @@ export default function App() {
         setFix(f);
         gpsFacing.current = initialGpsFacing();
         turn(p, f);
+        rememberGps(true);
+        setAwayFix(null);
         setArena(false);
         setFollow(true);
         setGlobe(false);
@@ -3508,6 +3541,7 @@ export default function App() {
     native: !!nativeObjective.reference,
     receipt: !nativePlay && !!adventureResults.unread,
     notice: !!adventureNotice,
+    away: arena && !nativePlay && !!awayFix,
     coach: coachActive,
     // Street finds and quests of the map-coin day show only on that ledger;
     // otherwise the folded card stayed as an empty bar on the map.
@@ -3948,6 +3982,21 @@ export default function App() {
               <span>
                 <strong>{tr("Choose another discovery")}</strong>
                 <small role="status">{adventureNotice}</small>
+              </span>
+              <ArrowRight size={20} aria-hidden="true" />
+            </button>
+          )}
+          {tab === "explore" && awayFix && showObjective("away") && (
+            <button
+              className="adventure-notice play-here-notice"
+              data-testid="play-here"
+              onClick={() => void locate()}
+              disabled={busy === "gps"}
+            >
+              <MapPin size={24} aria-hidden="true" />
+              <span>
+                <strong>{tr("Play where you are")}</strong>
+                <small>{tr("This is the Plzeň demo. Quests and coins are waiting around you too.")}</small>
               </span>
               <ArrowRight size={20} aria-hidden="true" />
             </button>

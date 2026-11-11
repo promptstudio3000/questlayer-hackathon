@@ -13,7 +13,7 @@ test("a started NPC or map activity keeps the goal until its own nearby target i
   assert.equal(canOfferNearbyAction("selection", undefined, false, false, false), true);
 });
 test("clearing an objective reveals the next actionable state without inventing one", () => {
-  const states = { native: true, receipt: true, notice: true, coach: true, find: true, quest: true };
+  const states = { native: true, receipt: true, notice: true, away: true, coach: true, find: true, quest: true };
   for (const kind of OBJECTIVE_ORDER.slice(1)) {
     assert.equal(mapObjective(states), kind);
     states[kind] = false;
