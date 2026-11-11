@@ -144,8 +144,8 @@ segments, cached per day like `street-finds`.
 its area and animates them locally. The server recomputes the position at interaction time; it never trusts the
 client's position for the NPC.
 
-**Operating hours.** NPCs and monsters are active inside opening hours configured per city (07:00–22:00 local
-time since 3 Nov 2026, was 08:00–20:00). Inside those hours the real sun decides who walks (`server/sun.mjs`):
+**Operating hours.** NPCs and monsters are active inside opening hours configured per city: around the clock (00:00–23:59 local
+time since 11 Nov 2026, owner decision; was 07:00–22:00 from 3 Nov). Inside those hours the real sun decides who walks (`server/sun.mjs`):
 an actor with `phase: "day"` walks between local sunrise and sunset, `phase: "night"` only after sunset (or before
 sunrise), and `"any"` (the default) all the time. The map repaints itself for day, dusk, dawn and night at the
 player's position (`src/map-sky.ts`). Per-cell density caps hold separately for the day and the night cast.
