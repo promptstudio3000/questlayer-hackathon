@@ -7,16 +7,16 @@ import { tr } from "./i18n";
 import { REALMS } from "./realms";
 import "./world-switcher.css";
 
-// Test label until the workshop leaves its feature switch (docs/GOTCHIVERSE.md).
-const GOTCHIVERSE_TEST_LABEL = "Gotchiverse-test-app";
-
 export function WorldSwitcher({
   virtual,
   enabled,
+  layerName,
   onChoose,
 }: {
   virtual: boolean;
   enabled: boolean;
+  /** Display name of the virtual voxel layer (docs/LAYER.md). */
+  layerName: string;
   onChoose: (virtual: boolean) => void;
 }) {
   const [open, setOpen] = useState(false);
@@ -35,7 +35,7 @@ export function WorldSwitcher({
         <span className="world-switcher-name">
           {REALMS.questlayer.name.toUpperCase()}
           <small>
-            {virtual ? GOTCHIVERSE_TEST_LABEL : REALMS.questlayer.name}
+            {virtual ? layerName : REALMS.questlayer.name}
           </small>
         </span>
         <CaretDown size={16} aria-hidden="true" />
@@ -84,11 +84,11 @@ export function WorldSwitcher({
               >
                 <Cube size={32} aria-hidden="true" />
                 <span>
-                  <strong>{GOTCHIVERSE_TEST_LABEL}</strong>
+                  <strong>{layerName}</strong>
                   <small>
                     {enabled
                       ? tr(
-                          "Shape terrain, bring your character and build with friends.",
+                          "A shared voxel world in space: build your plot, explore, meet explorers.",
                         )
                       : tr("Create your explorer to enter.")}
                   </small>
