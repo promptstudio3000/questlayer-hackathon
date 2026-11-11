@@ -1,6 +1,7 @@
 import type { NearbyActor } from "./nearby-action";
 import { applyGoldLook } from "./gold-emotes";
 import type { GoldMap } from "./gold-spend-client";
+import type { NotePin } from "./gold-map-layer";
 import {
   characterMarkerMarkup,
   STARTER_SPRITE,
@@ -122,6 +123,9 @@ export type GameMapProps = {
   frame?: string | null;
   goldMap?: GoldMap | null;
   onPlacePin?: (id: string) => void;
+  /** Free map notes near the player (Local chat · Notes). */
+  notes?: readonly NotePin[];
+  onNotePin?: (id: string) => void;
   /** A multi-stop walk: drawn from the explorer to the next stop and on. */
   route?: QuestRoute | null;
   /** NPCs waiting for the player's report (every step of their line done). */
@@ -1348,6 +1352,31 @@ export function GameMap(props: GameMapProps) {
     () => () => {
       goldLayer.current?.remove();
       goldLayer.current = null;
+    },
+    [],
+  );
+  // Free map notes: own lazy layer, so a note shows where it was left.
+  const noteLayer = useRef<{ update: (notes: readonly NotePin[]) => void; remove: () => void } | null>(null);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    let gone = false;
+    const notes = props.notes ?? [];
+    if (noteLayer.current) noteLayer.current.update(notes);
+    else if (notes.length)
+      import("./gold-map-layer").then(({ attachNoteLayer }) => {
+        if (gone || noteLayer.current) return;
+        noteLayer.current = attachNoteLayer(m, (id) => latest.current.onNotePin?.(id));
+        noteLayer.current.update(notes);
+      });
+    return () => {
+      gone = true;
+    };
+  }, [props.notes, ready]);
+  useEffect(
+    () => () => {
+      noteLayer.current?.remove();
+      noteLayer.current = null;
     },
     [],
   );

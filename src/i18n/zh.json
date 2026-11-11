@@ -3193,5 +3193,7 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "余额低于 {0} NEAR 时,每天可补充一次。",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "添加你自己的 NEAR:从任意钱包或交易所发送到 {0}。",
  "Refuelled. Your account has NEAR for its next payments.": "已补充。你的账户有 NEAR 用于接下来的付款。",
- "Could not refuel right now. Try again later.": "现在无法补充。请稍后再试。"
+ "Could not refuel right now. Try again later.": "现在无法补充。请稍后再试。",
+ "Your note: {0}": "你的留言：{0}",
+ "Note: {0}": "留言：{0}"
 }

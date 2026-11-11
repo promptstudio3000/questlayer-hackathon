@@ -161,6 +161,9 @@ export function MapNotes({
   onRecord,
   quick = false,
   onDone,
+  onChange,
+  openId,
+  onOpened,
 }: {
   playerId: string;
   position: Point;
@@ -175,6 +178,11 @@ export function MapNotes({
   /** Only the compact create dialog (Actions button); onDone closes it. */
   quick?: boolean;
   onDone?: () => void;
+  /** A note was published, edited or removed: the map redraws its note pins. */
+  onChange?: () => void;
+  /** A map note pin was tapped: show and highlight this note in the list. */
+  openId?: string | null;
+  onOpened?: () => void;
 }) {
   const [recordNote, setRecordNote] = useState<MapNote | null>(null);
   const identity = `${playerId}:${arena ? "arena" : "physical"}`;
@@ -246,6 +254,18 @@ export function MapNotes({
     [reason, setReason] = useState("spam"),
     [detail, setDetail] = useState("");
   const coordinates = `${position.lat.toFixed(2)}:${position.lng.toFixed(2)}`;
+  // A tapped map pin: once the list holds that note, scroll to it and mark it.
+  const [focusedId, setFocusedId] = useState<string | null>(null);
+  useEffect(() => {
+    if (!openId || loading) return;
+    if (notes.some((n) => n.id === openId)) {
+      setFocusedId(openId);
+      requestAnimationFrame(() =>
+        document.getElementById(`map-note-${openId}`)?.scrollIntoView({ block: "center", behavior: "smooth" }),
+      );
+    }
+    onOpened?.();
+  }, [openId, loading, notes]);
   const current = (who: string) => mounted.current && latest.current === who;
 
   useEffect(() => {
@@ -367,6 +387,8 @@ export function MapNotes({
       return false;
     const intent = pendingRef.current;
     clearIntent();
+    // Before setView: in the quick dialog, leaving compose closes (unmounts) it.
+    onChange?.();
     if (receipt.state !== "abandoned") {
       if (intent?.draftRevision !== undefined)
         draft.discard(intent.draftRevision);
@@ -517,6 +539,7 @@ export function MapNotes({
     setDetail("");
     if (selected.kind === "block") {
       onBlockChange?.();
+      onChange?.();
       await load();
       if (!current(who)) return;
       heading.current?.focus();
@@ -525,6 +548,7 @@ export function MapNotes({
       );
     }
     if (selected.kind === "remove") {
+      onChange?.();
       await load();
       if (!current(who)) return;
       heading.current?.focus();
@@ -563,6 +587,7 @@ export function MapNotes({
     if (!current(who)) return;
     setEditing(null);
     setNotice(tr("Note updated."));
+    onChange?.();
     await load();
   }
   const pendingCard = pending && (
@@ -813,7 +838,11 @@ export function MapNotes({
           ) : notes.length ? (
             <ul className="map-notes-list">
               {notes.map((note) => (
-                <li key={note.id} className={`map-note${note.own ? " is-own" : ""}`}>
+                <li
+                  key={note.id}
+                  id={`map-note-${note.id}`}
+                  className={`map-note${note.own ? " is-own" : ""}${focusedId === note.id ? " is-focused" : ""}`}
+                >
                   <Ghost className="map-note-ghost" />
                   <div className="map-note-body">
                     <div className="map-note-meta">

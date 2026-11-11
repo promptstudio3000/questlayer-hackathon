@@ -3193,5 +3193,7 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "Auffüllen ist einmal am Tag möglich, sobald dein Guthaben unter {0} NEAR fällt.",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "Eigene NEAR hinzufügen: sende sie von einer beliebigen Wallet oder Börse an {0}.",
  "Refuelled. Your account has NEAR for its next payments.": "Aufgefüllt. Dein Konto hat NEAR für die nächsten Zahlungen.",
- "Could not refuel right now. Try again later.": "Auffüllen ist gerade nicht möglich. Versuche es später."
+ "Could not refuel right now. Try again later.": "Auffüllen ist gerade nicht möglich. Versuche es später.",
+ "Your note: {0}": "Deine Notiz: {0}",
+ "Note: {0}": "Notiz: {0}"
 }
