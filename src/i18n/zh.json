@@ -3169,7 +3169,6 @@
  "They are not out near you right now.": "他们现在不在你附近。",
  "coins": "枚金币",
  "Back and ready": "已返回，可提取",
- "First time only: {0} test NEAR sets up your personal vault and is not returned.": "仅首次：{0} 测试 NEAR 用于创建你的个人金库，不予退还。",
  "Keep staking": "继续质押",
  "One stake. It stays yours: you can only withdraw it, which takes about 1–7 days.": "只需质押一次。它始终属于你：之后只能提取，约需 1–7 天。",
  "Requesting your withdrawal…": "正在申请提取…",
@@ -3177,7 +3176,6 @@
  "Staked. It counts after about two epochs; then you are a Staker.": "已质押。约两个纪元后生效，届时你就是 Staker。",
  "Step 1 of 2 · finishing your vault…": "第 1 步，共 2 步 · 正在完成金库…",
  "Step 1 of 2 · setting up your vault…": "第 1 步，共 2 步 · 正在创建金库…",
- "Step 2 of 2 · staking {0} NEAR…": "第 2 步，共 2 步 · 正在质押 {0} NEAR…",
  "The pool is confirming your last step. This takes a moment.": "池子正在确认你的上一步，请稍候。",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "其余收益归你。投入奖池越多，等级提升越快。",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "解除质押中：将在纪元 {0} 解锁（当前 {1}）。游戏会替你转回，之后在这里提取。",
@@ -3194,5 +3192,9 @@
  "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "你的全部质押现在开始返回。它立即不再计入你的等级，约 1–7 天（4 个纪元）后到账。",
  "Copy address": "复制地址",
  "Get test NEAR": "获取测试 NEAR",
- "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "你有 {0} 测试 NEAR；大约需要 {1}。请向你的探索者账户发送测试 NEAR，然后再检查。"
+ "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "你有 {0} 测试 NEAR；大约需要 {1}。请向你的探索者账户发送测试 NEAR，然后再检查。",
+ "First time only: {0} test NEAR sets up your personal vault (step 1) and is not returned; then you stake (step 2).": "仅首次：{0} 测试 NEAR 用于创建你的个人金库（第 1 步），不予退还；然后进行质押（第 2 步）。",
+ "Paid from your balance. You confirm with Yes in a small QuestLayer window.": "从你的余额支付。在一个小的 QuestLayer 窗口中点“是”确认。",
+ "Staking {0} NEAR…": "正在质押 {0} NEAR…",
+ "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "你的金库已就绪。请再点一次“质押 {0} NEAR”。"
 }

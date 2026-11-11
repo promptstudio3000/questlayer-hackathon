@@ -260,9 +260,12 @@ export function FuelTheCity({
       void readBalance(account).then(setBalance);
     };
     try {
-      const snap = (await readVaults()) || vaults;
+      // Sign straight from the tap: the confirmation window only opens while the
+      // browser still counts the tap, so no slow read sits before a signature.
+      const snap = vaults?.config ? vaults : await readVaults();
       if (!snap?.config) return fail(tr("Staking can't be read right now."));
       let now = stakePhase((snap.positions || []) as FuelPosition[]);
+      const setUp = now.kind === "none" || now.kind === "setup";
       if (now.kind === "none") {
         setOutcome({ kind: "pending", text: tr("Step 1 of 2 · setting up your vault…") });
         const known = new Set(snap.positions.map((p) => p.id));
@@ -290,7 +293,12 @@ export function FuelTheCity({
         setOutcome({ kind: "idle" });
         return;
       }
-      setOutcome({ kind: "pending", text: tr("Step 2 of 2 · staking {0} NEAR…", { 0: amount }) });
+      if (setUp) {
+        // The stake is its own tap, so its confirmation window may open.
+        setOutcome({ kind: "done", text: tr("Your vault is ready. Tap Stake {0} NEAR once more to stake.", { 0: amount }) });
+        return;
+      }
+      setOutcome({ kind: "pending", text: tr("Staking {0} NEAR…", { 0: amount }) });
       const ok = await sign({ action: "deposit", vaultId: now.position.account_id, amount: deposit });
       if (!ok) return fail();
       setOutcome({ kind: "done", text: tr("Staked. It counts after about two epochs; then you are a Staker.") });
@@ -434,12 +442,12 @@ export function FuelTheCity({
             <p className="fuel-paid">
               {tr("One stake. It stays yours: you can only withdraw it, which takes about 1–7 days.")}{" "}
               {phase.kind === "none" && setupNear !== null
-                ? tr("First time only: {0} test NEAR sets up your personal vault and is not returned.", { 0: fmt(setupNear, 2) })
+                ? tr("First time only: {0} test NEAR sets up your personal vault (step 1) and is not returned; then you stake (step 2).", { 0: fmt(setupNear, 2) })
                 : null}{" "}
               {!account
                 ? tr("Your explorer account is prepared first.")
                 : managed
-                  ? tr("Paid from your balance, no popup.")
+                  ? tr("Paid from your balance. You confirm with Yes in a small QuestLayer window.")
                   : tr("Your NEAR wallet asks you to approve.")}
             </p>
           </>

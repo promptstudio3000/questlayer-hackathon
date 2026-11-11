@@ -3169,7 +3169,6 @@
  "They are not out near you right now.": "वे अभी आपके पास नहीं हैं।",
  "coins": "सिक्के",
  "Back and ready": "वापस और तैयार",
- "First time only: {0} test NEAR sets up your personal vault and is not returned.": "केवल पहली बार: {0} टेस्ट NEAR से तुम्हारी निजी तिजोरी बनती है और यह वापस नहीं मिलता।",
  "Keep staking": "स्टेक जारी रखें",
  "One stake. It stays yours: you can only withdraw it, which takes about 1–7 days.": "एक स्टेक। यह तुम्हारा रहता है: तुम इसे केवल निकाल सकते हो, जिसमें लगभग 1–7 दिन लगते हैं।",
  "Requesting your withdrawal…": "निकासी का अनुरोध हो रहा है…",
@@ -3177,7 +3176,6 @@
  "Staked. It counts after about two epochs; then you are a Staker.": "स्टेक हो गया। यह लगभग दो एपॉक बाद गिना जाता है; फिर तुम Staker हो।",
  "Step 1 of 2 · finishing your vault…": "चरण 2 में से 1 · तुम्हारी तिजोरी पूरी हो रही है…",
  "Step 1 of 2 · setting up your vault…": "चरण 2 में से 1 · तुम्हारी तिजोरी बन रही है…",
- "Step 2 of 2 · staking {0} NEAR…": "चरण 2 में से 2 · {0} NEAR स्टेक हो रहा है…",
  "The pool is confirming your last step. This takes a moment.": "पूल तुम्हारे पिछले चरण की पुष्टि कर रहा है। इसमें थोड़ा समय लगता है।",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "बाकी यील्ड तुम्हारी है। इनाम पूल में ज़्यादा देने से टियर तेज़ी से बढ़ते हैं।",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "अनस्टेकिंग: एपॉक {0} में खुलेगा (अभी {1})। गेम इसे तुम्हारे लिए वापस लाता है; फिर यहाँ निकालो।",
@@ -3194,5 +3192,9 @@
  "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "तुम्हारा पूरा स्टेक अब वापस आना शुरू होता है। यह तुरंत तुम्हारे टियर में गिनना बंद कर देता है और लगभग 1–7 दिन (4 एपॉक) में पहुँचता है।",
  "Copy address": "पता कॉपी करें",
  "Get test NEAR": "टेस्ट NEAR पाएँ",
- "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "तुम्हारे पास {0} टेस्ट NEAR है; लगभग {1} चाहिए। अपने एक्सप्लोरर खाते में टेस्ट NEAR भेजो, फिर दोबारा जाँचो।"
+ "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "तुम्हारे पास {0} टेस्ट NEAR है; लगभग {1} चाहिए। अपने एक्सप्लोरर खाते में टेस्ट NEAR भेजो, फिर दोबारा जाँचो।",
+ "First time only: {0} test NEAR sets up your personal vault (step 1) and is not returned; then you stake (step 2).": "केवल पहली बार: {0} टेस्ट NEAR से तुम्हारी निजी तिजोरी बनती है (चरण 1) और यह वापस नहीं मिलता; फिर तुम स्टेक करते हो (चरण 2)।",
+ "Paid from your balance. You confirm with Yes in a small QuestLayer window.": "तुम्हारे बैलेंस से भुगतान। एक छोटी QuestLayer विंडो में हाँ दबाकर पुष्टि करो।",
+ "Staking {0} NEAR…": "{0} NEAR स्टेक हो रहा है…",
+ "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "तुम्हारी तिजोरी तैयार है। एक बार फिर {0} NEAR स्टेक करें पर टैप करो।"
 }

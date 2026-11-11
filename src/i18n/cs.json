@@ -3169,7 +3169,6 @@
  "They are not out near you right now.": "Teď nejsou poblíž.",
  "coins": "mincí",
  "Back and ready": "Zpět a připraveno",
- "First time only: {0} test NEAR sets up your personal vault and is not returned.": "Jen poprvé: {0} test NEAR založí tvůj osobní trezor a nevrací se.",
  "Keep staking": "Nechat stakované",
  "One stake. It stays yours: you can only withdraw it, which takes about 1–7 days.": "Jeden stake. Zůstává tvůj: můžeš si ho jen vybrat, což trvá asi 1–7 dní.",
  "Requesting your withdrawal…": "Žádám o výběr…",
@@ -3177,7 +3176,6 @@
  "Staked. It counts after about two epochs; then you are a Staker.": "Stakováno. Započítá se asi po dvou epochách; pak jsi Staker.",
  "Step 1 of 2 · finishing your vault…": "Krok 1 ze 2 · dokončuji tvůj trezor…",
  "Step 1 of 2 · setting up your vault…": "Krok 1 ze 2 · zakládám tvůj trezor…",
- "Step 2 of 2 · staking {0} NEAR…": "Krok 2 ze 2 · stakuji {0} NEAR…",
  "The pool is confirming your last step. This takes a moment.": "Pool potvrzuje tvůj poslední krok. Chvilku to trvá.",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "Zbytek výnosu je tvůj. Víc do banku cen = rychlejší postup po tierech.",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "Unstaking: odemkne se v epoše {0} (teď {1}). Hra ho posune zpět za tebe; pak si ho tady vyber.",
@@ -3194,5 +3192,9 @@
  "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "Celý tvůj stake se teď začne vracet. Hned se přestane počítat do tvého tieru a dorazí asi za 1–7 dní (4 epochy).",
  "Copy address": "Kopírovat adresu",
  "Get test NEAR": "Získat test NEAR",
- "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "Máš {0} test NEAR; potřeba je asi {1}. Pošli test NEAR na svůj účet průzkumníka a zkontroluj znovu."
+ "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "Máš {0} test NEAR; potřeba je asi {1}. Pošli test NEAR na svůj účet průzkumníka a zkontroluj znovu.",
+ "First time only: {0} test NEAR sets up your personal vault (step 1) and is not returned; then you stake (step 2).": "Jen poprvé: {0} test NEAR založí tvůj osobní trezor (krok 1) a nevrací se; pak stakuješ (krok 2).",
+ "Paid from your balance. You confirm with Yes in a small QuestLayer window.": "Platí se z tvého zůstatku. Potvrdíš to tlačítkem Ano v malém okně QuestLayer.",
+ "Staking {0} NEAR…": "Stakuji {0} NEAR…",
+ "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "Tvůj trezor je připravený. Klepni ještě jednou na Stakovat {0} NEAR."
 }

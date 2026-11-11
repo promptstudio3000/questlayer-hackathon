@@ -3169,7 +3169,6 @@
  "They are not out near you right now.": "ليسوا بالقرب منك الآن.",
  "coins": "عملات",
  "Back and ready": "عاد وجاهز",
- "First time only: {0} test NEAR sets up your personal vault and is not returned.": "في المرة الأولى فقط: {0} NEAR تجريبي ينشئ خزنتك الشخصية ولا يُسترد.",
  "Keep staking": "متابعة التخزين",
  "One stake. It stays yours: you can only withdraw it, which takes about 1–7 days.": "تخزين واحد. يبقى لك: يمكنك سحبه فقط، ويستغرق ذلك نحو 1–7 أيام.",
  "Requesting your withdrawal…": "جارٍ طلب السحب…",
@@ -3177,7 +3176,6 @@
  "Staked. It counts after about two epochs; then you are a Staker.": "تم التخزين. يُحتسب بعد نحو حقبتين؛ ثم تصبح Staker.",
  "Step 1 of 2 · finishing your vault…": "الخطوة 1 من 2 · جارٍ إكمال خزنتك…",
  "Step 1 of 2 · setting up your vault…": "الخطوة 1 من 2 · جارٍ إنشاء خزنتك…",
- "Step 2 of 2 · staking {0} NEAR…": "الخطوة 2 من 2 · جارٍ تخزين {0} NEAR…",
  "The pool is confirming your last step. This takes a moment.": "المجمع يؤكد خطوتك الأخيرة. يستغرق ذلك لحظة.",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "باقي العائد لك. المزيد لصندوق الجوائز يرفع المستويات أسرع.",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "فك التخزين: يُفتح في الحقبة {0} (الآن {1}). اللعبة تعيده لك؛ ثم اسحبه هنا.",
@@ -3194,5 +3192,9 @@
  "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "يبدأ كل تخزينك بالعودة الآن. يتوقف فوراً عن الاحتساب لمستواك ويصل بعد نحو 1–7 أيام (4 حقب).",
  "Copy address": "نسخ العنوان",
  "Get test NEAR": "احصل على NEAR تجريبي",
- "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "لديك {0} NEAR تجريبي؛ يلزم نحو {1}. أرسل NEAR تجريبياً إلى حساب المستكشف ثم تحقق مرة أخرى."
+ "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "لديك {0} NEAR تجريبي؛ يلزم نحو {1}. أرسل NEAR تجريبياً إلى حساب المستكشف ثم تحقق مرة أخرى.",
+ "First time only: {0} test NEAR sets up your personal vault (step 1) and is not returned; then you stake (step 2).": "في المرة الأولى فقط: {0} NEAR تجريبي ينشئ خزنتك الشخصية (الخطوة 1) ولا يُسترد؛ ثم تخزّن (الخطوة 2).",
+ "Paid from your balance. You confirm with Yes in a small QuestLayer window.": "يُدفع من رصيدك. تؤكد بنعم في نافذة QuestLayer صغيرة.",
+ "Staking {0} NEAR…": "جارٍ تخزين {0} NEAR…",
+ "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "خزنتك جاهزة. اضغط خزّن {0} NEAR مرة أخرى."
 }

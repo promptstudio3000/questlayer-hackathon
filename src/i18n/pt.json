@@ -3169,7 +3169,6 @@
  "They are not out near you right now.": "Agora não estão perto de ti.",
  "coins": "moedas",
  "Back and ready": "De volta e pronto",
- "First time only: {0} test NEAR sets up your personal vault and is not returned.": "Só na primeira vez: {0} NEAR de teste criam o teu cofre pessoal e não são devolvidos.",
  "Keep staking": "Continuar em stake",
  "One stake. It stays yours: you can only withdraw it, which takes about 1–7 days.": "Um só stake. Continua teu: só podes levantá-lo, o que leva cerca de 1–7 dias.",
  "Requesting your withdrawal…": "A pedir o levantamento…",
@@ -3177,7 +3176,6 @@
  "Staked. It counts after about two epochs; then you are a Staker.": "Em stake. Conta após cerca de duas épocas; depois és Staker.",
  "Step 1 of 2 · finishing your vault…": "Passo 1 de 2 · a concluir o teu cofre…",
  "Step 1 of 2 · setting up your vault…": "Passo 1 de 2 · a criar o teu cofre…",
- "Step 2 of 2 · staking {0} NEAR…": "Passo 2 de 2 · a fazer stake de {0} NEAR…",
  "The pool is confirming your last step. This takes a moment.": "O pool está a confirmar o teu último passo. Demora um momento.",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "O resto do rendimento é teu. Mais para o prémio sobe os tiers mais depressa.",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "Unstaking: desbloqueia na época {0} (agora {1}). O jogo devolve-o por ti; depois levanta-o aqui.",
@@ -3194,5 +3192,9 @@
  "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "Todo o teu stake começa a voltar agora. Deixa logo de contar para o teu tier e chega em cerca de 1–7 dias (4 épocas).",
  "Copy address": "Copiar endereço",
  "Get test NEAR": "Obter NEAR de teste",
- "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "Tens {0} NEAR de teste; são precisos cerca de {1}. Envia NEAR de teste para a tua conta de explorador e volta a verificar."
+ "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "Tens {0} NEAR de teste; são precisos cerca de {1}. Envia NEAR de teste para a tua conta de explorador e volta a verificar.",
+ "First time only: {0} test NEAR sets up your personal vault (step 1) and is not returned; then you stake (step 2).": "Só na primeira vez: {0} NEAR de teste criam o teu cofre pessoal (passo 1) e não são devolvidos; depois fazes stake (passo 2).",
+ "Paid from your balance. You confirm with Yes in a small QuestLayer window.": "Pago do teu saldo. Confirmas com Sim numa pequena janela QuestLayer.",
+ "Staking {0} NEAR…": "A fazer stake de {0} NEAR…",
+ "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "O teu cofre está pronto. Toca mais uma vez em Fazer stake de {0} NEAR."
 }

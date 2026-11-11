@@ -3169,7 +3169,6 @@
  "They are not out near you right now.": "Ahora mismo no están cerca de ti.",
  "coins": "monedas",
  "Back and ready": "De vuelta y listo",
- "First time only: {0} test NEAR sets up your personal vault and is not returned.": "Solo la primera vez: {0} NEAR de prueba crean tu bóveda personal y no se devuelven.",
  "Keep staking": "Seguir en staking",
  "One stake. It stays yours: you can only withdraw it, which takes about 1–7 days.": "Un solo stake. Sigue siendo tuyo: solo puedes retirarlo, lo que tarda unos 1–7 días.",
  "Requesting your withdrawal…": "Solicitando tu retiro…",
@@ -3177,7 +3176,6 @@
  "Staked. It counts after about two epochs; then you are a Staker.": "En stake. Cuenta tras unas dos épocas; entonces eres Staker.",
  "Step 1 of 2 · finishing your vault…": "Paso 1 de 2 · terminando tu bóveda…",
  "Step 1 of 2 · setting up your vault…": "Paso 1 de 2 · creando tu bóveda…",
- "Step 2 of 2 · staking {0} NEAR…": "Paso 2 de 2 · haciendo stake de {0} NEAR…",
  "The pool is confirming your last step. This takes a moment.": "El pool está confirmando tu último paso. Tarda un momento.",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "El resto del rendimiento es tuyo. Más al bote de premios sube los tiers más rápido.",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "Unstaking: se desbloquea en la época {0} (ahora {1}). El juego lo devuelve por ti; luego retíralo aquí.",
@@ -3194,5 +3192,9 @@
  "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "Todo tu stake empieza a volver ahora. Deja de contar para tu tier al instante y llega en unos 1–7 días (4 épocas).",
  "Copy address": "Copiar dirección",
  "Get test NEAR": "Conseguir NEAR de prueba",
- "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "Tienes {0} NEAR de prueba; se necesitan unos {1}. Envía NEAR de prueba a tu cuenta de explorador y vuelve a comprobar."
+ "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "Tienes {0} NEAR de prueba; se necesitan unos {1}. Envía NEAR de prueba a tu cuenta de explorador y vuelve a comprobar.",
+ "First time only: {0} test NEAR sets up your personal vault (step 1) and is not returned; then you stake (step 2).": "Solo la primera vez: {0} NEAR de prueba crean tu bóveda personal (paso 1) y no se devuelven; luego haces stake (paso 2).",
+ "Paid from your balance. You confirm with Yes in a small QuestLayer window.": "Se paga de tu saldo. Confirmas con Sí en una pequeña ventana de QuestLayer.",
+ "Staking {0} NEAR…": "Haciendo stake de {0} NEAR…",
+ "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "Tu bóveda está lista. Toca Hacer stake de {0} NEAR una vez más."
 }
