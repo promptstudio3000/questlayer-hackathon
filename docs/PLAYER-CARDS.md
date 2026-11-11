@@ -120,9 +120,14 @@ Since 10 November 2026 every explorer on the map opens this card as a dialog:
 - Test-world bots (`TEST_SEED=1`, ids starting with `seed-`) stay on for the
   first test weeks. Their card is the same dialog with a `demo-bot` tag after the
   name and a short note. Bots take no waves and have no Block button.
-- A **Write a message** button sits in the dialog. It stays disabled
-  ("Messages are coming soon.") until the app passes `onMessage(playerId, name)`
-  to `PlayerCard`; the inbox plugs in there. Demo bots never get it.
+- A **Message** button sits in the dialog. For real explorers it opens the
+  encrypted inbox; without the explorer account (wallet-only sign-in) it is
+  disabled and a line under the buttons says why.
+- **Demo bots (11 November 2026):** Message opens a short demo chat inside the
+  card. `POST /api/players/bot-chat {playerId, text}` answers with one of a few
+  fixed in-character lines picked by keywords (English and Czech), see
+  `server/demo-bot-chat.mjs`. Nothing is stored, no AI call, no chain write and no
+  relayer operation; 12 lines a minute per explorer. The card says it is a demo.
 
 ## Messages: what is built and what is proposed
 
@@ -140,7 +145,7 @@ explore together?", "There is a find near here.", "Thanks!", "See you around!").
 **Built 10 November 2026: private messages.** The card's Write a message button
 opens the encrypted player inbox (docs/PLAYER-INBOX.md): end-to-end encrypted
 messages of up to 500 characters stored on NEAR Social, open after a mutual wave
-or an accepted request, with Block and Report. It stays off for demo bots.
+or an accepted request, with Block and Report. Demo bots get the demo chat instead.
 
 ## Evidence
 
