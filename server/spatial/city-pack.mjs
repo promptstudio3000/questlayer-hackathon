@@ -205,7 +205,12 @@ export function buildCityZones(pack, day, { onRejected = () => {} } = {}) {
     throw Error("Pedestrian graph belongs to another city.");
   const rng = seeded(`${pack.id}:${day}:polygons-v2`),
     sectors = ["central", "north", "east", "southeast", "southwest", "west"];
-  const tiers = [1, 1, 1, 2, 2, 3];
+  const tiers = [1, 1, 1, 2, 2, 3],
+    // The compact demo layout (server/demo-zones.mjs) packs its six zones
+    // around one square, so it asks for a smaller (still positive) gap.
+    minGapM = Number.isFinite(pack.demoZones?.zoneGapM)
+      ? Math.max(50, pack.demoZones.zoneGapM)
+      : 250;
   for (let i = tiers.length - 1; i > 0; i--) {
     const j = Math.floor(rng() * (i + 1));
     [tiers[i], tiers[j]] = [tiers[j], tiers[i]];
@@ -257,7 +262,7 @@ export function buildCityZones(pack, day, { onRejected = () => {} } = {}) {
           reject(c, "invalid-or-small-footprint");
           continue;
         }
-        if (zones.some((z) => polygonGap(f.geometry, z.geometry) < 250)) {
+        if (zones.some((z) => polygonGap(f.geometry, z.geometry) < minGapM)) {
           reject(c, "boundary-gap");
           continue;
         }
