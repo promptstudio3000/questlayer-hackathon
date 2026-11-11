@@ -227,3 +227,11 @@ node scripts/smoke-vault-v3-position-testnet.mjs --network testnet --execute
 
 The rewards contract upgrade that goes with PR #240 is a separate script; see
 "Rewards-only M4 upgrade" in `docs/DAILY-PAYOUTS.md`.
+
+## Treasury staking vault (11 Nov 2026)
+
+What actually earns on testnet (RPC checks, 11 Nov 2026): stNEAR price frozen at 3.19875 for over a million blocks; LiNEAR moves only in irregular jumps; Burrow testnet supply APR is 0.07 % for wNEAR and about 0 % for USDC/USDT. Native validator staking does pay: protocol inflation 2.5 %/yr, 90 % to validators, over about 617 M staked of 2.68 B supply gives about 9.8 % APR gross, paid every epoch (43,200 blocks, about 7.1 h). The treasury vault `questlayer-vault-20261101b` on aurora (9 % fee) grew by about 7.3e-5 per epoch, which matches.
+
+`questlayer-stake-20261111.testnet` is a second, treasury-only vault: same reproducible vault build, beneficiary the operator, pool `stakely_v2.pool.f863973.m0` (3 % fee), contribution 100 %, no access keys after setup. Its principal comes from testnet helper faucet accounts that are deleted into the operator (`scripts/treasury-stake-testnet.mjs faucet <n>`), then staked (`deploy <near>`). The reward worker maintains it like every listed vault: harvest when the gain is worth at least `min_harvest`, unlock 4 epochs, `advance`, `flush_game` into `fund_rewards` with source yield. Expected: about 0.026 NEAR per 100 NEAR staked per day. The first flush lands about 5 epochs (about 35 h) after the deposit.
+
+The manifest entry (`vaults` in `public/native-rewards-testnet.json`) is added only after the vault exists on chain, because the yield audit reads every listed vault.
