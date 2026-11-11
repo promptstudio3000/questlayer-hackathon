@@ -544,6 +544,8 @@ button.community-row-open:focus-visible {
 .game-dialog .quick-create .quick-create-fine,
 .game-dialog .quick-create .quick-create-gps {
   font-size: var(--text-note);
+}
+
 /* ---- Local chat as a place chat (Lubos, 11 Nov 2026) ---- */
 /* Distance filter: one row of chips above everything. */
 .local-chat-range {
