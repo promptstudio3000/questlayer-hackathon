@@ -412,11 +412,11 @@ export const CHAPTERS: Chapter[] = [
   {
     id: "wearables-and-explorers",
     group: "play",
-    title: "Wearables and explorer cards",
-    summary: "Free Aavegotchi wearable clones on the map, a gold check for owned originals, and explorer cards with waves.",
+    title: "Wearables, explorer cards and your profile",
+    summary: "Free Aavegotchi wearable clones on the map, a gold check for owned originals, explorer cards with waves, and your own profile with its story and stake.",
     status: "live",
     updated: "2026-11-10",
-    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx"],
+    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx", "server/player-journey.mjs", "src/CharacterJourney.tsx", "src/StakeEarn.tsx"],
     blocks: [
       {
         p: "About one street find in three becomes a **wearable find** (at most 12 per world): a free in-game clone of the official Aavegotchi wearable catalogue. The catalogue is read from the Aavegotchi contract on Base and the artwork is served from the contract, never copied. The find card shows that official pixel art inside the same rarity ring as its map marker, with the rarity named; if the art cannot be read, the marker shows a sparkle and the card a discovery picture instead of a broken image. Picking one up is a normal street coin claim (GPS check, travel guard, XP caps), logged like any street find. The clone is a database row, never an NFT, and lands in **Inventory → Wardrobe**, not in the Aura grid: the pickup moment's See it in your Wardrobe opens it there, and the backpack points to the Wardrobe too.",
@@ -470,6 +470,15 @@ export const CHAPTERS: Chapter[] = [
           "**Community places** are free recommendations of spots worth a visit, nearest first within 10 km, with a kind (view, nature, history, art, food & drink, hidden gem, walk & play), a kind filter and sorting (nearest, newest, A to Z). The author edits or removes a place; three different reports hide it until a moderator looks. No links, contacts or private addresses. No GOLD or XP moves.",
           "Blocks hide notes, shouts, topics and places both ways. Demo maps and the real GPS map keep separate notes and places.",
           "The test world (TEST_SEED=1) seeds notes, community places, two shouts and two topics with replies around náměstí Republiky in Plzeň.",
+        ],
+      },
+      { h: "Your own profile" },
+      {
+        list: [
+          "**Profile** has three tabs: **Character**, **Stake** and **Settings**.",
+          "**Character:** the avatar with level and XP, then the same totals as an explorer card plus a few of your own: finds, quests, tasks done, tasks and quests posted, monsters won, wearables found, badges and GOLD earned (coins, quests, task pay and sales). **Badges** is a chapter that shows one row until opened. **Your story** lists what happened, newest first: street coins (one row per day), finds, quests, tasks, badges, sales, stake matured and tier reached. It reads `GET /api/me/journey` (`server/player-journey.mjs`), which only reads tables the game already writes.",
+          "**Stake** has a two-way switch. **Stake** opens with a small animated picture (your NEAR into the vault, yield back to you and into the prize pool at your chosen share), the tier ladder Free → Staker → Tier 2 → Tier 3 with what the next step needs, your stake today, the stake form and Manage stakes. **Earnings** shows the QGOLD balance and the next payout, GOLD earned on the map and the yield your stake kept for you; on the test network ledger it also shows the secured NEAR rewards.",
+          "**Settings:** Game, Help (with Game economy), Account and devices, Sign out, then the reference links (How it works, Wiki, Economy, Treasury). The reward ledger switch sits in a small Developer section at the very bottom.",
         ],
       },
     ],
