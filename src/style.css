@@ -59,8 +59,7 @@ p {
 }
 h1,
 h2,
-h3,
-.wordmark {
+h3 {
   font-family: var(--font-body);
 }
 h1 {
@@ -142,19 +141,6 @@ svg {
   padding: 20px 9px;
   color: #c0b7d2;
 }
-.brand-mark {
-  width: 52px;
-  height: 56px;
-  background: #ffffff0b;
-  border: 1px solid #ffffff15;
-  border-radius: 16px;
-  padding: 3px;
-  margin-bottom: 42px;
-}
-.brand-mark .ghost-art {
-  width: 40px;
-  height: 45px;
-}
 .rail-links {
   width: 100%;
   display: flex;
@@ -205,33 +191,6 @@ svg {
   background: #fbf9f4ed;
   backdrop-filter: blur(16px);
   border-bottom: 1px solid #ebe6db;
-}
-.wordmark {
-  cursor: pointer;
-  flex-shrink: 0;
-}
-.wordmark > span {
-  font-size: 26px;
-  font-weight: 800;
-  letter-spacing: 1px;
-  color: var(--dark);
-}
-.wordmark > span > span {
-  font-weight: 400;
-  color: #8b779f;
-  letter-spacing: 0.3px;
-}.realm-label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 9px;
-  letter-spacing: 1px;
-  color: #8f8397;
-  margin-left: 32px;
-}
-.realm-label > span:last-child {
-  font-size: 11px;
-  letter-spacing: 0;
 }
 .status-dot {
   width: 6px;
@@ -2007,9 +1966,6 @@ input[type="range"] {
   }
 }
 @media (max-width: 1100px) {
-  .realm-label {
-    display: none;
-  }
   .main-panel {
     width: 355px;
     padding: 21px;
@@ -2026,9 +1982,6 @@ input[type="range"] {
   }
   .topbar {
     padding: 0 20px;
-  }
-  .wordmark > span {
-    font-size: 23px;
   }
   .zone-illustration {
     width: 75px;
@@ -2062,7 +2015,6 @@ input[type="range"] {
     backdrop-filter: blur(14px);
     z-index: 35;
   }
-  .brand-mark,
   .rail-help,
   .rail-near {
     display: none;
@@ -2092,9 +2044,7 @@ input[type="range"] {
     padding: 0 15px;
     gap: 8px;
   }
-  .wordmark > span {
-    font-size: 21px;
-  }  .topbar-right {
+  .topbar-right {
     gap: 8px;
   }
   .balance-pill {
@@ -3709,15 +3659,8 @@ a.settings-row:hover {
   height: 100%;
   object-fit: contain;
 }
-/* Dropped-in wordmark (art/brand/wordmark) in the desktop header. */
-.wordmark-text {
-  display: flex;
-  align-items: center;
-}
-.wordmark-art {
-  display: block;
-  height: 40px;
-  width: auto;
-}
+/* Until the map chunk brings the current HUD styles (src/DeferredGameMap.tsx),
+   only the map stage with its loading message shows, never the bare layout. */
+.app-shell.hud-loading > :not(.map-stage) { visibility: hidden; }
 /* One loading message at a time: while the world loads, its message replaces the map's. */
 .app-shell:has(.world-loading) .map-loading:not(.map-failure) { display: none; }
