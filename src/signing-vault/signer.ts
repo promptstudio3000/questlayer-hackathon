@@ -51,7 +51,7 @@ export class IsolatedSigner extends Signer {
           methodName: a.functionCall.methodName,
           args: JSON.parse(
             new TextDecoder("utf-8", { fatal: true }).decode(
-              a.functionCall.args,
+              Uint8Array.from(a.functionCall.args),
             ),
           ),
           gas: String(a.functionCall.gas),

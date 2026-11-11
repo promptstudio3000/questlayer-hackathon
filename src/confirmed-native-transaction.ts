@@ -749,6 +749,11 @@ export async function sendConfirmedNative(
       await mutate(context, entry, () => null);
       throw Error("The wallet request was cancelled. Your entries are kept.");
     }
+    // Refused or failed before a signature existed: nothing reached the chain.
+    if ((error as { code?: unknown } | null)?.code === "SELF_PAID_NOT_SENT") {
+      await mutate(context, entry, () => null);
+      throw Error((error as Error).message);
+    }
     const message =
       tr("The wallet did not provide a receipt. Check its history in Wallet before trying again; the operation may already have been sent.");
     await mutate(context, entry, (current) => ({ ...current, error: message }));
