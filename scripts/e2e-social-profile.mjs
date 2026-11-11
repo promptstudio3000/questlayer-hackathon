@@ -296,7 +296,7 @@ async function runDevice(name, server, rpc, account) {
     await eth.getByPlaceholder("Your explorer name").fill(`Eth ${name}`);
     await eth.getByRole("button", { name: "I already have an explorer", exact: true }).click();
     await scan(eth, "welcome-login");
-    await eth.getByRole("button", { name: "Continue with MetaMask or Rabby" }).click();
+    await eth.getByRole("button", { name: "Ethereum", exact: true }).click();
     // A returning wallet (second device run) restores the same explorer.
     await eth.locator(".topbar .profile-pill").waitFor({ timeout: 30_000 });
     assert.equal(signed.length, 1, "the wallet signed one message");

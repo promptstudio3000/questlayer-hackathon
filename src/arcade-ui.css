@@ -11,7 +11,8 @@ body {
 .main-panel .panel-heading h1,
 .zone-explore-panel .panel-heading h1 {
   font-size: 20px;
-  line-height: 1.2;
+  /* 1.4, not 1.2: CJK titles need 27-28px or they clip vertically. */
+  line-height: 1.4;
 }
 .game-dialog h2 {
   font-size: var(--text-title);
@@ -97,7 +98,7 @@ body {
    The doubled class outranks the older per-area layers. */
 .app-shell .main-panel.main-panel .panel-heading h1 {
   font-size: 20px;
-  line-height: 1.2;
+  line-height: 1.4;
 }
 .app-shell .main-panel.main-panel :is(
   .creator-heading h3,

@@ -176,7 +176,7 @@ export function Welcome({
               type="button"
               className="signin-way"
               disabled={!!busy}
-              aria-label={tr("Continue with an external NEAR wallet")}
+              title={tr("Continue with an external NEAR wallet")}
               onClick={() => void onNear(name || "Explorer")}
             >
               <Wallet size={22} aria-hidden="true" />
@@ -186,7 +186,7 @@ export function Welcome({
               type="button"
               className="signin-way"
               disabled={!!busy}
-              aria-label={tr("Continue with MetaMask or Rabby")}
+              title={tr("Continue with MetaMask or Rabby")}
               onClick={() => void onEthereum(name || "Explorer")}
             >
               <Wallet size={22} aria-hidden="true" />
@@ -196,7 +196,7 @@ export function Welcome({
               type="button"
               className="signin-way"
               disabled={!!busy}
-              aria-label={tr("Restore with a recovery passkey")}
+              title={tr("Restore with a recovery passkey")}
               onClick={() => void onRestore()}
             >
               <Lifebuoy size={22} aria-hidden="true" />
