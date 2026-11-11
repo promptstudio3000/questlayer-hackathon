@@ -61,7 +61,7 @@ import {
   NearbyList,
   NearbyMarket,
   GoldShop,
-  PlaceMessages,
+  LocalChat,
   PlaceCompose,
   CommunityPlaces,
   AddPlaceDialog,
@@ -246,8 +246,6 @@ import {
   BAG_TABS,
   COMMUNITY_TABS,
   SHOP_TABS,
-  LOCAL_CHAT_TABS,
-  type LocalChatView,
   PROFILE_TABS,
   ProfileHero,
   ProfileTile,
@@ -410,7 +408,6 @@ export default function App() {
     [mapNotes, setMapNotes] = useState<NotePin[]>([]),
     [noteOpenId, setNoteOpenId] = useState<string | null>(null),
     [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
-    [chatView, setChatView] = useState<LocalChatView>("notes"),
     [quickCreate, setQuickCreate] = useState<"note" | "topic" | "place" | null>(null),
     [emotePicker, setEmotePicker] = useState(false),
     // The camera turns with the explorer unless switched off in Map settings.
@@ -3740,7 +3737,6 @@ export default function App() {
           route={questRoute}
           onPlacePin={(id) => {
             setPlaceOpenId(id);
-            setChatView("topics");
             setTab("messages");
             setSheetExpanded(true);
           }}
@@ -3748,7 +3744,6 @@ export default function App() {
           onNotePin={(id) => {
             setNoteOpenId(id);
             setNotesView("browse");
-            setChatView("notes");
             setTab("messages");
             setSheetExpanded(true);
           }}
@@ -4301,9 +4296,9 @@ export default function App() {
                     if (distanceM <= 35) setActorOpen(actor);
                     else showActor({ actorId: actor.id });
                   }}
-                  onPlace={(id) => { setPlaceOpenId(id); setChatView("topics"); setTab("messages"); }}
+                  onPlace={(id) => { setPlaceOpenId(id); setTab("messages"); }}
                   onSpot={() => setTab("places")}
-                  onNotes={() => { setNotesView("browse"); setChatView("notes"); setTab("messages"); }}
+                  onNotes={() => { setNotesView("browse"); setTab("messages"); }}
                   onCommunityTasks={() => setTab("bounties")}
                   market={{
                     fix: () =>
@@ -4937,55 +4932,40 @@ export default function App() {
           )}
           {tab === "messages" && (
             <ScreenTabPanel idBase="community" value="notes">
-            <div className="local-chat">
-            <ScreenTabs
-              label={tr("Local chat")}
-              idBase="chat"
-              variant="sub"
-              sticky={false}
-              tabs={LOCAL_CHAT_TABS}
-              value={chatView}
-              onChange={setChatView}
-            />
-            <ScreenTabPanel idBase="chat" value={chatView}>
-            {chatView === "topics" ? (
-              <PlaceMessages
-                key={player.id}
-                position={position}
-                fix={fix}
-                arena={arena && !nativePlay}
-                notify={notify}
-                onSpent={() => {
+            <LocalChat
+              places={{
+                position,
+                fix,
+                arena: arena && !nativePlay,
+                notify,
+                onSpent: () => {
                   void me();
                   void refreshGoldMap();
-                }}
-                openId={placeOpenId}
-                onOpened={clearPlaceOpen}
-                onPublish={recordAccount ? publishPlace : undefined}
-              />
-            ) : (
-            <MapNotes
-              key={player.id}
-              playerId={player.id}
-              position={position}
-              fix={fix}
-              arena={arena}
-              view={notesView}
-              notify={notify}
-              onViewChange={setNotesView}
-              recordAccount={recordAccount}
-              onRecord={recordNote}
-              onChange={() => void refreshMapNotes()}
-              openId={noteOpenId}
-              onOpened={clearNoteOpen}
-              onBlockChange={() => {
-                setOthers([]);
-                window.dispatchEvent(new Event("questlayer:social-blocks"));
+                },
+                openId: placeOpenId,
+                onOpened: clearPlaceOpen,
+                onPublish: recordAccount ? publishPlace : undefined,
               }}
+              chat={{
+                playerId: player.id,
+                position,
+                fix,
+                arena,
+                view: notesView,
+                notify,
+                onViewChange: setNotesView,
+                recordAccount,
+                onRecord: recordNote,
+                onChange: () => void refreshMapNotes(),
+                openId: noteOpenId,
+                onOpened: clearNoteOpen,
+                onBlockChange: () => {
+                  setOthers([]);
+                  window.dispatchEvent(new Event("questlayer:social-blocks"));
+                },
+              }}
+              key={player.id}
             />
-            )}
-            </ScreenTabPanel>
-            </div>
             </ScreenTabPanel>
           )}
           {tab === "bounties" && (

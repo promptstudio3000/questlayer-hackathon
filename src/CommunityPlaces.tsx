@@ -18,6 +18,7 @@ import { Dialog } from "./Dialog";
 import { EmptyState } from "./EmptyState";
 import { NotePinArt } from "./NotePinArt";
 import { PinLine } from "./PinLine";
+import { ChatAvatar, distanceLabel } from "./ChatAvatar";
 import { tr } from "./i18n";
 import type { Fix } from "./types";
 import {
@@ -112,15 +113,18 @@ export function CommunityPlaces({
           </button>
         </div>
       </div>
+      <div className="place-kind-chips" role="radiogroup" aria-label={tr("Kind of place")}>
+        <button type="button" role="radio" aria-checked={kind === "all"} onClick={() => setKind("all")}>
+          {tr("All kinds")}
+        </button>
+        {PLACE_KINDS.map((k) => (
+          <button type="button" role="radio" key={k.id} data-kind={k.id} aria-checked={kind === k.id} onClick={() => setKind(k.id)}>
+            <k.icon size={18} weight="fill" aria-hidden="true" /> {k.label()}
+          </button>
+        ))}
+      </div>
       <div className="community-filter">
-        <select value={kind} onChange={(e) => setKind(e.target.value as PlaceKind | "all")} aria-label={tr("Kind of place")}>
-          <option value="all">{tr("All kinds")}</option>
-          {PLACE_KINDS.map((k) => (
-            <option key={k.id} value={k.id}>
-              {k.label()}
-            </option>
-          ))}
-        </select>
+        <span className="community-filter-count">{tr("{0} places", { 0: shown.length })}</span>
         <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} aria-label={tr("Sort")}>
           <option value="near">{tr("Nearest")}</option>
           <option value="new">{tr("Newest")}</option>
@@ -137,13 +141,14 @@ export function CommunityPlaces({
       ) : !shown.length ? (
         <EmptyState title={tr("No places around you yet")}>{tr("Recommend a spot you like to the next explorer.")}</EmptyState>
       ) : (
-        <ul className="community-rows">
+        <ul className="community-rows place-cards">
           {shown.map((p) => {
             const k = kindOf(p.kind);
             return (
-              <li key={p.id} className="community-row">
-                <span className="community-row-icon" data-kind={p.kind} aria-hidden="true">
-                  <k.icon size={20} weight="duotone" />
+              <li key={p.id} className="community-row place-row" data-kind={p.kind}>
+                <span className="place-tile" data-kind={p.kind} aria-hidden="true">
+                  <k.icon size={38} weight="duotone" />
+                  {p.distanceM != null && <span className="place-tile-distance">{distanceLabel(p.distanceM)}</span>}
                 </span>
                 <div className="community-row-body">
                   {editing?.id === p.id ? (
@@ -172,14 +177,15 @@ export function CommunityPlaces({
                     </form>
                   ) : (
                     <>
+                      <span className="place-row-kind" data-kind={p.kind}>{k.label()}</span>
                       <b>{p.name}</b>
                       <p>{p.note}</p>
-                      <span className="community-row-meta">
-                        {k.label()} · {p.mine ? tr("You") : p.author.name}
+                      <span className="community-row-meta place-row-author">
+                        <ChatAvatar name={p.author.name} own={p.mine} size={22} />
+                        {p.mine ? tr("You") : p.author.name}
                       </span>
                     </>
                   )}
-                  <PinLine at={p} you={position} title={p.name} />
                 </div>
                 <div className="community-row-actions">
                   {p.mine ? (
@@ -219,6 +225,9 @@ export function CommunityPlaces({
                       <Flag size={20} aria-hidden="true" />
                     </button>
                   )}
+                </div>
+                <div className="place-row-gps">
+                  <PinLine at={p} you={position} title={p.name} />
                 </div>
               </li>
             );
