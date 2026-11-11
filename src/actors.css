@@ -232,3 +232,25 @@
     translate: 0 -3px;
   }
 }
+
+/* Arcade pass (11 Nov 2026): compact type. */
+.game-dialog .actor-status,
+.game-dialog .actor-note {
+  font-size: var(--text-meta);
+}
+.actor-problem .primary-button {
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+.game-dialog .actor-sheet h2 {
+  font-size: var(--text-title);
+}
+.game-dialog .actor-sheet .actor-role {
+  font-size: var(--text-note);
+}
+/* Out of range is a direction, not a failure. */
+.game-dialog .actor-problem.actor-far {
+  background: var(--surface-soft);
+  color: var(--ink);
+}
