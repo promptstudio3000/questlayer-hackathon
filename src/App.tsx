@@ -31,6 +31,7 @@ import {
   ChainLink,
   CreatorCommunity,
   CommunityBonusVote,
+  TreasuryVote,
   MapNotes,
   PlayerCard,
   Inbox,
@@ -2507,6 +2508,35 @@ export default function App() {
         invisible.deviceKey?.accountId ? invisible.deviceKey : null,
     });
   });
+  // Treasury DAO vote (docs/TREASURY-DAO.md): the explorer account approves
+  // one poll option on the Sputnik DAO; sponsored, no deposit, no popup.
+  async function voteTreasury(dao: string, proposalId: number): Promise<boolean> {
+    const result = await action("treasury-vote", async () => {
+      if (!onNearNetwork(dao)) throw Error(tr("The treasury vote is on another network."));
+      const { signer, accountId } = await resolveSigner(invisible.accountId || undefined);
+      await signer.send(
+        {
+          network: NEAR_NETWORK,
+          signerId: accountId,
+          receiverId: dao,
+          actions: [
+            {
+              type: "FunctionCall",
+              params: {
+                methodName: "act_proposal",
+                args: { id: proposalId, action: "VoteApprove", proposal: "Vote" },
+                gas: "50000000000000",
+                deposit: "0",
+              },
+            },
+          ],
+        },
+        { playerId: player!.id },
+      );
+      return true;
+    });
+    return result === true;
+  }
   async function withdrawNativeReward(
     expectedAccount: string,
     contractId: string,
@@ -4785,6 +4815,14 @@ export default function App() {
           )}
           {tab === "community" && (
             <ScreenTabPanel idBase="community" value={communityTab}>
+              {communityTab === "quests" && (
+                <TreasuryVote
+                  key={`treasury-${player.id}`}
+                  account={invisible.status === "ready" ? invisible.accountId || null : null}
+                  vote={voteTreasury}
+                  notify={notify}
+                />
+              )}
               {communityTab === "creators" && (
                 <CommunityBonusVote
                   key={`bonus-${player.id}`}

@@ -201,6 +201,7 @@ import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
 import { createLiquidStake, liquidStakeSettings } from "./native/liquid-stake.mjs";
 import { createTreasuryView } from "./native/stnear-treasury.mjs";
 import { createTreasuryMixView, mixSettings } from "./native/treasury-mix.mjs";
+import { createTreasuryDaoView, daoManifest, eligibleExplorers, EXPLORER_RULE } from "./native/treasury-dao.mjs";
 import { createRheaMarkets, rheaSettings } from "./native/rhea-markets.mjs";
 import { combineStakeReaders, createYieldVaultReader, yieldVaultSettings } from "./native/yield-vault-reader.mjs";
 import { createQgoldVaultReader, qgoldVaultSettings } from "./native/qgold-vault.mjs";
@@ -443,6 +444,14 @@ const intentsManifest =
   intentsManifestPath && process.env.INTENTS_MARKET_ENABLED !== "0"
     ? JSON.parse(readFileSync(intentsManifestPath, "utf8"))
     : null;
+// Treasury DAO (docs/TREASURY-DAO.md): the Sputnik DAO the Mac keeper created.
+// Explorers vote on it from their explorer account through the relayer.
+const treasuryDaoManifest = (() => {
+  if (process.env.TREASURY_DAO_ENABLED === "0") return null;
+  const path = [resolve(APP_ROOT, `public/${manifestName("native-treasury-dao")}`), resolve(APP_ROOT, `dist/${manifestName("native-treasury-dao")}`)].find((p) => existsSync(p));
+  return path ? daoManifest(JSON.parse(readFileSync(path, "utf8")), NETWORK) : null;
+})();
+const treasuryDao = treasuryDaoManifest ? createTreasuryDaoView({ provider, manifest: treasuryDaoManifest }) : null;
 // The QGOLD token the relayer may sponsor burns on (and escrow funding).
 const qgoldTokenForRelay = (() => {
   const path = resolve(APP_ROOT, `public/native-qgold-vault-${NETWORK}.json`);
@@ -487,6 +496,7 @@ const relayer = managedAccounts
           wnear: intentsManifest?.wnear || undefined,
           qgold: escrowManifestForRelay()?.tokenId || qgoldTokenForRelay,
           qgoldEscrow: escrowManifestForRelay()?.contractId || undefined,
+          treasuryDao: treasuryDaoManifest?.contractId || undefined,
           rewards: !featureEnabled("rewards")
             ? undefined
             : rewardsConfig?.contractId ||
@@ -752,6 +762,10 @@ const treasuryMix = treasuryMixConfig.enabled
       settings: treasuryMixConfig,
       record: () => readJsonRecord(treasuryMixRecordPaths),
       account: () => readJsonRecord(treasuryRecordPaths)?.account || null,
+      // Once the treasury DAO adopted a mix, that is the target.
+      target: treasuryDao
+        ? async () => (await treasuryDao.read()).adopted?.targets || null
+        : null,
     })
   : null;
 const liquidStakeConfig = liquidStakeSettings(process.env, NETWORK);
@@ -1580,6 +1594,15 @@ async function api(req, res, url) {
     return respond(res, await qgoldPage(), 200, {
       "Cache-Control": "public, max-age=30",
     });
+  if (path === "/api/treasury/dao" && method === "GET") {
+    assert(treasuryDao, "The treasury DAO is not set up on this host.", 503, "TREASURY_DAO_DISABLED");
+    const account = String(url.searchParams.get("account") || "");
+    return respond(res, await treasuryDao.read({ account: /^[a-z0-9._-]{2,64}$/.test(account) ? account : null }), 200, { "Cache-Control": account ? "no-store" : "public, max-age=30" });
+  }
+  if (path === "/api/treasury/dao/explorers" && method === "GET") {
+    assert(treasuryDao, "The treasury DAO is not set up on this host.", 503, "TREASURY_DAO_DISABLED");
+    return respond(res, { dao: treasuryDao.contractId, rule: EXPLORER_RULE, accounts: eligibleExplorers(db, { network: NETWORK }), generatedAt: Date.now() }, 200, { "Cache-Control": "public, max-age=300" });
+  }
   if (path === "/api/treasury/mix" && method === "GET") {
     assert(treasuryMix, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
     return respond(res, await treasuryMix(), 200, { "Cache-Control": "public, max-age=60" });
