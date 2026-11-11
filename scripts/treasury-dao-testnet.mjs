@@ -5,6 +5,9 @@
 //   node scripts/treasury-dao-testnet.mjs daily [--dry-run]    # tally / open polls, sync Explorers, file + auto-approve today's run
 //   node scripts/treasury-dao-testnet.mjs poll "<question>" "<option a>" "<option b>" [...]  # extra vote for this week
 //   node scripts/treasury-dao-testnet.mjs qgold-council [--execute]  # QGOLD vault council -> the DAO (SetCouncil)
+//   node scripts/treasury-dao-testnet.mjs adopt <preset> [--execute]  # owner decision: the council adopts a preset now
+//                                                     (e.g. staking-first = 90 % staked, 5 % USDC, 5 % USDT);
+//                                                     it supersedes this week's open mix poll and re-files today's run
 //
 // Accounts (sub-accounts of the operator, keys in .data/treasury-dao-keys.json, chmod 600):
 //   keeper.<operator>     Requestor: files proposals, casts the automatic vote for the recommended option
@@ -26,6 +29,8 @@ import {
   DAO_NAME,
   MIX_PRESETS,
   RECOMMENDED_MIX,
+  mixPreset,
+  mixShort,
   EXPLORER_RULE,
   buildPolicy,
   explorersRole,
@@ -216,7 +221,8 @@ async function daily() {
   const now = Date.now();
   const week = weekOf(now);
   const p = dao.proposals;
-  const adoptedPolls = new Set(p.filter((x) => x.meta?.t === "adopt").map((x) => x.meta.poll));
+  // A poll is done once adopted, or once an owner decision superseded it.
+  const adoptedPolls = new Set(p.filter((x) => x.meta?.t === "adopt").flatMap((x) => [x.meta.poll, ...(Array.isArray(x.meta.supersedes) ? x.meta.supersedes : [])]));
 
   // 1. Tally every closed poll that has no result yet; the council adopts the winner.
   for (const poll of pollIds(p)) {
@@ -226,9 +232,10 @@ async function daily() {
     const tally = Object.fromEntries(t.options.map((o) => [o.option, o.approvals]));
     const meta = { t: "adopt", kind: t.kind, poll, option: win.option, tally, voters: t.voters };
     if (t.kind === "mix") {
-      const preset = MIX_PRESETS.find((x) => x.id === win.option);
-      assert(preset, `Unknown mix option ${win.option}`);
-      meta.targets = preset.targets;
+      // The poll carries its own targets; presets are the fallback.
+      const targets = win.targets || mixPreset(win.option)?.targets;
+      assert(targets, `Unknown mix option ${win.option}`);
+      meta.targets = targets;
     }
     const title = t.kind === "mix" ? `Adopt treasury mix: ${win.label} (${poll}, ${t.voters} voters)` : `Result: ${t.title}: ${win.label}`;
     const id = await propose(describe(title, meta), "Vote");
@@ -266,7 +273,9 @@ async function daily() {
   dao = await readDao(provider, daoId);
   const adopted = adoptedMix(dao.proposals);
   const date = utcDate(now);
-  if (dailyRun(dao.proposals, date)) return log({ daily: date, note: "already filed" });
+  const filed = dailyRun(dao.proposals, date);
+  // A run filed before today's adoption has another target: file it again.
+  if (filed && (!adopted || sameTargets(filed.meta.target, adopted.targets))) return log({ daily: date, note: "already filed" });
   const settings = mixSettings({ ...process.env, TREASURY_MIX_ACCOUNT: operator.accountId }, "testnet");
   if (adopted) settings.target = adopted.targets;
   const live = await readMix(provider, settings, { account: operator.accountId, record: existsSync(".data/treasury-mix.json") ? JSON.parse(readFileSync(".data/treasury-mix.json")) : null });
@@ -284,7 +293,7 @@ async function daily() {
   };
   const problems = checkDailyRun(meta, { adopted, settings });
   if (problems.length) return log({ daily: date, refused: problems });
-  const title = `Daily treasury run ${date}: ${meta.action === "rebalance" ? `move ${nearStr(moved)} of ${nearStr(live.plan.total)} NEAR` : "hold"} toward ${settings.target.lst / 100}/${settings.target.stable / 100}/${settings.target.near / 100}`;
+  const title = `Daily treasury run ${date}: ${meta.action === "rebalance" ? `move ${nearStr(moved)} of ${nearStr(live.plan.total)} NEAR` : "hold"} toward ${mixShort(settings.target)}`;
   const id = await propose(describe(title, meta), "Vote");
   await councilApprove(id, "Vote");
 }
@@ -300,6 +309,31 @@ async function extraPoll() {
     const id = await propose(describe(`${question.slice(0, 120)}: ${label.slice(0, 80)}${i === 0 ? " (recommended)" : ""}`, meta), "Vote");
     if (i === 0) await act(ids.keeper, id, "VoteApprove", "Vote");
   }
+}
+
+// ---------------------------------------------------------------- owner decision
+async function adoptNow() {
+  const [option] = rest.filter((x) => !x.startsWith("--"));
+  const preset = MIX_PRESETS.find((x) => x.id === option);
+  assert(preset, `Usage: adopt <${MIX_PRESETS.map((x) => x.id).join(" | ")}> [--execute]`);
+  const dao = await readDao(provider, daoId);
+  assert(dao.exists, `${daoId} does not exist. Run setup --execute first.`);
+  const current = adoptedMix(dao.proposals);
+  if (current && sameTargets(current.targets, preset.targets)) return log({ adopted: preset.id, note: "already the adopted mix" });
+  const now = Date.now();
+  const week = weekOf(now);
+  // This week's open mix poll was filed with the earlier options: it is closed
+  // by this decision, and next Monday opens a fresh vote with the new presets.
+  const supersedes = pollIds(dao.proposals, "mix").filter((id) => {
+    const t = tallyPoll(dao.proposals, id);
+    return t && t.closesAt && t.closesAt > now;
+  });
+  const meta = { t: "adopt", kind: "mix", poll: `owner-${utcDate(now)}`, option: preset.id, targets: preset.targets, tally: null, supersedes, week: week.id };
+  log({ adopt: preset.label, from: current && mixShort(current.targets), supersedes, execute });
+  if (!execute) return log({ note: "Dry run. Re-run with --execute." });
+  const id = await propose(describe(`Adopt treasury mix: ${preset.label} (owner decision ${utcDate(now)})`, meta), "Vote");
+  await councilApprove(id, "Vote");
+  await daily();
 }
 
 // ---------------------------------------------------------------- QGOLD council
@@ -355,8 +389,9 @@ if (command === "setup") await setup();
 else if (command === "daily") await daily();
 else if (command === "poll") await extraPoll();
 else if (command === "qgold-council") await qgoldCouncil();
+else if (command === "adopt") await adoptNow();
 else if (command === "status") await status();
 else {
-  console.error("Commands: setup [--execute] | status | daily [--dry-run] | poll <question> <a> <b> | qgold-council [--execute]");
+  console.error("Commands: setup [--execute] | status | daily [--dry-run] | poll <question> <a> <b> | qgold-council [--execute] | adopt <preset> [--execute]");
   process.exit(2);
 }

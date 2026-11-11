@@ -807,9 +807,9 @@ export const CHAPTERS: Chapter[] = [
     id: "treasury-and-yield",
     group: "economy",
     title: "Treasury, yield and the mix",
-    tldr: "The treasury holds **50 % liquid staking, 40 % lent stablecoins and 10 % NEAR**, the mix explorers adopted in the DAO vote. A daily run, approved by the DAO council, harvests growth and rebalances within hard limits; only the yield becomes the map budget.",
+    tldr: "The treasury holds **90 % staked NEAR, 5 % USDC and 5 % USDT** (on Rhea Lend), the mix the DAO adopted on 11 Nov 2026 because on testnet only validator staking earns. A daily run, approved by the DAO council, harvests growth and rebalances within hard limits; only the yield becomes the map budget.",
     keyFacts: [
-      ["50 / 40 / 10", "% target: staking / stablecoins / NEAR"],
+      ["90 / 5 / 5", "% target: staked NEAR / USDC / USDT"],
       ["40 %", "max with any one protocol"],
       ["25 %", "of the treasury moved per run at most"],
       ["3 points", "of drift before a rebalance"],
@@ -824,13 +824,14 @@ export const CHAPTERS: Chapter[] = [
         table: {
           head: ["Limit", "Value"],
           rows: [
-            ["Max per protocol", "40 % (USDC + USDT both count as Rhea Lend)"],
+            ["Max per protocol", "40 % (each validator pool is its own protocol; USDC + USDT both count as Rhea Lend)"],
             ["No supply when market utilization is", "≥ 95 %"],
             ["Max moved per run", "25 % of the treasury"],
             ["Rebalance when drift exceeds", "3 percentage points"],
           ],
         },
       },
+      { p: "**Staked NEAR** sits in the treasury's keyless staking vaults (validator pools, 100 % of the yield to the prize pool). The mix counts these positions, valued at staked + unstaked, but never moves them: new stake goes through the staking script, spread over several validators. The liquid rest (stablecoins, liquid staking tokens, wNEAR) is what a daily run rebalances; with most of the treasury staked, its drift is measured against the liquid part. The stablecoin share is split evenly between USDC and USDT." },
       { p: "Order of a daily run: harvest stNEAR growth above the principal, rebalance toward the target, keep the reserve. The target is the mix the treasury DAO adopted, and a rebalance runs only on a day whose run the DAO approved (see the next chapter). The live split comes from `/api/treasury/mix`." },
       { h: "From yield to a daily budget" },
       { p: "Try it: the treasury size and the blended yield decide how much the map can pay every day without touching principal." },
@@ -853,7 +854,7 @@ export const CHAPTERS: Chapter[] = [
           "A keyless vault never changes code after creation; the yield vault gets fixes only by an in-place upgrade that must leave every position byte for byte unchanged.",
         ],
       },
-      { p: "The [Treasury](/treasury) dashboard shows all of this live: the money flow, the mix, today's budget, QGOLD backing and a model." },
+      { p: "The [Treasury](/treasury) page shows all of this live: one headline card with the treasury and its mix, then tabs for Overview, Vote, Money flow, QGOLD, Model and Safety." },
     ],
   },
   {
@@ -870,7 +871,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "dao-flow",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/TREASURY-DAO.md", "server/native/treasury-dao.mjs", "scripts/treasury-dao-testnet.mjs", "src/TreasuryVote.tsx"],
+    sources: ["docs/TREASURY-DAO.md", "server/native/treasury-dao.mjs", "scripts/treasury-dao-testnet.mjs", "src/economy/TreasuryVoteCard.tsx"],
     blocks: [
       { p: "The treasury follows a stock **Sputnik DAO v2**, `questlayer-treasury.sputnik-v2.testnet`, with the role names Trezu uses: a keeper that only files proposals (Requestor), a council of three that approves with **2 of 3** (Admin, Approver), and **Explorers**, the players who may vote." },
       {
@@ -886,13 +887,14 @@ export const CHAPTERS: Chapter[] = [
       },
       {
         list: [
-          "**Options:** Balanced 50 / 40 / 10 (recommended), More staking 70 / 20 / 10, Bigger reserve 40 / 30 / 30 (liquid staking / stablecoins / NEAR reserve). Every option stays inside the treasury limits.",
+          "**Options** (staked NEAR / stablecoins / NEAR reserve): Staking first 90 / 10 / 0 (recommended, the stables split 5 % USDC + 5 % USDT), More stables 70 / 20 / 10, Bigger reserve 60 / 20 / 20. Every option stays inside the treasury limits. Polls filed before 11 Nov 2026 (50 / 40 / 10 and friends) still tally to their own targets.",
+          "**Owner decision:** `treasury-dao-testnet.mjs adopt <preset> --execute` has the council adopt a preset at once (used on 11 Nov 2026 for 90 / 5 / 5); it closes this week's open mix poll and re-files today's run with the new target.",
           "**Checked automatic approval:** the council keys approve a daily run only when its target is the adopted mix and it moves at most 25 % of the treasury.",
           "Extra votes of the week appear under the mix vote and are counted the same way. New voters join the DAO once a day.",
           "Custody stays with the operator on testnet for now; the DAO decides the target and approves every run. The QGOLD vault council moves to the DAO next.",
         ],
       },
-      { p: "Vote in Community → Quests → **Treasury vote**. The live tally and the decision log are on the [Treasury](/treasury#dao) page." },
+      { p: "Vote on the [Treasury](/treasury#vote) page, tab **Vote**: each option shows its mix, votes and tags, and an explorer signed in on that device votes right there with no wallet popup. The same tab shows who decides and the decision log." },
     ],
   },
   {
