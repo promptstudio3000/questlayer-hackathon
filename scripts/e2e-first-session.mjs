@@ -278,9 +278,9 @@ async function cardOverlaps(page, where) {
         "tab bar": document.querySelectorAll(".nav-rail"),
         "map tools": document.querySelectorAll(".map-settings, .map-actions-toggle"),
         "demo controls": document.querySelectorAll(".demo-pad"),
-        "Market entry": [...document.querySelectorAll(".profile-tiles button")].filter((e) =>
-          /^Market/.test(e.textContent.trim()),
-        ),
+        // Profile → Character has no Market tile since 10 Nov 2026; its
+        // first control below the totals is the Badges chapter.
+        "Badges chapter": document.querySelectorAll(".badge-chapter-toggle"),
       };
       const hits = [];
       for (const c of cards)
@@ -677,7 +677,7 @@ async function runDevice(name, server) {
       await capture(cardPage, "home-screen-card-map");
       await cardPage.locator(".topbar .profile-pill").click();
       await cardPage.getByRole("tab", { name: "Character" }).click();
-      await cardPage.locator(".profile-tiles button").filter({ hasText: /^Market/ }).waitFor();
+      await cardPage.locator(".badge-chapter-toggle").waitFor();
       await check("Profile screen");
       await capture(cardPage, "home-screen-card-profile-screen");
       // The offer waits while a sheet owns the bottom; it returns on close.

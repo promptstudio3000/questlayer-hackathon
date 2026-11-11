@@ -173,7 +173,7 @@ test("HTTP integration: accounts, coins, market, escrow, signatures and passkey 
   assert.ok(a.cookie);
   assert.equal((await request("/me")).status, 401);
   {
-    // Tester sign-in: only a hash set by scripts/tester-account.mjs signs in.
+    // Tester sign-in: only a hash set by server/cli/tester-account.mjs signs in.
     const { hashTesterPassword, setTesterLogin, initializeTesterLogin } = await import("../server/identity/test-login.mjs");
     const fixture = new DatabaseSync(join(dir, "db.sqlite"));
     fixture.exec("PRAGMA busy_timeout=5000");

@@ -16,8 +16,6 @@ import {
   Storefront,
   Tag,
   TShirt,
-  Trophy,
-  Medal,
   UserCircle,
   Coins,
   Translate,
@@ -31,17 +29,17 @@ import type { CreatorCommunityView } from "./creator-community-types";
 import type { ProfileView } from "./app-navigation";
 import { lang, LANGS, setLang, tr, type Lang } from "./i18n";
 
-export type ProfileTab = ProfileView | "stake" | "rewards";
+export type ProfileTab = "character" | "stake" | "settings";
+// Badges live inside Character; Stake holds staking and earnings behind one
+// switch (owner request, 10 Nov 2026).
 export const PROFILE_TABS: readonly ScreenTab<ProfileTab>[] = [
   { id: "character", get label() { return tr("Character"); }, icon: UserCircle },
-  { id: "badges", get label() { return tr("Badges"); }, icon: Medal },
   { id: "stake", get label() { return tr("Stake"); }, icon: Flame },
-  { id: "rewards", get label() { return tr("Rewards"); }, icon: Trophy },
   { id: "settings", get label() { return tr("Settings"); }, icon: GearSix },
 ];
 /** Profile sub-tab for the current app tab ("fuel" and "wallet" keep their routes). */
 export function profileTabOf(tab: string, view: ProfileView): ProfileTab {
-  return tab === "fuel" ? "stake" : tab === "wallet" ? "rewards" : view;
+  return tab === "fuel" || tab === "wallet" ? "stake" : view === "settings" ? "settings" : "character";
 }
 
 export type ExploreTab = "discoveries" | "nearby";
