@@ -3217,5 +3217,10 @@
  "Write to {0}…": "Напиши {0}…",
  "Messages need your explorer account. Sign in with it to write.": "Для сообщений нужен твой аккаунт исследователя. Войди с ним, чтобы писать.",
  "Your note: {0}": "Ваша заметка: {0}",
- "Note: {0}": "Заметка: {0}"
+ "Note: {0}": "Заметка: {0}",
+ "Link this device": "Привязать это устройство",
+ "Messages open with your explorer account, which you get with your first find or quest.": "Сообщения откроются с твоим аккаунтом исследователя, который ты получишь с первой находкой или заданием.",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "Это устройство ещё не привязано к твоему аккаунту исследователя, поэтому не может отправлять и читать сообщения. Добавь его с помощью резервного passkey.",
+ "Your explorer account is being set up. Messages open in a moment.": "Твой аккаунт исследователя готовится. Сообщения откроются через минуту.",
+ "Your explorer account is not available on this device, so messages are off here.": "Твой аккаунт исследователя недоступен на этом устройстве, поэтому сообщения здесь выключены."
 }

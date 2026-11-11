@@ -3217,5 +3217,10 @@
  "Write to {0}…": "Schreib {0}…",
  "Messages need your explorer account. Sign in with it to write.": "Nachrichten brauchen dein Entdecker-Konto. Melde dich damit an, um zu schreiben.",
  "Your note: {0}": "Deine Notiz: {0}",
- "Note: {0}": "Notiz: {0}"
+ "Note: {0}": "Notiz: {0}",
+ "Link this device": "Dieses Gerät verbinden",
+ "Messages open with your explorer account, which you get with your first find or quest.": "Nachrichten öffnen sich mit deinem Entdecker-Konto, das du mit deinem ersten Fund oder Quest bekommst.",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "Dieses Gerät ist noch nicht mit deinem Entdecker-Konto verbunden und kann keine Nachrichten senden oder lesen. Füge es mit deinem Wiederherstellungs-Passkey hinzu.",
+ "Your explorer account is being set up. Messages open in a moment.": "Dein Entdecker-Konto wird eingerichtet. Nachrichten öffnen sich gleich.",
+ "Your explorer account is not available on this device, so messages are off here.": "Dein Entdecker-Konto ist auf diesem Gerät nicht verfügbar, daher sind Nachrichten hier aus."
 }

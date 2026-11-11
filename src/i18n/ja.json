@@ -3217,5 +3217,10 @@
  "Write to {0}…": "{0}に書く…",
  "Messages need your explorer account. Sign in with it to write.": "メッセージには探検者アカウントが必要です。そのアカウントでサインインしてください。",
  "Your note: {0}": "あなたのメモ: {0}",
- "Note: {0}": "メモ: {0}"
+ "Note: {0}": "メモ: {0}",
+ "Link this device": "このデバイスを連携",
+ "Messages open with your explorer account, which you get with your first find or quest.": "メッセージは探検者アカウントで使えます。最初の発見かクエストで手に入ります。",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "このデバイスはまだ探検者アカウントと連携していないため、メッセージを送受信できません。復旧用パスキーで追加してください。",
+ "Your explorer account is being set up. Messages open in a moment.": "探検者アカウントを準備中です。まもなくメッセージが使えます。",
+ "Your explorer account is not available on this device, so messages are off here.": "このデバイスでは探検者アカウントが使えないため、ここではメッセージがオフです。"
 }

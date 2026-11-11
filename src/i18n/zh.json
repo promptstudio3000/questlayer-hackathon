@@ -3217,5 +3217,10 @@
  "Write to {0}…": "写给{0}…",
  "Messages need your explorer account. Sign in with it to write.": "发消息需要你的探索者账户。请用它登录后再写。",
  "Your note: {0}": "你的留言：{0}",
- "Note: {0}": "留言：{0}"
+ "Note: {0}": "留言：{0}",
+ "Link this device": "关联此设备",
+ "Messages open with your explorer account, which you get with your first find or quest.": "消息需要探索者账户，完成第一次发现或任务即可获得。",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "此设备尚未关联你的探索者账户，因此无法收发消息。请用恢复通行密钥添加它。",
+ "Your explorer account is being set up. Messages open in a moment.": "你的探索者账户正在准备中，消息很快就能使用。",
+ "Your explorer account is not available on this device, so messages are off here.": "此设备上无法使用你的探索者账户，因此这里的消息已关闭。"
 }

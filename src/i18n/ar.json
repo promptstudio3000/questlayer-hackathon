@@ -3217,5 +3217,10 @@
  "Write to {0}…": "اكتب إلى {0}…",
  "Messages need your explorer account. Sign in with it to write.": "تحتاج الرسائل إلى حساب المستكشف الخاص بك. سجّل الدخول به لتكتب.",
  "Your note: {0}": "ملاحظتك: {0}",
- "Note: {0}": "ملاحظة: {0}"
+ "Note: {0}": "ملاحظة: {0}",
+ "Link this device": "اربط هذا الجهاز",
+ "Messages open with your explorer account, which you get with your first find or quest.": "تعمل الرسائل مع حساب المستكشف الخاص بك، وتحصل عليه مع أول اكتشاف أو مهمة.",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "هذا الجهاز غير مرتبط بحساب المستكشف بعد، لذا لا يمكنه إرسال الرسائل أو قراءتها. أضفه بمفتاح المرور الاحتياطي.",
+ "Your explorer account is being set up. Messages open in a moment.": "يجري إعداد حساب المستكشف الخاص بك. ستعمل الرسائل بعد لحظات.",
+ "Your explorer account is not available on this device, so messages are off here.": "حساب المستكشف غير متاح على هذا الجهاز، لذا الرسائل متوقفة هنا."
 }

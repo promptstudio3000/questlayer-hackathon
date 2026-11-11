@@ -3217,5 +3217,10 @@
  "Write to {0}…": "{0} को लिखें…",
  "Messages need your explorer account. Sign in with it to write.": "संदेशों के लिए आपका खोजकर्ता खाता चाहिए। लिखने के लिए उससे साइन इन करें।",
  "Your note: {0}": "आपका नोट: {0}",
- "Note: {0}": "नोट: {0}"
+ "Note: {0}": "नोट: {0}",
+ "Link this device": "इस डिवाइस को जोड़ें",
+ "Messages open with your explorer account, which you get with your first find or quest.": "संदेश आपके खोजकर्ता खाते से खुलते हैं, जो पहली खोज या क्वेस्ट से मिलता है।",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "यह डिवाइस अभी आपके खोजकर्ता खाते से नहीं जुड़ा है, इसलिए यह संदेश भेज या पढ़ नहीं सकता। इसे अपनी रिकवरी पासकी से जोड़ें।",
+ "Your explorer account is being set up. Messages open in a moment.": "आपका खोजकर्ता खाता तैयार हो रहा है। संदेश थोड़ी देर में खुलेंगे।",
+ "Your explorer account is not available on this device, so messages are off here.": "इस डिवाइस पर आपका खोजकर्ता खाता उपलब्ध नहीं है, इसलिए यहाँ संदेश बंद हैं।"
 }
