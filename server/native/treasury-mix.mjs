@@ -52,7 +52,14 @@ export const MIX_NETWORKS = {
       { id: "wnear", label: "wNEAR", token: "wrap.testnet", bucket: "near", protocol: "NEAR", decimals: 24 },
     ],
     // Keyless staking vaults whose beneficiary is the treasury account.
-    stakeVaults: ["stake-20261111.questlayer-dev-20261101.testnet", "questlayer-vault-20261101b.testnet"],
+    // Vaults that do not exist yet count as nothing (b/c/d wait for the faucet).
+    stakeVaults: [
+      "stake-20261111.questlayer-dev-20261101.testnet",
+      "stake-20261111-b.questlayer-dev-20261101.testnet",
+      "stake-20261111-c.questlayer-dev-20261101.testnet",
+      "stake-20261111-d.questlayer-dev-20261101.testnet",
+      "questlayer-vault-20261101b.testnet",
+    ],
   },
   // Mainnet needs its own allowlist, a review and Lubos's go.
 };
