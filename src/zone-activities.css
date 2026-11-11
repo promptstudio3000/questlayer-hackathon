@@ -234,3 +234,26 @@
 /* The heading takes focus programmatically for screen readers (tabIndex -1);
    a focus ring there looked like an editable search field. */
 .main-panel .panel-heading h1[tabindex="-1"]:focus { outline: none; }
+/* Today in this zone: window, progress, rewards left and the daily reset. */
+.zone-schedule {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--decorative-border);
+  border-radius: 14px;
+  background: var(--surface-soft);
+  font-size: 14px;
+  line-height: 1.35;
+}
+.zone-schedule p {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+}
+.zone-schedule svg {
+  flex: none;
+  margin-top: 1px;
+  color: var(--action);
+}

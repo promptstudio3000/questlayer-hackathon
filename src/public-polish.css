@@ -66,13 +66,11 @@ html:is(.wk-root,.hiw-root,.eco-root), html:is(.wk-root,.hiw-root,.eco-root) bod
 .hiw .hiw-rail a[aria-current] { color: var(--action); }
 .hiw .hiw-hero-glow { background: var(--surface-soft); filter: none; border-radius: 50%; }
 .hiw .hiw-hero-bg { opacity: .12; }
-.hiw :is(h1 em,.hiw-ladder b,.hiw-tally svg,.hiw-tradeup .arrow,.hiw-season-head svg,.hiw-step-icon) { color: var(--action); }
-.hiw :is(.hiw-gate-step,.hiw-season-points b) { color: var(--action); }
-.hiw :is(.hiw-staker-badge,.seg.hunt,.seg.line) { color: var(--ink); box-shadow: none; }
-.hiw .hiw-zone-map { background: var(--surface-soft); }
-.hiw .hiw-zone.t1 { background: var(--success-surface); color: var(--success); }
-.hiw .hiw-zone.t2 { background: var(--surface-raised); color: var(--ink-secondary); border-color: var(--control-border); }
-.hiw .hiw-zone.t3 { background: var(--surface-raised); color: var(--ink); border-color: var(--action); }
+.hiw :is(h1 em,.hiw-ladder b,.hiw-tally svg,.hiw-tradeup .arrow,.hiw-step-icon) { color: var(--action); }
+.hiw .hiw-gate-step { color: var(--action); }
+.hiw .hiw-staker-badge { color: var(--ink); box-shadow: none; }
+.hiw .hiw-button.hiw-button-big { min-height: 68px; padding: 18px 44px; border-radius: 14px; font-size: 22px; font-weight: 600; }
+.hiw .hiw-to-top { background: var(--surface-raised); color: var(--action) !important; border: 1px solid var(--control-border); box-shadow: 0 4px 14px #441c6c26; }
 .hiw .hiw-chips li { background: var(--surface-soft); border-color: var(--decorative-border); }
 .hiw .hiw-eyebrow { color: var(--ink-secondary); text-transform: none; letter-spacing: normal; font-size: 14px; }
 .hiw .hiw-phone { border: 1px solid var(--decorative-border); border-radius: 20px; }
