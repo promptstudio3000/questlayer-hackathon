@@ -35,6 +35,8 @@ const RARITY_LABEL: Record<AuraRarity, string> = {
   get legendary() { return tr("Legendary"); },
 };
 
+export const rarityLabel = (r: AuraRarity) => RARITY_LABEL[r] || r;
+
 // Rarer zones are taller so they read from further away.
 const TOTEM_HEIGHT = { 1: 14, 2: 18, 3: 22 } as Record<number, number>;
 // Presentation heights: the boundary aura is the long-distance signal.
@@ -389,6 +391,11 @@ export function zoneLootFeatures(
           id: `${z.id}:${item.id}`,
           image: item.image,
           dim: phase !== "open",
+          // Read by the map's tap handler to explain the item.
+          zoneId: z.id,
+          kind: item.kind,
+          name: item.name,
+          rarity: item.rarity || "",
         },
         geometry: { type: "Point", coordinates: spots[i] },
       });
@@ -420,4 +427,81 @@ export function zoneLandmarkLabel(
   return [window, when, loot.length ? `find: ${loot.join(", ")}` : ""]
     .filter(Boolean)
     .join(" · ");
+}
+
+/** Milliseconds `timeZone` is ahead of UTC at instant `t`. */
+function tzOffset(t: number, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(t);
+  const v = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  const wall = Date.UTC(v("year"), v("month") - 1, v("day"), v("hour"), v("minute"), v("second"));
+  return wall - Math.floor(t / 1000) * 1000;
+}
+
+/**
+ * The next local midnight in the world's time zone: when the daily world
+ * swaps and a zone gets fresh activities and rewards (docs/WORLD-GENERATION.md,
+ * GEO08). DST-safe; an unknown zone name falls back to Europe/Prague.
+ */
+export function nextLocalMidnight(now: number, timeZone = "Europe/Prague") {
+  let zoneName = timeZone;
+  try {
+    tzOffset(now, zoneName);
+  } catch {
+    zoneName = "Europe/Prague";
+  }
+  const local = new Date(now + tzOffset(now, zoneName));
+  const wallMidnight = Date.UTC(
+    local.getUTCFullYear(),
+    local.getUTCMonth(),
+    local.getUTCDate() + 1,
+  );
+  // Two passes settle the offset on a DST change day.
+  let at = wallMidnight - tzOffset(wallMidnight, zoneName);
+  at = wallMidnight - tzOffset(at, zoneName);
+  return at;
+}
+
+export type ZoneSchedule = {
+  phase: ZonePhase;
+  opensAt: number;
+  closesAt: number;
+  /** Activities finished today / all of today's activities in the zone. */
+  done: number;
+  total: number;
+  /** When the daily world swaps and the zone's rewards are fresh again. */
+  resetAt: number;
+  xp: number;
+  gold_u: number;
+  loot: ZoneLoot[];
+};
+
+/** Everything the zone detail says about today's rewards and their reset. */
+export function zoneSchedule(
+  zone: Zone,
+  quests: readonly Quest[],
+  now: number,
+  timeZone?: string,
+): ZoneSchedule {
+  const linked = linkedQuests(zone, quests);
+  const open = linked.filter((q) => !q.completed);
+  return {
+    phase: zonePhase(zone, quests, now),
+    opensAt: zone.opensAt,
+    closesAt: zone.closesAt,
+    done: linked.length - open.length,
+    total: linked.length,
+    resetAt: nextLocalMidnight(now, timeZone),
+    xp: open.reduce((sum, q) => sum + (q.xp || 0), 0),
+    gold_u: open.reduce((sum, q) => sum + (q.gold_u || 0), 0),
+    loot: zoneLoot(zone, quests).filter((l) => l.kind === "aura"),
+  };
 }

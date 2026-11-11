@@ -3217,5 +3217,19 @@
  "Write to {0}…": "写给{0}…",
  "Messages need your explorer account. Sign in with it to write.": "发消息需要你的探索者账户。请用它登录后再写。",
  "Your note: {0}": "你的留言：{0}",
- "Note: {0}": "留言：{0}"
+ "Note: {0}": "留言：{0}",
+ "Activities in {0} pay GOLD today.": "{0}的活动今天发放GOLD。",
+ "Done today: {0} of {1} activities": "今日已完成：{1}个活动中的{0}个",
+ "Everything here is done for today": "这里今天的内容已全部完成",
+ "GOLD in this zone": "本区域的GOLD",
+ "New activities and rewards at {0} (in {1})": "新活动和奖励将于{0}刷新（还有{1}）",
+ "Open now until {0} (in {1})": "开放至{0}（还剩{1}）",
+ "Open now, all day": "全天开放",
+ "Opens at {0} (in {1})": "{0}开放（还有{1}）",
+ "Show zone activities": "查看区域活动",
+ "Still to win today:": "今天还能赢取：",
+ "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "{0}的宝箱今天可能装有这个光环。去那里打开宝箱活动试试吧。",
+ "Today in this zone": "今天在这个区域",
+ "chest Auras: {0}": "宝箱光环：{0}",
+ "{0} Aura": "{0}光环"
 }

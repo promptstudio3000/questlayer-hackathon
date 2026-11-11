@@ -28,6 +28,7 @@ import {
   zoneTotemFeatures,
   zoneWallFeatures,
   zoneAuraColor,
+  rarityLabel,
   beamFeatures,
 } from "./zone-landmarks";
 import type { NearbyExplorer, WornWearable } from "./types";
@@ -258,6 +259,34 @@ function ensureLootImages(
     pending.push(load);
   }
   return Promise.all(pending);
+}
+type LootProps = { zoneId: string; kind: "aura" | "gold"; name: string; rarity: string };
+/**
+ * The zone whose altar (the 3D model at its centre) is under a tap. The altar
+ * stands up from the centre, so the hit box reaches up by its drawn height.
+ */
+function altarAt(m: maplibregl.Map, zones: readonly Zone[], point: { x: number; y: number }) {
+  if (m.getZoom() < 13) return null;
+  const metresPerPixel =
+    (40075016.686 * Math.cos((m.getCenter().lat * Math.PI) / 180)) / (512 * 2 ** m.getZoom());
+  const lift = (Math.sin((m.getPitch() * Math.PI) / 180) / metresPerPixel) * 1.08;
+  let best: Zone | null = null,
+    bestD = Infinity;
+  for (const z of zones) {
+    const c = m.project([z.lng, z.lat]);
+    const height = totemHeight(z.tier) * lift,
+      halfWidth = Math.max(26, 7 / metresPerPixel, height * 0.4),
+      below = Math.max(18, 7 / metresPerPixel);
+    const dx = point.x - c.x,
+      dy = point.y - c.y;
+    if (Math.abs(dx) > halfWidth || dy > below || dy < -(height + 14)) continue;
+    const d = Math.hypot(dx, dy + height / 2);
+    if (d < bestD) {
+      best = z;
+      bestD = d;
+    }
+  }
+  return best;
 }
 function skinFallback(node: HTMLElement, _color?: string) {
   const image = node.querySelector("img");
@@ -526,8 +555,78 @@ export function GameMap(props: GameMapProps) {
           return;
         }
       }
+      const p = latest.current;
+      if (p.globe || !p.world) return;
+      // Items floating inside a zone say what they are; the altar in the
+      // middle of a zone opens the zone detail, like its pin. An item drawn
+      // over the altar wins only when the tap is on the item itself.
+      const altar = altarAt(m, p.world.zones, e.point);
+      const items = m.getLayer("zone-loot")
+        ? m.queryRenderedFeatures(
+            [
+              [e.point.x - 22, e.point.y - 22],
+              [e.point.x + 22, e.point.y + 22],
+            ],
+            { layers: ["zone-loot"] },
+          )
+        : [];
+      const item = items
+        .filter((f) => f.geometry.type === "Point")
+        .map((f) => {
+          const at = (f.geometry as { coordinates: [number, number] }).coordinates;
+          const c = m.project(at);
+          return { f, at, d: Math.hypot(c.x - e.point.x, c.y - e.point.y) };
+        })
+        .sort((a, b) => a.d - b.d)[0];
+      const itemZone = item && p.world.zones.find((z) => z.id === item.f.properties?.zoneId);
+      if (item && itemZone && (!altar || item.d <= 16)) {
+        showLootInfo(m, item.at, item.f.properties as LootProps, itemZone);
+        return;
+      }
+      if (altar) {
+        lootPopup?.remove();
+        p.onZone(altar);
+        return;
+      }
       // No tap-to-walk: real play moves with GPS, the demo with its pad.
     });
+    let lootPopup: maplibregl.Popup | null = null;
+    const showLootInfo = (
+      m: maplibregl.Map,
+      at: [number, number],
+      item: LootProps,
+      zone: Zone,
+    ) => {
+      lootPopup?.remove();
+      const box = document.createElement("div");
+      box.className = "zone-loot-info";
+      const title = document.createElement("strong");
+      title.textContent =
+        item.kind === "aura"
+          ? `${item.name} · ${tr("{0} Aura", { 0: rarityLabel(item.rarity as Parameters<typeof rarityLabel>[0]) })}`
+          : tr("GOLD in this zone");
+      const text = document.createElement("p");
+      text.textContent =
+        item.kind === "aura"
+          ? tr("The chest in {0} can hold this Aura today. Open the chest activity there to try for it.", { 0: zone.name })
+          : tr("Activities in {0} pay GOLD today.", { 0: zone.name });
+      const open = document.createElement("button");
+      open.type = "button";
+      open.className = "zone-loot-open";
+      open.textContent = tr("Show zone activities");
+      open.addEventListener("click", (event) => {
+        event.stopPropagation();
+        lootPopup?.remove();
+        latest.current.onZone(zone);
+      });
+      box.append(title, text, open);
+      lootPopup = new maplibregl.Popup({ offset: 22, maxWidth: "260px", className: "zone-loot-popup", focusAfterOpen: true })
+        .setLngLat(at)
+        .setDOMContent(box)
+        .addTo(m);
+    };
+    m.on("mouseenter", "zone-loot", () => (m.getCanvas().style.cursor = "pointer"));
+    m.on("mouseleave", "zone-loot", () => (m.getCanvas().style.cursor = ""));
     m.on("error", () => {
       if (!gone) setError(true);
     });
@@ -979,6 +1078,11 @@ export function GameMap(props: GameMapProps) {
       chip.dataset.zoneId = z.id;
       chip.textContent = countdown.text;
       chip.hidden = !countdown.text;
+      // The nameplate sits on the altar base: a tap there opens the zone too.
+      chip.addEventListener("click", (e) => {
+        e.stopPropagation();
+        latest.current.onZone(z);
+      });
       const stem = document.createElement("span");
       stem.className = "zone-totem-stem";
       stem.setAttribute("aria-hidden", "true");

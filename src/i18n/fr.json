@@ -3217,5 +3217,19 @@
  "Write to {0}…": "Écris à {0}…",
  "Messages need your explorer account. Sign in with it to write.": "Les messages nécessitent ton compte d’explorateur. Connecte-toi avec lui pour écrire.",
  "Your note: {0}": "Ta note : {0}",
- "Note: {0}": "Note : {0}"
+ "Note: {0}": "Note : {0}",
+ "Activities in {0} pay GOLD today.": "Les activités à {0} rapportent du GOLD aujourd'hui.",
+ "Done today: {0} of {1} activities": "Fait aujourd'hui : {0} sur {1} activités",
+ "Everything here is done for today": "Tout est fait ici pour aujourd'hui",
+ "GOLD in this zone": "GOLD dans cette zone",
+ "New activities and rewards at {0} (in {1})": "Nouvelles activités et récompenses à {0} (dans {1})",
+ "Open now until {0} (in {1})": "Ouvert jusqu'à {0} (encore {1})",
+ "Open now, all day": "Ouvert toute la journée",
+ "Opens at {0} (in {1})": "Ouvre à {0} (dans {1})",
+ "Show zone activities": "Voir les activités de la zone",
+ "Still to win today:": "Encore à gagner aujourd'hui :",
+ "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "Le coffre de {0} peut contenir cette Aura aujourd'hui. Ouvre l'activité du coffre là-bas pour tenter ta chance.",
+ "Today in this zone": "Aujourd'hui dans cette zone",
+ "chest Auras: {0}": "Auras du coffre : {0}",
+ "{0} Aura": "Aura {0}"
 }
