@@ -1,0 +1,35 @@
+[Unit]
+Description=QuestLayer treasury worker (%i): stNEAR harvest, treasury DAO, treasury mix (docs/TREASURY-WORKERS-VPS.md)
+After=network-online.target questlayer-hackathon.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=questlayer-treasury
+Group=questlayer-treasury
+StateDirectory=questlayer-treasury
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/questlayer-treasury
+UMask=0077
+Environment=NODE_ENV=production
+Environment=HOME=/var/lib/questlayer-treasury
+Environment=NEAR_NETWORK=testnet
+Environment=NEAR_RPC_URL=https://test.rpc.fastnear.com
+# Signs the treasury mix and the stNEAR harvest as the dedicated treasury-ops
+# account. The operator full-access key is never on this host.
+Environment=NEAR_OPERATOR_KEY_PATH=/var/lib/questlayer-treasury/.data/treasury-ops.json
+Environment=QUESTLAYER_OPERATOR_ACCOUNT=questlayer-dev-20261101.testnet
+Environment=TREASURY_MIX_ACCOUNT=treasury-ops.questlayer-dev-20261101.testnet
+Environment=TREASURY_DAO_KEYS_PATH=/var/lib/questlayer-treasury/.data/treasury-dao-keys.json
+Environment=TREASURY_DAO_MANIFEST=/opt/ps3000/apps/questlayer-hackathon/current/public/native-treasury-dao-testnet.json
+Environment=TREASURY_DAO_API=http://127.0.0.1:7091
+ExecStart=/bin/bash /opt/ps3000/apps/questlayer-hackathon/current/scripts/treasury-worker-vps.sh %i
+ExecStopPost=+/bin/bash /opt/ps3000/apps/questlayer-hackathon/current/scripts/treasury-worker-vps.sh publish
+TimeoutStartSec=30min
+Nice=10
+MemoryMax=512M
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/questlayer-treasury

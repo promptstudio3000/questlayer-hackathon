@@ -1,0 +1,10 @@
+[Unit]
+Description=QuestLayer daily treasury run at 06:30 Prague time (was the Mac LaunchAgent)
+
+[Timer]
+OnCalendar=*-*-* 06:30:00 Europe/Prague
+Persistent=true
+Unit=questlayer-treasury@daily.service
+
+[Install]
+WantedBy=timers.target
