@@ -3181,5 +3181,17 @@
  "Your free home plot has a gold border. Tap Build, pick a block and tap where it goes.": "Ta parcelle gratuite a un bord doré. Touche Construire, choisis un bloc et touche l'endroit voulu.",
  "Your last blocks were not saved and were undone. Try again.": "Tes derniers blocs n'ont pas été enregistrés et ont été annulés. Réessaie.",
  "Your plot": "Ta parcelle",
- "{0} m": "{0} m"
+ "{0} m": "{0} m",
+ "NEAR for your payments": "NEAR pour tes paiements",
+ "Running low": "Bientôt vide",
+ "The game pays the gas for every action. This small balance covers your account's storage and your own payments, such as buying an Aura.": "Le jeu paie le gaz de chaque action. Ce petit solde couvre le stockage de ton compte et tes propres paiements, comme l'achat d'une Aura.",
+ "Refuel to {0} NEAR": "Recharger à {0} NEAR",
+ "Convert QGOLD to NEAR": "Convertir des QGOLD en NEAR",
+ "Account name copied": "Nom du compte copié",
+ "Add your own NEAR": "Ajouter tes propres NEAR",
+ "You already refuelled today. Tomorrow you can again.": "Tu as déjà rechargé aujourd'hui. Tu pourras demain.",
+ "Refuel opens when your balance drops below {0} NEAR, once a day.": "La recharge s'ouvre une fois par jour quand ton solde passe sous {0} NEAR.",
+ "Add your own NEAR: send it from any wallet or exchange to {0}.": "Ajoute tes propres NEAR : envoie-les depuis n'importe quel portefeuille ou plateforme d'échange vers {0}.",
+ "Refuelled. Your account has NEAR for its next payments.": "Rechargé. Ton compte a des NEAR pour ses prochains paiements.",
+ "Could not refuel right now. Try again later.": "Recharge impossible pour l'instant. Réessaie plus tard."
 }

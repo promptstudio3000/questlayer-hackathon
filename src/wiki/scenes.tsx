@@ -107,7 +107,7 @@ const CARDS: FactCard[] = [
       "every player gets an own NEAR account automatically",
       "its key never leaves the device; recover with a passkey or a linked wallet",
       "the game pays the gas for every game action",
-      "a small deposit for storage and first own payments (**0.02 NEAR** on mainnet), with a capped daily top-up",
+      "a small deposit for storage and first own payments (**0.02 NEAR**), refuelled once a day when it runs low",
     ],
   },
   {

@@ -841,7 +841,7 @@ function AccountSeq() {
       msgs={[
         { from: 0, to: 0, label: "Generate key pair", tone: "player" },
         { from: 0, to: 1, label: "Create account (public key)", tone: "player" },
-        { from: 1, to: 3, label: "create + 0.1 NEAR + add key", tone: "chain" },
+        { from: 1, to: 3, label: "create + 0.02 NEAR + add key", tone: "chain" },
         { from: 0, to: 0, label: "Sign delegate action", tone: "player" },
         { from: 0, to: 2, label: "POST /api/relay", tone: "core" },
         { from: 2, to: 2, label: "Policy check · budget", tone: "core" },

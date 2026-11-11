@@ -547,6 +547,40 @@ export class ManagedAccounts {
     });
     return { toppedUp: true, amount: amount.toString(), transactionHash: hash };
   }
+  /**
+   * Fuel: the explorer's own NEAR for storage and the first self-paid trade.
+   * A refuel tops a low account back up to the starting amount, at most once
+   * per UTC day, inside the per-account top-up cap and the service-wide
+   * sponsorship budget. Gas is sponsored separately and never needs fuel.
+   */
+  fuelPolicy() {
+    return { targetYocto: this.fundYocto, belowYocto: this.fundYocto / 2n };
+  }
+  refuelOperation(accountId) {
+    return `refuel:${accountId}:${dayKey(this.clock(), "UTC")}`;
+  }
+  async fuel(playerId) {
+    const row = this.row(playerId);
+    const { targetYocto, belowYocto } = this.fuelPolicy();
+    const base = { network: NETWORK, targetYocto: targetYocto.toString(), belowYocto: belowYocto.toString() };
+    if (!row || row.state !== "ready") return { ...base, accountId: row?.account_id ?? null, balanceYocto: null, canRefuel: false, reason: "ACCOUNT_NOT_READY" };
+    const balance = await this.balance(row.account_id);
+    const usedToday = !!this.funding.latest(`topup:${this.refuelOperation(row.account_id)}`);
+    const reason = !this.factory ? "ACCOUNT_DISABLED" : usedToday ? "FUEL_REFUELED_TODAY" : balance >= belowYocto ? "FUEL_NOT_LOW" : null;
+    return { ...base, accountId: row.account_id, balanceYocto: balance.toString(), canRefuel: !reason, reason };
+  }
+  async refuel(playerId) {
+    const row = this.row(playerId);
+    assert(row && row.state === "ready", "Your explorer account is not ready yet.", 409, "ACCOUNT_NOT_READY");
+    assert(this.factory, "Managed accounts are disabled on this host.", 503, "ACCOUNT_DISABLED");
+    const op = this.refuelOperation(row.account_id);
+    assert(!this.funding.latest(`topup:${op}`), "You already refuelled today. Try again tomorrow, buy NEAR or convert QGOLD.", 429, "FUEL_REFUELED_TODAY");
+    const { targetYocto, belowYocto } = this.fuelPolicy();
+    const balance = await this.balance(row.account_id);
+    assert(balance < belowYocto, "Your account still has enough NEAR.", 409, "FUEL_NOT_LOW");
+    const result = await this.ensureFunded(row.account_id, targetYocto, { jobId: op });
+    return { ...result, accountId: row.account_id };
+  }
   view(playerId) {
     const row = this.row(playerId);
     if (!row)

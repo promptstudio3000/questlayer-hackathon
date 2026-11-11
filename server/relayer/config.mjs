@@ -33,12 +33,12 @@ export function relayerConfiguration(env = process.env) {
     factoryAccount: env.PLAYER_FACTORY_ACCOUNT || null,
     fundYocto: yocto(
       env.PLAYER_FACTORY_FUND_YOCTO,
-      "100000000000000000000000",
+      "20000000000000000000000",
       "PLAYER_FACTORY_FUND_YOCTO",
     ),
     topupCapYocto: yocto(
       env.RELAY_TOPUP_CAP_YOCTO,
-      "200000000000000000000000",
+      "50000000000000000000000",
       "RELAY_TOPUP_CAP_YOCTO",
     ),
     maxJobsPerDay: count(

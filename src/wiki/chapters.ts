@@ -1114,20 +1114,21 @@ export const CHAPTERS: Chapter[] = [
     title: "Accounts, wallets and the relayer",
     tldr: "The blockchain is invisible: every explorer automatically gets an **own NEAR account** whose key never leaves the device, the game pays the gas for every game action, and recovery works with a passkey or a linked wallet.",
     keyFacts: [
-      ["0.02 NEAR", "deposit per new account on mainnet (0.1 on testnet)"],
-      ["0.05 NEAR", "daily top-up cap per account on mainnet"],
+      ["0.02 NEAR", "deposit per new account, testnet and mainnet"],
+      ["1 × a day", "Refuel back to 0.02 NEAR when below half"],
       ["0", "player keys held by the server"],
       ["2 NEAR/day", "sponsorship cap planned for mainnet"],
     ],
     hero: "account-seq",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/RELAYER.md", "docs/IDENTITY-RECOVERY.md", "docs/NATIVE-TRANSACTION-CONFIRMATION.md", "docs/DURABLE-NATIVE-RECOVERY.md", "docs/ETH-WALLETS.md", "docs/NATIVE-PROFILES.md", "server/relayer/policy.mjs"],
+    sources: ["docs/RELAYER.md", "docs/IDENTITY-RECOVERY.md", "docs/NATIVE-TRANSACTION-CONFIRMATION.md", "docs/DURABLE-NATIVE-RECOVERY.md", "docs/ETH-WALLETS.md", "docs/NATIVE-PROFILES.md", "server/relayer/policy.mjs", "server/relayer/accounts.mjs", "src/FuelCard.tsx"],
     blocks: [
       { h: "Your explorer account" },
       {
         list: [
-          "A new explorer gets `<name>.play-…testnet` once they earned their first XP on the map; the first steps play solo without it. The account gets a small deposit for storage and its first own payments (0.1 test NEAR on testnet; 0.02 NEAR planned on mainnet) and a sponsored top-up within a daily cap (0.05 NEAR on mainnet). New accounts per network address are capped per day.",
+          "A new explorer gets `<name>.play-…testnet`, funded with 0.02 NEAR (the same on mainnet), once they earned their first XP on the map; the first steps play solo without it. New accounts per network address are capped per day.",
+          "Gas is always sponsored. The small balance only covers the account's storage and the player's own payments (Aura buys, deposits), which the relayer never sponsors. When it drops below half, Profile → Stake → Earnings offers **Refuel** back to 0.02 NEAR once a UTC day (inside the 0.05 NEAR per-account daily top-up cap and the shared sponsorship budget), **Convert QGOLD to NEAR** at the vault, or **Add your own NEAR** from any wallet.",
           "Every in-game action (tasks, Secrets, Aura listings and equipment, staking, level rewards, badges, profile and note records) signs with this account, without a wallet pop-up. Before it exists, **Activate my account** prepares it.",
           "The device key lives in a separate signing origin, deployed with the game. If a browser blocks its storage, no account is created, Profile → Settings → Account and devices says so, and free play continues. Keys made before that origin are not rotated yet.",
           "Purchases, equipment, earned mini-games and getting ready to trade sign silently. Anything that can pay someone else (a sale or purchase, a task, Secret or send, a withdrawal, an asset transfer) and account recovery ask one plain Yes / No question in a small separate window, which a compromised game page cannot answer.",
