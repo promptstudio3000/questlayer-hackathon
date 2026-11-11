@@ -24,6 +24,8 @@ import type { Player } from "./types";
 import "./fuel-the-city.css";
 import "./fuel-stake.css";
 import { tr } from "./i18n";
+import { FundsHelp } from "./FundsHelp";
+import { GAS_HEADROOM, readNearBalance as readBalance, readQgoldCover, nearText, type QgoldCover } from "./funds-help";
 
 type StakerGates = { minNear: string; suggestNear: string; priceEur: number | null; access: { step: string; staker: boolean } };
 
@@ -110,9 +112,11 @@ export function stakePhase(positions: FuelPosition[]): StakePhase {
  */
 export function FuelTheCity({
   player,
-  account,
-  managed,
+  account: explorerAccount,
+  managed: explorerManaged,
+  explorerStatus,
   onConnect,
+  onLinkWallet,
   onTransaction,
 }: {
   player: Player;
@@ -120,10 +124,32 @@ export function FuelTheCity({
   account: string;
   /** True when the account is the invisible one, so nothing pops up. */
   managed: boolean;
+  /** Why the explorer account is not ready yet (play-first, creating, needs-recovery, ...). */
+  explorerStatus?: string;
   cityName?: string;
   onConnect: () => void;
+  /** Links a NEAR wallet the player already has (wallet picker + signed message). */
+  onLinkWallet?: () => Promise<void> | void;
   onTransaction: (r: VaultRequest) => Promise<boolean>;
 }) {
+  // Stake from the explorer account by default, or from a linked NEAR wallet.
+  const payOptions = [...new Set([explorerAccount, ...player.wallets.map((w) => w.account_id)].filter(Boolean))];
+  const [chosen, setChosen] = useState("");
+  const account = chosen && payOptions.includes(chosen) ? chosen : payOptions[0] || "";
+  const managed = explorerManaged && account === explorerAccount;
+  const [helpOpen, setHelpOpen] = useState(false);
+  // A wallet linked from the help dialog becomes the one that pays.
+  const knownWallets = useRef(player.wallets.map((w) => w.account_id).join());
+  useEffect(() => {
+    const ids = player.wallets.map((w) => w.account_id);
+    const before = knownWallets.current.split(",");
+    const added = ids.find((id) => !before.includes(id) && id !== explorerAccount);
+    knownWallets.current = ids.join();
+    if (added) {
+      setChosen(added);
+      setHelpOpen(false);
+    }
+  }, [player.wallets, explorerAccount]);
   const [vaults, setVaults] = useState<VaultSnapshot | null>(null),
     [city, setCity] = useState<CityStaking | null>(null),
     [readError, setReadError] = useState(""),
@@ -131,6 +157,8 @@ export function FuelTheCity({
     [gates, setGates] = useState<StakerGates | null>(null),
     [contribution, setContribution] = useState(50),
     [confirmExit, setConfirmExit] = useState(false),
+    [balance, setBalance] = useState<bigint | null>(null),
+    [qgold, setQgold] = useState<QgoldCover | null>(null),
     [outcome, setOutcome] = useState<Outcome>({ kind: "idle" });
   const accountRef = useRef(account);
   accountRef.current = account;
@@ -149,8 +177,14 @@ export function FuelTheCity({
     }
   }
   // Each read fills its own part: the slow prize pool total never holds up the stake button.
+  // QGOLD that could be swapped to cover a shortfall, read when the help opens.
+  useEffect(() => {
+    if (helpOpen && account) void readQgoldCover(account).then(setQgold);
+  }, [helpOpen, account]);
   useEffect(() => {
     void readVaults();
+    setBalance(null);
+    if (account) void readBalance(account).then(setBalance);
   }, [account]);
   useEffect(() => {
     let live = true;
@@ -191,14 +225,20 @@ export function FuelTheCity({
   const stakeNear = Number(amount) || Number(STAKER_SUGGEST_NEAR);
   const eur = eurHint(stakeNear, gates?.priceEur);
   const setupNear = vaults?.config ? nearOf(vaults.config.setup_deposit) : null;
+  let stakeYocto = 0n;
+  try {
+    stakeYocto = BigInt(parseTestNear(amount));
+  } catch {
+    stakeYocto = 0n;
+  }
 
   async function sign(request: Omit<VaultRequest, "accountId">): Promise<boolean> {
     return onTransaction({ ...request, accountId: account });
   }
 
   /** Waits until the factory shows the vault as ready (create registers it in the same transaction). */
-  async function waitForVault(match: (p: FuelPosition) => boolean): Promise<FuelPosition | null> {
-    for (let i = 0; i < 20; i++) {
+  async function waitForVault(match: (p: FuelPosition) => boolean, tries = 20): Promise<FuelPosition | null> {
+    for (let i = 0; i < tries; i++) {
       const snap = await readVaults();
       const p = ((snap?.positions || []) as FuelPosition[]).find(match);
       if (p?.position) return p;
@@ -211,7 +251,7 @@ export function FuelTheCity({
 
   /** One tap: set up the vault when there is none, then stake. */
   async function stake() {
-    if (!account) return onConnect();
+    if (!account || short) return setHelpOpen(true);
     let deposit: string;
     try {
       deposit = parseTestNear(amount);
@@ -222,11 +262,15 @@ export function FuelTheCity({
     const fail = (text = tr("It didn't go through. Nothing was taken; try again.")) => {
       setOutcome({ kind: "failed", text });
       void readVaults();
+      void readBalance(account).then(setBalance);
     };
     try {
-      const snap = (await readVaults()) || vaults;
+      // Sign straight from the tap: the confirmation window only opens while the
+      // browser still counts the tap, so no slow read sits before a signature.
+      const snap = vaults?.config ? vaults : await readVaults();
       if (!snap?.config) return fail(tr("Staking can't be read right now."));
       let now = stakePhase((snap.positions || []) as FuelPosition[]);
+      const setUp = now.kind === "none" || now.kind === "setup";
       if (now.kind === "none") {
         setOutcome({ kind: "pending", text: tr("Step 1 of 2 · setting up your vault…") });
         const known = new Set(snap.positions.map((p) => p.id));
@@ -236,8 +280,9 @@ export function FuelTheCity({
           contributionBps: contribution * 100,
           setupDeposit: snap.config.setup_deposit,
         });
-        if (!ok) return fail();
-        const p = await waitForVault((x) => !known.has(x.id));
+        // A sent setup whose confirmation timed out still shows its new vault.
+        const p = await waitForVault((x) => !known.has(x.id), ok ? 20 : 4);
+        if (!p && !ok) return fail(tr("It didn't finish. If it was sent, your vault shows here in a minute."));
         if (!p) return fail(tr("Your vault is still being set up. Check again in a minute."));
         now = p.position ? { kind: "empty", position: p } : { kind: "setup", position: p };
       }
@@ -254,9 +299,19 @@ export function FuelTheCity({
         setOutcome({ kind: "idle" });
         return;
       }
-      setOutcome({ kind: "pending", text: tr("Step 2 of 2 · staking {0} NEAR…", { 0: amount }) });
-      const ok = await sign({ action: "deposit", vaultId: now.position.account_id, amount: deposit });
-      if (!ok) return fail();
+      if (setUp) {
+        // The stake is its own tap, so its confirmation window may open.
+        setOutcome({ kind: "done", text: tr("Your vault is ready. Tap Stake {0} NEAR once more to stake.", { 0: amount }) });
+        return;
+      }
+      setOutcome({ kind: "pending", text: tr("Staking {0} NEAR…", { 0: amount }) });
+      const vaultId = now.position.account_id;
+      const ok = await sign({ action: "deposit", vaultId, amount: deposit });
+      if (!ok) {
+        // A sent stake whose confirmation timed out still shows in the vault.
+        const after = await waitForVault((x) => x.account_id === vaultId && nearOf(x.position?.principal) > 0, 4);
+        if (!after) return fail(tr("It didn't finish. If it was sent, your stake shows here in a minute."));
+      }
       setOutcome({ kind: "done", text: tr("Staked. It counts after about two epochs; then you are a Staker.") });
       await readVaults();
     } catch (e) {
@@ -266,14 +321,33 @@ export function FuelTheCity({
 
   async function run(request: Omit<VaultRequest, "accountId">, pending: string, done: string) {
     setOutcome({ kind: "pending", text: pending });
+    const before = phase.kind;
+    let ok = false;
     try {
-      const ok = await sign(request);
-      setOutcome(ok ? { kind: "done", text: done } : { kind: "failed", text: tr("It didn't go through. Nothing was taken; try again.") });
+      ok = await sign(request);
     } catch (e) {
       setOutcome({ kind: "failed", text: (e as Error).message });
     }
     setConfirmExit(false);
-    await readVaults();
+    // The vault list can lag the chain by a few seconds: read until the step shows,
+    // so a sent withdrawal never leaves the Withdraw button standing.
+    for (let i = 0; i < 8; i++) {
+      const snap = await readVaults();
+      if (snap && stakePhase((snap.positions || []) as FuelPosition[]).kind !== before) {
+        ok = true;
+        break;
+      }
+      if (!ok && i >= 3) break;
+      await wait(3000);
+    }
+    setOutcome((o) =>
+      ok
+        ? { kind: "done", text: done }
+        : o.kind === "failed"
+          ? o
+          : { kind: "failed", text: tr("It didn't finish. If it was sent, it shows here in a minute.") },
+    );
+    if (account) void readBalance(account).then(setBalance);
   }
 
   // Where the explorer stands on Free → Staker → Tier 2 → Tier 3.
@@ -300,7 +374,10 @@ export function FuelTheCity({
   const credit = "position" in phase ? nearOf(phase.position.position?.owner_credit) : 0;
   const status = "position" in phase && phase.position.position ? fuelStatus(phase.position) : null;
   const canStake = phase.kind === "none" || phase.kind === "setup" || phase.kind === "empty";
-
+  // What one tap costs from here: the vault setup the first time, the stake, a little gas.
+  const needYocto =
+    (phase.kind === "none" && vaults?.config ? big(vaults.config.setup_deposit) : 0n) + stakeYocto + GAS_HEADROOM;
+  const short = canStake && account && balance !== null && balance < needYocto;
   return (
     <section className="fuel" aria-labelledby="fuel-title">
       <h2 id="fuel-title" className="sr-only">{tr("Stake")}</h2>
@@ -352,22 +429,44 @@ export function FuelTheCity({
           <>
             <button
               className="primary-button fuel-stake-button"
-              disabled={busy || (!!vaults?.config && vaults.config.created >= vaults.config.capacity && phase.kind === "none")}
+              // Visible at once, tappable once the vault read says there is no stake yet.
+              disabled={busy || loading || (!!vaults?.config && vaults.config.created >= vaults.config.capacity && phase.kind === "none")}
               onClick={() => void stake()}
             >
               {busy && outcome.kind === "pending" ? outcome.text : tr("Stake {0} NEAR", { 0: amount })}
               {eur && !busy ? <small>{eur}</small> : null}
               <Flame size={20} aria-hidden="true" />
             </button>
+            {payOptions.length > 1 && (
+              <label className="fuel-payfrom">
+                <span>{tr("Pay from")}</span>
+                <select value={account} disabled={busy} onChange={(e) => setChosen(e.target.value)}>
+                  {payOptions.map((id) => (
+                    <option key={id} value={id}>
+                      {id === explorerAccount ? tr("Explorer account") + " · " : ""}
+                      {id}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            )}
+            {(short || !account) && (
+              <button type="button" className="fuel-why" onClick={() => setHelpOpen(true)}>
+                <WarningCircle size={18} aria-hidden="true" />
+                {!account
+                  ? tr("Your account isn't ready to stake yet. What can I do?")
+                  : tr("Not enough test NEAR yet. What can I do?")}
+              </button>
+            )}
             <p className="fuel-paid">
               {tr("One stake. It stays yours: you can only withdraw it, which takes about 1–7 days.")}{" "}
               {phase.kind === "none" && setupNear !== null
-                ? tr("First time only: {0} test NEAR sets up your personal vault and is not returned.", { 0: fmt(setupNear, 2) })
+                ? tr("First time only: {0} test NEAR sets up your personal vault (step 1) and is not returned; then you stake (step 2).", { 0: fmt(setupNear, 2) })
                 : null}{" "}
               {!account
                 ? tr("Your explorer account is prepared first.")
                 : managed
-                  ? tr("Paid from your balance, no popup.")
+                  ? tr("Paid from your balance. You confirm with Yes in a small QuestLayer window.")
                   : tr("Your NEAR wallet asks you to approve.")}
             </p>
           </>
@@ -488,6 +587,19 @@ export function FuelTheCity({
       )}
 
       {!canStake && <StakeToday />}
+
+      {helpOpen && (
+        <FundsHelp
+          title={tr("Why you can't stake yet")}
+          needLine={tr("Staking needs about {0} NEAR (vault setup, the stake and a little gas).", { 0: nearText(needYocto, 2) })}
+          funds={{ account, have: balance, need: needYocto, qgold }}
+          explorerAccount={explorerAccount}
+          explorerStatus={explorerStatus}
+          onRecheck={() => void readBalance(account).then(setBalance)}
+          onLinkWallet={onLinkWallet}
+          onClose={() => setHelpOpen(false)}
+        />
+      )}
 
       <details className="play-details fuel-advanced">
         <summary>

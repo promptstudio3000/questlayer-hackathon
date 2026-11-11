@@ -23,6 +23,7 @@ for (const relative of [
   "./fair-play.mjs",
   "./map-read-indexes.mjs",
   "./hot-path-indexes.mjs",
+  "./coin-spots.mjs",
   "./identity/schema.mjs",
   "./identity/test-login.mjs",
   "./creators/completion.mjs",

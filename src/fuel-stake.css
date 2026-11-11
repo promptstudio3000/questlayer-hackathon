@@ -97,3 +97,54 @@
   font-size: 15px;
   font-weight: 600;
 }
+.fuel-short {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.fuel-short p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink); }
+.fuel-short code {
+  font-size: 12px;
+  word-break: break-all;
+  color: var(--ink-secondary);
+}
+.fuel-short-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
+.fuel-short-buttons .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+.fuel-why {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--action);
+  text-align: start;
+  cursor: pointer;
+}
+.fuel-payfrom { display: grid; gap: 4px; font-size: 13px; color: var(--ink-secondary); }
+.fuel-payfrom select {
+  min-height: 44px;
+  padding: 0 10px;
+  border: 1px solid var(--decorative-border);
+  border-radius: 12px;
+  background: var(--surface-raised);
+  font: inherit;
+  font-size: 14px;
+  color: var(--ink);
+}

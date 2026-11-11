@@ -53,6 +53,8 @@ const adventureResults = () => import("./AdventureResults");
 export const GameIntro = lazyNamed(() => import("./GameIntro"), "GameIntro", true);
 export const QuestBrief = lazyNamed(() => import("./QuestBrief"), "QuestBrief");
 export const WearableMoment = lazyNamed(() => import("./WearableMoment"), "WearableMoment");
+export const LockedZoneCard = lazyNamed(() => import("./LockedZone"), "LockedZoneCard", true);
+export const LockedZoneDialog = lazyNamed(() => import("./LockedZone"), "LockedZoneDialog", true);
 export const AdventureResultDialog = lazyNamed(
   adventureResults,
   "AdventureResultDialog",
@@ -170,9 +172,9 @@ export const NearbyList = lazyNamed(() => import("./NearbyList"), "NearbyList");
 // Community · Tasks reuses the Nearby chunk (NearbyList re-exports NearbyMarket).
 export const NearbyMarket = lazyNamed(() => import("./NearbyList"), "NearbyMarket");
 export const GoldShop = lazyNamed(() => import("./GoldShop"), "GoldShop");
-export const PlaceMessages = lazyNamed(
-  () => import("./PlaceMessages"),
-  "PlaceMessages",
+export const LocalChat = lazyNamed(
+  () => import("./LocalChat"),
+  "LocalChat",
 );
 export const PlaceCompose = lazyNamed(() => import("./PlaceMessages"), "PlaceCompose");
 export const CommunityPlaces = lazyNamed(() => import("./CommunityPlaces"), "CommunityPlaces");

@@ -1,5 +1,8 @@
 import { randomUUID } from "node:crypto";
-import { assert, hash, id, point, validateFix } from "./domain.mjs";
+import { assert, distance, hash, id, point, validateFix } from "./domain.mjs";
+
+/** Local chat distance filter (Lubos, 11 Nov 2026): how far away notes may be. */
+export const NOTE_RADIUS_KM = Object.freeze([1, 3, 10, 25, 50, 100]);
 import { initSocialNoteExpiry, NOTE_DAYS } from "./social-note-expiry.mjs";
 
 export const REPORT_REASONS = [
@@ -127,6 +130,14 @@ export class SocialContent {
     this.player(player);
     const { lat, lng } = point(input);
     assert(typeof input.arena === "boolean", "Choose the note map mode.");
+    const radiusKm = input.radiusKm ?? null;
+    assert(
+      radiusKm === null || NOTE_RADIUS_KM.includes(radiusKm),
+      `Pick a radius of ${NOTE_RADIUS_KM.join(", ")} km.`,
+    );
+    // Without a radius (map pins) the small box around the player stays as before.
+    const dLat = radiusKm ? radiusKm / 111 : 0.025,
+      dLng = radiusKm ? radiusKm / (111 * Math.cos((lat * Math.PI) / 180)) : 0.04;
     const rows = this.db
       .prepare(
         `SELECT m.*,p.name AS author,s.arena,s.state,e.expires_at FROM messages m
@@ -136,25 +147,31 @@ export class SocialContent {
       AND (e.expires_at IS NULL OR e.expires_at>?)
       AND NOT EXISTS(SELECT 1 FROM social_blocks b WHERE
         (b.actor_id=? AND b.target_id=m.player_id) OR (b.target_id=? AND b.actor_id=m.player_id))
-      ORDER BY m.created_at DESC,m.id DESC LIMIT 50`,
+      ORDER BY m.created_at DESC,m.id DESC LIMIT ?`,
       )
       .all(
         input.arena ? 1 : 0,
-        lat - 0.025,
-        lat + 0.025,
-        lng - 0.04,
-        lng + 0.04,
+        lat - dLat,
+        lat + dLat,
+        lng - dLng,
+        lng + dLng,
         this.clock(),
         player,
         player,
-      );
+        radiusKm ? 400 : 50,
+      )
+      .map((row) => ({ row, d: distance({ lat, lng }, row) }))
+      .filter(({ d }) => !radiusKm || d <= radiusKm * 1000)
+      .slice(0, 50);
     return {
-      messages: rows.map(({ expires_at, ...row }) => ({
+      ...(radiusKm ? { radiusKm } : {}),
+      messages: rows.map(({ row: { expires_at, ...row }, d }) => ({
         ...row,
         expires_at: expires_at ?? null,
         arena: !!row.arena,
         own: row.player_id === player,
         author_fix: row.author_fix ? JSON.parse(row.author_fix) : null,
+        distance_m: Math.round(d),
       })),
     };
   }

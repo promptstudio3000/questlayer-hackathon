@@ -373,7 +373,7 @@ const SCREENS: Screen[] = [
     tabs: [
       { name: "Quests" },
       { name: "Tasks" },
-      { name: "Local chat", sub: "Notes · Shouts & topics" },
+      { name: "Local chat", sub: "Active topics · chat · 1–100 km" },
       { name: "Places" },
       { name: "Creators" },
     ],
