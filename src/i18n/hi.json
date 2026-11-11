@@ -3236,5 +3236,7 @@
   "Why you can't buy this yet": "आप इसे अभी क्यों नहीं खरीद सकते",
   "You have {0} QGOLD, worth about {1} NEAR. Swap part of it for NEAR at the QGOLD vault, then come back and buy.": "आपके पास {0} QGOLD है, लगभग {1} NEAR के बराबर। QGOLD वॉल्ट में इसका कुछ हिस्सा NEAR से बदलें, फिर लौटकर खरीदें।",
   "You have {0} QGOLD, worth about {1} NEAR. That is not enough to cover the missing {2} NEAR yet; collect more on the map or add NEAR.": "आपके पास {0} QGOLD है, लगभग {1} NEAR के बराबर। यह कमी वाले {2} NEAR के लिए अभी काफ़ी नहीं है; नक्शे पर और इकट्ठा करें या NEAR जोड़ें।",
-  "{0} has {1} NEAR.": "{0} के पास {1} NEAR है।"
+  "{0} has {1} NEAR.": "{0} के पास {1} NEAR है।",
+  "It didn't finish. If it was sent, your stake shows here in a minute.": "यह पूरा नहीं हुआ। अगर भेजा गया था, तो आपका स्टेक एक मिनट में यहाँ दिखेगा।",
+  "It didn't finish. If it was sent, your vault shows here in a minute.": "यह पूरा नहीं हुआ। अगर भेजा गया था, तो आपका वॉल्ट एक मिनट में यहाँ दिखेगा।"
 }

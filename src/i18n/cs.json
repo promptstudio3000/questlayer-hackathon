@@ -3236,5 +3236,7 @@
   "Why you can't buy this yet": "Proč to zatím nemůžeš koupit",
   "You have {0} QGOLD, worth about {1} NEAR. Swap part of it for NEAR at the QGOLD vault, then come back and buy.": "Máš {0} QGOLD v hodnotě asi {1} NEAR. Směň část za NEAR v trezoru QGOLD, pak se vrať a kup.",
   "You have {0} QGOLD, worth about {1} NEAR. That is not enough to cover the missing {2} NEAR yet; collect more on the map or add NEAR.": "Máš {0} QGOLD v hodnotě asi {1} NEAR. To zatím nestačí na chybějících {2} NEAR; nasbírej víc na mapě nebo přidej NEAR.",
-  "{0} has {1} NEAR.": "{0} má {1} NEAR."
+  "{0} has {1} NEAR.": "{0} má {1} NEAR.",
+  "It didn't finish. If it was sent, your stake shows here in a minute.": "Nedokončilo se to. Pokud se to odeslalo, stake se tu ukáže do minuty.",
+  "It didn't finish. If it was sent, your vault shows here in a minute.": "Nedokončilo se to. Pokud se to odeslalo, trezor se tu ukáže do minuty."
 }
