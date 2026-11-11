@@ -536,7 +536,6 @@ async function runDevice(name, server) {
 
     console.log("6. Optional secure or share from the durable receipt");
     await page.getByRole("button", { name: "Inventory", exact: true }).click();
-    await page.getByRole("button", { name: "History", exact: true }).click();
     await page.getByRole("button", { name: "Adventure results", exact: true }).click();
     await page.locator(".adventure-result-list button").first().click();
     await page.locator(".reward-more > summary").click();
@@ -626,10 +625,11 @@ async function runDevice(name, server) {
     await quietToast(page);
     await page.getByRole("button", { name: "Close item details" }).click();
     await page.locator('dialog[aria-label="Aura details"]').waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
-    await page.getByRole("tab", { name: "Market", exact: true }).click();
-    const marketTabs = page.getByRole("tablist", { name: "Market" });
-    await marketTabs.getByRole("tab", { name: "Secured" }).waitFor({ timeout: 10_000 });
-    assert.equal(await marketTabs.getByRole("tab", { name: "Practice" }).count(), 0, "no database market tab");
+    // Inventory → Shop → Market: one card board of Auras for sale on NEAR.
+    await page.getByRole("tab", { name: "Shop", exact: true }).click();
+    await page.getByRole("tablist", { name: "Shop" }).getByRole("tab", { name: "Market", exact: true }).click();
+    await page.locator(".market-board").waitFor({ timeout: 10_000 });
+    assert.equal(await page.getByRole("tab", { name: "Practice" }).count(), 0, "no database market tab");
     await capture(page, "market-secured");
     await scan(page, "market");
     console.log(`  ${auraName}: sale form in test NEAR, market is on chain`);

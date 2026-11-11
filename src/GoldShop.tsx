@@ -16,6 +16,8 @@ import {
 } from "./gold-spend-client";
 import "./gold-spend.css";
 import { EmptyState } from "./EmptyState";
+import { InfoTip } from "./InfoTip";
+import { AuraSprite } from "./aura-art";
 
 // GOLD shop (QGOLD stream 4): everything here burns GOLD. Nothing pays another
 // player or changes odds. With the QGOLD vault open each purchase burns the
@@ -87,37 +89,35 @@ export function GoldShop({
 
   return (
     <div className="gold-shop">
-      <p className="gold-shop-lead">
-        <Sparkle weight="duotone" /> {tr("Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.")}
-      </p>
       <p className="gold-shop-balance">
-        {shop.realm === "qgold" ? tr("Your QGOLD") : tr("Your GOLD")}: <b>{gold(shop.balanceU, shop.realm === "qgold" ? 6 : 0)}</b>
-        {shop.realm === "qgold" ? (
-          <small> · {tr("each purchase burns QGOLD from your NEAR account")}</small>
-        ) : (
-          <small> · {tr("practice GOLD until the QGOLD vault opens")}</small>
-        )}
+        <span>
+          {shop.realm === "qgold" ? tr("Your QGOLD") : tr("Your GOLD")}: <b>{gold(shop.balanceU, shop.realm === "qgold" ? 6 : 0)}</b>
+        </span>
+        <InfoTip label={tr("Shop")}>
+          {tr("Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.")}{" "}
+          {shop.realm === "qgold" ? tr("each purchase burns QGOLD from your NEAR account") : tr("practice GOLD until the QGOLD vault opens")}
+        </InfoTip>
       </p>
 
       <section aria-labelledby="gold-emotes">
         <h3 id="gold-emotes">
-          <Smiley weight="duotone" /> {tr("Emotes above your character")}
+          <Smiley weight="duotone" aria-hidden="true" /> {tr("Emotes above your character")}
+          <InfoTip label={tr("Emotes above your character")}>{tr("Basic emotes are free. Tap one to show it on the map for 30 seconds.")}</InfoTip>
         </h3>
-        <p className="gold-shop-note">{tr("Basic emotes are free. Tap one to show it on the map for 30 seconds.")}</p>
-        <div className="gold-emote-grid">
+        <div className="shop-card-grid">
           {shop.emotes.map((e) => (
             <button
               type="button"
               key={e.id}
-              className={`gold-emote${e.owned ? " owned" : ""}`}
+              className={`shop-card${e.owned ? " owned" : ""}`}
               disabled={!!busy || (!e.owned && !can(e.price))}
               onClick={() => (e.owned ? showEmote(e.id) : run(`buy:${e.id}`, () => goldBuy(`emote:${e.id}`)))}
               aria-label={`${e.owned ? tr("Show emote {0}", { 0: e.id }) : tr("Unlock emote {0} for {1} GOLD", { 0: e.id, 1: e.price })}, ${e.free ? tr("Free") : e.owned ? tr("Yours") : priceTag(e.price)}`}
             >
-              <span className="gold-emote-glyph" aria-hidden="true">
+              <span className="shop-card-art gold-emote-glyph" aria-hidden="true">
                 {EMOTE_GLYPH[e.id]}
               </span>
-              <small>{e.free ? tr("Free") : e.owned ? tr("Yours") : priceTag(e.price)}</small>
+              <small className="shop-card-price">{e.free ? tr("Free") : e.owned ? tr("Yours") : priceTag(e.price)}</small>
             </button>
           ))}
         </div>
@@ -125,38 +125,52 @@ export function GoldShop({
 
       <section aria-labelledby="gold-frames">
         <h3 id="gold-frames">
-          <Sparkle weight="duotone" /> {tr("Marker frames")}
+          <Sparkle weight="duotone" aria-hidden="true" /> {tr("Marker frames")}
         </h3>
-        <div className="gold-frame-list">
+        <div className="shop-card-grid shop-card-grid-wide">
           {shop.cosmetics.map((c) => (
-            <div className={`gold-frame${c.equipped ? " equipped" : ""}`} key={c.id}>
-              <span className="gold-frame-swatch" style={{ borderColor: FRAME_COLOR[c.id] }} aria-hidden="true" />
-              <span className="gold-frame-name">{FRAME_NAME[c.id]?.() || c.id}</span>
-              {c.owned ? (
-                <button type="button" disabled={!!busy} onClick={() => run(`equip:${c.id}`, () => goldEquip(c.equipped ? null : c.id))}>
-                  {c.equipped ? tr("Take off") : tr("Wear")}
-                </button>
-              ) : (
-                <button type="button" disabled={!!busy || !can(c.price)} onClick={() => run(`buy:${c.id}`, () => goldBuy(`cosmetic:${c.id}`))}>
-                  {priceTag(c.price)}
-                </button>
-              )}
-            </div>
+            <button
+              type="button"
+              key={c.id}
+              className={`shop-card${c.owned ? " owned" : ""}${c.equipped ? " equipped" : ""}`}
+              disabled={!!busy || (!c.owned && !can(c.price))}
+              aria-pressed={c.owned ? c.equipped : undefined}
+              onClick={() =>
+                c.owned
+                  ? run(`equip:${c.id}`, () => goldEquip(c.equipped ? null : c.id))
+                  : run(`buy:${c.id}`, () => goldBuy(`cosmetic:${c.id}`))
+              }
+            >
+              <span className="shop-card-art" aria-hidden="true">
+                <span className="gold-frame-swatch" style={{ borderColor: FRAME_COLOR[c.id] }} />
+              </span>
+              <strong>{FRAME_NAME[c.id]?.() || c.id}</strong>
+              <small className="shop-card-price">{c.owned ? (c.equipped ? tr("Take off") : tr("Wear")) : priceTag(c.price)}</small>
+            </button>
           ))}
         </div>
       </section>
 
       <section aria-labelledby="gold-lures">
         <h3 id="gold-lures">
-          <MapPin weight="duotone" /> {tr("Lures")}
+          <MapPin weight="duotone" aria-hidden="true" /> {tr("Lures")}
+          <InfoTip label={tr("Lures")}>
+            {tr("For {0} minutes a monster or a trader that is already out today comes to the public place where you stand, or a beacon marks it as a meeting point. Players within 1 km see it. {1}–{2}, GPS only.", {
+              0: shop.lures.minutes,
+              1: shop.lures.hours[0],
+              2: shop.lures.hours[1],
+            })}
+          </InfoTip>
         </h3>
-        <p className="gold-shop-note">
-          {tr("For {0} minutes a monster or a trader that is already out today comes to the public place where you stand, or a beacon marks it as a meeting point. Players within 1 km see it. {1}–{2}, GPS only.", {
-            0: shop.lures.minutes,
-            1: shop.lures.hours[0],
-            2: shop.lures.hours[1],
-          })}
-        </p>
+        <div className="shop-card-grid shop-card-grid-wide">
+          {(["monster", "trader", "beacon"] as const).map((kind) => (
+            <article className="shop-card" key={kind}>
+              <span className="shop-card-art shop-card-icon" aria-hidden="true">{LURE_ICON[kind]}</span>
+              <strong>{LURE_NAME[kind]()}</strong>
+              {shop.lures.prices[kind] != null && <small className="shop-card-price">{priceTag(shop.lures.prices[kind])}</small>}
+            </article>
+          ))}
+        </div>
         {shop.lures.active ? (
           <p className="gold-lure-active">
             {LURE_ICON[shop.lures.active.kind]} {shop.lures.active.actorName || LURE_NAME[shop.lures.active.kind]()} · {shop.lures.active.place} ·{" "}
@@ -215,25 +229,30 @@ export function GoldShop({
         )}
       </section>
 
-      <section aria-labelledby="gold-gear">
-        <h3 id="gold-gear">
-          <Storefront weight="duotone" /> {tr("Premium gear")}
-        </h3>
-        <p className="gold-shop-note">
-          {tr("Traders on the map sell one premium Aura a day for GOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.")}
-        </p>
-        <ul className="gold-gear-list">
-          {shop.gear.items.map((g) => (
-            <li key={g.id}>
-              <span>{g.name}</span>
-              <small>
-                {priceTag(g.price)}
-                {g.left !== null ? ` · ${tr("{0} left", { 0: g.left })}` : ""}
-              </small>
-            </li>
-          ))}
-        </ul>
-      </section>
+      {shop.gear.items.length > 0 && (
+        <section aria-labelledby="gold-gear">
+          <h3 id="gold-gear">
+            <Storefront weight="duotone" aria-hidden="true" /> {tr("Premium gear")}
+            <InfoTip label={tr("Premium gear")}>
+              {tr("Traders on the map sell one premium Aura a day for GOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.")}
+            </InfoTip>
+          </h3>
+          <div className="shop-card-grid shop-card-grid-wide">
+            {shop.gear.items.map((g) => (
+              <article className={`shop-card rarity-${g.rarity}`} key={g.id}>
+                <span className="shop-card-art" aria-hidden="true">
+                  <AuraSprite edition={g.id} slot={g.slot} size={1} animated={false} />
+                </span>
+                <strong>{g.name}</strong>
+                <small className="shop-card-price">
+                  {priceTag(g.price)}
+                  {g.left !== null ? ` · ${tr("{0} left", { 0: g.left })}` : ""}
+                </small>
+              </article>
+            ))}
+          </div>
+        </section>
+      )}
     </div>
   );
 }
