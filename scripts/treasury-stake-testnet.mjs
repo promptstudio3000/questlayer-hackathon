@@ -40,12 +40,10 @@ const log = (o) => console.log(JSON.stringify(o));
 const manifestPath = "public/native-rewards-testnet.json";
 const manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 const rewardsId = manifest.contractId;
-const VAULT_ID = process.env.TREASURY_STAKE_VAULT || "questlayer-stake-20261111.testnet";
 const POOL = process.env.TREASURY_STAKE_POOL || "stakely_v2.pool.f863973.m0"; // 3 % pool fee, lowest of the allowlist
 const POOL_CODE = "J1arLz48fgXcGyCPVckFwLnewNH6j1uw79thsvwqGYTY"; // official staking-pool factory build
 const WASM = "contracts/target/wasm32-unknown-unknown/release/questlayer_vault.wasm";
 const pinned = JSON.parse(readFileSync("contracts/wasm-sha256.json", "utf8")).contracts.questlayer_vault;
-const listed = (manifest.vaults || []).some((v) => v.accountId === VAULT_ID);
 const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
 const base58 = (hex) => {
   let n = BigInt("0x" + hex),
@@ -66,6 +64,11 @@ assert.equal((await provider.viewNodeStatus()).chain_id, "testnet", "Testnet RPC
 const signer = KeyPairSigner.fromSecretKey(operator.secretKey);
 const operatorPublicKey = KeyPair.fromString(operator.secretKey).getPublicKey().toString();
 const root = new Account(operator.accountId, provider, signer);
+// A sub-account of the operator: created by the operator itself, so it does
+// not depend on the testnet helper (which rate-limits with 429).
+const VAULT_ID = process.env.TREASURY_STAKE_VAULT || `stake-20261111.${operator.accountId}`;
+const VAULT_RESERVE = 5n * NEAR; // contract storage + gas for its own callbacks; stays in the vault
+const listed = (manifest.vaults || []).some((v) => v.accountId === VAULT_ID);
 
 const recordPath = "public/treasury-stake-testnet.json";
 const record = existsSync(recordPath)
@@ -185,7 +188,8 @@ if (command === "faucet") {
     const acc = await helperAccount(id);
     const from = new Account(id, provider, signer);
     const r = await from.signAndSendTransaction({ receiverId: id, actions: [actions.deleteAccount(operator.accountId)], waitUntil: "FINAL" });
-    assert.ok(!failed(r), "delete failed: " + JSON.stringify(r.status));
+    // Only the transaction status: the gas-refund receipt to a deleted account always fails.
+    assert.ok(!r?.status?.Failure, "delete failed: " + JSON.stringify(r.status));
     record.faucet.push({ account: id, received: acc.amount, deleteTransaction: txOf(r), at: new Date().toISOString() });
     save();
     log({ faucet: id, toOperator: near(acc.amount), transaction: txOf(r) });
@@ -214,7 +218,15 @@ assert.equal((await view(rewardsId, "get_config")).owner, operator.accountId, "O
 
 let info = await accountOf(VAULT_ID);
 if (!info) {
-  info = await helperAccount(VAULT_ID);
+  assert.ok(VAULT_ID.endsWith("." + operator.accountId), `Create ${VAULT_ID} first, or use a sub-account of the operator.`);
+  await step(`Create ${VAULT_ID} with a ${near(VAULT_RESERVE)} NEAR reserve`, () =>
+    root.signAndSendTransaction({
+      receiverId: VAULT_ID,
+      actions: [actions.createAccount(), actions.transfer(VAULT_RESERVE), actions.addFullAccessKey(PublicKey.from(operatorPublicKey))],
+      waitUntil: "FINAL",
+    }),
+  );
+  info = await accountOf(VAULT_ID);
   log({ created: VAULT_ID, reserve: near(info.amount) });
 }
 const vaultAccount = new Account(VAULT_ID, provider, signer);
