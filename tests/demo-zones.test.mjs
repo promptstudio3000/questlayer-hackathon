@@ -68,7 +68,9 @@ test("compact plans put six always-open zones within 450 m of the start", () => 
   assert.ok(normal.zones.some((z) => z.closesAt - z.opensAt < 12 * 3600_000));
 });
 
-test("a compact world is its own world id and every zone quest is open now", async () => {
+// The mainnet suite (npm run test:mainnet) refuses DEMO_ZONES, which the
+// first test covers; a compact world exists only on testnet.
+test("a compact world is its own world id and every zone quest is open now", { skip: process.env.NEAR_NETWORK === "mainnet" }, async () => {
   const saved = process.env.DEMO_ZONES;
   process.env.DEMO_ZONES = "plzen-compact";
   try {
