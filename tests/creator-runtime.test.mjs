@@ -70,7 +70,7 @@ test("creator runtime defaults off without creating storage and explicit configu
   }
 });
 
-test("application progression counts durable locks even with creator publication disabled, never earning or burning XP", () => {
+test("application progression counts durable locks even with creator publication disabled, never burning XP; publication earns creator XP once", () => {
   const db = openDatabase(":memory:");
   try {
     const author = createPlayer(db, "QA author"),
@@ -109,14 +109,15 @@ test("application progression counts durable locks even with creator publication
     const held = playerView(db, author);
     assert.deepEqual(
       [held.xp, held.earnedXp, held.lockedXp, held.availableXp, held.level],
-      [1000, 1000, 200, 800, 3],
+      // 1000 XP plus 100 creator XP for the published story quest.
+      [1100, 1100, 200, 900, 4],
     );
     createCreatorRuntime(db, {
       env: {},
       origin: "http://localhost",
       authenticate: () => author,
     });
-    assert.equal(playerView(db, author).availableXp, 800);
+    assert.equal(playerView(db, author).availableXp, 900);
     assert.equal(creatorAudit(db).activeCommitments.length, 1);
     assert.throws(
       () =>
@@ -492,7 +493,8 @@ test("actual host and operator CLI complete profile, publication, following, pro
     .player;
   assert.deepEqual(
     [held.xp, held.earnedXp, held.lockedXp, held.availableXp, held.level],
-    [1000, 1000, 200, 800, 3],
+    // 1000 XP plus 100 creator XP for the published story quest.
+    [1100, 1100, 200, 900, 4],
   );
   assert.equal(
     (
@@ -575,7 +577,7 @@ test("actual host and operator CLI complete profile, publication, following, pro
     expectedVersion: 4,
   });
   assert.equal(finalized.status, 200);
-  assert.equal(finalized.body.progression.availableXp, 1000);
+  assert.equal(finalized.body.progression.availableXp, 1100);
   assert.deepEqual(
     (
       await call(author, "/quests/qa-river/finalize", {
@@ -595,7 +597,7 @@ test("actual host and operator CLI complete profile, publication, following, pro
       released.availableXp,
       released.level,
     ],
-    [1000, 0, 1000, 4],
+    [1100, 0, 1100, 4],
   );
   assert.equal(
     (await call(walker, "/me/participations")).body.items[0].state,
@@ -603,7 +605,8 @@ test("actual host and operator CLI complete profile, publication, following, pro
   );
   assert.equal(playerView(db, walker.id).xp, 0);
   assert.equal(db.prepare("SELECT count(*) n FROM inventory").get().n, 2);
-  assert.equal(db.prepare("SELECT count(*) n FROM history").get().n, 2);
+  // Two account rows plus one "Quest published" creator XP line.
+  assert.equal(db.prepare("SELECT count(*) n FROM history").get().n, 3);
   assert.equal(
     db.prepare("SELECT SUM(available_u) n FROM treasury").get().n,
     100000000000,

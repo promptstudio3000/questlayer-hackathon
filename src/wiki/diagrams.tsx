@@ -490,15 +490,14 @@ function MoneyFlow() {
 type Mix = { total: string; buckets: { bucket: string; currentBps: number; targetBps: number }[] } | null;
 function TreasuryMix() {
   const mix = useJson<Mix>("/api/treasury/mix");
-  const names: Record<string, string> = { lst: "Liquid staking", stable: "Stablecoins on Rhea", near: "NEAR reserve" };
-  const tones: Record<string, Tone> = { lst: "money", stable: "world", near: "chain" };
+  const names: Record<string, string> = { staked: "Staked NEAR", lst: "Liquid staking", stable: "Stablecoins on Rhea", near: "NEAR reserve" };
+  const tones: Record<string, Tone> = { staked: "core", lst: "money", stable: "world", near: "chain" };
   const target = [
-    { label: names.lst, value: 50, tone: tones.lst },
-    { label: names.stable, value: 40, tone: tones.stable },
-    { label: names.near, value: 10, tone: tones.near },
+    { label: names.staked, value: 90, tone: tones.staked },
+    { label: "USDC + USDT on Rhea", value: 10, tone: tones.stable },
   ];
   const live = mix?.buckets?.length
-    ? mix.buckets.map((b) => ({ label: names[b.bucket] ?? b.bucket, value: b.currentBps / 100, tone: tones[b.bucket] ?? "core" }))
+    ? mix.buckets.filter((b) => b.currentBps > 0).map((b) => ({ label: names[b.bucket] ?? b.bucket, value: b.currentBps / 100, tone: tones[b.bucket] ?? "core" }))
     : null;
   return (
     <div className="wk-pair">
@@ -986,7 +985,7 @@ function DaoFlow() {
         { id: "explorers", x: 95, y: 60, w: 150, label: "Explorers (L3+)", sub: "weekly mix vote, 1 : 1", tone: "player", pulse: true },
         { id: "keeper", x: 330, y: 60, w: 150, label: "Keeper", sub: "files polls, results, runs", tone: "core" },
         { id: "council", x: 590, y: 60, w: 170, label: "Council 2 of 3", sub: "approves after checks", tone: "chain", pulse: true },
-        { id: "mix", x: 590, y: 190, w: 170, label: "Adopted mix", sub: "e.g. 50 / 40 / 10", tone: "money" },
+        { id: "mix", x: 590, y: 190, w: 170, label: "Adopted mix", sub: "e.g. 90 / 5 / 5", tone: "money" },
         { id: "run", x: 330, y: 190, w: 150, label: "Daily run", sub: "≤ 25 % moved", tone: "money" },
         { id: "treasury", x: 95, y: 190, w: 150, label: "Treasury", sub: "staking · stables · NEAR", tone: "world" },
       ]}

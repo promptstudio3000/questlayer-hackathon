@@ -26,6 +26,7 @@ import { InfoTip } from "./InfoTip";
 import { QuestThumbnail } from "./QuestThumbnail";
 import { ActorPortrait } from "./ActorPortrait";
 import { NearbyMarket, type MarketSecret, type MarketTask } from "./NearbyMarket";
+export { NearbyMarket };
 import { questObjectPresentation, representativeZoneQuest } from "./game-object-art-data";
 import { activityLabel } from "./activity-view";
 import { questDisplayTitle } from "./quest-copy";
@@ -144,7 +145,6 @@ export function NearbyList({
   const [form, setForm] = useState<"" | "task" | "secret" | "send">("");
   const [actors, setActors] = useState<{ list: ActorView[]; skew: number }>({ list: [], skew: 0 });
   const [marketData, setMarketData] = useState<{ tasks: MarketTask[]; active: MarketTask[]; secrets: MarketSecret[] } | null>(null);
-  const [bounties, setBounties] = useState<Bounty[]>([]);
   const [places, setPlaces] = useState<PlaceThread[]>([]);
   const [notes, setNotes] = useState<MapNote[]>([]);
   const [spots, setSpots] = useState<CommunityPlace[]>([]);
@@ -183,8 +183,6 @@ export function NearbyList({
       .then((r) => { if (live) setNotes(r.messages); }, ignore);
     api<{ places: CommunityPlace[] }>(`/community-places?lat=${lat.toFixed(5)}&lng=${lng.toFixed(5)}&arena=${arena ? 1 : 0}`)
       .then((r) => { if (live) setSpots(r.places); }, ignore);
-    api<{ bounties: Bounty[] }>("/bounties")
-      .then((r) => { if (live) setBounties(r.bounties); }, ignore);
     return () => { live = false; };
   }, [world.id, lat, lng, arena]);
 
@@ -194,11 +192,6 @@ export function NearbyList({
     for (const t of marketData?.tasks || [])
       if (!active.has(t.id))
         items.push({ id: t.id, type: "task", title: t.title, detail: t.poster.name, distanceM: t.distanceM ?? distanceTo(position, t), reward: t.reward });
-    for (const b of bounties) {
-      const d = distanceTo(position, b);
-      if (b.state === "open" && d <= COMMUNITY_TASK_M)
-        items.push({ id: b.id, type: "bounty", title: b.title, detail: "", distanceM: d, reward: b.amount_u });
-    }
     for (const s of marketData?.secrets || [])
       items.push({
         id: s.id, type: "secret", title: s.title, inside: s.inside, revealed: s.revealed,
@@ -214,7 +207,7 @@ export function NearbyList({
     for (const sp of spots)
       items.push({ id: sp.id, type: "spot", title: sp.name, detail: sp.author.name, distanceM: sp.distanceM ?? distanceTo(position, sp), reward: 0 });
     return items;
-  }, [marketData, bounties, places, notes, spots, position]);
+  }, [marketData, places, notes, spots, position]);
 
   const zones = world.zones.filter((z) => z.closesAt > now);
   const zoneById = new Map(zones.map((z) => [z.id, z]));

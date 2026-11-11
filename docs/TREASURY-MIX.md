@@ -86,3 +86,28 @@ shows a run without a redeploy. State: `.data/treasury-mix.json`.
 
 QGOLD conviction voting will steer the mix within these limits (LST providers from an approved list, at most 50 %
 per LST provider in the voting design, never above the 40 % per-protocol ceiling here unless Lubos changes it).
+
+## 90 % staked, 5 % USDC, 5 % USDT (11 Nov 2026)
+
+Lubos, 11 Nov 2026: on testnet only native validator staking earns (about
+9.8 % APR; stNEAR's price is frozen and Rhea testnet supply APR is about 0),
+so the treasury is held **90 % staked NEAR, 5 % USDC and 5 % USDT** on Rhea
+Lend. The stables earn nothing on testnet; they keep the shape for mainnet.
+
+- New bucket **`staked`**: the treasury's keyless staking vaults
+  (`stakeVaults` in `MIX_NETWORKS`, override `TREASURY_MIX_STAKE_VAULTS`,
+  comma list or `off`). A vault counts only when its `beneficiary` is the
+  treasury account; its value is `staked + unstaked + pending_pool_cash`.
+- The planner **never moves staked NEAR**: its target is its own value. New
+  stake goes through `scripts/treasury-stake-testnet.mjs`. Each validator pool
+  is its own protocol under the 40 % cap, so a single pool above 40 % is
+  flagged until more vaults spread the stake.
+- The liquid rest is planned as before, stables first, then LSTs, then the
+  reserve. With staked NEAR present, drift of a liquid asset is measured
+  against the liquid part, so 2 NEAR next to 93 staked still rebalance.
+- The stablecoin share is **split evenly** over the healthy markets (USDC and
+  USDT), each inside the room Rhea Lend has left under the cap.
+- Targets have four keys `{ staked, lst, stable, near }`; mixes adopted before
+  this change have no `staked` and count it as 0. Settings default stays
+  50 / 40 / 10 (`TREASURY_MIX_STAKED_BPS` adds the staked share); on testnet
+  the DAO's adopted mix is the target.

@@ -56,8 +56,10 @@ for (const relative of [
   "./spatial/place-safety.mjs",
   "./social-note-expiry.mjs",
   "./community-places.mjs",
+  "./creators/creator-xp.mjs",
   "./staker-gates.mjs",
   "./task-evidence.mjs",
+  "./native/treasury-history.mjs",
 ]) {
   const url = new URL(relative, import.meta.url);
   if (existsSync(url)) await import(url.href);

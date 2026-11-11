@@ -639,12 +639,13 @@ async function runDevice(name, server) {
     await openScreen(page, "Community");
     const feed = page.getByRole("region", { name: "Creator community" });
     await feed.waitFor();
-    await feed.getByRole("heading", { name: "All creator quests" }).waitFor({ timeout: 15_000 });
+    // One quest list (or its empty note) under the filter chips.
+    await feed.locator(".cl-list, .creator-empty-line").first().waitFor({ timeout: 15_000 });
     assert.equal(await feed.locator("[role=alert]").count(), 0, "creator feed loads without an error");
     await capture(page, "creator-feed");
     await scan(page, "creator-feed");
     await feed
-      .getByRole("navigation", { name: "Creator community section" })
+      .getByRole("group", { name: "Creator community section" })
       .getByRole("button")
       .nth(1)
       .click();

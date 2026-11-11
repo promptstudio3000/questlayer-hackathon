@@ -452,3 +452,9 @@
   font-size: 14px;
   min-height: 44px;
 }
+/* The note whose map pin was tapped. */
+.map-note.is-focused {
+  outline: 2px solid var(--accent, #7b3fe4);
+  outline-offset: 2px;
+  border-radius: 12px;
+}

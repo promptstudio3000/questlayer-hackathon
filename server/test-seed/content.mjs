@@ -18,6 +18,11 @@ export const SEED_PLAYERS = Object.freeze([
   { id: "seed-p-marek", name: "Marek", color: "#e0a94a", xp: 700, gold: 900_000, walk: true, auras: ["Ember Wisp"] },
   { id: "seed-p-lucie", name: "Lucie", color: "#c2a0df", xp: 300, gold: 150_000, walk: true, auras: [] },
   { id: "seed-p-ondra", name: "Ondra", color: "#7cf0b0", xp: 500, gold: 200_000, companion: true, auras: ["Comet Trail"] },
+  // Creators who do not walk the map: they build quests and post tasks.
+  { id: "seed-p-klara", name: "Klara", color: "#ffb36b", xp: 3100, gold: 0, auras: ["Golden Dust", "Moon Ring"] },
+  { id: "seed-p-petr", name: "Petr", color: "#6bc7ff", xp: 1900, gold: 0, auras: ["Stormcrown"] },
+  { id: "seed-p-eva", name: "Eva", color: "#f28bd2", xp: 1400, gold: 0, auras: ["Meadow Bloom", "Dewfall Ring"] },
+  { id: "seed-p-honza", name: "Honza", color: "#a7e06b", xp: 2600, gold: 0, auras: ["Ember Wisp", "Moon Ring"] },
 ]);
 
 // The explorer who buys what real players list on the practice market.
@@ -97,12 +102,17 @@ export const SEED_LISTINGS = Object.freeze([
   { slug: "storm", seller: "seed-p-tomas", aura: "Stormcrown", price: 35_000 },
 ]);
 
-// Practice-GOLD tasks; the seed author approves the first submission and the
-// task is reposted, so it can be tried again.
-export const SEED_BOUNTIES = Object.freeze([
-  { slug: "tower", creator: "seed-p-vera", title: "Count the bells in the cathedral tower", description: "Climb the tower and tell me how many bells you saw.", reward: 1_500, at: near(0.0001, 0.0002) },
-  { slug: "menu", creator: "seed-p-tomas", title: "Today's soup at the brewery canteen", description: "Write which soup they serve today at the brewery canteen.", reward: 800, at: near(-0.0011, 0.0098) },
-  { slug: "bench", creator: "seed-p-jana", title: "Find the bench with the brass plaque", description: "Somewhere in the park is a bench with a brass plaque. What does it say?", reward: 1_200, at: near(-0.0035, 0.0015) },
+// Player tasks (Community · Tasks) posted by demo bots, so the list shows how
+// explorers post paid work for each other. Examples only: no QGOLD is held for
+// them and they cannot be taken (server/market/service.mjs refuses seed- tasks).
+export const SEED_TASKS = Object.freeze([
+  { slug: "tower-photo", poster: "seed-p-vera", type: "photo", title: "Photo of the square from the tower", description: "Climb St Bartholomew's tower and take one photo of the whole square.", reward: 40, slots: 3, at: near(0.0001, 0.0002) },
+  { slug: "bells", poster: "seed-p-klara", type: "answer", title: "How many bells hang in the tower?", description: "Count the bells you can see from the gallery and write the number.", reward: 15, slots: 5, at: near(0.0001, 0.0002) },
+  { slug: "soup", poster: "seed-p-tomas", type: "go", title: "Check today's soup at the brewery canteen", description: "Walk to the brewery gate canteen and tell me which soup they serve today.", reward: 10, slots: 2, at: near(-0.0011, 0.0098) },
+  { slug: "book", poster: "seed-p-eva", type: "deliver", title: "Bring a book to the bookshop courtyard", description: "Leave a book you have read on the bench in the courtyard behind the bookshop.", reward: 25, slots: 1, at: near(-0.0009, 0.0021) },
+  { slug: "boss", poster: "seed-p-ondra", type: "meet", title: "Boss hunt team at the Radbuza", description: "Meet by the riverside path at 6 pm, we need four explorers for the boss.", reward: 20, slots: 4, at: near(-0.0042, -0.0085) },
+  { slug: "litter", poster: "seed-p-honza", type: "collect", title: "Pick up litter in Kopecký park", description: "Fill one bag with litter around the pond and send a photo of the full bag.", reward: 30, slots: 5, at: near(-0.0035, 0.0015) },
+  { slug: "mural", poster: "seed-p-petr", type: "create", title: "Draw the ghost mural", description: "Sketch the little purple ghost on the corner house and share the drawing.", reward: 35, slots: 2, at: near(0.0016, -0.0024) },
 ]);
 
 // Free Secrets around the demo square, so the Nearby list is never empty.
@@ -114,8 +124,22 @@ export const SEED_SECRETS = Object.freeze([
 ]);
 
 export const SEED_CREATORS = Object.freeze([
-  { player: "seed-p-vera", displayName: "Vera's Walks", bio: "Test creator. Short walks around the old town." },
-  { player: "seed-p-tomas", displayName: "Tomas the Tinkerer", bio: "Test creator. Puzzles, trails and chests." },
+  { player: "seed-p-vera", displayName: "Vera's Walks", bio: "Short walks around the old town, one story per street." },
+  { player: "seed-p-tomas", displayName: "Tomas the Tinkerer", bio: "Puzzles, riddles and chests hidden by the river." },
+  { player: "seed-p-klara", displayName: "Klara Maps Plzeň", bio: "Trails for a slow evening: towers, courtyards and views." },
+  { player: "seed-p-jana", displayName: "Jana's Parks", bio: "Green corners of the city, best with a coffee." },
+  { player: "seed-p-honza", displayName: "Honza Hunts", bio: "Chests and monster trails for groups of friends." },
+  { player: "seed-p-eva", displayName: "Eva Draws", bio: "Murals, statues and small details nobody looks up at." },
+  { player: "seed-p-petr", displayName: "Petr's History", bio: "Five minutes of history at every stop." },
+  { player: "seed-p-lucie", displayName: "Lucie Reads", bio: "Quiet places to read the chronicler's stories." },
+]);
+
+// Explorers who follow seed creators, so creator cards show followers.
+export const SEED_FOLLOWS = Object.freeze([
+  ["seed-p-marek", "seed-p-vera"], ["seed-p-jana", "seed-p-vera"], ["seed-p-ondra", "seed-p-vera"], ["seed-p-lucie", "seed-p-vera"],
+  ["seed-p-vera", "seed-p-klara"], ["seed-p-tomas", "seed-p-klara"], ["seed-p-petr", "seed-p-klara"],
+  ["seed-p-ondra", "seed-p-honza"], ["seed-p-marek", "seed-p-honza"], ["seed-p-vera", "seed-p-tomas"],
+  ["seed-p-eva", "seed-p-jana"], ["seed-p-klara", "seed-p-eva"], ["seed-p-honza", "seed-p-petr"],
 ]);
 
 const requirement = (prompt) => ({
@@ -163,6 +187,76 @@ export const SEED_CREATOR_QUESTS = Object.freeze([
       description: "Walk to the brewery gate and solve the riddle written above it.",
       place: { template: "visit", points: [near(-0.0011, 0.0098)] },
       requirement: requirement("Which year is written on the brewery gate?"),
+    },
+  },
+  {
+    id: "seed-q-tower-trail",
+    author: "seed-p-klara",
+    draft: {
+      title: "Towers of the old town",
+      description: "Four stops, four towers: the cathedral, the town hall, the synagogue and the water tower.",
+      place: { template: "trail", points: [near(0.0001, 0.0002), near(0.0004, -0.0006), near(-0.0012, -0.0068), near(-0.0025, -0.0035)] },
+      requirement: requirement("Which tower did you like most and why?"),
+    },
+  },
+  {
+    id: "seed-q-courtyard",
+    author: "seed-p-klara",
+    draft: {
+      title: "The courtyard behind the bookshop",
+      description: "Find the quiet passage off the square and the stone well behind it.",
+      place: { template: "visit", points: [near(-0.0009, 0.0021)] },
+      requirement: requirement("What is carved on the stone well?"),
+    },
+  },
+  {
+    id: "seed-q-park-pond",
+    author: "seed-p-jana",
+    draft: {
+      title: "Ducks of Kopecký park",
+      description: "Sit by the pond in Kopecký park for five minutes and count the ducks.",
+      place: { template: "visit", points: [near(-0.0035, 0.0015)] },
+      requirement: requirement("How many ducks did you count?"),
+    },
+  },
+  {
+    id: "seed-q-guardian-chest",
+    author: "seed-p-honza",
+    draft: {
+      title: "Chest of the river guardian",
+      description: "A chest waits where the guardian roams. Bring friends, it is safer.",
+      place: { template: "chest", points: [near(-0.0038, -0.0079)] },
+      requirement: requirement("What did you see written on the chest?"),
+    },
+  },
+  {
+    id: "seed-q-ghost-mural",
+    author: "seed-p-eva",
+    draft: {
+      title: "The tiny purple ghost",
+      description: "Look up at the corner house: a small ghost is painted under a window.",
+      place: { template: "visit", points: [near(0.0016, -0.0024)] },
+      requirement: requirement("Which window is the ghost painted under?"),
+    },
+  },
+  {
+    id: "seed-q-history-loop",
+    author: "seed-p-petr",
+    draft: {
+      title: "Five minutes of history",
+      description: "Three stops between the square and the synagogue, each with one fact to find.",
+      place: { template: "trail", points: [near(0, 0), near(-0.0006, -0.0011), near(-0.0012, -0.0068)] },
+      requirement: requirement("Write one fact you learned on the way."),
+    },
+  },
+  {
+    id: "seed-q-reading-bench",
+    author: "seed-p-lucie",
+    draft: {
+      title: "A bench for reading",
+      description: "Find the bench with the brass plaque in the park and read one story there.",
+      place: { template: "visit", points: [near(-0.0031, 0.0011)] },
+      requirement: requirement("What does the brass plaque say?"),
     },
   },
   {

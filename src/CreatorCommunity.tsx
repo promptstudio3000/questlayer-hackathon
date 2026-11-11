@@ -15,10 +15,12 @@ import {
   EyeSlash,
   PencilSimple,
   Plus,
-  UserCircle,
+  UserPlus,
   UsersThree,
   Flag,
+  Info,
   ShieldSlash,
+  X,
 } from "@phosphor-icons/react";
 import { ArrowRight, ArrowLeft } from "./dir-icons";
 import { Ghost } from "./Ghost";
@@ -56,10 +58,19 @@ import {
   type CreatorPlaceTemplate,
   type CreatorProfile,
   type CreatorPublicationQuote,
+  type CreatorXpTable,
   type OwnedCreatorQuest,
   type PublicCreatorQuest,
 } from "./creator-community-types";
 import type { Player } from "./types";
+import {
+  BotTag,
+  CommunityRow,
+  ExplorerAvatar,
+  FilterChips,
+  XpReward,
+  type ArtKind,
+} from "./CommunityCards";
 import "./creator-community.css";
 import { tr } from "./i18n";
 
@@ -210,17 +221,11 @@ async function load(
     );
   switch (view.page) {
     case "community": {
-      const [quests, following] = await Promise.all([
-        client.read<CreatorPage<PublicCreatorQuest>>(
-          "/quests?limit=50",
-          signal,
-        ),
-        client.read<CreatorPage<PublicCreatorQuest>>(
-          "/quests?following=true&limit=5",
-          signal,
-        ),
-      ]);
-      return { me, quests, following };
+      const quests = await client.read<CreatorPage<PublicCreatorQuest>>(
+        "/quests?limit=50",
+        signal,
+      );
+      return { me, quests };
     }
     case "following":
       return {
@@ -256,7 +261,8 @@ async function load(
           : {}),
       };
     case "creator": {
-      const [creator, quests] = await Promise.all([
+      // The profile opens as a dialog over the creators list.
+      const [creator, quests, creators] = await Promise.all([
         client.read<CreatorProfile & { following: boolean }>(
           `/creators/${idPath(view.creatorId)}`,
           signal,
@@ -265,8 +271,9 @@ async function load(
           `/quests?creator=${idPath(view.creatorId)}&limit=20`,
           signal,
         ),
+        client.read<CreatorPage<CreatorProfile>>("/creators?limit=20", signal),
       ]);
-      return { me, creator, quests };
+      return { me, creator, quests, creators };
     }
     case "quest": {
       const [quest, participation] = await Promise.all([
@@ -345,6 +352,7 @@ function CreatorCommunitySession({
     error: string;
   }>({ key: "", capability: null, data: null, loading: true, error: "" });
   const [busy, setBusy] = useState(false);
+  const [nearOnly, setNearOnly] = useState(false);
   const [message, setMessage] = useState("");
   const actionLock = useRef(false),
     alive = useRef(true),
@@ -543,23 +551,27 @@ function CreatorCommunitySession({
     );
   const data = state.data;
   const allTabs = [
-    { page: "community", label: tr("Community"), section: "quests" },
+    { page: "community", label: tr("All"), section: "quests" },
+    { page: "near", label: tr("Nearby"), section: "quests" },
     { page: "following", label: tr("Following"), section: "quests" },
     { page: "participations", label: tr("Started"), section: "quests" },
     { page: "creators", label: tr("Creators"), section: "creators" },
     { page: "mine", label: tr("My creations"), section: "creators" },
   ] as const;
-  const tabs = allTabs.filter((tab) =>
-    screenSection
-      ? tab.section === screenSection
-      : tab.page !== "participations",
-  );
-  const active =
+  type Chip = (typeof allTabs)[number]["page"];
+  const chips = allTabs
+    .filter((tab) => (screenSection ? tab.section === screenSection : true))
+    .map((tab) => ({ id: tab.page as Chip, label: tab.label }));
+  const chipValue: Chip =
     view.page === "edit" || view.page === "profile" || view.page === "blocked"
       ? "mine"
       : view.page === "creator"
         ? "creators"
-        : view.page;
+        : view.page === "community"
+          ? nearOnly
+            ? "near"
+            : "community"
+          : (view.page as Chip);
   return (
     <section
       ref={section}
@@ -569,20 +581,20 @@ function CreatorCommunitySession({
     >
       <h2 className="sr-only" data-creator-heading tabIndex={-1}>
         {tr("Stories from explorers")}</h2>
-      <div className="creator-toolbar">
-        <nav className="creator-tabs" aria-label={tr("Creator community section")}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.page}
-              aria-current={active === tab.page ? "page" : undefined}
-              onClick={() => navigate({ page: tab.page })}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+      <FilterChips
+        label={tr("Creator community section")}
+        options={chips}
+        value={chipValue}
+        onChange={(next) => {
+          if (next === "near" || next === "community") {
+            setNearOnly(next === "near");
+            if (view.page !== "community") navigate({ page: "community" });
+          } else navigate({ page: next });
+        }}
+      >
         <button
-          className="creator-icon"
+          type="button"
+          className="cl-icon-button"
           aria-label={tr("Refresh creator quests")}
           title={tr("Refresh creator quests")}
           disabled={busy || state.loading}
@@ -590,16 +602,7 @@ function CreatorCommunitySession({
         >
           <ArrowClockwise size={20} />
         </button>
-      </div>
-      {!screenSection && (
-        <button
-          className="creator-started"
-          onClick={() => navigate({ page: "participations" })}
-        >
-          <BookmarkSimple size={20} /> {" "}{tr("Your started quests")}{" "}
-          <ArrowRight size={20} />
-        </button>
-      )}
+      </FilterChips>
       {message && (
         <p className="creator-message" role="status">
           {message}
@@ -639,28 +642,21 @@ function CreatorCommunitySession({
       ) : (
         data && (
           <>
-            {view.page === "community" && (
-              <CommunityHome
-                data={data}
-                position={position}
-                navigate={navigate}
-              />
-            )}
             {(view.page === "community" || view.page === "following") && (
               <>
-                <h3>
-                  {view.page === "following"
-                    ? tr("From creators you follow")
-                    : tr("All creator quests")}
-                </h3>
-                <QuestList
-                  page={data.quests}
+                <QuestCards
+                  quests={data.quests?.items || []}
                   from={position}
+                  nearOnly={view.page === "community" && nearOnly}
                   navigate={navigate}
                   empty={
                     view.page === "following"
                       ? tr("Follow a creator to see their published quests here. Following is free and does not share your location.")
-                      : tr("No reviewed creator quests are published yet. Explore the map, or start a draft in My creations.")
+                      : nearOnly
+                        ? !position
+                          ? tr("Turn on location on the map to see creator places nearby.")
+                          : tr("No creator places within 5 km yet. Pin the first one in My creations.")
+                        : tr("No reviewed creator quests are published yet. Explore the map, or start a draft in My creations.")
                   }
                 />
                 {data.quests?.nextCursor && (
@@ -678,32 +674,32 @@ function CreatorCommunitySession({
                 )}
               </>
             )}
-            {view.page === "creators" && (
+            {(view.page === "creators" || view.page === "creator") && (
               <>
-                <h3>{tr("Meet the creators")}</h3>
                 {!data.creators?.items.length ? (
                   <Empty>
                     {tr("Creators appear here after they deliberately publish a profile.")}</Empty>
                 ) : (
-                  data.creators.items.map((creator) => (
-                    <article className="creator-row" key={creator.id}>
-                      <UserCircle size={32} aria-hidden="true" />
-                      <div>
-                        <h4>{creator.displayName}</h4>
-                        <p>
-                          {creator.bio || tr("Free quests from this explorer.")}
-                        </p>
-                        <button
-                          className="text-button"
-                          onClick={() =>
-                            navigate({ page: "creator", creatorId: creator.id })
+                  <ul className="cl-list">
+                    {data.creators.items.map((creator) => (
+                      <li key={creator.id}>
+                        <CreatorCard
+                          creator={creator}
+                          self={creator.id === player.id}
+                          busy={busy}
+                          onOpen={() => navigate({ page: "creator", creatorId: creator.id })}
+                          onFollow={() =>
+                            void act(
+                              `/creators/${idPath(creator.id)}/follow`,
+                              "PUT",
+                              { following: !creator.following },
+                              creator.following ? tr("You no longer follow {0}.", { 0: creator.displayName }) : tr("You follow {0}.", { 0: creator.displayName }),
+                            )
                           }
-                        >
-                          {tr("View creator")}{" "}<ArrowRight size={20} />
-                        </button>
-                      </div>
-                    </article>
-                  ))
+                        />
+                      </li>
+                    ))}
+                  </ul>
                 )}
                 {data.creators?.nextCursor && (
                   <More
@@ -714,98 +710,55 @@ function CreatorCommunitySession({
               </>
             )}
             {view.page === "creator" && data.creator && (
-              <>
-                <Back onClick={() => navigate({ page: "creators" })}>
-                  {tr("Creators")}</Back>
-                <h3>{data.creator.displayName}</h3>
-                <p>{data.creator.bio}</p>
-                {data.creator.id !== player.id && (
-                  <button
-                    className="secondary-button"
-                    disabled={busy}
-                    onClick={() =>
-                      void act(
-                        `/creators/${idPath(data.creator!.id)}/follow`,
-                        "PUT",
-                        { following: !data.creator!.following },
-                        tr("Following preference confirmed."),
-                      )
-                    }
-                  >
-                    <UsersThree size={20} />
-                    {data.creator.following ? tr("Unfollow") : tr("Follow for free")}
-                  </button>
-                )}
-                <p className="creator-hint">
-                  {tr("Following neither pays the creator nor shares your location.")}</p>
-                {data.creator.id !== player.id && (
-                  <details className="creator-safety-tools">
-                    <summary>{tr("Creator safety")}</summary>
-                    <p className="creator-hint">
-                      {tr("Blocking hides public content between you. Your started quest instructions remain available.")}</p>
-                    <button
-                      className="secondary-button"
-                      disabled={busy}
-                      onClick={() =>
-                        setSafety({
-                          kind: "block",
-                          creator: data.creator!,
-                          blocked: true,
-                        })
-                      }
-                    >
-                      <ShieldSlash size={20} />
-                      {tr("Block creator…")}</button>
-                  </details>
-                )}
-                <QuestList
-                  page={data.quests}
-                  from={position}
-                  navigate={navigate}
-                  empty={tr("This creator has no published free quests at the moment.")}
-                />
-                {data.quests?.nextCursor && (
-                  <More
-                    busy={busy}
-                    onClick={() =>
-                      void more(
-                        "quests",
-                        `/quests?creator=${idPath(view.creatorId)}`,
-                      )
-                    }
-                  />
-                )}
-              </>
+              <CreatorDialog
+                creator={data.creator}
+                quests={data.quests?.items || []}
+                self={data.creator.id === player.id}
+                busy={busy}
+                from={position}
+                navigate={navigate}
+                onClose={() => navigate({ page: "creators" })}
+                onFollow={() =>
+                  void act(
+                    `/creators/${idPath(data.creator!.id)}/follow`,
+                    "PUT",
+                    { following: !data.creator!.following },
+                    data.creator!.following ? tr("You no longer follow {0}.", { 0: data.creator!.displayName }) : tr("You follow {0}.", { 0: data.creator!.displayName }),
+                  )
+                }
+                onBlock={() =>
+                  setSafety({
+                    kind: "block",
+                    creator: data.creator!,
+                    blocked: true,
+                  })
+                }
+              />
             )}
             {view.page === "participations" && (
               <>
-                <h3>{tr("Your started quests")}</h3>
-                <p className="creator-hint">
-                  {tr("Your accepted instructions remain available after edits or closure.")}</p>
                 {!data.participations?.items.length ? (
                   <Empty>
                     {tr("Start a reviewed free quest to keep its instructions here.")}</Empty>
                 ) : (
-                  data.participations.items.map((part) => (
-                    <article className="creator-quest-row" key={part.questId}>
-                      <button
-                        className="creator-quest-open"
-                        onClick={() =>
-                          navigate({ page: "quest", questId: part.questId })
-                        }
-                      >
-                        <span className="creator-state">
-                          {statusName(part.state)}
-                        </span>
-                        <h4>{part.content.title}</h4>
-                        <small>
-                          {tr("Accepted revision")}{" "}{part.revision} ·{" "}
-                          {statusName(part.questState)}
-                        </small>
-                        <ArrowRight size={22} />
-                      </button>
-                    </article>
-                  ))
+                  <ul className="cl-list">
+                    {data.participations.items.map((part) => {
+                      const art: ArtKind = part.content.place?.template ?? "story";
+                      return (
+                        <li key={part.questId}>
+                          <CommunityRow
+                            art={art}
+                            title={part.content.title}
+                            author={part.creator?.displayName || tr("Creator")}
+                            meta={`${kindLabel(art)} · ${statusName(part.state)}`}
+                            onOpen={() =>
+                              navigate({ page: "quest", questId: part.questId })
+                            }
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
                 {data.participations?.nextCursor && (
                   <More
@@ -840,6 +793,7 @@ function CreatorCommunitySession({
                     <Plus size={20} /> {" "}{tr("New quest")}</button>
                 </div>
                 {money && <CreatorEarningsPanel money={money} />}
+                {data.me.creatorXp && <CreatorXpTable table={data.me.creatorXp} />}
                 <Progression me={data.me} />
                 <button
                   className="creator-profile-entry"
@@ -1037,143 +991,275 @@ function More({ busy, onClick }: { busy: boolean; onClick: () => void }) {
     </button>
   );
 }
-function CommunityHome({
-  data,
-  position,
-  navigate,
-}: {
-  data: Loaded;
-  position?: Point;
-  navigate: (view: CreatorCommunityView) => void;
-}) {
-  const near = nearbyQuests(data.quests?.items || [], position).slice(0, 5);
-  const followed = data.following?.items.slice(0, 3) || [];
-  return (
-    <>
-      <h3>{tr("Near you")}</h3>
-      {!position ? (
-        <Empty>{tr("Turn on location on the map to see creator places nearby.")}</Empty>
-      ) : !near.length ? (
-        <Empty>
-          {tr("No creator places within 5 km yet. Pin the first one in My creations.")}</Empty>
-      ) : (
-        <div className="creator-nearby">
-          {near.map(({ quest, distance }) => (
-            <QuestRow
-              key={quest.id}
-              quest={quest}
-              distance={distance}
-              navigate={navigate}
-            />
-          ))}
-        </div>
-      )}
-      <div className="creator-heading">
-        <h3>{tr("Creators you follow")}</h3>
-        {followed.length > 0 && (
-          <button
-            className="text-button"
-            onClick={() => navigate({ page: "following" })}
-          >
-            {tr("See all")}{" "}<ArrowRight size={18} />
-          </button>
-        )}
-      </div>
-      {!followed.length ? (
-        <Empty>
-          {tr("Follow a creator to see their new places here.")}{" "}
-          <button
-            className="text-button"
-            onClick={() => navigate({ page: "creators" })}
-          >
-            {tr("Meet the creators")}{" "}<ArrowRight size={18} />
-          </button>
-        </Empty>
-      ) : (
-        followed.map((quest) => (
-          <QuestRow
-            key={quest.id}
-            quest={quest}
-            distance={placeDistance(quest.place, position)}
-            navigate={navigate}
-          />
-        ))
-      )}
-    </>
-  );
-}
-function QuestRow({
-  quest,
-  distance,
-  navigate,
-}: {
-  quest: PublicCreatorQuest;
-  distance: number | null;
-  navigate: (view: CreatorCommunityView) => void;
-}) {
-  const template = quest.place ? PLACE_TEMPLATES[quest.place.template] : null;
-  return (
-    <article className="creator-quest-row">
-      <button
-        className="creator-quest-open"
-        onClick={() => navigate({ page: "quest", questId: quest.id })}
-      >
-        <span className="creator-state">
-          {template ? template.badge : tr("Quest")}
-          {quest.price ? ` · ${nearText(quest.price)} NEAR` : tr(" · Free")}
-          {distance !== null ? ` · ${distanceText(distance)}` : ""}
-        </span>
-        <h4>{quest.title}</h4>
-        <small>{tr("By")}{" "}{quest.creator.displayName}</small>
-        <ArrowRight size={22} />
-      </button>
-    </article>
-  );
-}
-function QuestList({
-  page,
+const questArt = (quest: PublicCreatorQuest): ArtKind =>
+  quest.kind ?? (quest.place ? quest.place.template : "story");
+const kindLabel = (kind: ArtKind) =>
+  kind === "story" ? tr("Story") : kind === "task" ? tr("Task") : PLACE_TEMPLATES[kind].badge;
+/** Every creator quest in one compact list, nearest first when the map has a position. */
+function QuestCards({
+  quests,
   from,
+  nearOnly = false,
   navigate,
   empty,
 }: {
-  page?: CreatorPage<PublicCreatorQuest>;
+  quests: PublicCreatorQuest[];
   from?: Point;
+  nearOnly?: boolean;
   navigate: (view: CreatorCommunityView) => void;
   empty: string;
 }) {
-  return !page?.items.length ? (
-    <Empty>{empty}</Empty>
-  ) : (
-    <div>
-      {page.items.map((quest) => {
-        const distance = placeDistance(quest.place, from);
+  const rows = quests
+    .map((quest) => ({ quest, distance: placeDistance(quest.place, from) }))
+    .filter((r) => !nearOnly || (r.distance !== null && r.distance <= NEARBY_METERS))
+    .sort((a, b) =>
+      from ? (a.distance ?? Number.MAX_VALUE) - (b.distance ?? Number.MAX_VALUE) : 0,
+    );
+  if (!rows.length) return <Empty>{empty}</Empty>;
+  return (
+    <ul className="cl-list">
+      {rows.map(({ quest, distance }) => {
+        const art = questArt(quest);
         return (
-          <article className="creator-quest-row" key={quest.id}>
-            <button
-              className="creator-quest-open"
-              onClick={() => navigate({ page: "quest", questId: quest.id })}
-            >
-              <span className="creator-state">
-                {quest.place
-                  ? PLACE_TEMPLATES[quest.place.template].badge
-                  : tr("Free")}
-                {distance !== null ? ` · ${distanceText(distance)}` : ""}
-              </span>
-              <h4>{quest.title}</h4>
-              <p>
-                {quest.description.length > 180
-                  ? quest.description.slice(0, 180) + "…"
-                  : quest.description}
-              </p>
-              <small>
-                {tr("By")}{" "}{quest.creator.displayName} {" "}{tr("· reviewed revision")}{" "}
-                {quest.revision}
-              </small>
-              <ArrowRight size={22} />
-            </button>
-          </article>
+          <li key={quest.id}>
+            <CommunityRow
+              art={art}
+              title={quest.title}
+              author={quest.creator.displayName}
+              look={quest.creator.look}
+              meta={kindLabel(art)}
+              where={
+                distance !== null
+                  ? tr("{0} away", { 0: distanceText(distance) })
+                  : quest.place
+                    ? null
+                    : tr("Anywhere")
+              }
+              reward={
+                quest.price ? (
+                  <span>{nearText(quest.price)} NEAR</span>
+                ) : (
+                  <span className="cl-free">{tr("Free")}</span>
+                )
+              }
+              onOpen={() => navigate({ page: "quest", questId: quest.id })}
+            />
+          </li>
         );
       })}
+    </ul>
+  );
+}
+function CreatorStats({ creator }: { creator: CreatorProfile }) {
+  const s = creator.stats;
+  return (
+    <span className="cl-creator-stats">
+      {s && (
+        <>
+          <span>
+            <b>{count(s.quests)}</b> {s.quests === 1 ? tr("quest") : tr("quests")}
+          </span>
+          <span>
+            <b>{count(s.followers)}</b> {s.followers === 1 ? tr("follower") : tr("followers")}
+          </span>
+        </>
+      )}
+    </span>
+  );
+}
+function FollowButton({
+  creator,
+  busy,
+  onFollow,
+  big = false,
+}: {
+  creator: CreatorProfile;
+  busy: boolean;
+  onFollow: () => void;
+  big?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      className="cl-follow"
+      aria-pressed={!!creator.following}
+      aria-label={
+        creator.following
+          ? tr("Unfollow {0}", { 0: creator.displayName })
+          : tr("Follow {0}", { 0: creator.displayName })
+      }
+      disabled={busy}
+      onClick={onFollow}
+    >
+      {creator.following ? (
+        <>
+          <Check size={16} weight="bold" aria-hidden="true" /> {tr("Following")}
+        </>
+      ) : (
+        <>
+          <UserPlus size={big ? 20 : 16} weight="bold" aria-hidden="true" /> {tr("Follow")}
+        </>
+      )}
+    </button>
+  );
+}
+function CreatorCard({
+  creator,
+  self,
+  busy,
+  onOpen,
+  onFollow,
+}: {
+  creator: CreatorProfile;
+  self: boolean;
+  busy: boolean;
+  onOpen: () => void;
+  onFollow: () => void;
+}) {
+  return (
+    <div className="cl-creator">
+      <button
+        type="button"
+        className="cl-avatar-button"
+        onClick={onOpen}
+        tabIndex={-1}
+        aria-hidden="true"
+      >
+        <ExplorerAvatar look={creator.look} size={56} />
+      </button>
+      <button type="button" className="cl-creator-main" onClick={onOpen}>
+        <strong>
+          <span>{creator.displayName}</span>
+        </strong>
+        {creator.bio && <span className="cl-creator-bio">{creator.bio}</span>}
+        <span className="cl-creator-stats">
+          <CreatorStats creator={creator} />
+          <BotTag look={creator.look} />
+        </span>
+      </button>
+      {!self && <FollowButton creator={creator} busy={busy} onFollow={onFollow} />}
+    </div>
+  );
+}
+/** A creator's profile and quests, as its own dialog over the creators list. */
+function CreatorDialog({
+  creator,
+  quests,
+  self,
+  busy,
+  from,
+  navigate,
+  onClose,
+  onFollow,
+  onBlock,
+}: {
+  creator: CreatorProfile;
+  quests: PublicCreatorQuest[];
+  self: boolean;
+  busy: boolean;
+  from?: Point;
+  navigate: (view: CreatorCommunityView) => void;
+  onClose: () => void;
+  onFollow: () => void;
+  onBlock: () => void;
+}) {
+  const [info, setInfo] = useState(false);
+  const s = creator.stats;
+  return (
+    <Dialog label={creator.displayName} history={false} onClose={onClose}>
+      <div className="cl-profile">
+        <button type="button" className="sheet-close" aria-label={tr("Close")} onClick={onClose}>
+          <X size={20} aria-hidden="true" />
+        </button>
+        <header className="cl-profile-head">
+          <ExplorerAvatar look={creator.look} size={88} />
+          <div>
+            <h2>
+              {creator.displayName}
+              <BotTag look={creator.look} />
+            </h2>
+            <p>
+              {tr("Creator")}
+              {creator.look ? ` · ${tr("Level {0}", { 0: creator.look.level })}` : ""}
+            </p>
+          </div>
+        </header>
+        {creator.bio && <p className="cl-profile-bio">{creator.bio}</p>}
+        {s && (
+          <dl className="cl-profile-stats">
+            <div>
+              <dt>{tr("Quests")}</dt>
+              <dd>{count(s.quests)}</dd>
+            </div>
+            <div>
+              <dt>{tr("Followers")}</dt>
+              <dd>{count(s.followers)}</dd>
+            </div>
+            <div>
+              <dt>{tr("Finished")}</dt>
+              <dd>{count(s.completions)}</dd>
+            </div>
+            <div>
+              <dt>{tr("Creator XP")}</dt>
+              <dd>{count(s.xp)}</dd>
+            </div>
+          </dl>
+        )}
+        {!self && (
+          <div className="cl-profile-actions">
+            <FollowButton creator={creator} busy={busy} onFollow={onFollow} big />
+            <button
+              type="button"
+              className="cl-info"
+              aria-label={tr("About following and safety")}
+              aria-expanded={info}
+              onClick={() => setInfo((v) => !v)}
+            >
+              <Info size={22} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+        {info && !self && (
+          <div className="cl-info-panel">
+            <p>{tr("Following is free. It neither pays the creator nor shares your location.")}</p>
+            <p>{tr("Blocking hides public content between you. Your started quest instructions remain available.")}</p>
+            <button type="button" className="text-button" disabled={busy} onClick={onBlock}>
+              <ShieldSlash size={18} aria-hidden="true" /> {tr("Block creator…")}
+            </button>
+          </div>
+        )}
+        <h3>{tr("Quests by {0}", { 0: creator.displayName })}</h3>
+        <QuestCards
+          quests={quests}
+          from={from}
+          navigate={navigate}
+          empty={tr("This creator has no published free quests at the moment.")}
+        />
+      </div>
+    </Dialog>
+  );
+}
+/** What the game gives a creator for building quests. */
+function CreatorXpTable({ table }: { table: CreatorXpTable }) {
+  return (
+    <div className="cl-earn">
+      <strong>{tr("Each published quest earns you XP")}</strong>
+      <ul>
+        <li>{tr("Story")} · <XpReward xp={table.publish.story} /></li>
+        <li>{tr("Visit")} · <XpReward xp={table.publish.visit} /></li>
+        <li>{tr("Chest")} · <XpReward xp={table.publish.chest} /></li>
+        <li>{tr("Trail")} · <XpReward xp={table.publish.trail} /></li>
+      </ul>
+      <span>
+        {tr("Trails get +{0} XP for every stop after the second.", { 0: table.trailStopBonus })}{" "}
+        {tr("+{0} XP each time another explorer finishes it (up to {1} a day). QGOLD only comes from QGOLD you put into a quest yourself.", {
+          0: table.completion,
+          1: table.completionsPerDay,
+        })}
+      </span>
+      {table.earned > 0 && (
+        <span>{tr("You earned {0} XP from your quests so far.", { 0: count(table.earned) })}</span>
+      )}
     </div>
   );
 }
