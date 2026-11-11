@@ -13,7 +13,7 @@ Until now the sponsor treasury (operator `questlayer-dev-20261101.testnet`) was 
 came from NEAR staking and its whole value moved with the NEAR price. Lending stablecoins on Rhea Lend adds a second
 yield source that does not depend on NEAR, and keeps 40 % of the treasury's value in dollars when NEAR falls.
 
-The QGOLD backing is a different pot and stays in LSTs only (build plan, core model).
+The QGOLD backing is a different pot: NEAR locked in the QGOLD vault (the LST backing of the build plan waits until testnet LST prices move). Stablecoins steady the treasury; they do not sit in the QGOLD vault.
 
 ## Buckets
 
