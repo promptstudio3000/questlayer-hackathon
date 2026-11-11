@@ -11,7 +11,11 @@
 //     credit. Removes only that credit (never below 0) from every explorer
 //     except the kept names, and zeroes the welcome history amount, so
 //     "QGOLD earned" shows only backed earnings.
-// Without --apply both mutating commands only print what they would do.
+//   node server/cli/tester-account.mjs retire-explorer --database DB --player ID [--apply]
+//     Retires a duplicate test explorer without deleting rows: GOLD 0, name
+//     "retired-<id>", every session and map presence revoked. Refuses the
+//     explorer that holds the tester login.
+// Without --apply the mutating commands only print what they would do.
 import "../schema-catalog.mjs";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -128,6 +132,37 @@ if (command === "set-login") {
       1,
     ),
   );
+} else if (command === "retire-explorer") {
+  const explorer = options.player
+    ? db.prepare("SELECT id, name, gold_u FROM players WHERE id=?").get(options.player)
+    : null;
+  if (!explorer) throw Error("Pass --player with an existing explorer id.");
+  if (db.prepare("SELECT 1 FROM tester_logins WHERE player_id=?").get(explorer.id))
+    throw Error("This explorer holds the tester login; it is never retired.");
+  const name = `retired-${explorer.id.replace(/^player_/, "").slice(0, 8)}`;
+  const sessions = db.prepare("SELECT COUNT(*) n FROM sessions WHERE player_id=?").get(explorer.id).n;
+  const wallets = db.prepare("SELECT account_id FROM wallet_links WHERE player_id=?").all(explorer.id).map((r) => r.account_id);
+  if (options.apply)
+    atomic(db, () => {
+      db.prepare("UPDATE players SET gold_u=0, name=? WHERE id=?").run(name, explorer.id);
+      db.prepare("DELETE FROM sessions WHERE player_id=?").run(explorer.id);
+      db.prepare("DELETE FROM presence WHERE player_id=?").run(explorer.id);
+      history(db, explorer.id, "retired", "Duplicate test explorer retired", -explorer.gold_u, {
+        source: "tester-account-retire",
+        previousName: explorer.name,
+      });
+    });
+  console.log(
+    JSON.stringify({
+      applied: !!options.apply,
+      player: explorer.id,
+      previousName: explorer.name,
+      name,
+      removedU: explorer.gold_u,
+      sessionsRevoked: sessions,
+      walletLinks: wallets,
+    }),
+  );
 } else {
-  throw Error("Use hash, set-login or remove-faucet.");
+  throw Error("Use hash, set-login, remove-faucet or retire-explorer.");
 }

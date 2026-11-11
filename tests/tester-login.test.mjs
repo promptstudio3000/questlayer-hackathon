@@ -75,4 +75,20 @@ test("faucet cleanup removes only the old demo credit and keeps the tester", (t)
   db = openDatabase(file);
   initializeTesterLogin(db);
   assert.equal(testerLogin(db, { network: "testnet", name: "coinmandeer", password: "owner-pass" }), owner);
+  // A duplicate coinmandeer is retired; the tester login holder never is.
+  const duplicate = createPlayer(db, "coinmandeer");
+  db.prepare("UPDATE players SET gold_u=? WHERE id=?").run(FAUCET_U, duplicate);
+  db.prepare("INSERT INTO sessions VALUES (?,?,?)").run("f".repeat(64), duplicate, Date.now() + 60_000);
+  db.close();
+  assert.throws(() => run("retire-explorer", "--database", file, "--player", owner, "--apply"), /tester login/);
+  assert.equal(run("retire-explorer", "--database", file, "--player", duplicate).applied, false);
+  const retired = run("retire-explorer", "--database", file, "--player", duplicate, "--apply");
+  assert.equal(retired.removedU, FAUCET_U);
+  assert.equal(retired.sessionsRevoked, 1);
+  db = openDatabase(file);
+  const row = db.prepare("SELECT name, gold_u FROM players WHERE id=?").get(duplicate);
+  assert.match(row.name, /^retired-/);
+  assert.equal(row.gold_u, 0);
+  assert.equal(db.prepare("SELECT COUNT(*) n FROM sessions WHERE player_id=?").get(duplicate).n, 0);
+  assert.equal(gold(owner), FAUCET_U);
 });
