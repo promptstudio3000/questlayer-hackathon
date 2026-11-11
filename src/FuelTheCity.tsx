@@ -60,6 +60,31 @@ const big = (v: unknown) => {
   }
 };
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+/** Gas headroom kept on top of the setup and the stake. */
+const GAS_HEADROOM = 5n * 10n ** 22n;
+const TEST_NEAR_FAUCET = "https://near-faucet.io/";
+
+/** The account's spendable balance in yoctoNEAR, read straight from the chain (null when unknown). */
+async function readBalance(accountId: string): Promise<bigint | null> {
+  try {
+    const config = await api<{ rpcUrl?: string }>("/config");
+    if (!config.rpcUrl) return null;
+    const r = await fetch(config.rpcUrl, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: "balance",
+        method: "query",
+        params: { request_type: "view_account", finality: "final", account_id: accountId },
+      }),
+    });
+    const body = (await r.json()) as { result?: { amount?: string; locked?: string } };
+    return body.result?.amount ? BigInt(body.result.amount) : null;
+  } catch {
+    return null;
+  }
+}
 
 type Outcome =
   | { kind: "idle" }
@@ -131,6 +156,8 @@ export function FuelTheCity({
     [gates, setGates] = useState<StakerGates | null>(null),
     [contribution, setContribution] = useState(50),
     [confirmExit, setConfirmExit] = useState(false),
+    [balance, setBalance] = useState<bigint | null>(null),
+    [copied, setCopied] = useState(false),
     [outcome, setOutcome] = useState<Outcome>({ kind: "idle" });
   const accountRef = useRef(account);
   accountRef.current = account;
@@ -151,6 +178,8 @@ export function FuelTheCity({
   // Each read fills its own part: the slow prize pool total never holds up the stake button.
   useEffect(() => {
     void readVaults();
+    setBalance(null);
+    if (account) void readBalance(account).then(setBalance);
   }, [account]);
   useEffect(() => {
     let live = true;
@@ -191,6 +220,12 @@ export function FuelTheCity({
   const stakeNear = Number(amount) || Number(STAKER_SUGGEST_NEAR);
   const eur = eurHint(stakeNear, gates?.priceEur);
   const setupNear = vaults?.config ? nearOf(vaults.config.setup_deposit) : null;
+  let stakeYocto = 0n;
+  try {
+    stakeYocto = BigInt(parseTestNear(amount));
+  } catch {
+    stakeYocto = 0n;
+  }
 
   async function sign(request: Omit<VaultRequest, "accountId">): Promise<boolean> {
     return onTransaction({ ...request, accountId: account });
@@ -222,6 +257,7 @@ export function FuelTheCity({
     const fail = (text = tr("It didn't go through. Nothing was taken; try again.")) => {
       setOutcome({ kind: "failed", text });
       void readVaults();
+      void readBalance(account).then(setBalance);
     };
     try {
       const snap = (await readVaults()) || vaults;
@@ -274,6 +310,7 @@ export function FuelTheCity({
     }
     setConfirmExit(false);
     await readVaults();
+    if (account) void readBalance(account).then(setBalance);
   }
 
   // Where the explorer stands on Free → Staker → Tier 2 → Tier 3.
@@ -300,6 +337,19 @@ export function FuelTheCity({
   const credit = "position" in phase ? nearOf(phase.position.position?.owner_credit) : 0;
   const status = "position" in phase && phase.position.position ? fuelStatus(phase.position) : null;
   const canStake = phase.kind === "none" || phase.kind === "setup" || phase.kind === "empty";
+  // What one tap costs from here: the vault setup the first time, the stake, a little gas.
+  const needYocto =
+    (phase.kind === "none" && vaults?.config ? big(vaults.config.setup_deposit) : 0n) + stakeYocto + GAS_HEADROOM;
+  const short = canStake && account && balance !== null && balance < needYocto;
+  async function copyAccount() {
+    try {
+      await navigator.clipboard.writeText(account);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  }
 
   return (
     <section className="fuel" aria-labelledby="fuel-title">
@@ -352,13 +402,35 @@ export function FuelTheCity({
           <>
             <button
               className="primary-button fuel-stake-button"
-              disabled={busy || (!!vaults?.config && vaults.config.created >= vaults.config.capacity && phase.kind === "none")}
+              disabled={busy || !!short || (!!vaults?.config && vaults.config.created >= vaults.config.capacity && phase.kind === "none")}
               onClick={() => void stake()}
             >
               {busy && outcome.kind === "pending" ? outcome.text : tr("Stake {0} NEAR", { 0: amount })}
               {eur && !busy ? <small>{eur}</small> : null}
               <Flame size={20} aria-hidden="true" />
             </button>
+            {short && (
+              <div className="fuel-short" role="status">
+                <p>
+                  {tr("You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.", {
+                    0: fmt(nearOf(balance!.toString()), 2),
+                    1: fmt(nearOf(needYocto.toString()), 2),
+                  })}
+                </p>
+                <code>{account}</code>
+                <div className="fuel-short-buttons">
+                  <button type="button" className="secondary-button" onClick={() => void copyAccount()}>
+                    {copied ? tr("Copied") : tr("Copy address")}
+                  </button>
+                  <a className="secondary-button" href={TEST_NEAR_FAUCET} target="_blank" rel="noreferrer">
+                    {tr("Get test NEAR")}
+                  </a>
+                  <button type="button" className="secondary-button" onClick={() => void readBalance(account).then(setBalance)}>
+                    <ArrowsClockwise size={18} aria-hidden="true" /> {tr("Check again")}
+                  </button>
+                </div>
+              </div>
+            )}
             <p className="fuel-paid">
               {tr("One stake. It stays yours: you can only withdraw it, which takes about 1–7 days.")}{" "}
               {phase.kind === "none" && setupNear !== null

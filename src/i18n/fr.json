@@ -3191,5 +3191,8 @@
  "Your stake": "Ton stake",
  "Your stake is on its way back. The game moves it along for you; then withdraw it here.": "Ton stake est sur le chemin du retour. Le jeu le fait avancer pour toi ; retire-le ensuite ici.",
  "Your vault is still being set up. Check again in a minute.": "Ton coffre est encore en cours de création. Réessaie dans une minute.",
- "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "Tout ton stake commence à revenir maintenant. Il cesse aussitôt de compter pour ton tier et arrive dans environ 1 à 7 jours (4 époques)."
+ "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "Tout ton stake commence à revenir maintenant. Il cesse aussitôt de compter pour ton tier et arrive dans environ 1 à 7 jours (4 époques).",
+ "Copy address": "Copier l'adresse",
+ "Get test NEAR": "Obtenir des NEAR de test",
+ "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "Tu as {0} NEAR de test ; il en faut environ {1}. Envoie des NEAR de test sur ton compte d'explorateur, puis vérifie à nouveau."
 }

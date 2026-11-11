@@ -3191,5 +3191,8 @@
  "Your stake": "تخزينك",
  "Your stake is on its way back. The game moves it along for you; then withdraw it here.": "تخزينك في طريق العودة. اللعبة تحرّكه لك؛ ثم اسحبه هنا.",
  "Your vault is still being set up. Check again in a minute.": "ما زالت خزنتك قيد الإنشاء. تحقق مرة أخرى بعد دقيقة.",
- "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "يبدأ كل تخزينك بالعودة الآن. يتوقف فوراً عن الاحتساب لمستواك ويصل بعد نحو 1–7 أيام (4 حقب)."
+ "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "يبدأ كل تخزينك بالعودة الآن. يتوقف فوراً عن الاحتساب لمستواك ويصل بعد نحو 1–7 أيام (4 حقب).",
+ "Copy address": "نسخ العنوان",
+ "Get test NEAR": "احصل على NEAR تجريبي",
+ "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "لديك {0} NEAR تجريبي؛ يلزم نحو {1}. أرسل NEAR تجريبياً إلى حساب المستكشف ثم تحقق مرة أخرى."
 }

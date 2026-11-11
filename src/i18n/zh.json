@@ -3191,5 +3191,8 @@
  "Your stake": "你的质押",
  "Your stake is on its way back. The game moves it along for you; then withdraw it here.": "你的质押正在返回途中。游戏会替你推进，之后在这里提取。",
  "Your vault is still being set up. Check again in a minute.": "你的金库仍在创建中，请一分钟后再查看。",
- "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "你的全部质押现在开始返回。它立即不再计入你的等级，约 1–7 天（4 个纪元）后到账。"
+ "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "你的全部质押现在开始返回。它立即不再计入你的等级，约 1–7 天（4 个纪元）后到账。",
+ "Copy address": "复制地址",
+ "Get test NEAR": "获取测试 NEAR",
+ "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "你有 {0} 测试 NEAR；大约需要 {1}。请向你的探索者账户发送测试 NEAR，然后再检查。"
 }

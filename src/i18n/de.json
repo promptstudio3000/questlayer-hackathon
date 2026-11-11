@@ -3191,5 +3191,8 @@
  "Your stake": "Dein Stake",
  "Your stake is on its way back. The game moves it along for you; then withdraw it here.": "Dein Stake ist auf dem Rückweg. Das Spiel bewegt ihn für dich weiter; dann hier abheben.",
  "Your vault is still being set up. Check again in a minute.": "Dein Tresor wird noch eingerichtet. Schau in einer Minute nochmal.",
- "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "Dein ganzer Stake kommt jetzt zurück. Er zählt sofort nicht mehr für deinen Tier und kommt nach etwa 1–7 Tagen (4 Epochen) an."
+ "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "Dein ganzer Stake kommt jetzt zurück. Er zählt sofort nicht mehr für deinen Tier und kommt nach etwa 1–7 Tagen (4 Epochen) an.",
+ "Copy address": "Adresse kopieren",
+ "Get test NEAR": "Test-NEAR holen",
+ "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "Du hast {0} Test-NEAR; nötig sind etwa {1}. Sende Test-NEAR an dein Entdecker-Konto und prüfe dann erneut."
 }

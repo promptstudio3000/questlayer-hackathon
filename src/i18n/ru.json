@@ -3191,5 +3191,8 @@
  "Your stake": "Твой стейк",
  "Your stake is on its way back. The game moves it along for you; then withdraw it here.": "Твой стейк возвращается. Игра продвигает его за тебя; потом выведи здесь.",
  "Your vault is still being set up. Check again in a minute.": "Хранилище ещё создаётся. Проверь через минуту.",
- "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "Весь твой стейк начинает возвращаться. Он сразу перестаёт засчитываться в тир и придёт примерно через 1–7 дней (4 эпохи)."
+ "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "Весь твой стейк начинает возвращаться. Он сразу перестаёт засчитываться в тир и придёт примерно через 1–7 дней (4 эпохи).",
+ "Copy address": "Скопировать адрес",
+ "Get test NEAR": "Получить тестовые NEAR",
+ "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "У тебя {0} тестовых NEAR; нужно около {1}. Отправь тестовые NEAR на свой аккаунт исследователя и проверь снова."
 }

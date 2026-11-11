@@ -3191,5 +3191,8 @@
  "Your stake": "あなたのステーク",
  "Your stake is on its way back. The game moves it along for you; then withdraw it here.": "ステークは戻る途中です。ゲームが進めるので、その後ここで引き出してください。",
  "Your vault is still being set up. Check again in a minute.": "ボールトはまだ作成中です。1分後にもう一度確認してください。",
- "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "ステーク全額の返却が今始まります。すぐにティアへのカウントが止まり、約1〜7日（4エポック）で届きます。"
+ "Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).": "ステーク全額の返却が今始まります。すぐにティアへのカウントが止まり、約1〜7日（4エポック）で届きます。",
+ "Copy address": "アドレスをコピー",
+ "Get test NEAR": "テストNEARを入手",
+ "You have {0} test NEAR; this needs about {1}. Send test NEAR to your explorer account, then check again.": "テストNEARは {0} です。約 {1} 必要です。エクスプローラーアカウントにテストNEARを送ってから、もう一度確認してください。"
 }
