@@ -40,6 +40,7 @@ for (const relative of [
   "./npc/trader-ledger.mjs",
   "./operator/world-controls.mjs",
   "./poi-quests.mjs",
+  "./layer/store.mjs",
   "./global-activities.mjs",
   "./global-rewards.mjs",
   "./landmark-clue.mjs",

@@ -526,20 +526,21 @@ export const CHAPTERS: Chapter[] = [
   },
   // ----------------------------------------------------------------- world
   {
-    id: "gotchiverse-test-app",
+    id: "virtual-layer",
     group: "play",
-    title: "Gotchiverse-test-app",
-    summary: "A free 16 × 16 voxel workshop behind a server switch: shape terrain, place a lantern and build with invited friends.",
+    title: "The Layer (virtual voxel world)",
+    summary: "A shared, infinite voxel world in space behind a testnet switch: a free home plot to build on, beacons to find and other explorers nearby.",
     status: "partial",
-    updated: "2026-11-08",
-    sources: ["docs/GOTCHIVERSE.md", "server/gotchiverse/store.mjs", "server/gotchiverse/routes.mjs", "src/Gotchiverse.tsx", "src/WorldSwitcher.tsx"],
+    updated: "2026-11-11",
+    sources: ["docs/LAYER.md", "server/layer/world.mjs", "server/layer/store.mjs", "server/layer/routes.mjs", "server/layer/layers.mjs", "src/layer/Layer.tsx", "src/layer/engine.ts", "src/WorldSwitcher.tsx"],
     blocks: [
       {
         list: [
-          "**Switch:** off unless the server runs with `GOTCHIVERSE_TEST_APP=1`. When it is on, the logo opens a world picker with QuestLayer and **Gotchiverse-test-app**; when it is off, the logo and the API routes behave as before.",
-          "**Play:** each explorer opens one private workshop, raises and lowers blocks, paints grass, stone, sand or water and places a garden lantern. The first activity asks for three changed blocks and a lantern. Owners invite friends with a one-day link and can remove them again.",
-          "**No money:** the workshop has no QGOLD, XP, item grants, land claims or permits. Virtual movement never counts as GPS and the outdoor map pauses its requests while the workshop is open.",
-          "**Storage:** one JSON file per workshop in a `gotchiverse` folder next to the game database, written under a lock with an atomic rename. Edits carry a revision and a request id, so a retry never applies twice.",
+          "**Switch:** off unless the server runs with `LAYER_ENABLED=1` (never on mainnet). Then the logo opens a world picker with QuestLayer and the **Space Layer**.",
+          "**Play:** walk and jump through one shared 3D world generated from a seed. Every explorer gets a free 16 × 16 home plot in a settlement and builds with ten blocks; only the owner can change a plot. Light pillars lead to beacons that activate when you stand on them. Daily goals: 8 blocks built, 3 beacons.",
+          "**Explorers:** others within 128 blocks appear with name and a blocky outfit (six colour sets; an equipped Aura shows as a halo). Positions are kept in memory for 15 seconds and fast jumps are corrected.",
+          "**Community layers:** each community gets its own layer (own seed, name and coin name) on the QGOLD mechanics. The first is Space Layer with the coin MINECOIN. Per-layer treasury, staking and task payments are agreed but **not active**: nothing in the layer pays or costs anything.",
+          "**Storage:** SQLite tables for plots, changed blocks, edit receipts and beacon activations. Edits carry a request id, so a retry never applies twice. Virtual movement never counts as GPS.",
         ],
       },
     ],
