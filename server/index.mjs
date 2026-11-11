@@ -114,6 +114,7 @@ import {
   wornWearables,
 } from "./gotchi-wearables.mjs";
 import { isDemoBot, playerCard, profileOriginal, sendWave, takeWaves } from "./player-waves.mjs";
+import { demoBotReply } from "./demo-bot-chat.mjs";
 import { PlayerInbox, socialInboxReader } from "./inbox/service.mjs";
 import { createInboxRoutes } from "./inbox/routes.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
@@ -3457,6 +3458,13 @@ async function api(req, res, url) {
       if (row) look = await publicAppearance(db, row, nativeCollectibles);
     }
     return respond(res, playerCard(db, player, target, look));
+  }
+  // Demo bots answer from fixed lines; nothing is stored or sent on chain.
+  if (path === "/api/players/bot-chat" && method === "POST") {
+    limit("bot-chat", player, 12, "Please wait a moment before writing again.");
+    const i = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    return respond(res, demoBotReply(db, player, i.playerId, i.text));
   }
   if (path === "/api/players/wave" && method === "POST") {
     limit("wave", player, 20, "Please wait before waving again.");

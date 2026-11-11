@@ -3193,5 +3193,12 @@
  "Refuel opens when your balance drops below {0} NEAR, once a day.": "बैलेंस {0} NEAR से नीचे जाने पर दिन में एक बार भर सकते हैं।",
  "Add your own NEAR: send it from any wallet or exchange to {0}.": "अपना NEAR जोड़ें: किसी भी वॉलेट या एक्सचेंज से {0} पर भेजें।",
  "Refuelled. Your account has NEAR for its next payments.": "भर दिया गया। आपके खाते में अगले भुगतानों के लिए NEAR है।",
- "Could not refuel right now. Try again later.": "अभी भरना संभव नहीं हुआ। बाद में फिर कोशिश करें।"
+ "Could not refuel right now. Try again later.": "अभी भरना संभव नहीं हुआ। बाद में फिर कोशिश करें।",
+ "Chat with {0}": "{0} से चैट",
+ "Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.": "डेमो चैट: {0} तैयार वाक्यों से जवाब देता है। कुछ भी सहेजा या चेन पर भेजा नहीं जाता; असली खोजकर्ताओं के लिए एन्क्रिप्टेड इनबॉक्स है।",
+ "{0} is typing…": "{0} लिख रहा है…",
+ "Write to {0}…": "{0} को लिखें…",
+ "Messages need your explorer account. Sign in with it to write.": "संदेशों के लिए आपका खोजकर्ता खाता चाहिए। लिखने के लिए उससे साइन इन करें।",
+ "Your note: {0}": "आपका नोट: {0}",
+ "Note: {0}": "नोट: {0}"
 }
