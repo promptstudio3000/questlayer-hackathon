@@ -34,6 +34,8 @@ const config = {
     collectibles: m("native-claims").contractId,
     npcGames: m("native-npc-games").contractId,
     social: "v1.social08.testnet",
+    intents: m("native-intents").verifierContract,
+    wnear: m("native-intents").wnear,
   },
 };
 const { validateVaultOrigins } = await import("./src/signing-vault/policy.ts");

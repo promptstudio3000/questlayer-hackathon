@@ -23,6 +23,7 @@ import {
 import {
   describeReview,
   needsProtection,
+  reviewQuestion,
   trustedVaultMessage,
   validateVaultCall,
   validateVaultOrigins,
@@ -196,6 +197,7 @@ async function reviewed(request: Request, record: PlayerKeyRecord) {
     call,
     config,
     (memo) => api(`/gold/burn/intent?memo=${encodeURIComponent(memo)}`),
+    record.publicKey,
   );
   return { protected: protectedAction, review: call };
 }
@@ -431,7 +433,7 @@ if (location.pathname === "/approve") {
     pending = await vaultRecord<Pending>(`request:${id}`);
   const main = document.querySelector("#vault")!;
   const heading = document.createElement("h1");
-  heading.textContent = "Confirm account action";
+  heading.textContent = "QuestLayer";
   main.append(heading);
   if (
     !pending ||
@@ -443,9 +445,12 @@ if (location.pathname === "/approve") {
       "This request expired or is already complete. You can close this window.";
     main.append(p);
   } else {
+    // One plain question with Yes / No. The decoded breakdown and the exact
+    // request stay one tap away under "Details"; warnings stay visible.
+    heading.textContent = reviewQuestion(pending.review, config);
     const intro = document.createElement("p");
     intro.textContent =
-      "Review the account, destination and amount. Approve only the action you started in QuestLayer.";
+      "Nothing leaves your account unless you tap Yes. Tap No if you did not just do this in QuestLayer.";
     const review = document.createElement("section"),
       view = describeReview(pending.review, config);
     if (view.warnings.length) {
@@ -470,21 +475,21 @@ if (location.pathname === "/approve") {
     const details = document.createElement("details"),
       summary = document.createElement("summary"),
       exact = document.createElement("pre");
-    summary.textContent = "Exact request";
+    summary.textContent = "Details";
     exact.textContent = JSON.stringify(pending.review, null, 2);
-    details.append(summary, exact);
-    review.append(fields, details);
+    details.append(summary, fields, exact);
+    review.append(details);
     const cancel = document.createElement("button"),
       approve = document.createElement("button"),
       status = document.createElement("p");
-    cancel.textContent = "Cancel";
-    approve.textContent = "Approve";
+    cancel.textContent = "No";
+    approve.textContent = "Yes";
     approve.className = "primary";
     status.setAttribute("role", "status");
     const controls = document.createElement("div");
     controls.className = "actions";
     controls.append(cancel, approve);
-    main.append(intro, review, controls, status);
+    main.append(intro, controls, review, status);
     cancel.focus();
     const finish = async (accepted: boolean) => {
       cancel.disabled = approve.disabled = true;
@@ -532,7 +537,8 @@ if (location.pathname === "/approve") {
       }
       await vaultRecord(`request:${id}`, done);
       channel.postMessage({ id });
-      status.textContent = done.error ?? "Approved. Return to QuestLayer.";
+      status.textContent = done.error ?? "Done. Back to QuestLayer…";
+      if (!done.error) setTimeout(() => window.close(), 700);
     };
     cancel.onclick = () => void finish(false);
     approve.onclick = () => void finish(true);
