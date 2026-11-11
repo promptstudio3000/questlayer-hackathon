@@ -3195,5 +3195,10 @@
   "Refuel opens when your balance drops below {0} NEAR, once a day.": "残高が{0} NEARを下回ると、1日1回補充できます。",
   "Add your own NEAR: send it from any wallet or exchange to {0}.": "自分のNEARを追加:任意のウォレットや取引所から{0}へ送ってください。",
   "Refuelled. Your account has NEAR for its next payments.": "補充しました。次の支払い用のNEARがあります。",
-  "Could not refuel right now. Try again later.": "今は補充できませんでした。後でもう一度お試しください。"
+  "Could not refuel right now. Try again later.": "今は補充できませんでした。後でもう一度お試しください。",
+  "Chat with {0}": "{0}とチャット",
+  "Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.": "デモチャット：{0}は用意された文で答えます。何も保存されず、チェーンにも送られません。本物の探検者には暗号化された受信箱があります。",
+  "{0} is typing…": "{0}が入力中…",
+  "Write to {0}…": "{0}に書く…",
+  "Messages need your explorer account. Sign in with it to write.": "メッセージには探検者アカウントが必要です。そのアカウントでサインインしてください。"
 }

@@ -19,7 +19,8 @@ Tests: `tests/player-inbox.test.mjs`, `tests/relayer-policy.test.mjs`.
    (**Ask to message**) and the other **accepted**. A declined request stays declined for the one who asked;
    the other explorer can still ask back.
 2. **Block** (the existing two-way block) stops requests, sending, the conversation list and delivery.
-3. Demo explorers and players without their explorer account cannot write or receive.
+3. Demo explorers and players without their explorer account cannot write or receive. Demo bots answer in a
+   separate demo chat on their card instead (`server/demo-bot-chat.mjs`, nothing stored or sent on chain).
 4. Limits: 10 new requests a day and at most 20 unanswered; 30 messages an hour and 150 a day per sender;
    120 received an hour per explorer; one message every 2 seconds per pair. Text is 1–500 characters,
    no control characters except new lines.

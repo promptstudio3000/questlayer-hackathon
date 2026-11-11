@@ -3195,5 +3195,10 @@
   "Refuel opens when your balance drops below {0} NEAR, once a day.": "تُتاح إعادة التعبئة مرة يوميًا عندما ينخفض رصيدك عن {0} NEAR.",
   "Add your own NEAR: send it from any wallet or exchange to {0}.": "أضف NEAR خاصًا بك: أرسله من أي محفظة أو منصة تداول إلى {0}.",
   "Refuelled. Your account has NEAR for its next payments.": "تمت إعادة التعبئة. لدى حسابك NEAR لمدفوعاته التالية.",
-  "Could not refuel right now. Try again later.": "تعذّرت إعادة التعبئة الآن. حاول لاحقًا."
+  "Could not refuel right now. Try again later.": "تعذّرت إعادة التعبئة الآن. حاول لاحقًا.",
+  "Chat with {0}": "الدردشة مع {0}",
+  "Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.": "دردشة تجريبية: يرد {0} بجمل جاهزة. لا يُحفظ شيء ولا يُرسل إلى السلسلة؛ المستكشفون الحقيقيون لديهم صندوق الرسائل المشفّر.",
+  "{0} is typing…": "{0} يكتب…",
+  "Write to {0}…": "اكتب إلى {0}…",
+  "Messages need your explorer account. Sign in with it to write.": "تحتاج الرسائل إلى حساب المستكشف الخاص بك. سجّل الدخول به لتكتب."
 }

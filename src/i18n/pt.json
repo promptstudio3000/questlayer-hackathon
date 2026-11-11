@@ -3195,5 +3195,10 @@
   "Refuel opens when your balance drops below {0} NEAR, once a day.": "A recarga abre uma vez por dia quando o saldo desce abaixo de {0} NEAR.",
   "Add your own NEAR: send it from any wallet or exchange to {0}.": "Adiciona os teus próprios NEAR: envia-os de qualquer carteira ou exchange para {0}.",
   "Refuelled. Your account has NEAR for its next payments.": "Recarregado. A tua conta tem NEAR para os próximos pagamentos.",
-  "Could not refuel right now. Try again later.": "Não foi possível recarregar agora. Tenta mais tarde."
+  "Could not refuel right now. Try again later.": "Não foi possível recarregar agora. Tenta mais tarde.",
+  "Chat with {0}": "Conversar com {0}",
+  "Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.": "Chat de demonstração: {0} responde com frases prontas. Nada é guardado nem enviado para a cadeia; exploradores reais usam a caixa de mensagens cifrada.",
+  "{0} is typing…": "{0} está a escrever…",
+  "Write to {0}…": "Escreve a {0}…",
+  "Messages need your explorer account. Sign in with it to write.": "As mensagens precisam da tua conta de explorador. Entra com ela para escrever."
 }
