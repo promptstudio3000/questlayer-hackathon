@@ -53,6 +53,8 @@ const adventureResults = () => import("./AdventureResults");
 export const GameIntro = lazyNamed(() => import("./GameIntro"), "GameIntro", true);
 export const QuestBrief = lazyNamed(() => import("./QuestBrief"), "QuestBrief");
 export const WearableMoment = lazyNamed(() => import("./WearableMoment"), "WearableMoment");
+export const LockedZoneCard = lazyNamed(() => import("./LockedZone"), "LockedZoneCard", true);
+export const LockedZoneDialog = lazyNamed(() => import("./LockedZone"), "LockedZoneDialog", true);
 export const AdventureResultDialog = lazyNamed(
   adventureResults,
   "AdventureResultDialog",

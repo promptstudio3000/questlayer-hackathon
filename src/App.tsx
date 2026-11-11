@@ -1,5 +1,4 @@
 import { currentZone, zoneInteriorMargin } from "./zone-presence";
-import { LockedZoneCard, LockedZoneDialog } from "./LockedZone";
 import { ZonePresence } from "./ZonePresence";
 import { MapSurface } from "./MapSurface";
 import { ActorPortrait } from "./ActorPortrait";
@@ -70,6 +69,8 @@ import {
   CharacterJourney,
   StakeEarnSwitch,
   EarningsPanel,
+  LockedZoneCard,
+  LockedZoneDialog,
 } from "./lazy-panels";
 import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
 import type { NotePin } from "./gold-map-layer";
