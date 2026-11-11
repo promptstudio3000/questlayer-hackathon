@@ -267,6 +267,7 @@ export const CHAPTERS: Chapter[] = [
           "Coins sit on mapped public paths, 95–120 m apart (60 m within 300 m of a zone). Every coin of a day is backed QGOLD of the same value; a pioneer coin counts twice.",
           "Six waves between 07:00 and 22:00 local time, each start shifted by up to ±30 min from the day seed. A later wave's coins stay hidden and cannot be claimed early.",
           "The city demo has no waves, so visitors in any time zone can play; its coins carry the same backed value.",
+          "**One coin, one pick-up.** A coin can show in more than one world at the same spot (the GPS city map and the city demo share their street cells). Whoever picks it up first, in any world, takes it: every other explorer gets \"Another explorer got this coin first\", and the coin leaves their map at once.",
           "Every claim is confirmed by the server before the floating reward chip appears. Retrying a request returns the original receipt.",
         ],
       },

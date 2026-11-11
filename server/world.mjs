@@ -19,6 +19,7 @@ import {
 } from "./domain.mjs";
 import { chestAuraAvailable } from "./aura-catalog.mjs";
 import { atomic } from "./database.mjs";
+import { withoutTakenSpots } from "./coin-spots.mjs";
 import {
   DEFAULT_CITY,
   cityFor,
@@ -653,6 +654,8 @@ export function worldView(db, id, player = null, options = {}) {
         "SELECT id,lat,lng,value_u,claimant FROM coins WHERE world_id=? AND claimant IS NULL",
       )
       .all(id);
+  // Hide a coin somebody already picked up at the same spot in another world.
+  rows = withoutTakenSpots(db, id, rows);
   mark("wcoins");
   // Map-reward coins appear in waves; a later wave stays hidden until it opens.
   const hidden = manifest.mapRewards ? hiddenCoinIds(db, id, now) : null,
