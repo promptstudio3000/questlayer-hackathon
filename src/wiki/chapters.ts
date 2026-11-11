@@ -845,7 +845,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "treasury-mix",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/STNEAR-TREASURY.md", "docs/TREASURY-MIX.md", "docs/TREASURY-PAGE.md", "docs/YIELD-VAULT.md", "docs/YIELD-VAULT-PLAN.md", "docs/NATIVE-REWARDS-AND-VAULT.md", "docs/LIQUID-STAKE.md", "server/native/treasury-mix.mjs", "scripts/faucet-to-treasury-testnet.mjs"],
+    sources: ["docs/STNEAR-TREASURY.md", "docs/TREASURY-MIX.md", "docs/TREASURY-PAGE.md", "docs/YIELD-VAULT.md", "docs/YIELD-VAULT-PLAN.md", "docs/NATIVE-REWARDS-AND-VAULT.md", "docs/LIQUID-STAKE.md", "server/native/treasury-mix.mjs", "scripts/faucet-to-treasury-testnet.mjs", "scripts/treasury-stake-testnet.mjs"],
     blocks: [
       { h: "Limits" },
       {
@@ -877,7 +877,8 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "The first prize day paid entirely from realized staking yield was proven on testnet (day `plzen-2026-11-05-v2`, `public/native-yield-day-proof.json`).",
-          "Testnet LST prices are frozen, so stNEAR growth there is zero; mainnet LSTs earn about 4 %.",
+          "Testnet LST prices are frozen, so stNEAR growth there is zero; mainnet LSTs earn about 4 %. Testnet lending (Burrow/Rhea) pays about 0 % too.",
+          "**Treasury staking vault** `stake-20261111.questlayer-dev-20261101.testnet` (setup started 11 Nov): the one testnet asset that really earns. Faucet test NEAR is staked with the Stakely validator (3 % fee, about 9.5 % APR, rewards every ~7 h epoch) through a keyless vault that gives **100 %** of its gain to the treasury. The principal is never counted as yield; only realized validator rewards reach the prize pool, each step a public transaction (`scripts/treasury-stake-testnet.mjs`, record `public/treasury-stake-testnet.json`). The pool unlocks unstaked NEAR only after 4 epochs, so further vaults staked one epoch apart take turns and bring fresh yield about every epoch; unclaimed rewards return to the treasury and are offered again in later days, never restaked.",
           "An operator script can sweep throwaway testnet faucet accounts (12 × 10 test NEAR) into the rewards contract as sponsor funding (`fund_rewards`) and then delete them.",
           "A keyless vault never changes code after creation; the yield vault gets fixes only by an in-place upgrade that must leave every position byte for byte unchanged.",
         ],
