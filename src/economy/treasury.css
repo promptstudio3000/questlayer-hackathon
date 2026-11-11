@@ -123,7 +123,8 @@
 }
 .tr rect.tr-c1,
 .tr rect.tr-c2,
-.tr rect.tr-c3 {
+.tr rect.tr-c3,
+.tr rect.tr-c4 {
   fill: var(--c);
 }
 .tr-line {
@@ -500,3 +501,135 @@
   padding-left: 1.2rem;
   overflow-wrap: anywhere;
 }
+
+/* ---------------------------------------------------------------------------
+   Short-first layout (hero card + tabs). Light game palette from tokens.css. */
+.tr .tr-hero { padding: 8px 0 4px; }
+.tr .tr-hero-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tr .tr-hero h1 { margin: 0; font-size: 34px; }
+.tr .tr-chip { font-size: 13px; padding: 4px 10px; border-radius: 999px; background: var(--surface-soft); color: var(--ink-secondary); white-space: nowrap; }
+.tr .tr-hero-sub { margin: 6px 0 16px; color: var(--ink-secondary); }
+.tr .tr-hero-card {
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 20px; border-radius: 20px; color: #fff;
+  background: radial-gradient(120% 140% at 100% 0%, #ff1dff55 0%, transparent 55%), linear-gradient(140deg, #3d10a6 0%, #672eeb 60%, #8a4dff 100%);
+}
+.tr .tr-hero-label { font-size: 14px; opacity: 0.85; }
+.tr .tr-hero-value { font-size: 44px; line-height: 1.05; font-weight: 500; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.tr .tr-hero-value small { font-size: 18px; opacity: 0.85; }
+.tr .tr-hero-note { font-size: 14px; opacity: 0.85; }
+.tr .tr-strip { display: flex; gap: 3px; height: 10px; border-radius: 999px; overflow: hidden; margin: 8px 0 4px; }
+.tr .tr-strip > span { display: block; min-width: 4px; background: var(--c); }
+.tr .tr-strip-big { height: 12px; margin-top: 14px; background: rgba(255, 255, 255, 0.15); }
+.tr .tr-hero-card .tr-c1 { --c: #ff8cff; }
+.tr .tr-hero-card .tr-c2 { --c: #7ff0c8; }
+.tr .tr-hero-card .tr-c3 { --c: #fef87d; }
+.tr .tr-hero-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; list-style: none; margin: 4px 0 0; padding: 0; font-size: 14px; }
+.tr .tr-hero-legend i, .tr .tr-buckets i, .tr .tr-legend-inline i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
+.tr .tr-hero-legend b { font-weight: 500; }
+.tr .tr-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0 0; }
+.tr .tr-stat { display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 14px; background: var(--surface-soft); min-width: 0; }
+.tr .tr-stat svg { color: var(--action); }
+.tr .tr-stat span { font-size: 12px; color: var(--ink-secondary); line-height: 1.3; }
+.tr .tr-stat b { font-size: 15px; font-weight: 500; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+
+/* Tabs: sticky segmented pills, scroll sideways on a phone. */
+.tr .tr-tabs {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none;
+  margin: 18px -16px 0; padding: 10px 16px;
+  background: var(--surface); border-bottom: 1px solid var(--decorative-border);
+}
+.tr .tr-tabs::-webkit-scrollbar { display: none; }
+.tr .tr-tab {
+  position: relative; flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px;
+  min-height: 44px; padding: 0 14px; border-radius: 999px; border: 1px solid var(--decorative-border);
+  background: var(--surface-raised); color: var(--ink); font-size: 15px; cursor: pointer;
+}
+.tr .tr-tab.on { background: var(--action); border-color: var(--action); color: var(--on-action); }
+.tr .tr-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--discovery); }
+.tr .tr-panel { padding-top: 8px; }
+
+/* Cards inside a tab. */
+.tr .tr-card { padding: 20px 0; border-top: 1px solid var(--decorative-border); }
+.tr .tr-panel > .tr-card:first-child, .tr .tr-panel > .tr-teaser + .tr-card { border-top: 0; }
+.tr .tr-card h2 { margin: 0 0 4px; font-size: 22px; }
+.tr .tr-card .tr-lead { margin: 0 0 12px; font-size: 15px; color: var(--ink-secondary); }
+
+/* Overview: TL;DR as icon rows. */
+.tr .tr-tldr { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.tr .tr-tldr li { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 14px; background: var(--surface-raised); border: 1px solid var(--decorative-border); }
+.tr .tr-tldr-icon { flex: 0 0 auto; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--surface-soft); color: var(--action); }
+.tr .tr-tldr b { display: block; font-weight: 500; }
+.tr .tr-tldr small { display: block; font-size: 14px; color: var(--ink-secondary); line-height: 1.4; }
+.tr .tr-teaser {
+  display: flex; align-items: center; gap: 12px; width: 100%; margin: 4px 0 8px; padding: 14px;
+  border-radius: 16px; border: 1px solid var(--action); background: var(--surface-soft); color: var(--ink); text-align: left; cursor: pointer;
+}
+.tr .tr-teaser-icon { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 12px; background: var(--action); color: var(--on-action); flex: 0 0 auto; }
+.tr .tr-teaser-text { flex: 1; min-width: 0; }
+.tr .tr-teaser-text b { display: block; font-weight: 500; }
+.tr .tr-teaser-text small { display: block; font-size: 14px; color: var(--ink-secondary); }
+.tr .tr-buckets { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.tr .tr-buckets li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: var(--surface-soft); }
+.tr .tr-buckets li > span { flex: 1; min-width: 0; }
+.tr .tr-buckets b { font-weight: 500; }
+.tr .tr-buckets small { display: block; font-size: 13px; color: var(--ink-secondary); }
+.tr .tr-buckets i { width: 12px; height: 28px; border-radius: 4px; }
+.tr .tr-bucket-pct { font-variant-numeric: tabular-nums; }
+.tr .tr-next { display: flex; gap: 6px; align-items: center; font-size: 14px; color: var(--ink-secondary); margin: 12px 0 0; }
+.tr .tr-link { display: inline-flex; align-items: center; gap: 4px; padding: 0; min-height: 44px; border: 0; background: none; color: var(--action); font-size: 15px; cursor: pointer; }
+
+/* Vote. */
+.tr .tr-vote-gate { display: flex; gap: 8px; align-items: flex-start; padding: 12px; border-radius: 12px; background: var(--surface-soft); font-size: 15px; }
+.tr .tr-vote-gate svg { flex: 0 0 auto; margin-top: 3px; color: var(--action); }
+.tr .tr-poll { margin-top: 12px; }
+.tr .tr-poll-head h3 { margin: 0; font-size: 18px; }
+.tr .tr-poll-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 4px 0 10px; font-size: 14px; color: var(--ink-secondary); }
+.tr .tr-poll-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.tr .tr-options { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.tr .tr-option { padding: 14px; border-radius: 16px; border: 1px solid var(--decorative-border); background: var(--surface-raised); }
+.tr .tr-option.is-lead { border-color: var(--action); box-shadow: 0 0 0 1px var(--action) inset; }
+.tr .tr-option.is-mine { background: var(--surface-soft); }
+.tr .tr-option-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.tr .tr-option-name b { font-weight: 500; font-size: 17px; }
+.tr .tr-option-name small { margin-left: 8px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
+.tr .tr-option-tags { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }
+.tr .tr-tag { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 2px 8px; border-radius: 999px; background: #fef87d; color: var(--ink); white-space: nowrap; }
+.tr .tr-tag-live { background: var(--success-surface); color: var(--success); }
+.tr .tr-option-bottom { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+.tr .tr-tally { flex: 1; height: 6px; border-radius: 999px; background: var(--surface-soft); overflow: hidden; }
+.tr .tr-tally span { display: block; height: 100%; background: var(--action); border-radius: 999px; }
+.tr .tr-option-count { font-size: 13px; color: var(--ink-secondary); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.tr .tr-vote-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 44px !important; padding: 0 18px; border: 0; border-radius: 10px; background: var(--action); color: var(--on-action); cursor: pointer; }
+.tr .tr-vote-btn:disabled { opacity: 0.45; cursor: default; }
+.tr .tr-vote-btn.voted { opacity: 1; background: var(--success-surface); color: var(--success); }
+.tr .tr-vote-note { margin: 10px 0 0; padding: 10px 12px; border-radius: 10px; background: var(--success-surface); color: var(--success); }
+.tr .tr-vote-note.bad { background: var(--error-surface); color: var(--error); }
+.tr .tr-legend-inline { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.tr .tr-legend-inline i { margin-left: 6px; }
+.tr .tr-steps-mini { margin: 12px 0; padding-left: 22px; display: grid; gap: 6px; }
+.tr .tr-steps-mini b { font-weight: 500; }
+.tr .tr-more summary { cursor: pointer; min-height: 44px; display: flex; align-items: center; color: var(--action); }
+
+/* Safety. */
+.tr .tr-rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.tr .tr-rules li { display: flex; gap: 10px; padding: 12px; border-radius: 12px; background: var(--surface-soft); }
+.tr .tr-rules svg { flex: 0 0 auto; color: var(--success); margin-top: 2px; }
+
+@media (max-width: 420px) {
+  .tr .tr-hero-value { font-size: 38px; }
+  .tr .tr-stat { padding: 10px; }
+  .tr .tr-option-name small { display: block; margin: 0; }
+}
+/* Icons keep their own size (the chart rule above stretches every svg). */
+.tr svg[fill="currentColor"] { display: inline-block; width: auto; height: auto; flex: none; vertical-align: -0.15em; overflow: visible; }
+.tr .tr-hero-card small { color: inherit; }
+.tr .tr-stat svg { align-self: flex-start; }
+.tr :is(.tr-rules, .tr-vote-gate, .tr-tldr) svg { align-self: flex-start; }
+.tr .tr-tldr { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.tr .tr-history-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-bottom: 4px; font-size: 15px; }
+.tr .tr-history-head b { font-weight: 500; }
+.tr .tr-up { color: var(--success); }
+.tr .tr-down { color: var(--error); }
+.tr .tr-hero-card .tr-c4 { --c: #9db8ff; }

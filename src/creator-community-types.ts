@@ -1,3 +1,4 @@
+import type { PublicLook } from "./CommunityCards";
 export type CreatorCommunityView =
   | {
       page:
@@ -102,7 +103,23 @@ export function parseCreatorCapability(
     completionConfigured: v.completionConfigured === true,
   };
 }
-export type CreatorProfile = { id: string; displayName: string; bio: string };
+export type CreatorProfile = {
+  id: string;
+  displayName: string;
+  bio: string;
+  /** Public avatar (server/public-look.mjs); absent on older hosts. */
+  look?: PublicLook;
+  stats?: { quests: number; followers: number; completions: number; xp: number };
+  following?: boolean;
+};
+/** The game's XP table for building quests (server/data/creator-xp.json). */
+export type CreatorXpTable = {
+  publish: Record<"story" | "visit" | "chest" | "trail", number>;
+  trailStopBonus: number;
+  completion: number;
+  completionsPerDay: number;
+  earned: number;
+};
 export type MyCreatorProfile = CreatorProfile & {
   public: boolean;
   version: number;
@@ -118,6 +135,7 @@ export type CreatorMe = {
   domain: "demo";
   profile: MyCreatorProfile;
   progression: CreatorProgression;
+  creatorXp?: CreatorXpTable;
 };
 export type PublicCreatorQuest = {
   requirement?: CreatorObservationRequirement;
@@ -128,7 +146,11 @@ export type PublicCreatorQuest = {
   revision: number;
   title: string;
   description: string;
-  creator: { id: string; displayName: string };
+  creator: { id: string; displayName: string; look?: PublicLook };
+  /** XP table type: a place template, or story without a place. */
+  kind?: "visit" | "trail" | "chest" | "story";
+  /** XP the creator got from the game for publishing it. */
+  creatorXp?: number;
   access: "free";
   rewardStatus: "not-configured";
   domain: "demo";

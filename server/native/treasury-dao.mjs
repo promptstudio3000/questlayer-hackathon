@@ -34,16 +34,26 @@ export const NEVER = "1000000000000";
 export const EXPLORER_RULE = Object.freeze({ minLevel: 3, minXp: 400, activeDays: 7 });
 
 /**
- * Weekly treasury mix options. All of them stay inside the hard limits of
- * server/native/treasury-mix.mjs (at most 40 % per protocol: stables are all
- * Rhea Lend, so stable <= 40 %; LSTs split across two providers).
+ * Weekly treasury mix options (staked NEAR / stablecoins / NEAR reserve).
+ * Since 11 Nov 2026 (Lubos): on testnet only validator staking earns, so the
+ * recommended mix is 90 % staked, 5 % USDC and 5 % USDT on Rhea Lend. All of
+ * them stay inside the hard limits of server/native/treasury-mix.mjs: at most
+ * 40 % per protocol, where every validator pool is its own protocol and the
+ * stables (all Rhea Lend) stay at or under 40 % together.
  */
 export const MIX_PRESETS = Object.freeze([
-  { id: "balanced", label: "Balanced 50 / 40 / 10", targets: { lst: 5000, stable: 4000, near: 1000 } },
-  { id: "staking", label: "More staking 70 / 20 / 10", targets: { lst: 7000, stable: 2000, near: 1000 } },
-  { id: "reserve", label: "Bigger reserve 40 / 30 / 30", targets: { lst: 4000, stable: 3000, near: 3000 } },
+  { id: "staking-first", label: "Staking first 90 / 10 / 0", targets: { staked: 9000, lst: 0, stable: 1000, near: 0 } },
+  { id: "more-stables", label: "More stables 70 / 20 / 10", targets: { staked: 7000, lst: 0, stable: 2000, near: 1000 } },
+  { id: "bigger-reserve", label: "Bigger reserve 60 / 20 / 20", targets: { staked: 6000, lst: 0, stable: 2000, near: 2000 } },
 ]);
-export const RECOMMENDED_MIX = "balanced";
+export const RECOMMENDED_MIX = "staking-first";
+/** Earlier presets, so a poll filed before the change still tallies to its targets. */
+export const LEGACY_MIX_PRESETS = Object.freeze([
+  { id: "balanced", label: "Balanced 50 / 40 / 10", targets: { staked: 0, lst: 5000, stable: 4000, near: 1000 } },
+  { id: "staking", label: "More staking 70 / 20 / 10", targets: { staked: 0, lst: 7000, stable: 2000, near: 1000 } },
+  { id: "reserve", label: "Bigger reserve 40 / 30 / 30", targets: { staked: 0, lst: 4000, stable: 3000, near: 3000 } },
+]);
+export const mixPreset = (id) => MIX_PRESETS.find((p) => p.id === id) || LEGACY_MIX_PRESETS.find((p) => p.id === id) || null;
 
 const NS = 1_000_000n;
 export const nsToMs = (ns) => Number(BigInt(ns || 0) / NS);
@@ -78,9 +88,15 @@ export function parseMeta(description) {
 }
 export const titleOf = (description) => String(description || "").split("\n")[0].slice(0, 200);
 
+const MIX_KEYS = ["staked", "lst", "stable", "near"];
+/** A mix target; "staked" may be missing on mixes adopted before 11 Nov 2026 (= 0). */
 const validTargets = (t) =>
-  !!t && ["lst", "stable", "near"].every((k) => Number.isInteger(t[k]) && t[k] >= 0 && t[k] <= 10_000) && t.lst + t.stable + t.near === 10_000;
-export const sameTargets = (a, b) => validTargets(a) && validTargets(b) && a.lst === b.lst && a.stable === b.stable && a.near === b.near;
+  !!t &&
+  MIX_KEYS.every((k) => (k === "staked" && t[k] === undefined) || (Number.isInteger(t[k]) && t[k] >= 0 && t[k] <= 10_000)) &&
+  MIX_KEYS.reduce((a, k) => a + (t[k] ?? 0), 0) === 10_000;
+export const sameTargets = (a, b) => validTargets(a) && validTargets(b) && MIX_KEYS.every((k) => (a[k] ?? 0) === (b[k] ?? 0));
+/** "90/10/0" style label: staked + liquid staking / stablecoins / NEAR reserve. */
+export const mixShort = (t) => `${((t.staked ?? 0) + (t.lst ?? 0)) / 100}/${(t.stable ?? 0) / 100}/${(t.near ?? 0) / 100}`;
 
 const group = (members) => ({ Group: [...new Set(members)].sort() });
 const weight = (n) => ({ weight_kind: "RoleWeight", quorum: "0", threshold: String(n) });

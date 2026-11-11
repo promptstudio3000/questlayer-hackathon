@@ -207,6 +207,10 @@ export function createCreatorApi({
             domain: "demo",
             profile: community.myProfile(actor),
             progression: lifecycle.progression(actor),
+            // What the game gives for building quests (server/data/creator-xp.json).
+            ...(community.myCreatorXp
+              ? { creatorXp: community.myCreatorXp(actor) }
+              : {}),
           };
         else if (
           parts.length === 3 &&

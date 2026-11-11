@@ -14,7 +14,9 @@ const DIST = resolve(import.meta.dirname, "..", "dist");
 // November 2026: 181 KB gzip JS after the split (was 762 KB with the map).
 const BUDGET = {
   jsGzipKb: Number(process.env.BUNDLE_BUDGET_JS_GZIP_KB || 220),
-  cssGzipKb: Number(process.env.BUNDLE_BUDGET_CSS_GZIP_KB || 36),
+  // 37 since 11 Nov 2026: the bundler now splits the Ghost and game-object-art
+  // styles into their own first-load files (same rules, ~0.7 KB more gzip overhead).
+  cssGzipKb: Number(process.env.BUNDLE_BUDGET_CSS_GZIP_KB || 37),
 };
 // Chunk names that must stay out of the first load.
 const DEFERRED = [

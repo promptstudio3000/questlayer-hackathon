@@ -1,4 +1,5 @@
 import { createCreatorServices } from "./services.mjs";
+import { awardCompletionXp, awardPublishXp } from "./creator-xp.mjs";
 import { createNodeCreatorHandler } from "./node-handler.mjs";
 import { createQuestDrafter } from "../ai/quest-drafts.mjs";
 import { creatorAssert as fail, creatorKey } from "./operations.mjs";
@@ -73,6 +74,9 @@ export function createCreatorRuntime(
         isModerator: (actor) => config.moderators.includes(actor),
         isCompletionAuthority: (actor) =>
           config.completionAuthorities.includes(actor),
+        // The game's XP for building quests (server/creators/creator-xp.mjs).
+        onPublished: (award) => awardPublishXp(db, award),
+        onCompleted: (award) => awardCompletionXp(db, award),
       })
     : null;
   // AI drafting rides on the creator flow: its output is only ever a suggestion

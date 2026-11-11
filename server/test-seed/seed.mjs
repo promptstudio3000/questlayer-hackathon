@@ -27,7 +27,8 @@ import {
   SEED_COMMUNITY_PLACES,
   SEED_PLACE_THREADS,
   SEED_LISTINGS,
-  SEED_BOUNTIES,
+  SEED_TASKS,
+  SEED_FOLLOWS,
   SEED_SECRETS,
   SEED_CREATORS,
   SEED_CREATOR_QUESTS,
@@ -282,29 +283,22 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return created;
   }
 
-  function ensureBounties(now) {
+  /** Demo-bot example tasks in Community · Tasks. No QGOLD is held; they cannot be taken. */
+  function ensureTasks(now) {
+    ensureMarketSchema(db);
     let created = 0;
     atomic(db, () => {
-      for (const b of SEED_BOUNTIES) {
-        const prefix = `seed-b-${b.slug}-`;
-        const open = db
-          .prepare("SELECT 1 FROM bounties WHERE substr(id,1,?)=? AND state='open' AND deadline>?")
-          .get(prefix.length, prefix, now);
-        if (open) continue;
-        db.prepare(
-          "INSERT INTO bounties(id,creator,title,description,amount_u,lat,lng,deadline,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
-        ).run(
-          `${prefix}${now.toString(36)}`,
-          b.creator,
-          b.title,
-          b.description,
-          b.reward * GOLD,
-          b.at.lat,
-          b.at.lng,
-          now + 7 * DAY,
-          now,
+      for (const t of SEED_TASKS) {
+        const id = `seed-t-${t.slug}`;
+        created += Number(
+          db
+            .prepare(
+              "INSERT OR IGNORE INTO mk_tasks(id,poster,title,description,type,visibility,lat,lng,radius_m,reward_u,slots,payout_mode,currency,held_u,fee_held_u,state,deadline,created_at,updated_at) VALUES (?,?,?,?,?,'public',?,?,80,?,?,'review','qgold',0,0,'open',?,?,?)",
+            )
+            .run(id, t.poster, t.title, t.description, t.type, t.at.lat, t.at.lng, t.reward * GOLD, t.slots, now + 7 * DAY, now, now).changes,
         );
-        created++;
+        // Keep the examples open while the test world runs.
+        db.prepare("UPDATE mk_tasks SET deadline=?,state='open' WHERE id=? AND deadline<?").run(now + 7 * DAY, id, now + 3 * DAY);
       }
     });
     return created;
@@ -324,6 +318,8 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
           publicConsent: true,
         });
     }
+    for (const [follower, creator] of SEED_FOLLOWS)
+      db.prepare("INSERT OR IGNORE INTO creator_follows(follower,creator,created_at) VALUES (?,?,?)").run(follower, creator, clock());
     let published = 0;
     for (const q of SEED_CREATOR_QUESTS) {
       const row = () => db.prepare("SELECT state,version FROM creator_quests WHERE id=?").get(q.id);
@@ -359,7 +355,11 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     applyCommunityPlaces(now);
     applyPlaceThreads(now);
     ensureListings(now);
-    ensureBounties(now);
+    ensureTasks(now);
+    // The practice-GOLD tasks of earlier seed versions are gone (Lubos, 11 Nov 2026).
+    if (tableExists(db, "bounty_submissions"))
+      db.prepare("DELETE FROM bounty_submissions WHERE substr(bounty_id,1,7)='seed-b-'").run();
+    db.prepare("DELETE FROM bounties WHERE substr(id,1,7)='seed-b-'").run();
     ensureSecrets(now);
     let creatorResult;
     try {
@@ -470,33 +470,6 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return bought;
   }
 
-  function tickBounties(now) {
-    const pending = db
-      .prepare(
-        "SELECT s.id FROM bounty_submissions s JOIN bounties b ON b.id=s.bounty_id WHERE substr(b.id,1,7)='seed-b-' AND b.state='open' AND s.state='pending' AND s.created_at<=? AND NOT EXISTS(SELECT 1 FROM bounty_submissions e WHERE e.bounty_id=s.bounty_id AND e.state='pending' AND e.id<s.id) LIMIT 10",
-      )
-      .all(now - REVIEW_DELAY_MS);
-    for (const { id } of pending)
-      atomic(db, () => {
-        const s = db.prepare("SELECT * FROM bounty_submissions WHERE id=?").get(id);
-        const b = db.prepare("SELECT * FROM bounties WHERE id=?").get(s.bounty_id);
-        if (s.state !== "pending" || b.state !== "open") return;
-        db.prepare("UPDATE bounties SET state='paid',winner=? WHERE id=?").run(s.player_id, b.id);
-        db.prepare("UPDATE bounty_submissions SET state='approved' WHERE id=?").run(s.id);
-        db.prepare("UPDATE players SET gold_u=gold_u+? WHERE id=?").run(b.amount_u, s.player_id);
-        db.prepare("INSERT INTO history VALUES (?,?,?,?,?,?,?)").run(
-          `seed-h-${s.bounty_id}-${s.id}`,
-          s.player_id,
-          "bounty",
-          b.title,
-          b.amount_u,
-          JSON.stringify({ seed: SEED_VERSION }),
-          now,
-        );
-      });
-    return pending.length;
-  }
-
   function tickCompletions(now) {
     if (!creators?.services?.completion || !creators.completionAuthority) return 0;
     let accepted = 0;
@@ -540,15 +513,14 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return finished;
   }
 
-  /** Economy step: buyer, task approvals, creator completions, restocking. */
+  /** Economy step: buyer, creator completions, restocking. */
   function tickEconomy(now = clock()) {
     return {
       boards: tickBoards(now),
       bought: tickBuyer(now),
-      approved: tickBounties(now),
       completions: tickCompletions(now),
       listings: ensureListings(now),
-      bounties: ensureBounties(now),
+      tasks: ensureTasks(now),
     };
   }
 
@@ -561,7 +533,7 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
       communityPlaces: has("community_places") ? n("SELECT count(*) n FROM community_places WHERE substr(id,1,5)='seed-'") : 0,
       placeThreads: has("place_threads") ? n("SELECT count(*) n FROM place_threads WHERE substr(id,1,5)='seed-'") : 0,
       openListings: n("SELECT count(*) n FROM listings WHERE substr(id,1,5)='seed-' AND state='open'"),
-      openBounties: n("SELECT count(*) n FROM bounties WHERE substr(id,1,5)='seed-' AND state='open'"),
+      openTasks: has("mk_tasks") ? n("SELECT count(*) n FROM mk_tasks WHERE substr(id,1,5)='seed-' AND state='open'") : 0,
       secrets: has("mk_secrets") ? n("SELECT count(*) n FROM mk_secrets WHERE substr(id,1,5)='seed-' AND state='open'") : 0,
       creatorQuests: has("creator_quests")
         ? n("SELECT count(*) n FROM creator_quests WHERE substr(id,1,5)='seed-' AND state='published'")
