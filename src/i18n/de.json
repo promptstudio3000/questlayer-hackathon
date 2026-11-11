@@ -257,7 +257,6 @@
  "Aura taken off.": "Aura abgelegt.",
  "Auras": "Auras",
  "Auras and badges change how you look, never your odds, damage or payouts.": "Auras und Abzeichen ändern dein Aussehen, nie deine Chancen, deinen Schaden oder Auszahlungen.",
- "Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Auras sind das Leuchten deines Geistes, oben oder unten. Jedes Design ist eine limitierte Edition von höchstens {0}. Sichere eine, und sie gehört dir auf NEAR: behalte sie, trag sie oder handle sie auf dem Markt.",
  "Auras secured to your NEAR account. They stay separate from practice Auras and GOLD.": "Auf dein NEAR-Konto gesicherte Auras. Sie bleiben getrennt von Übungs-Auras und GOLD.",
  "Automatic collection needs available browser storage": "Automatisches Sammeln braucht verfügbaren Browserspeicher",
  "Available for your current level": "Für dein aktuelles Level verfügbar",
@@ -3231,5 +3230,9 @@
  "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "Die Truhe in {0} kann heute diese Aura enthalten. Öffne dort die Truhen-Aktivität, um sie zu versuchen.",
  "Today in this zone": "Heute in dieser Zone",
  "chest Auras: {0}": "Truhen-Auras: {0}",
- "{0} Aura": "{0}-Aura"
+ "{0} Aura": "{0}-Aura",
+ "Auras are the glow your ghost wears, above or below. There is no supply cap: they keep appearing as quest rewards and in chests at harder spots on the map. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Auren sind das Leuchten, das dein Geist über oder unter sich trägt. Es gibt keine Mengenbegrenzung: Sie tauchen immer wieder als Quest-Belohnungen und in Truhen an schwierigeren Orten der Karte auf. Sichere dir eine, und sie gehört dir auf NEAR: behalte sie, trage sie oder handle sie auf dem Markt.",
+ "Closed · new zones tomorrow": "Geschlossen · morgen neue Zonen",
+ "No supply cap": "Keine Mengenbegrenzung",
+ "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "Dein Konto hat sein Start-NEAR einmal bei der Erstellung bekommen. Füge eigenes NEAR hinzu: Sende es von einer beliebigen Wallet oder Börse an {0}."
 }

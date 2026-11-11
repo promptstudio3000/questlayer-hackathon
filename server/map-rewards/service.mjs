@@ -99,7 +99,7 @@ function promoteCellZones(db, world, cell, count, zonesU, seed) {
     if (!q || prize <= 0) continue;
     const meta = JSON.parse(q.metadata || "{}");
     if (meta.activity)
-      meta.activity.rewardConstraint = `Personal XP for everyone who finishes; the first explorer also takes ${(prize / 1e6).toFixed(6)} QGOLD from this area's daily budget.`;
+      meta.activity.rewardConstraint = `Personal XP for everyone who finishes; the first explorer also takes ${prize.toLocaleString("en-US")} GOLD from this area's daily budget.`;
     meta.cellZone = { policy: MAP_REWARDS_POLICY, cell, prizeU: prize };
     db.prepare("UPDATE quests SET gold_u=?,metadata=? WHERE id=?").run(
       prize,
@@ -121,7 +121,7 @@ function chestActivity(spot) {
     },
   );
   activity.rewardConstraint =
-    "Personal XP once; a cosmetic Aura only while edition supply remains. Coins in this area are worth double today.";
+    "Personal XP once and a cosmetic Aura. Coins in this area are worth double today.";
   return activity;
 }
 
@@ -162,7 +162,7 @@ function pioneerChest(db, world, cell, samples, now, seed) {
     questId,
     world.id,
     "Pioneer chest",
-    "Nobody has explored this area for a month. Reach the chest first and open it: XP for every pioneer today, a cosmetic Aura while edition supply remains.",
+    "Nobody has explored this area for a month. Reach the chest first and open it: XP for every pioneer today and a cosmetic Aura.",
     spot.lat,
     spot.lng,
     1,

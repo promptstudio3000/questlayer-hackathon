@@ -5,7 +5,7 @@ import { PLZEN } from "../server/spatial/city-pack.mjs";
 import { localDateStart } from "../server/spatial/calendar.mjs";
 import { distance } from "../server/domain.mjs";
 import { loadCityActors } from "../server/actors/definitions.mjs";
-import { pathGraph, planDay, positionAt } from "../server/actors/schedule.mjs";
+import { npcAroundTheClock, pathGraph, planDay, positionAt } from "../server/actors/schedule.mjs";
 import { planSpawns, GUARDIAN_CHEST_RADIUS_M } from "../server/actors/spawns.mjs";
 import { createActorService } from "../server/actors/service.mjs";
 
@@ -25,8 +25,12 @@ test("day plans are deterministic, contiguous and stay on mapped paths", () => {
     const b = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: city.hours });
     assert.deepEqual(a, b, def.id);
     assert.ok(a.length >= 1, def.id);
-    assert.equal(a[0].from, dayStart + 7 * 3600_000);
-    assert.equal(a.at(-1).to, dayStart + 22 * 3600_000);
+    // NPCs walk around the clock; monsters keep the city's opening hours.
+    const npc = npcAroundTheClock(def);
+    if (npc || !def.phase || def.phase === "any") {
+      assert.equal(a[0].from, dayStart + (npc ? 0 : 7 * 3600_000), def.id);
+      assert.equal(a.at(-1).to, dayStart + (npc ? 23 * 3600_000 + 59 * 60_000 : 22 * 3600_000), def.id);
+    }
     for (let i = 1; i < a.length; i++) assert.equal(a[i].from, a[i - 1].to);
     for (const s of a) for (const p of s.path) assert.ok(onGraph(g, p), `${def.id} off path`);
     // Walking speed matches the definition (no teleporting NPC).
@@ -42,7 +46,10 @@ test("day plans are deterministic, contiguous and stay on mapped paths", () => {
 });
 
 test("positions interpolate inside segments and are null outside hours", () => {
-  const def = city.actors.find((a) => a.id === "kupec-vojtech");
+  const trader = city.actors.find((a) => a.id === "kupec-vojtech");
+  assert.ok(positionAt(planDay(trader, PLZEN, "seed", DAY, { dayStart, hours: city.hours }), dayStart + 3600_000), "NPCs are out at 01:00");
+  // A walking monster keeps the city's hours.
+  const def = { ...trader, kind: "monster" };
   const segs = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: city.hours });
   assert.equal(positionAt(segs, dayStart + 3600_000), null);
   const walk = segs.find((s) => !s.dwell);
@@ -96,7 +103,8 @@ test("encounters need range, a fresh precise fix and plausible speed", async () 
   now += 2000;
   // 5 km in 2 seconds: teleport.
   await assert.rejects(service.encounter({ player: "p1", actorId: trader.id, worldId: gps.id, location: fix({ lat: spot.lat + 0.045, lng: spot.lng }) }), (e) => e.code === "IMPLAUSIBLE_MOVE");
-  now += 600_000;
+  // Walking back 5 km at the ~15 km/h cap takes at least 20 minutes.
+  now += 1_800_000;
   const ok = await service.encounter({ player: "p1", actorId: trader.id, worldId: gps.id, location: fix(spot) });
   assert.match(ok.encounter, /^enc_/);
   assert.equal(ok.actor.id, trader.id);

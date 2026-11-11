@@ -257,7 +257,6 @@
  "Aura taken off.": "Aura quitada.",
  "Auras": "Auras",
  "Auras and badges change how you look, never your odds, damage or payouts.": "Las Auras e insignias cambian tu aspecto, nunca tus probabilidades, daño ni pagos.",
- "Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Las Auras son el brillo que lleva tu fantasma, arriba o abajo. Cada diseño es una edición limitada de como máximo {0}. Asegura una y será tuya en NEAR: guárdala, llévala o véndela en el mercado.",
  "Auras secured to your NEAR account. They stay separate from practice Auras and GOLD.": "Auras aseguradas en tu cuenta NEAR. Se mantienen aparte de las Auras de práctica y el GOLD.",
  "Automatic collection needs available browser storage": "La recolección automática necesita almacenamiento disponible en el navegador",
  "Available for your current level": "Disponible para tu nivel actual",
@@ -3231,5 +3230,9 @@
  "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "El cofre de {0} puede contener esta Aura hoy. Abre allí la actividad del cofre para intentarlo.",
  "Today in this zone": "Hoy en esta zona",
  "chest Auras: {0}": "Auras del cofre: {0}",
- "{0} Aura": "Aura {0}"
+ "{0} Aura": "Aura {0}",
+ "Auras are the glow your ghost wears, above or below. There is no supply cap: they keep appearing as quest rewards and in chests at harder spots on the map. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Las Auras son el brillo que lleva tu fantasma, encima o debajo. No tienen límite de suministro: siguen apareciendo como recompensas de misiones y en cofres en los lugares más difíciles del mapa. Asegura una y será tuya en NEAR: guárdala, llévala o véndela en el mercado.",
+ "Closed · new zones tomorrow": "Cerrada · nuevas zonas mañana",
+ "No supply cap": "Sin límite de suministro",
+ "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "Tu cuenta recibió su NEAR inicial una sola vez, al crearse. Añade tu propio NEAR: envíalo desde cualquier monedero o exchange a {0}."
 }

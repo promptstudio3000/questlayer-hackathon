@@ -257,7 +257,6 @@
  "Aura taken off.": "ऑरा उतार दिया गया।",
  "Auras": "ऑरा",
  "Auras and badges change how you look, never your odds, damage or payouts.": "ऑरा और बैज सिर्फ़ तुम्हारा लुक बदलते हैं, तुम्हारी संभावना, डैमेज या भुगतान कभी नहीं।",
- "Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "ऑरा वह चमक है जो तुम्हारा घोस्ट ऊपर या नीचे पहनता है। हर डिज़ाइन ज़्यादा से ज़्यादा {0} का सीमित एडिशन है। एक सुरक्षित करो और वह NEAR पर तुम्हारा हो जाता है: रखो, पहनो या मार्केट में ट्रेड करो।",
  "Auras secured to your NEAR account. They stay separate from practice Auras and GOLD.": "तुम्हारे NEAR अकाउंट में सुरक्षित ऑरा। ये प्रैक्टिस ऑरा और GOLD से अलग रहते हैं।",
  "Automatic collection needs available browser storage": "अपने-आप जमा करने के लिए ब्राउज़र स्टोरेज चाहिए",
  "Available for your current level": "तुम्हारे मौजूदा लेवल के लिए उपलब्ध",
@@ -3231,5 +3230,9 @@
  "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "{0} के संदूक में आज यह ऑरा हो सकता है। इसे पाने के लिए वहाँ संदूक वाली गतिविधि खोलें।",
  "Today in this zone": "आज इस ज़ोन में",
  "chest Auras: {0}": "संदूक के ऑरा: {0}",
- "{0} Aura": "{0} ऑरा"
+ "{0} Aura": "{0} ऑरा",
+ "Auras are the glow your ghost wears, above or below. There is no supply cap: they keep appearing as quest rewards and in chests at harder spots on the map. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "ऑरा वह चमक है जिसे तुम्हारा भूत ऊपर या नीचे पहनता है। इनकी आपूर्ति की कोई सीमा नहीं है: ये क्वेस्ट इनामों के रूप में और नक्शे की कठिन जगहों पर संदूकों में मिलती रहती हैं। एक सुरक्षित करो और वह NEAR पर तुम्हारी हो जाती है: रखो, पहनो या बाज़ार में बेचो।",
+ "Closed · new zones tomorrow": "बंद · कल नए ज़ोन",
+ "No supply cap": "आपूर्ति की कोई सीमा नहीं",
+ "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "तुम्हारे खाते को शुरुआती NEAR सिर्फ़ एक बार, बनते समय मिला। अपना NEAR जोड़ो: किसी भी वॉलेट या एक्सचेंज से {0} पर भेजो।"
 }

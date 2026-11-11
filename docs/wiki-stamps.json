@@ -1,7 +1,7 @@
 {
   "note": "Written by npm run wiki:stamp (docs/WIKI.md). Do not edit by hand.",
   "docs": {
-    "docs/ACTORS-API.md": "a8442ed4423d28c3",
+    "docs/ACTORS-API.md": "ebe4b1e322fcedcf",
     "docs/AI-QUEST-DRAFTS.md": "03c41a3c34e89c58",
     "docs/ARCHITECTURE.md": "839d5faccdf915d5",
     "docs/ASSET-CATALOG.md": "f6ba2d912f985da4",
@@ -17,7 +17,7 @@
     "docs/ECONOMY-PAGE.md": "fc86e66b2d027266",
     "docs/ECONOMY-RULES.md": "c062322518389413",
     "docs/ETH-WALLETS.md": "77a60b58fbcae866",
-    "docs/FAIR-PLAY.md": "9ec3e84cde875b15",
+    "docs/FAIR-PLAY.md": "bc1a51327db7f2be",
     "docs/FIRST-SESSION.md": "07dcca2b43436567",
     "docs/GAME-LOOPS.md": "5c0dd55441d9b170",
     "docs/GAME-RULES.md": "9957adc9596a787f",
@@ -67,7 +67,7 @@
     "docs/QGOLD-VAULT.md": "cf7fc2fdee9f367e",
     "docs/QUEST-FLAVOUR.md": "733d24eb566027fd",
     "docs/QUEST-TEMPLATES.md": "e089ba68574f1556",
-    "docs/RELAYER.md": "e5dbab3648a12202",
+    "docs/RELAYER.md": "28fe5b6b276778ce",
     "docs/RUNTIME-RELIABILITY.md": "841ce373ede9bb78",
     "docs/SEASON.md": "4197a88af9af96c2",
     "docs/SECOND-CITY-PLAYBOOK.md": "eec1c148d4c27312",

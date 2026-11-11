@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { formatGold } from "./gold-units.ts";
 import { ChatsCircle, Flag, Megaphone, PaperPlaneRight, Trash, UserPlus, X } from "@phosphor-icons/react";
 import { Dialog } from "./Dialog";
 import { NotePinArt } from "./NotePinArt";
@@ -369,7 +370,7 @@ export function PlaceCompose({
           {tr("Public at this map spot. GOLD is burned and not returned if the message is removed.")}
         </p>
         <button type="submit" className="gold-primary" disabled={busy || !text.trim() || (kind === "topic" && !title.trim())}>
-          {tr("Post for {0} GOLD", { 0: Math.round(perDay * days * 1e6) / 1e6 })}
+          {tr("Post for {0} GOLD", { 0: formatGold(perDay * days) })}
         </button>
       </form>
     </Dialog>

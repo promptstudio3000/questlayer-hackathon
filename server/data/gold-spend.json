@@ -1,6 +1,6 @@
 {
-  "version": "gold-spend-v2",
-  "note": "Prices are QGOLD (6 decimals), set 5 Nov 2026 so a premium emote costs about one good walk: with the testnet map budget a coin is worth about 0.0004 QGOLD and a cell-zone prize a few hundredths. Every spend burns the player's own QGOLD on chain (ft_burn, docs/GOLD-SPENDING.md). Spending never creates money and never changes odds.",
+  "version": "gold-spend-v3",
+  "note": "Prices are whole in-game GOLD; 1 GOLD is the smallest QGOLD unit (QGOLD has 6 decimals, so 1 QGOLD = 1,000,000 GOLD; owner, 11 Nov 2026). Retuned 11 Nov 2026 to the live map: a coin is a few GOLD and a cell-zone prize about 1,500 GOLD, so a premium emote costs about one or two zone prizes. Every spend burns the player's own QGOLD on chain (ft_burn, docs/GOLD-SPENDING.md). Spending never creates money and never changes odds.",
   "emotes": {
     "free": [
       "wave",
@@ -13,43 +13,43 @@
     "premium": [
       {
         "id": "fire",
-        "price": 0.025
+        "price": 2500
       },
       {
         "id": "crown",
-        "price": 0.04
+        "price": 4000
       },
       {
         "id": "gem",
-        "price": 0.04
+        "price": 4000
       },
       {
         "id": "ghost",
-        "price": 0.025
+        "price": 2500
       },
       {
         "id": "dragon",
-        "price": 0.06
+        "price": 6000
       },
       {
         "id": "rocket",
-        "price": 0.03
+        "price": 3000
       },
       {
         "id": "bolt",
-        "price": 0.025
+        "price": 2500
       },
       {
         "id": "clover",
-        "price": 0.03
+        "price": 3000
       },
       {
         "id": "rainbow",
-        "price": 0.05
+        "price": 5000
       },
       {
         "id": "unicorn",
-        "price": 0.075
+        "price": 7500
       }
     ],
     "showSeconds": 30
@@ -58,27 +58,27 @@
     {
       "id": "frame-ember",
       "slot": "frame",
-      "price": 0.1
+      "price": 10000
     },
     {
       "id": "frame-frost",
       "slot": "frame",
-      "price": 0.1
+      "price": 10000
     },
     {
       "id": "frame-storm",
       "slot": "frame",
-      "price": 0.15
+      "price": 15000
     },
     {
       "id": "frame-void",
       "slot": "frame",
-      "price": 0.15
+      "price": 15000
     },
     {
       "id": "frame-gold",
       "slot": "frame",
-      "price": 0.3
+      "price": 30000
     }
   ],
   "gear": {
@@ -90,18 +90,18 @@
       "comet"
     ],
     "price": {
-      "rare": 0.75,
-      "epic": 2
+      "rare": 75000,
+      "epic": 200000
     },
     "perDay": 1
   },
   "altar": {
-    "default": 0.025,
+    "default": 2500,
     "byRecipe": {
-      "ember-comet": 0.05,
-      "storm-crown": 0.05,
-      "void-moon": 0.05,
-      "wardbreaker": 0.05
+      "ember-comet": 5000,
+      "storm-crown": 5000,
+      "void-moon": 5000,
+      "wardbreaker": 5000
     }
   },
   "lures": {
@@ -114,13 +114,13 @@
     ],
     "searchM": 2000,
     "price": {
-      "beacon": 0.01,
-      "trader": 0.05,
-      "roamer": 0.04,
-      "lurker": 0.06,
-      "wandering_rare": 0.05,
-      "storyteller": 0.03,
-      "quest_giver": 0.03
+      "beacon": 1000,
+      "trader": 5000,
+      "roamer": 4000,
+      "lurker": 6000,
+      "wandering_rare": 5000,
+      "storyteller": 3000,
+      "quest_giver": 3000
     },
     "kinds": {
       "monster": [
@@ -134,8 +134,8 @@
     "visibleM": 1000
   },
   "places": {
-    "shoutPerDay": 0.005,
-    "topicPerDay": 0.01,
+    "shoutPerDay": 500,
+    "topicPerDay": 1000,
     "maxDays": 7,
     "shoutChars": 140,
     "topicChars": 280,

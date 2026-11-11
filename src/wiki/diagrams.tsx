@@ -44,7 +44,7 @@ function Architecture() {
         { id: "db", x: 510, y: 50, label: "SQLite (WAL)", sub: "exactly-once ledger", tone: "core" },
         { id: "poi", x: 650, y: 165, w: 120, label: "POI database", sub: "OSM · Overture", tone: "world" },
         { id: "key", x: 90, y: 165, label: "Device key", sub: "signs NEAR actions", tone: "player" },
-        { id: "ai", x: 300, y: 165, label: "AI providers", sub: "NEAR AI · Ollama", tone: "ai" },
+        { id: "ai", x: 300, y: 165, label: "AI providers", sub: "NEAR AI Cloud", tone: "ai" },
         { id: "workers", x: 510, y: 165, w: 120, label: "Workers", sub: "rewards · keepers", tone: "core" },
         { id: "relayer", x: 200, y: 290, label: "Relayer", sub: "NEP-366 · pays gas", tone: "chain" },
         { id: "near", x: 510, y: 290, w: 200, h: 60, label: "NEAR contracts", sub: "rewards · QGOLD · NFTs · Intents", tone: "chain", pulse: true },
@@ -879,14 +879,12 @@ function AiChain() {
       height={200}
       nodes={[
         { id: "q", x: 80, y: 100, label: "NPC question", tone: "player" },
-        { id: "near", x: 270, y: 100, label: "NEAR AI Cloud", sub: "TEE · attested", tone: "ai", pulse: true },
-        { id: "ollama", x: 450, y: 100, label: "Ollama", sub: "fallback", tone: "ai" },
-        { id: "tpl", x: 630, y: 100, label: "Template", sub: "always works", tone: "muted" },
+        { id: "near", x: 340, y: 100, label: "NEAR AI Cloud", sub: "TEE · attested", tone: "ai", pulse: true },
+        { id: "tpl", x: 610, y: 100, label: "Template", sub: "always works", tone: "muted" },
       ]}
       edges={[
         { from: "q", to: "near", flow: true, tone: "ai" },
-        { from: "near", to: "ollama", label: "timeout / error", dashed: true },
-        { from: "ollama", to: "tpl", label: "timeout / error", dashed: true },
+        { from: "near", to: "tpl", label: "timeout / error", dashed: true },
       ]}
     />
   );

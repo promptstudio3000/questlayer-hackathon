@@ -54,7 +54,7 @@ export class ManagedAccounts {
     db,
     provider,
     factory,
-    { factoryId, fundYocto, topupCapYocto = 0n, clock = Date.now, subsidyBudget = null } = {},
+    { factoryId, fundYocto, topupCapYocto = 0n, clock = Date.now, subsidyBudget = null, refuel = false } = {},
   ) {
     this.db = db;
     this.provider = provider;
@@ -67,6 +67,9 @@ export class ManagedAccounts {
     );
     this.fundYocto = yoctoText(fundYocto ?? 0n);
     this.topupCapYocto = yoctoText(topupCapYocto);
+    // Starting NEAR is given once, when the account is created (owner,
+    // 11 Nov 2026). The daily refuel stays available only behind PLAYER_REFUEL=1.
+    this.refuelEnabled = refuel === true;
     this.clock = clock;
     this.subsidyBudget = subsidyBudget ?? new SubsidyBudget(db, { clock });
     this.funding = new FundingJournal(db, factory, this.subsidyBudget, clock);
@@ -566,13 +569,14 @@ export class ManagedAccounts {
     if (!row || row.state !== "ready") return { ...base, accountId: row?.account_id ?? null, balanceYocto: null, canRefuel: false, reason: "ACCOUNT_NOT_READY" };
     const balance = await this.balance(row.account_id);
     const usedToday = !!this.funding.latest(`topup:${this.refuelOperation(row.account_id)}`);
-    const reason = !this.factory ? "ACCOUNT_DISABLED" : usedToday ? "FUEL_REFUELED_TODAY" : balance >= belowYocto ? "FUEL_NOT_LOW" : null;
+    const reason = !this.factory ? "ACCOUNT_DISABLED" : !this.refuelEnabled ? "FUEL_START_ONLY" : usedToday ? "FUEL_REFUELED_TODAY" : balance >= belowYocto ? "FUEL_NOT_LOW" : null;
     return { ...base, accountId: row.account_id, balanceYocto: balance.toString(), canRefuel: !reason, reason };
   }
   async refuel(playerId) {
     const row = this.row(playerId);
     assert(row && row.state === "ready", "Your explorer account is not ready yet.", 409, "ACCOUNT_NOT_READY");
     assert(this.factory, "Managed accounts are disabled on this host.", 503, "ACCOUNT_DISABLED");
+    assert(this.refuelEnabled, "Starting NEAR comes once, with your account. Add your own NEAR or convert QGOLD.", 409, "FUEL_START_ONLY");
     const op = this.refuelOperation(row.account_id);
     assert(!this.funding.latest(`topup:${op}`), "You already refuelled today. Try again tomorrow, buy NEAR or convert QGOLD.", 429, "FUEL_REFUELED_TODAY");
     const { targetYocto, belowYocto } = this.fuelPolicy();

@@ -5,7 +5,7 @@
 //
 // 1. Travel guard (GPS worlds only, never the arena): a player's last accepted
 //    fix is the anchor. A new fix far from it is accepted only after the time a
-//    fast trip would take (MAX_SPEED_MPS), capped at TRAVEL_COOLDOWN_MAX_MS so a
+//    fast trip would take (MAX_SPEED_KMH, about 15 km/h), capped at TRAVEL_COOLDOWN_MAX_MS so a
 //    real train or plane ride is a wait, not a lock-out. A rejected fix never
 //    moves the anchor, so hopping between two spoofed places gains nothing.
 // 2. XP caps (every world): location XP per H3 res-7 cell and local day, per
@@ -22,6 +22,9 @@ import {
   registerModuleSchema,
 } from "./schema-compatibility.mjs";
 
+/** Default GPS travel cap, km/h (the demo arena is exempt). */
+export const MAX_SPEED_KMH = 15;
+
 export function fairPlayLimits(env = process.env) {
   const read = (name, fallback, min, max) => {
     const raw = env[name];
@@ -30,7 +33,9 @@ export function fairPlayLimits(env = process.env) {
     return Number.isSafeInteger(n) && n >= min && n <= max ? n : fallback;
   };
   return Object.freeze({
-    maxSpeedMps: read("FAIR_PLAY_MAX_SPEED_MPS", 15, 1, 400),
+    // Outside the demo arena GPS play is on foot or by bike: about 15 km/h
+    // (owner, 11 Nov 2026). FAIR_PLAY_MAX_SPEED_KMH tunes it (whole km/h).
+    maxSpeedMps: read("FAIR_PLAY_MAX_SPEED_KMH", MAX_SPEED_KMH, 1, 1440) / 3.6,
     travelCooldownMaxMs: read("FAIR_PLAY_TRAVEL_COOLDOWN_MAX_MS", 2 * 3600_000, 0, 24 * 3600_000),
     cellXpPerDay: read("FAIR_PLAY_CELL_XP_PER_DAY", 600, 0, 1_000_000),
     dailyXp: read("FAIR_PLAY_DAILY_XP", 3000, 0, 10_000_000),

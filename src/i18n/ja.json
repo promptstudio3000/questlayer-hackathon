@@ -257,7 +257,6 @@
  "Aura taken off.": "Auraを外しました。",
  "Auras": "Aura",
  "Auras and badges change how you look, never your odds, damage or payouts.": "Auraとバッジは見た目を変えるだけで、確率・ダメージ・報酬は変わりません。",
- "Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Auraはゴーストが上か下にまとう光です。各デザインは最大{0}個の限定エディション。確保すればNEAR上であなたのものになり、持っておくのも、身に着けるのも、マーケットで取引するのも自由です。",
  "Auras secured to your NEAR account. They stay separate from practice Auras and GOLD.": "NEARアカウントに確保したAuraです。練習用AuraやGOLDとは別管理です。",
  "Automatic collection needs available browser storage": "自動収集にはブラウザのストレージが必要です",
  "Available for your current level": "現在のレベルで利用可能",
@@ -3231,5 +3230,9 @@
  "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "{0}の宝箱には今日このオーラが入っている可能性があります。そこで宝箱のアクティビティを開いて挑戦しよう。",
  "Today in this zone": "今日のこのゾーン",
  "chest Auras: {0}": "宝箱のオーラ: {0}",
- "{0} Aura": "{0}オーラ"
+ "{0} Aura": "{0}オーラ",
+ "Auras are the glow your ghost wears, above or below. There is no supply cap: they keep appearing as quest rewards and in chests at harder spots on the map. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "オーラはゴーストが頭上や足元にまとう光です。発行上限はありません。クエストの報酬や、マップ上の難しい場所にある宝箱から出続けます。確保するとNEAR上であなたのものになり、持ち続けても、身につけても、マーケットで取引してもかまいません。",
+ "Closed · new zones tomorrow": "終了 · 明日新しいゾーン",
+ "No supply cap": "発行上限なし",
+ "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "アカウントの初期NEARは作成時に一度だけ付与されます。自分のNEARを追加するには、任意のウォレットや取引所から {0} に送ってください。"
 }

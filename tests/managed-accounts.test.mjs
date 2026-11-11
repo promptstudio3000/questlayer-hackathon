@@ -328,8 +328,18 @@ test("revocation during the account-name lookup prevents an account job or subsi
   assert.equal(f.rows("relay_jobs").length, 0);
 });
 
-test("refuel tops a low explorer back to the starting amount once a UTC day, inside the cap", async (t) => {
+test("starting NEAR comes once: refuel is off unless switched on", async (t) => {
   const f = fixture({ fundYocto: 2n * 10n ** 22n, topupCapYocto: 5n * 10n ** 22n });
+  t.after(() => f.db.close());
+  const acct = f.ready(f.player, "alice-novakova", { amount: 3n * 10n ** 21n });
+  const fuel = await f.accounts.fuel(f.player);
+  assert.deepEqual([fuel.canRefuel, fuel.reason], [false, "FUEL_START_ONLY"]);
+  await assert.rejects(f.accounts.refuel(f.player), (e) => e.code === "FUEL_START_ONLY");
+  assert.equal(f.state.accounts.get(acct.accountId).amount, 3n * 10n ** 21n);
+});
+
+test("refuel (PLAYER_REFUEL=1) tops a low explorer back to the starting amount once a UTC day, inside the cap", async (t) => {
+  const f = fixture({ fundYocto: 2n * 10n ** 22n, topupCapYocto: 5n * 10n ** 22n, refuel: true });
   t.after(() => f.db.close());
   const none = await f.accounts.fuel(f.player);
   assert.deepEqual([none.canRefuel, none.reason], [false, "ACCOUNT_NOT_READY"]);

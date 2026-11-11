@@ -257,7 +257,6 @@
  "Aura taken off.": "Aura retirée.",
  "Auras": "Auras",
  "Auras and badges change how you look, never your odds, damage or payouts.": "Les Auras et les badges changent ton apparence, jamais tes chances, tes dégâts ou tes gains.",
- "Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Les Auras sont la lueur que porte ton fantôme, au-dessus ou en dessous. Chaque design est une édition limitée d’au plus {0} exemplaires. Sécurise-en une et elle devient à toi sur NEAR : garde-la, porte-la ou échange-la sur le marché.",
  "Auras secured to your NEAR account. They stay separate from practice Auras and GOLD.": "Auras sécurisées sur ton compte NEAR. Elles restent séparées des Auras d’entraînement et du GOLD.",
  "Automatic collection needs available browser storage": "La collecte automatique a besoin du stockage du navigateur",
  "Available for your current level": "Disponible pour ton niveau actuel",
@@ -3231,5 +3230,9 @@
  "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "Le coffre de {0} peut contenir cette Aura aujourd'hui. Ouvre l'activité du coffre là-bas pour tenter ta chance.",
  "Today in this zone": "Aujourd'hui dans cette zone",
  "chest Auras: {0}": "Auras du coffre : {0}",
- "{0} Aura": "Aura {0}"
+ "{0} Aura": "Aura {0}",
+ "Auras are the glow your ghost wears, above or below. There is no supply cap: they keep appearing as quest rewards and in chests at harder spots on the map. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Les Auras sont la lueur que porte ton fantôme, au-dessus ou en dessous. Il n'y a pas de limite d'offre : elles continuent d'apparaître comme récompenses de quêtes et dans des coffres aux endroits les plus difficiles de la carte. Sécurise-en une et elle t'appartient sur NEAR : garde-la, porte-la ou échange-la sur le marché.",
+ "Closed · new zones tomorrow": "Fermée · nouvelles zones demain",
+ "No supply cap": "Pas de limite d'offre",
+ "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "Ton compte a reçu son NEAR de départ une seule fois, à sa création. Ajoute ton propre NEAR : envoie-le depuis n'importe quel portefeuille ou plateforme d'échange à {0}."
 }

@@ -128,7 +128,7 @@ export const GOLD = goldSpend;
 
 type Edition = { id: string; rarity: string; source?: string };
 export const EDITIONS = (auraCatalog.editions as Edition[]).map((e) => ({ id: e.id, rarity: e.rarity, source: e.source ?? "chest" }));
-export const SUPPLY_PER_EDITION = Number((auraCatalog as { supplyPerEdition?: number }).supplyPerEdition ?? 256);
+export const SUPPLY_PER_EDITION = Number((auraCatalog as { supplyPerEdition?: number | null }).supplyPerEdition ?? 256);
 
 const levelRows = LEVELS.map((l) => [`L${l.level}`, l.xp.toLocaleString("en-US"), l.unlock, l.item ?? "–"]);
 const gateRows = STAKER_GATES.map((g) => [
@@ -214,7 +214,7 @@ export const CHAPTERS: Chapter[] = [
           head: ["Unit", "What it is", "Where it lives", "Transferable"],
           rows: [
             ["XP / QXP", "Experience from play. Drives levels and gates.", "Game DB; QXP mirror contract on NEAR", "Never (soulbound)"],
-            ["QGOLD (shown as GOLD)", "Token fully backed by NEAR, 6 decimals. Coins and zone prizes earn it, payout rounds mint it, every purchase burns it. Its rate R only rises.", "`questlayer-qgold-vault-20261104.testnet`; unpaid amounts wait in the game DB", "Yes (NEP-141)"],
+            ["QGOLD (shown as GOLD)", "Token fully backed by NEAR, 6 decimals. In the game 1 GOLD is its smallest unit (1 QGOLD = 1,000,000 GOLD), so every amount is a whole number. Coins and zone prizes earn it, payout rounds mint it, every purchase burns it. Its rate R only rises.", "`questlayer-qgold-vault-20261104.testnet`; unpaid amounts wait in the game DB", "Yes (NEP-141)"],
             ["NEAR / test NEAR", "Prize pool money, stake, fees, Aura prices.", "Rewards, vault, market and Intents contracts", "Yes"],
           ],
         },
@@ -240,7 +240,7 @@ export const CHAPTERS: Chapter[] = [
     keyFacts: [
       ["95–120 m", "between coins on a path (60 m near a zone)"],
       ["6 waves", "of coins between 07:00 and 22:00 local"],
-      ["15 m/s", "fair-play speed cap"],
+      ["15 km/h", "GPS travel cap (the demo is exempt)"],
       ["25 m", "range to confirm a quest stop"],
     ],
     hero: "core-loop",
@@ -252,7 +252,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**GPS play:** no tap-to-walk anywhere. The character and the follow camera use your moving course; stationary jitter, stale or inaccurate fixes and big jumps never invent a turn. Manual panning pauses follow; My location or walking on restores it.",
-          "**City demo:** a collapsible joystick (drag the knob: up walks the way you face, sideways turns, down steps back at 0.6× speed); arrows and WASD work too. A Run toggle, on by default, moves at 14 m/s; walking is 5 m/s. Both stay under the 15 m/s cap.",
+          "**City demo:** a collapsible joystick (drag the knob: up walks the way you face, sideways turns, down steps back at 0.6× speed); arrows and WASD work too. A Run toggle, on by default, moves at 14 m/s; walking is 5 m/s. The demo is exempt from the GPS travel cap (about 15 km/h).",
           "Opening a dialog releases held movement; closing it never resumes an old key press.",
           "Quest buttons only turn the explorer toward the target; within 3 m the demo snaps onto it so thin path zones count.",
           "Multi-stop walks keep their stop numbers. Ordered walks accept only the server's next stop; any-order hunts say **Any order** and use the nearest remaining stop. Confirmation needs the 25 m range, the zone footprint and fresh GPS; the server alone advances progress.",
@@ -320,7 +320,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**Tap the altar** in the middle of a zone (or its pin) to open the zone detail: whether it is open now or when it opens, how many of today's activities you have done, the XP, GOLD and chest Auras still to win, and when the zone gets new activities and rewards (the next local midnight, when the daily world swaps).",
-          "**The round icons floating inside a zone** are the chest Auras its chest can hold today (ring colour = rarity) and a gold coin when an activity there pays GOLD. Tap one to see what it is and jump to the zone's activities. They disappear once the zone is closed or cleared.",
+          "**The round icons floating inside a zone** are the chest Auras its chest can hold today (ring colour = rarity) and a gold coin when an activity there pays GOLD. Tap one to see what it is and jump to the zone's activities. They disappear once the zone is closed or cleared; the zone itself stays on the map all day with a low, dimmed wall and the chip “Closed · new zones tomorrow”.",
         ],
       },
       {
@@ -760,7 +760,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "At the first request of a local day the server builds the plan once from the **real daily budget**: the map's share of the rewards contract's per-date cap, priced in micro-QGOLD at the vault's rate R.",
-          "**One coin = coin budget ÷ all shares.** At a 0.05 NEAR map budget and R = 0.001 NEAR that is 50 QGOLD over 6.5–13 million shares, a few micro-QGOLD per coin. The value grows with the treasury; shares a cell cannot hold stay in the treasury.",
+          "**One coin = coin budget ÷ all shares.** At a 0.05 NEAR map budget and R = 0.001 NEAR that is 50 QGOLD over 6.5–13 million shares, a few GOLD per coin (1 GOLD = 1 micro-QGOLD, the smallest unit). The value grows with the treasury; shares a cell cannot hold stay in the treasury.",
           "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area; what a capped cell cannot take goes to the others.",
           "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest.",
           "The city demo pays the same backed coins. Outside Czechia a cell gets no coins until more countries have a plan.",
@@ -987,7 +987,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           `Emotes: ${GOLD.emotes.free.length} free; premium ones are shown to others for ${GOLD.emotes.showSeconds} s (${premiumEmotes}).`,
-          `NPC gear: one chest-edition Aura a day from a trader (rare ${GOLD.gear.price.rare}, epic ${GOLD.gear.price.epic} QGOLD).`,
+          `NPC gear: one chest-edition Aura a day from a trader (rare ${GOLD.gear.price.rare.toLocaleString("en-US")}, epic ${GOLD.gear.price.epic.toLocaleString("en-US")} GOLD).`,
           `Lures: ${GOLD.lures.minutes} minutes, GPS only, ${GOLD.lures.hours.join("–")}, at least ${GOLD.lures.spacingM} m apart, snapped to a safe place within ${GOLD.lures.poiSnapM} m. They attract actors and never change odds.`,
           "Place messages: paid shouts live up to 7 days; a topic with posts from 6 distinct authors becomes free and is archived after 90 days without activity.",
           "Every spend calls `ft_burn` from your own account (sponsored, no pop-up), the server verifies it on chain, and only then the purchase happens. One saved reference follows each purchase from quote to delivery; retries return the saved result.",
@@ -1142,7 +1142,7 @@ export const CHAPTERS: Chapter[] = [
     tldr: "The blockchain is invisible: every explorer automatically gets an **own NEAR account** whose key never leaves the device, the game pays the gas for every game action, and recovery works with a passkey or a linked wallet.",
     keyFacts: [
       ["0.02 NEAR", "deposit per new account, testnet and mainnet"],
-      ["1 × a day", "Refuel back to 0.02 NEAR when below half"],
+      ["once", "starting NEAR, only at account creation"],
       ["0", "player keys held by the server"],
       ["2 NEAR/day", "sponsorship cap planned for mainnet"],
     ],
@@ -1155,7 +1155,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "A new explorer gets `<name>.play-…testnet`, funded with 0.02 NEAR (the same on mainnet), once they earned their first XP on the map; the first steps play solo without it. New accounts per network address are capped per day.",
-          "Gas is always sponsored. The small balance only covers the account's storage and the player's own payments (Aura buys, deposits), which the relayer never sponsors. When it drops below half, Profile → Stake → Earnings offers **Refuel** back to 0.02 NEAR once a UTC day (inside the 0.05 NEAR per-account daily top-up cap and the shared sponsorship budget), **Convert QGOLD to NEAR** at the vault, or **Add your own NEAR** from any wallet.",
+          "Gas is always sponsored. The small balance only covers the account's storage and the player's own payments (Aura buys, deposits), which the relayer never sponsors. Starting NEAR comes **once**, when the account is created; there is no daily refuel (`PLAYER_REFUEL=1` turns it back on for tests). Profile → Stake → Earnings offers **Convert QGOLD to NEAR** at the vault or **Add your own NEAR** from any wallet.",
           "Every in-game action (tasks, Secrets, Aura listings and equipment, staking, level rewards, badges, profile and note records) signs with this account, without a wallet pop-up. Before it exists, **Activate my account** prepares it.",
           "The device key lives in a separate signing origin, deployed with the game. If a browser blocks its storage, no account is created, Profile → Settings → Account and devices says so, and free play continues. Keys made before that origin are not rotated yet.",
           "Purchases, equipment, earned mini-games and getting ready to trade sign silently. Anything that can pay someone else (a sale or purchase, a task, Secret or send, a withdrawal, an asset transfer) and account recovery ask one plain Yes / No question in a small separate window, which a compromised game page cannot answer.",
@@ -1217,7 +1217,7 @@ export const CHAPTERS: Chapter[] = [
     title: "AI in the game",
     tldr: "AI phrases NPC replies and writes nightly quest flavour, but it **only ever picks from options the server computed**. It never sets rewards, prices or links, and no model call slows play.",
     keyFacts: [
-      ["3", "providers in order: NEAR AI Cloud, Ollama, template"],
+      ["2", "providers in order: NEAR AI Cloud, template"],
       ["01:00 UTC", "nightly flavour batch"],
       ["0", "model calls on the player's path for quest texts"],
       ["0", "drafts published without review"],
@@ -1229,7 +1229,7 @@ export const CHAPTERS: Chapter[] = [
     blocks: [
       {
         list: [
-          "**NPC talk:** NEAR AI Cloud, then Ollama, then a deterministic template. Signed responses are checked against their attestation report in the background; the reply shows its verification state.",
+          "**NPC talk:** NEAR AI Cloud, then a deterministic template (NEAR AI is the only model provider; Ollama was removed). Signed responses are checked against their attestation report in the background; the reply shows its verification state.",
           "**Quest flavour:** a nightly batch after 01:00 UTC writes short texts for places in active regions; play only reads the cache. Rejected texts are logged with reasons.",
           "**Creator drafts:** an editor helper suggests quest drafts; suggestions are never saved or published automatically and pass the normal review.",
           "Rule for every model: it picks from options the server computed, by index. Outputs are filtered for unsafe text and prompt leaks.",
@@ -1243,7 +1243,7 @@ export const CHAPTERS: Chapter[] = [
     title: "Fair play and safety",
     tldr: "The server is the trusted validator of GPS evidence, with a travel guard, XP caps and safety-filtered public places. The contracts bound what even a compromised server could pay.",
     keyFacts: [
-      ["15 m/s", "travel guard in GPS worlds"],
+      ["15 km/h", "travel guard in GPS worlds"],
       ["600 XP", "per cell a day from location play"],
       ["3,000 XP", "a day from location play"],
       ["12", "cells a day count for XP"],
@@ -1255,7 +1255,7 @@ export const CHAPTERS: Chapter[] = [
     blocks: [
       {
         list: [
-          "Faster than 15 m/s returns `422 IMPLAUSIBLE_MOVE` (wait capped at 2 h).",
+          "Faster than about 15 km/h (on foot or by bike, `FAIR_PLAY_MAX_SPEED_KMH`) returns `422 IMPLAUSIBLE_MOVE` (wait capped at 2 h).",
           "XP caps: the claim still succeeds, extra XP is trimmed and the response says so.",
           "Rate limits on sign-up and APIs; all quests sit on safety-filtered public places.",
           "Map notes, place messages, places and creator quests have reports, blocks and moderators.",

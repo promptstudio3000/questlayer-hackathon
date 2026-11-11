@@ -363,7 +363,7 @@ function CollectiblesScene() {
                 <div className="hiw-card-face back">
                   <ShieldCheck size={28} weight="duotone" />
                   <b>{tr("Edition")}</b>
-                  <small>{tr("Max {0} ever", { 0: AURA_SUPPLY })}</small>
+                  <small>{AURA_SUPPLY ? tr("Max {0} ever", { 0: AURA_SUPPLY }) : tr("No supply cap")}</small>
                   <small>{tr("Secured on NEAR")}</small>
                 </div>
               )}
@@ -794,7 +794,7 @@ export default function HowItWorks() {
           flip
           eyebrow={tr("Collectibles and editions")}
           title={tr("Wear what you earn. Own it on NEAR.")}
-          lead={tr("Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.", { 0: AURA_SUPPLY })}
+          lead={tr("Auras are the glow your ghost wears, above or below. There is no supply cap: they keep appearing as quest rewards and in chests at harder spots on the map. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.")}
           chips={[tr("Limited editions"), tr("Above and below slots"), tr("Market and traders")]}
           scene={<CollectiblesScene />}
         />

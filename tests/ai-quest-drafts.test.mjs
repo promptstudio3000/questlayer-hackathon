@@ -224,7 +224,7 @@ test("emergency off switch disables drafting and configuration is validated", as
     drafter.draft({ actor: "a", cityId: "plzen", candidateId: place.id, template: "visit" }),
     (e) => e.code === "AI_DRAFT_DISABLED",
   );
-  assert.throws(() => questDraftConfiguration({ QUEST_AI_PROVIDER: "gpt" }), /template, anthropic, ollama or off/);
+  assert.throws(() => questDraftConfiguration({ QUEST_AI_PROVIDER: "gpt" }), /template, anthropic, near-ai or off/);
   assert.equal(questDraftConfiguration({}).model, DEFAULT_QUEST_AI_MODEL);
   // Without a key the Anthropic setting stays on the offline template.
   const keyless = setup(t, { env: { QUEST_AI_PROVIDER: "anthropic" } });

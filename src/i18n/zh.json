@@ -257,7 +257,6 @@
  "Aura taken off.": "已卸下 Aura。",
  "Auras": "Aura",
  "Auras and badges change how you look, never your odds, damage or payouts.": "Aura 和徽章只改变你的外观，绝不改变概率、伤害或收益。",
- "Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Aura 是你的幽灵在上方或下方佩戴的光芒。每种设计都是最多 {0} 份的限量版本。将它上链后，它就在 NEAR 上归你所有：收藏、佩戴或在市场上交易都行。",
  "Auras secured to your NEAR account. They stay separate from practice Auras and GOLD.": "已上链到你的 NEAR 账户的 Aura。它们与练习 Aura 和 GOLD 分开。",
  "Automatic collection needs available browser storage": "自动收集需要可用的浏览器存储",
  "Available for your current level": "当前等级可用",
@@ -3231,5 +3230,9 @@
  "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "{0}的宝箱今天可能装有这个光环。去那里打开宝箱活动试试吧。",
  "Today in this zone": "今天在这个区域",
  "chest Auras: {0}": "宝箱光环：{0}",
- "{0} Aura": "{0}光环"
+ "{0} Aura": "{0}光环",
+ "Auras are the glow your ghost wears, above or below. There is no supply cap: they keep appearing as quest rewards and in chests at harder spots on the map. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "光环是你的幽灵佩戴在上方或下方的光芒。没有供应上限：它们会不断作为任务奖励出现，也会出现在地图上较难到达地点的宝箱里。获得一个后，它就在 NEAR 上归你所有：可以保留、佩戴或在市场上交易。",
+ "Closed · new zones tomorrow": "已关闭 · 明天有新区域",
+ "No supply cap": "无供应上限",
+ "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "你的账户只在创建时获得一次初始 NEAR。添加你自己的 NEAR：从任意钱包或交易所发送到 {0}。"
 }

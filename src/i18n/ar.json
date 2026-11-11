@@ -257,7 +257,6 @@
  "Aura taken off.": "نُزعت الهالة.",
  "Auras": "الهالات",
  "Auras and badges change how you look, never your odds, damage or payouts.": "الهالات والشارات تغيّر مظهرك، ولا تغيّر أبدًا احتمالاتك أو ضررك أو أرباحك.",
- "Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "الهالات هي التوهج الذي يرتديه شبحك، في الأعلى أو الأسفل. كل تصميم إصدار محدود لا يتجاوز {0}. أمّن واحدة فتصبح ملكك على NEAR: احتفظ بها أو ارتدها أو تاجر بها في السوق.",
  "Auras secured to your NEAR account. They stay separate from practice Auras and GOLD.": "هالات مؤمَّنة في حساب NEAR الخاص بك. تبقى منفصلة عن الهالات التدريبية وGOLD.",
  "Automatic collection needs available browser storage": "الجمع التلقائي يحتاج إلى مساحة تخزين متاحة في المتصفح",
  "Available for your current level": "متاحة لمستواك الحالي",
@@ -3231,5 +3230,9 @@
  "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "قد يحتوي الصندوق في {0} على هذه الهالة اليوم. افتح نشاط الصندوق هناك لتجرّب الحصول عليها.",
  "Today in this zone": "اليوم في هذه المنطقة",
  "chest Auras: {0}": "هالات الصندوق: {0}",
- "{0} Aura": "هالة {0}"
+ "{0} Aura": "هالة {0}",
+ "Auras are the glow your ghost wears, above or below. There is no supply cap: they keep appearing as quest rewards and in chests at harder spots on the map. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "الهالات هي الوهج الذي يرتديه شبحك فوقه أو تحته. لا يوجد حد للمعروض: تستمر في الظهور كمكافآت للمهام وفي صناديق في الأماكن الأصعب على الخريطة. أمّن واحدة لتصبح ملكك على NEAR: احتفظ بها أو ارتدِها أو تداولها في السوق.",
+ "Closed · new zones tomorrow": "مغلقة · مناطق جديدة غدًا",
+ "No supply cap": "بلا حد للمعروض",
+ "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "حصل حسابك على NEAR الابتدائي مرة واحدة عند إنشائه. أضف NEAR الخاص بك: أرسله من أي محفظة أو منصة تداول إلى {0}."
 }

@@ -5,8 +5,7 @@
 // number and Aura name it uses must be in the facts. Any failure returns the
 // persona's template line with the menu as plain buttons (docs/NPC-PLAN.md §5).
 import { clean, screenText } from "../ai/text-policy.mjs";
-import { ollamaConfiguration, ollamaJson } from "../ai/ollama.mjs";
-import { nearAiConfiguration, nearAiJson } from "../ai/near-ai.mjs";
+import { aiProviderName, nearAiConfiguration, nearAiJson } from "../ai/near-ai.mjs";
 import { AURA_CATALOG } from "../aura-catalog.mjs";
 
 export const NPC_TALK_POLICY = "npc-talk-v1";
@@ -117,18 +116,6 @@ export function npcUserMessage({ facts, menu, memory = [], message }) {
   }\n</player_message>`;
 }
 
-export function createOllamaNpcProvider(config) {
-  return {
-    name: "ollama",
-    model: config.model,
-    reply: ({ persona, ...context }) =>
-      ollamaJson(
-        { ...config, timeoutMs: 20_000 },
-        { system: systemPrompt(persona), user: npcUserMessage(context), schema: NPC_OUTPUT_SCHEMA },
-      ),
-  };
-}
-
 // NEAR AI Cloud (OpenAI-compatible, private inference in TEEs). Off unless
 // NEAR_AI_ENABLED=1 and NEAR_AI_API_KEY is set (docs/NEAR-AI-CLOUD.md). The
 // reply carries a receipt so the service can check the enclave signature.
@@ -147,55 +134,29 @@ export function createNearAiNpcProvider(config) {
   };
 }
 
-// Tries the primary provider, then the fallback when the primary is down or
-// returns something unparseable. Validation failures are not retried: the
-// template reply is the answer to those.
-export function createFallbackNpcProvider(primary, fallback) {
-  const meta = async (p, args) => {
-    const res = await p.reply(args);
-    return p.withMeta ? res : { output: res, source: p.name, model: p.model };
-  };
-  return {
-    name: primary.name,
-    model: primary.model,
-    withMeta: true,
-    async reply(args) {
-      try {
-        return await meta(primary, args);
-      } catch (error) {
-        const res = await meta(fallback, args);
-        return { ...res, primaryReason: error.reason || (/^provider-[a-z]+( \(\d{3}\))?$/.test(error.message || "") ? error.message : "provider-unavailable") };
-      }
-    },
-  };
-}
-
 const whole = (value, name, fallback) => {
   if (value === undefined || value === "") return fallback;
   if (!/^[0-9]{1,6}$/.test(value)) throw Error(`${name} must be a whole number.`);
   return Number(value);
 };
 
-// NPC_AI_PROVIDER: ollama | near-ai | template | off. Unset: NEAR AI Cloud
-// when NEAR_AI_ENABLED=1 and a key exists, otherwise the guide's Ollama setup,
-// so NPCs use the existing Ollama key with no new env. near-ai falls back to
-// Ollama (when its key exists) and then to the template reply.
+// NPC_AI_PROVIDER: near-ai | template | off. Unset: NEAR AI Cloud when
+// NEAR_AI_ENABLED=1 and a key exists, otherwise the template reply. NEAR AI
+// is the only model provider (Ollama removed 11 Nov 2026); when it is down or
+// returns something unusable, the persona's template line answers.
 export function npcConfiguration(env = process.env) {
-  let provider = (env.NPC_AI_PROVIDER || "").trim();
+  let provider = aiProviderName(env.NPC_AI_PROVIDER);
   const nearAi = nearAiConfiguration(env);
-  const inherited = (env.GUIDE_AI_PROVIDER || "").trim() === "ollama" ? "ollama" : "template";
-  if (!provider) provider = nearAi.active ? "near-ai" : inherited;
-  if (!["ollama", "near-ai", "template", "off"].includes(provider))
-    throw Error("NPC_AI_PROVIDER must be ollama, near-ai, template or off.");
+  if (!provider) provider = nearAi.active ? "near-ai" : "template";
+  if (!["near-ai", "template", "off"].includes(provider))
+    throw Error("NPC_AI_PROVIDER must be near-ai, template or off.");
   // The NEAR AI switch wins: without NEAR_AI_ENABLED=1 nothing calls it.
-  if (provider === "near-ai" && !nearAi.enabled) provider = inherited;
-  const ollama = ollamaConfiguration(env);
+  if (provider === "near-ai" && !nearAi.enabled) provider = "template";
   return {
     provider,
     perHour: whole(env.NPC_TALK_LIMIT_PER_HOUR, "NPC_TALK_LIMIT_PER_HOUR", 20),
     perMinute: whole(env.NPC_TALK_LIMIT_PER_MINUTE, "NPC_TALK_LIMIT_PER_MINUTE", 6),
     dailyCalls: whole(env.NPC_AI_DAILY_CALLS, "NPC_AI_DAILY_CALLS", 2000),
-    ...(provider === "ollama" || (provider === "near-ai" && ollama.apiKey) ? { ollama } : {}),
     ...(provider === "near-ai"
       ? { nearAi: { ...nearAi, model: (env.NPC_NEAR_AI_MODEL || nearAi.model).trim() } }
       : {}),
@@ -203,10 +164,6 @@ export function npcConfiguration(env = process.env) {
 }
 
 export function npcProviderFor(config) {
-  if (config.provider === "ollama" && config.ollama?.apiKey) return createOllamaNpcProvider(config.ollama);
-  if (config.provider === "near-ai" && config.nearAi?.active) {
-    const near = createNearAiNpcProvider(config.nearAi);
-    return config.ollama?.apiKey ? createFallbackNpcProvider(near, createOllamaNpcProvider(config.ollama)) : near;
-  }
+  if (config.provider === "near-ai" && config.nearAi?.active) return createNearAiNpcProvider(config.nearAi);
   return null;
 }

@@ -257,7 +257,6 @@
  "Aura taken off.": "Aura sundána.",
  "Auras": "Aury",
  "Auras and badges change how you look, never your odds, damage or payouts.": "Aury a odznaky mění tvůj vzhled, nikdy šance, poškození ani výplaty.",
- "Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Aury jsou záře, kterou tvůj duch nosí nahoře nebo dole. Každý vzor je limitovaná edice nejvýš {0} kusů. Zajisti si ji a bude tvoje na NEAR: nech si ji, nos ji nebo s ní obchoduj na trhu.",
  "Auras secured to your NEAR account. They stay separate from practice Auras and GOLD.": "Aury zajištěné na tvém účtu NEAR. Zůstávají oddělené od cvičných Aur a GOLD.",
  "Automatic collection needs available browser storage": "Automatický sběr potřebuje dostupné úložiště prohlížeče",
  "Available for your current level": "Dostupné pro tvou aktuální úroveň",
@@ -3231,5 +3230,9 @@
  "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "Truhla v {0} dnes může obsahovat tuto Auru. Otevři tam aktivitu s truhlou a zkus ji získat.",
  "Today in this zone": "Dnes v této zóně",
  "chest Auras: {0}": "Aury z truhly: {0}",
- "{0} Aura": "Aura {0}"
+ "{0} Aura": "Aura {0}",
+ "Closed · new zones tomorrow": "Zavřeno · nové zóny zítra",
+ "No supply cap": "Bez limitu nákladu",
+ "Auras are the glow your ghost wears, above or below. There is no supply cap: they keep appearing as quest rewards and in chests at harder spots on the map. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Aury jsou záře, kterou tvůj duch nosí nad sebou nebo pod sebou. Nemají limit nákladu: objevují se dál jako odměny za questy a v truhlách na náročnějších místech mapy. Zajisti si ji a bude tvoje na NEAR: nech si ji, nos ji nebo ji prodej na trhu.",
+ "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "Startovní NEAR dostal tvůj účet jednou, při založení. Přidej vlastní NEAR: pošli ho z libovolné peněženky nebo burzy na {0}."
 }

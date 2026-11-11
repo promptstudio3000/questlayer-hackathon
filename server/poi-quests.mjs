@@ -11,7 +11,7 @@
 // order never changes it.
 //
 // Rewards: XP only, plus one cosmetic chest per cell and day that mints an
-// Aura only while edition supply lasts (the ordinary chest path). Street coins
+// Aura (the ordinary chest path; editions are uncapped). Street coins
 // are unchanged. No GOLD, no NEAR: gold_u is always 0 here.
 import { DatabaseSync } from "node:sqlite";
 import { existsSync, realpathSync, statSync } from "node:fs";
@@ -524,7 +524,7 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
       const objective = hunt
         ? `Visit ${HUNT_STOPS} ${label(q.category, true)} in this area today, in any order.`
         : q.chest
-          ? `Reach the chest next to ${name} and open it. An Aura may remain in its edition.`
+          ? `Reach the chest next to ${name} and open it. It holds a cosmetic Aura.`
           : clue
             ? `Reach the marked public spot next to ${name}, then answer one question about it. The answer comes from Wikidata.`
             : `Reach the marked public spot next to ${name} and confirm your visit.`;
@@ -541,7 +541,7 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
         activity.rewardConstraint = `Personal XP once: ${CLUE_XP.correct} for the right answer, ${CLUE_XP.miss} for the visit. One answer. No GOLD or NEAR prize.`;
       if (q.chest)
         activity.rewardConstraint =
-          "Personal XP once; a cosmetic Aura only while edition supply remains. No GOLD or NEAR prize.";
+          "Personal XP once and a cosmetic Aura. No GOLD or NEAR prize.";
       db.prepare(
         "INSERT INTO quests(id,world_id,title,description,lat,lng,tier,gold_u,xp,kind,opens_at,closes_at,zone_id,metadata) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       ).run(

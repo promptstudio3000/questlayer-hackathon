@@ -257,7 +257,6 @@
  "Aura taken off.": "Аура снята.",
  "Auras": "Ауры",
  "Auras and badges change how you look, never your odds, damage or payouts.": "Ауры и значки меняют твой облик, но никогда не шансы, урон или выплаты.",
- "Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Ауры — это сияние, которое носит твой призрак, сверху или снизу. Каждый дизайн — ограниченный тираж не больше {0}. Закрепи одну, и она станет твоей в NEAR: храни, носи или продавай на рынке.",
  "Auras secured to your NEAR account. They stay separate from practice Auras and GOLD.": "Ауры, закреплённые за твоим аккаунтом NEAR. Они учитываются отдельно от тренировочных Аур и GOLD.",
  "Automatic collection needs available browser storage": "Для автосбора нужно доступное хранилище браузера",
  "Available for your current level": "Доступно на твоём текущем уровне",
@@ -3231,5 +3230,9 @@
  "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "Сундук в {0} сегодня может содержать эту Ауру. Откройте там задание с сундуком, чтобы попытаться её получить.",
  "Today in this zone": "Сегодня в этой зоне",
  "chest Auras: {0}": "Ауры из сундука: {0}",
- "{0} Aura": "Аура: {0}"
+ "{0} Aura": "Аура: {0}",
+ "Auras are the glow your ghost wears, above or below. There is no supply cap: they keep appearing as quest rewards and in chests at harder spots on the map. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Ауры — это сияние, которое твой призрак носит над собой или под собой. Их количество не ограничено: они продолжают появляться как награды за квесты и в сундуках в сложных местах карты. Закрепи ауру за собой, и она станет твоей в NEAR: храни, носи или продавай на рынке.",
+ "Closed · new zones tomorrow": "Закрыто · завтра новые зоны",
+ "No supply cap": "Без ограничения количества",
+ "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "Твой аккаунт получил стартовый NEAR один раз, при создании. Добавь свой NEAR: отправь его с любого кошелька или биржи на {0}."
 }

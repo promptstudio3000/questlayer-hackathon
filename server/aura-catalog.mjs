@@ -5,7 +5,15 @@ import { readFileSync } from "node:fs";
 const catalog = JSON.parse(
   readFileSync(new URL("./data/aura-catalog.json", import.meta.url), "utf8"),
 );
-export const AURA_SUPPLY = catalog.supplyPerEdition;
+// No capped supply (owner, 11 Nov 2026): Auras keep appearing as rewards.
+// The editions table keeps a max_supply column, so "uncapped" is stored as
+// the largest safe integer.
+export const AURA_SUPPLY = catalog.supplyPerEdition ?? Number.MAX_SAFE_INTEGER;
+export const AURA_UNCAPPED = catalog.supplyPerEdition == null;
+// The deployed collectibles contract still mints at most 256 copies per
+// edition on NEAR (contracts/collectibles AURA copies), so native token ids
+// keep that bound until the contract is upgraded.
+export const AURA_CHAIN_COPIES = 256;
 export const AURA_ENTITLEMENTS = Object.freeze(catalog.entitlements);
 export const AURA_CATALOG = Object.freeze(
   catalog.editions.map((e) => Object.freeze({ ...e })),
@@ -47,7 +55,7 @@ const NATIVE_TOKEN = new RegExp(`^aura:(${NATIVE_EDITIONS.join("|")}):([1-9]\\d{
 /** Parse `aura:<edition>:<serial>` for a native edition; null otherwise. */
 export function nativeAuraToken(tokenId) {
   const m = typeof tokenId === "string" ? NATIVE_TOKEN.exec(tokenId) : null;
-  if (!m || Number(m[2]) > AURA_SUPPLY) return null;
+  if (!m || Number(m[2]) > AURA_CHAIN_COPIES) return null;
   return { edition: m[1], serial: Number(m[2]) };
 }
 export const isNativeAuraTokenId = (value) => !!nativeAuraToken(value);

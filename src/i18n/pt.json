@@ -257,7 +257,6 @@
  "Aura taken off.": "Aura removida.",
  "Auras": "Auras",
  "Auras and badges change how you look, never your odds, damage or payouts.": "Auras e insígnias mudam sua aparência, nunca suas chances, dano ou pagamentos.",
- "Auras are the glow your ghost wears, above or below. Each design is a limited edition of at most {0}. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "Auras são o brilho que seu fantasma usa, acima ou abaixo. Cada design é uma edição limitada de no máximo {0}. Proteja uma e ela vira sua na NEAR: guarde, use ou negocie no mercado.",
  "Auras secured to your NEAR account. They stay separate from practice Auras and GOLD.": "Auras protegidas na sua conta NEAR. Ficam separadas das Auras de treino e do GOLD.",
  "Automatic collection needs available browser storage": "A coleta automática precisa de armazenamento disponível no navegador",
  "Available for your current level": "Disponível para o seu nível atual",
@@ -3231,5 +3230,9 @@
  "The chest in {0} can hold this Aura today. Open the chest activity there to try for it.": "O baú em {0} pode conter esta Aura hoje. Abra a atividade do baú lá para tentar.",
  "Today in this zone": "Hoje nesta zona",
  "chest Auras: {0}": "Auras do baú: {0}",
- "{0} Aura": "Aura {0}"
+ "{0} Aura": "Aura {0}",
+ "Auras are the glow your ghost wears, above or below. There is no supply cap: they keep appearing as quest rewards and in chests at harder spots on the map. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.": "As Auras são o brilho que o teu fantasma usa, por cima ou por baixo. Não há limite de oferta: continuam a aparecer como recompensas de missões e em baús nos pontos mais difíceis do mapa. Garante uma e ela passa a ser tua na NEAR: guarda-a, usa-a ou troca-a no mercado.",
+ "Closed · new zones tomorrow": "Fechada · novas zonas amanhã",
+ "No supply cap": "Sem limite de oferta",
+ "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "A tua conta recebeu o NEAR inicial uma única vez, quando foi criada. Adiciona o teu próprio NEAR: envia-o de qualquer carteira ou exchange para {0}."
 }
