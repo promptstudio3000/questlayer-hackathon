@@ -321,14 +321,32 @@ export function FuelTheCity({
 
   async function run(request: Omit<VaultRequest, "accountId">, pending: string, done: string) {
     setOutcome({ kind: "pending", text: pending });
+    const before = phase.kind;
+    let ok = false;
     try {
-      const ok = await sign(request);
-      setOutcome(ok ? { kind: "done", text: done } : { kind: "failed", text: tr("It didn't go through. Nothing was taken; try again.") });
+      ok = await sign(request);
     } catch (e) {
       setOutcome({ kind: "failed", text: (e as Error).message });
     }
     setConfirmExit(false);
-    await readVaults();
+    // The vault list can lag the chain by a few seconds: read until the step shows,
+    // so a sent withdrawal never leaves the Withdraw button standing.
+    for (let i = 0; i < 8; i++) {
+      const snap = await readVaults();
+      if (snap && stakePhase((snap.positions || []) as FuelPosition[]).kind !== before) {
+        ok = true;
+        break;
+      }
+      if (!ok && i >= 3) break;
+      await wait(3000);
+    }
+    setOutcome((o) =>
+      ok
+        ? { kind: "done", text: done }
+        : o.kind === "failed"
+          ? o
+          : { kind: "failed", text: tr("It didn't finish. If it was sent, it shows here in a minute.") },
+    );
     if (account) void readBalance(account).then(setBalance);
   }
 

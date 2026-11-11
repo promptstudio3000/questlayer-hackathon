@@ -3236,5 +3236,6 @@
  "You have {0} QGOLD, worth about {1} NEAR. That is not enough to cover the missing {2} NEAR yet; collect more on the map or add NEAR.": "{0} QGOLD（約 {1} NEAR）を持っています。不足している {2} NEAR にはまだ足りません。マップでもっと集めるか NEAR を追加してください。",
  "{0} has {1} NEAR.": "{0} の残高は {1} NEAR です。",
  "It didn't finish. If it was sent, your stake shows here in a minute.": "完了しませんでした。送信済みなら、1分ほどでステークがここに表示されます。",
- "It didn't finish. If it was sent, your vault shows here in a minute.": "完了しませんでした。送信済みなら、1分ほどでボールトがここに表示されます。"
+ "It didn't finish. If it was sent, your vault shows here in a minute.": "完了しませんでした。送信済みなら、1分ほどでボールトがここに表示されます。",
+ "It didn't finish. If it was sent, it shows here in a minute.": "完了しませんでした。送信済みなら、1分ほどでここに表示されます。"
 }
