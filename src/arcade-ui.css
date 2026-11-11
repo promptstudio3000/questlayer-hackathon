@@ -1,0 +1,234 @@
+/* Arcade pass (11 Nov 2026), loaded last. One compact type scale and tighter
+   stacks for zone activities, the find card and the main screens. Sizes come
+   from the --text-* tokens in tokens.css. Dialog-specific rules of this pass
+   live with their lazy stylesheets (npc-sheet, actors, local-chat,
+   nearby-market, welcome). */
+body {
+  font-size: var(--text-body);
+}
+
+/* Screen and dialog titles: one size, one weight. */
+.main-panel .panel-heading h1,
+.zone-explore-panel .panel-heading h1 {
+  font-size: 20px;
+  line-height: 1.2;
+}
+.game-dialog h2 {
+  font-size: var(--text-title);
+  line-height: 1.25;
+}
+
+/* Activity inside a zone: requirement, reward chips, one button, then help. */
+.quest-brief.quest-brief-compact,
+.game-dialog-map .quest-brief.quest-brief-compact {
+  display: grid;
+  gap: 8px;
+  padding: 0 12px 10px;
+  margin: 0;
+  border: 0;
+  text-align: start;
+}
+.game-dialog-map .quest-brief-compact > p,
+.quest-brief-compact > p {
+  margin: 0;
+  font-size: var(--text-body);
+  line-height: 1.4;
+}
+.game-dialog-map .quest-brief-compact .quest-brief-status,
+.game-dialog-map .quest-brief-compact .quest-brief-requirement {
+  font-size: var(--text-meta);
+}
+.quest-brief-compact .quest-brief-rewards {
+  justify-content: flex-start;
+  gap: 6px;
+  padding: 0;
+  background: none;
+}
+.quest-brief-compact .quest-brief-rewards > span {
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  border: 1px solid var(--decorative-border);
+  font-size: var(--text-meta);
+  font-weight: 500;
+}
+.quest-brief-compact .quest-brief-rewards svg {
+  width: 16px;
+  height: 16px;
+}
+.quest-brief-compact .quest-brief-rewards .game-object-art {
+  width: 18px;
+  height: 18px;
+}
+.game-dialog-map .quest-brief-compact > .primary-button,
+.quest-brief-compact > .primary-button {
+  min-height: 48px;
+  border-radius: var(--radius-item);
+  font-size: var(--text-body);
+  font-weight: 600;
+}
+/* "How this works" and "Learn more" share one row until one is opened. */
+.quest-brief-help {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 12px;
+}
+.quest-brief-help > details[open] {
+  flex-basis: 100%;
+}
+.quest-brief-help > details > summary {
+  min-height: 40px;
+  justify-content: flex-start;
+  font-size: var(--text-meta);
+}
+.quest-brief-help .activity-help,
+.quest-brief-help .activity-help p,
+.quest-brief-help .quest-brief-more p {
+  font-size: var(--text-meta);
+}
+.quest-brief:not(.quest-brief-compact) .quest-brief-help {
+  justify-content: center;
+}
+
+/* Screens (Community, Inventory, Profile, Explore): one type scale.
+   20 screen title · 16 section heading · 15 row title and body · 13 meta.
+   The doubled class outranks the older per-area layers. */
+.app-shell .main-panel.main-panel .panel-heading h1 {
+  font-size: 20px;
+  line-height: 1.2;
+}
+.app-shell .main-panel.main-panel :is(
+  .creator-heading h3,
+  .creator-community > h3,
+  .play-section-heading :is(h2, h3),
+  .task-heading h2,
+  .map-notes-heading h2,
+  .community-head h2,
+  .aura-claims > h2,
+  .gold-shop h3,
+  .badge-chapter-toggle h2,
+  .journey > h2,
+  .staking-heading h2,
+  .places-head h2,
+  .inventory-disclosure header h3
+) {
+  font-size: 16px;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.app-shell .main-panel.main-panel .stake-story h2 {
+  font-size: 18px;
+  line-height: 1.25;
+}
+.app-shell .main-panel.main-panel .profile-hero-heading h2 {
+  font-size: 22px;
+}
+.app-shell .main-panel.main-panel :is(.creator-quest-open h4, .creator-row h4) {
+  font-size: var(--text-body);
+  font-weight: 600;
+  line-height: 1.3;
+}
+.app-shell .main-panel.main-panel :is(
+  .creator-tabs button,
+  .creator-empty-line,
+  .creator-empty-line .text-button,
+  .creator-quest-open > p,
+  .creator-row p,
+  .creator-row .text-button,
+  .native-tasks > .secondary-button,
+  .task-proof > summary,
+  .map-note-text,
+  .map-note-menu button,
+  .map-notes-secondary-action,
+  .community-row-body > b,
+  .bonus-vote summary h2,
+  .bonus-vote-title b,
+  .bonus-vote-button,
+  .gold-shop-balance,
+  .journey-stats dd,
+  .settings-row > span,
+  .settings-group > h2,
+  .screen-details > summary,
+  .account-sessions .secondary-button,
+  .native-extras > summary,
+  .session-list li,
+  .zone-row-body strong,
+  .pot-row-stat b,
+  .inventory-disclosure > summary,
+  .inventory-disclosure .secondary-button,
+  .inventory-secondary,
+  .inventory-action,
+  .adventure-history-button,
+  .staking-action,
+  .fuel-advanced > summary
+) {
+  font-size: var(--text-body);
+}
+.app-shell .main-panel.main-panel .settings-row > span small {
+  font-size: var(--text-meta);
+}
+
+/* Creator quest rows: badge, title and author on a tighter stack. */
+.app-shell .main-panel.main-panel .creator-quest-open {
+  padding-block: 12px;
+}
+.app-shell .main-panel.main-panel .creator-quest-open > svg:last-child {
+  top: 50%;
+  translate: 0 -50%;
+}
+.app-shell .main-panel.main-panel .creator-quest-open h4 {
+  margin: 6px 0 2px;
+}
+.app-shell .main-panel.main-panel .creator-quest-open > :is(p, small) {
+  margin: 0;
+  font-size: var(--text-meta);
+  line-height: 1.35;
+}
+
+/* Find card: art beside the name, so the map stays visible behind it. */
+.game-dialog-encounter .find-details {
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 4px 14px;
+  font-size: var(--text-body);
+}
+.game-dialog-encounter .find-details > * {
+  grid-column: 2;
+}
+.game-dialog-encounter .find-details > .find-details-art {
+  grid-column: 1;
+  grid-row: 1 / span 3;
+  width: 96px;
+  height: 96px;
+  min-height: 0;
+  margin: 0;
+}
+.game-dialog-encounter .find-details > .find-details-art.wearable-art img,
+.game-dialog-encounter .find-details > .find-details-art img {
+  width: 60px;
+  height: 60px;
+}
+.game-dialog-encounter .find-details > .find-details-art .game-object-art {
+  width: 72px;
+  height: 72px;
+}
+.game-dialog.game-dialog-encounter .find-details h2 {
+  align-self: end;
+  padding-inline-end: 48px;
+  font-size: 20px;
+}
+.game-dialog.game-dialog-encounter .find-details p {
+  font-size: var(--text-meta);
+}
+.game-dialog-encounter .find-details > [role="status"],
+.game-dialog-encounter .find-details > .primary-button {
+  grid-column: 1 / -1;
+}
+.game-dialog-encounter .find-details > [role="status"] {
+  margin-top: 8px;
+}
+.game-dialog-encounter .find-details > .primary-button {
+  justify-content: center;
+}

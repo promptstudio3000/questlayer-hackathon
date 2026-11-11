@@ -67,9 +67,10 @@ not a generic dashboard with game illustrations.
    verified appearances; record sources and permissions for distributed artwork.
 8. Use Phosphor for utility icons consistently. Use authored game assets for chest,
    coin, Aura and quest objects; do not substitute random Unicode or emoji glyphs.
-9. Essential phone controls have at least a 48 CSS px effective target. Body and
-   input text start at 16px; secondary text at 14px; reserve 12px for nonessential
-   annotations. Respect safe areas, browser zoom and enlarged text.
+9. Essential phone controls have at least a 48 CSS px effective target. Type follows
+   the compact scale in `src/tokens.css` (owner decision, 11 Nov 2026): 15px body,
+   13px secondary, 12px annotations, 16px inputs; a label should fit one line on a
+   360 px phone. Respect safe areas, browser zoom and enlarged text.
 10. Use native controls or a single established accessible primitive system for
     dialogs/sheets. Preserve keyboard access, visible focus, Escape, focus return,
     proper labels and alternatives to drag-only interactions.
