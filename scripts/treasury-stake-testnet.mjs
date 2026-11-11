@@ -15,6 +15,11 @@
 //   node scripts/treasury-stake-testnet.mjs faucet <n>          # n helper accounts x 10 NEAR -> operator
 //   node scripts/treasury-stake-testnet.mjs deploy <near>       # create vault, approve, stake <near>, drop key
 //   node scripts/treasury-stake-testnet.mjs deposit <near>      # top up (vault must be idle)
+//   node scripts/treasury-stake-testnet.mjs stagger <near-each> [count=3] [--from-epoch E]
+//        # creates `count` more vaults (b, c, d...) at once, then stakes one per
+//        # epoch (E, E+1, ...; default next epoch) so their harvests alternate:
+//        # the NEAR pool unlock takes 4 epochs per vault, four staggered vaults
+//        # bring fresh yield every epoch (~7 h). Long-running: start with nohup.
 //
 // Mac only (operator key in .data/). Build the vault first with
 // `bash scripts/build-contracts-docker.sh`: the deployed bytes must equal the
@@ -137,18 +142,18 @@ async function helperAccount(id) {
   }
   throw new Error(`${id} did not appear`);
 }
-async function deposit(amount) {
+async function deposit(amount, vaultId = VAULT_ID) {
   assert.ok(amount >= NEAR && amount <= 1000n * NEAR, "Deposit 1-1000 NEAR per call.");
-  const state = await view(VAULT_ID, "get_state");
+  const state = await view(vaultId, "get_state");
   assert.equal(state.stage, "idle", `Vault is busy (${state.stage}/${state.operation}); deposit after it settles.`);
   const liquid = BigInt((await accountOf(operator.accountId)).amount);
   assert.ok(liquid >= amount + NEAR / 2n, `Operator has ${near(liquid)} NEAR; run faucet first.`);
-  await step(`Stake ${near(amount)} NEAR through the treasury vault`, () =>
-    root.callFunctionRaw({ contractId: VAULT_ID, methodName: "deposit_and_stake", args: {}, deposit: amount, gas: 200n * TGAS, waitUntil: "FINAL" }),
+  await step(`Stake ${near(amount)} NEAR through ${vaultId}`, () =>
+    root.callFunctionRaw({ contractId: vaultId, methodName: "deposit_and_stake", args: {}, deposit: amount, gas: 200n * TGAS, waitUntil: "FINAL" }),
   );
-  const after = await view(VAULT_ID, "get_state");
+  const after = await view(vaultId, "get_state");
   assert.equal(after.stage, "idle", "Deposit did not settle: " + after.stage);
-  record.deposited = after.deposited;
+  record.deposits = { ...(record.deposits || {}), [vaultId]: after.deposited };
   save();
 }
 
@@ -204,7 +209,7 @@ if (command === "deposit") {
   process.exit(0);
 }
 
-assert.equal(command, "deploy", "Unknown command: " + command);
+assert.ok(["deploy", "stagger"].includes(command), "Unknown command: " + command);
 const amount = toYocto(rest[0]);
 const wasm = readFileSync(WASM);
 const sha = createHash("sha256").update(wasm).digest("hex");
@@ -215,67 +220,97 @@ assert.equal(poolInfo.code_hash, POOL_CODE, "Pool code is not the official staki
 assert.equal((await provider.query({ request_type: "view_access_key_list", account_id: POOL, finality: "final" })).keys.length, 0, "Pool has access keys.");
 assert.equal(await view(POOL, "is_staking_paused"), false, "Pool staking is paused.");
 assert.equal((await view(rewardsId, "get_config")).owner, operator.accountId, "Operator must own the rewards contract.");
+const entryOf = (vaultId) => ({ accountId: vaultId, beneficiary: operator.accountId, pool: POOL, codeHash, wasmSha256: sha });
 
-let info = await accountOf(VAULT_ID);
-if (!info) {
-  assert.ok(VAULT_ID.endsWith("." + operator.accountId), `Create ${VAULT_ID} first, or use a sub-account of the operator.`);
-  await step(`Create ${VAULT_ID} with a ${near(VAULT_RESERVE)} NEAR reserve`, () =>
-    root.signAndSendTransaction({
-      receiverId: VAULT_ID,
-      actions: [actions.createAccount(), actions.transfer(VAULT_RESERVE), actions.addFullAccessKey(PublicKey.from(operatorPublicKey))],
-      waitUntil: "FINAL",
-    }),
-  );
-  info = await accountOf(VAULT_ID);
-  log({ created: VAULT_ID, reserve: near(info.amount) });
+/** Create, initialize, approve and make keyless one treasury vault; stakes nothing. */
+async function setupVault(vaultId) {
+  let info = await accountOf(vaultId);
+  if (!info) {
+    assert.ok(vaultId.endsWith("." + operator.accountId), `Create ${vaultId} first, or use a sub-account of the operator.`);
+    await step(`Create ${vaultId} with a ${near(VAULT_RESERVE)} NEAR reserve`, () =>
+      root.signAndSendTransaction({
+        receiverId: vaultId,
+        actions: [actions.createAccount(), actions.transfer(VAULT_RESERVE), actions.addFullAccessKey(PublicKey.from(operatorPublicKey))],
+        waitUntil: "FINAL",
+      }),
+    );
+    info = await accountOf(vaultId);
+    log({ created: vaultId, reserve: near(info.amount) });
+  }
+  const vaultAccount = new Account(vaultId, provider, signer);
+  if (info.code_hash === "11111111111111111111111111111111")
+    await step(`Deploy and initialize ${vaultId}`, () =>
+      vaultAccount.signAndSendTransaction({
+        receiverId: vaultId,
+        actions: [
+          actions.deployContract(wasm),
+          actions.functionCall(
+            "new",
+            { beneficiary_id: operator.accountId, pool_id: POOL, rewards_id: rewardsId, contribution_bps: 10000 },
+            100n * TGAS,
+            0n,
+          ),
+        ],
+        waitUntil: "FINAL",
+      }),
+    );
+  info = await accountOf(vaultId);
+  assert.equal(info.code_hash, codeHash, "Deployed code hash differs from the reproducible build.");
+  const state = await view(vaultId, "get_state");
+  assert.equal(state.beneficiary, operator.accountId);
+  assert.equal(state.rewards, rewardsId);
+  assert.equal(state.pool, POOL);
+  assert.equal(state.contribution_bps, 10000);
+  if (!record.transactions.some((t) => t.label === `Approve ${vaultId} as a yield source of ${rewardsId}`))
+    await step(`Approve ${vaultId} as a yield source of ${rewardsId}`, () =>
+      root.callFunctionRaw({ contractId: rewardsId, methodName: "set_vault", args: { account_id: vaultId, approved: true }, deposit: 0n, gas: 30n * TGAS, waitUntil: "FINAL" }),
+    );
+  // Keyless: after this nobody (not even the operator) can move the vault's
+  // funds except through the contract's own rules. The beneficiary can still
+  // deposit, because deposit_and_stake is called from the operator account.
+  const keys = (await provider.query({ request_type: "view_access_key_list", account_id: vaultId, finality: "final" })).keys;
+  if (keys.length && !rest.includes("--keep-key"))
+    await step(`Remove the last access key of ${vaultId} (keyless vault)`, () =>
+      vaultAccount.signAndSendTransaction({ receiverId: vaultId, actions: keys.map((k) => actions.deleteKey(PublicKey.from(k.public_key))), waitUntil: "FINAL" }),
+    );
+  record.vaults = [...new Set([...(record.vaults || [record.vault]), vaultId])];
+  save();
+  return state;
 }
-const vaultAccount = new Account(VAULT_ID, provider, signer);
-if (info.code_hash === "11111111111111111111111111111111")
-  await step(`Deploy and initialize ${VAULT_ID}`, () =>
-    vaultAccount.signAndSendTransaction({
-      receiverId: VAULT_ID,
-      actions: [
-        actions.deployContract(wasm),
-        actions.functionCall(
-          "new",
-          { beneficiary_id: operator.accountId, pool_id: POOL, rewards_id: rewardsId, contribution_bps: 10000 },
-          100n * TGAS,
-          0n,
-        ),
-      ],
-      waitUntil: "FINAL",
-    }),
-  );
-info = await accountOf(VAULT_ID);
-assert.equal(info.code_hash, codeHash, "Deployed code hash differs from the reproducible build.");
-const state = await view(VAULT_ID, "get_state");
-assert.equal(state.beneficiary, operator.accountId);
-assert.equal(state.rewards, rewardsId);
-assert.equal(state.pool, POOL);
-assert.equal(state.contribution_bps, 10000);
-record.codeHash = info.code_hash;
-record.wasmSha256 = sha;
-save();
+const epochNow = async () => BigInt((await view(VAULT_ID, "get_state")).epoch);
 
-if (!record.transactions.some((t) => t.label.startsWith("Approve")))
-  await step(`Approve ${VAULT_ID} as a yield source of ${rewardsId}`, () =>
-    root.callFunctionRaw({ contractId: rewardsId, methodName: "set_vault", args: { account_id: VAULT_ID, approved: true }, deposit: 0n, gas: 30n * TGAS, waitUntil: "FINAL" }),
-  );
-if (state.deposited === "0") await deposit(amount);
+if (command === "deploy") {
+  const state = await setupVault(VAULT_ID);
+  if (state.deposited === "0") await deposit(amount, VAULT_ID);
+  // The worker maintains vaults listed in the manifest. The entry is added by a
+  // follow-up commit once the vault exists, so no VPS build ever lists a vault
+  // that is not on chain yet (the yield audit reads every listed vault).
+  log({ done: true, manifestEntry: entryOf(VAULT_ID), listedInManifest: listed });
+  process.exit(0);
+}
 
-// Keyless: after this nobody (not even the operator) can move the vault's
-// funds except through the contract's own rules.
-const keys = (await provider.query({ request_type: "view_access_key_list", account_id: VAULT_ID, finality: "final" })).keys;
-if (keys.length && !rest.includes("--keep-key"))
-  await step(`Remove the last access key of ${VAULT_ID} (keyless vault)`, () =>
-    vaultAccount.signAndSendTransaction({ receiverId: VAULT_ID, actions: keys.map((k) => actions.deleteKey(PublicKey.from(k.public_key))), waitUntil: "FINAL" }),
-  );
-// The worker maintains vaults listed in the manifest. The entry is added by a
-// follow-up commit once the vault exists, so no VPS build ever lists a vault
-// that is not on chain yet (the yield audit reads every listed vault).
-log({
-  done: true,
-  manifestEntry: { accountId: VAULT_ID, beneficiary: operator.accountId, pool: POOL, codeHash, wasmSha256: sha },
-  listedInManifest: listed,
-  nextStep: listed ? "bash scripts/deploy-vps.sh" : `add manifestEntry to ${manifestPath} vaults, merge, then bash scripts/deploy-vps.sh`,
-});
+// stagger
+const count = Number(rest[1] && !rest[1].startsWith("--") ? rest[1] : 3);
+assert.ok(Number.isInteger(count) && count >= 1 && count <= 6, "stagger <near-each> [1..6]");
+const base = VAULT_ID.split(".")[0];
+const ids = Array.from({ length: count }, (_, i) => VAULT_ID.replace(base, `${base}-${String.fromCharCode(98 + i)}`));
+const op = BigInt((await accountOf(operator.accountId)).amount);
+const need = BigInt(count) * (amount + VAULT_RESERVE + NEAR / 2n);
+assert.ok(op >= need, `Operator has ${near(op)} NEAR, stagger needs ${near(need)}; run faucet first.`);
+for (const id of ids) await setupVault(id);
+log({ manifestEntries: ids.map(entryOf), note: "List these in the manifest and deploy the VPS now; vaults with no stake are ignored by the worker until their deposit." });
+const fromIdx = rest.indexOf("--from-epoch");
+const first = fromIdx >= 0 ? BigInt(rest[fromIdx + 1]) : (await epochNow()) + 1n;
+for (const [i, id] of ids.entries()) {
+  const target = first + BigInt(i);
+  if ((await view(id, "get_state")).deposited !== "0") {
+    log({ vault: id, skipped: "already staked" });
+    continue;
+  }
+  for (let e = await epochNow(); e < target; e = await epochNow()) {
+    log({ vault: id, waitingForEpoch: target.toString(), epoch: e.toString() });
+    await new Promise((res) => setTimeout(res, 10 * 60_000));
+  }
+  await deposit(amount, id);
+}
+log({ done: true, vaults: [VAULT_ID, ...ids] });
