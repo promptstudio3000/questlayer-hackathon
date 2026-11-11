@@ -8,6 +8,8 @@ import {
   zoneTotemFeatures,
   zoneWallFeatures,
   zoneLandmarkLabel,
+  zoneSchedule,
+  nextLocalMidnight,
 } from "../src/zone-landmarks.ts";
 
 const H = 3600000,
@@ -139,4 +141,37 @@ test("zone walls carry a taller halo band above them", () => {
   const [w] = zoneWallFeatures([zone()], [quest()], now);
   assert.ok(w.properties.height >= 30);
   assert.ok(w.properties.halo > w.properties.height);
+});
+
+test("zone rewards reset at the next local midnight, also across DST", () => {
+  // 3 Nov 2026 10:00 UTC = 11:00 in Prague (CET, UTC+1).
+  assert.equal(nextLocalMidnight(now, "Europe/Prague"), Date.UTC(2026, 10, 3, 23));
+  // 24 Oct 2026 12:00 UTC: the night of the switch back to CET.
+  assert.equal(nextLocalMidnight(Date.UTC(2026, 9, 24, 12), "Europe/Prague"), Date.UTC(2026, 9, 24, 22));
+  assert.equal(nextLocalMidnight(Date.UTC(2026, 9, 25, 12), "Europe/Prague"), Date.UTC(2026, 9, 25, 23));
+  // An unknown zone name falls back to Prague instead of throwing.
+  assert.equal(nextLocalMidnight(now, "Nowhere/City"), Date.UTC(2026, 10, 3, 23));
+});
+
+test("zone schedule counts progress, what is left and the reset", () => {
+  const quests = [
+    quest(),
+    quest({ id: "w:quest:2", kind: "visit", xp: 50, gold_u: 0 }),
+    quest({ id: "w:quest:3", kind: "visit", xp: 30, gold_u: 0, completed: 1 }),
+  ];
+  const s = zoneSchedule(zone(), quests, now, "Europe/Prague");
+  assert.equal(s.phase, "open");
+  assert.equal(s.done, 1);
+  assert.equal(s.total, 3);
+  assert.equal(s.xp, 60);
+  assert.equal(s.gold_u, 500);
+  assert.ok(s.loot.length > 0 && s.loot.every((l) => l.kind === "aura"));
+  assert.equal(s.resetAt, Date.UTC(2026, 10, 3, 23));
+});
+
+test("zone items carry what the map needs to explain them on tap", () => {
+  const [item] = zoneLootFeatures([zone()], [quest()], now);
+  assert.equal(item.properties.zoneId, "w:zone:1");
+  assert.equal(item.properties.kind, "aura");
+  assert.ok(item.properties.name);
 });
