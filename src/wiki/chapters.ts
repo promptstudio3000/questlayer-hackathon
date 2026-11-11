@@ -513,7 +513,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "wearable-rarity",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx", "server/player-journey.mjs", "src/CharacterJourney.tsx", "src/StakeEarn.tsx", "server/gotchi-models.mjs"],
+    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "server/demo-bot-chat.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx", "server/player-journey.mjs", "src/CharacterJourney.tsx", "src/StakeEarn.tsx", "server/gotchi-models.mjs"],
     blocks: [
       { h: "Wearable finds" },
       {
@@ -539,7 +539,8 @@ export const CHAPTERS: Chapter[] = [
           "Tap any explorer for their profile: name, level, the original Aavegotchi they wear with its BRS, play stats and equipment slots. A gold seal marks an original their wallet holds. A profile never shows a position, a wallet or the rest of a collection.",
           "Waves are six ready phrases. Limits: one per pair per minute, 20 sent and 30 received per hour; deleted after an hour.",
           "**Write a message** opens the encrypted inbox. Block hides presence, notes, waves, messages and the card both ways.",
-          "Demo bots in the test world carry a **demo-bot** tag; they take no waves and cannot be blocked.",
+          "Demo bots in the test world carry a **demo-bot** tag; they take no waves and cannot be blocked. **Message** on a demo bot opens a short demo chat: the bot answers with ready in-character lines, nothing is stored and nothing goes on chain (bots have no inbox key). At most 12 lines a minute.",
+          "Without your explorer account (for example signed in only with a wallet) **Message** stays off and the card says why.",
         ],
       },
       { h: "Your Profile" },
@@ -568,7 +569,7 @@ export const CHAPTERS: Chapter[] = [
     ],
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/MapNotes.tsx", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx"],
+    sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/MapNotes.tsx", "src/gold-map-layer.ts", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx"],
     blocks: [
       { h: "Create from the map" },
       {
@@ -577,6 +578,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**Map notes** are free. The author picks 1 day, 1 week (default) or Keep until removed; expired notes leave every list. Authors can edit their own text; pin, photo and time stay.",
+          "Every note near you also stands **on the map** as a small paper pin with its text (your own with a coloured edge), refreshed every 30 seconds and right after you leave, edit or remove one. Tapping a pin opens Local chat · Notes with that note highlighted.",
           "Every row shows author, time, time left, the text and a **GPS line** with the pin and its distance. Tapping it shows the spot on a plain map with only the pin and your position.",
           "**Shouts** are short paid bubbles for up to 7 days; a **topic** becomes free for good once 6 different players wrote in it (see Fees and spending).",
           "**Community places** are free recommendations: nearest first within 10 km, with a kind (view, nature, history, art, food & drink, hidden gem, walk & play), filters and sorting. Three reports from different players hide a place until a moderator looks. No links, contacts or private addresses; no GOLD or XP moves.",

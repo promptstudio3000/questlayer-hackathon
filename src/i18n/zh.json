@@ -3210,5 +3210,12 @@
  "followers": "位关注者",
  "quest": "个任务",
  "quests": "个任务",
- "{0} away": "距离 {0}"
+ "{0} away": "距离 {0}",
+ "Chat with {0}": "与{0}聊天",
+ "Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.": "演示聊天：{0}用预设的句子回答。不会保存，也不会发送到链上；真实的探索者使用加密收件箱。",
+ "{0} is typing…": "{0}正在输入…",
+ "Write to {0}…": "写给{0}…",
+ "Messages need your explorer account. Sign in with it to write.": "发消息需要你的探索者账户。请用它登录后再写。",
+ "Your note: {0}": "你的留言：{0}",
+ "Note: {0}": "留言：{0}"
 }

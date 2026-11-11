@@ -3210,5 +3210,12 @@
  "followers": "متابِعون",
  "quest": "مهمة",
  "quests": "مهام",
- "{0} away": "على بعد {0}"
+ "{0} away": "على بعد {0}",
+ "Chat with {0}": "الدردشة مع {0}",
+ "Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.": "دردشة تجريبية: يرد {0} بجمل جاهزة. لا يُحفظ شيء ولا يُرسل إلى السلسلة؛ المستكشفون الحقيقيون لديهم صندوق الرسائل المشفّر.",
+ "{0} is typing…": "{0} يكتب…",
+ "Write to {0}…": "اكتب إلى {0}…",
+ "Messages need your explorer account. Sign in with it to write.": "تحتاج الرسائل إلى حساب المستكشف الخاص بك. سجّل الدخول به لتكتب.",
+ "Your note: {0}": "ملاحظتك: {0}",
+ "Note: {0}": "ملاحظة: {0}"
 }

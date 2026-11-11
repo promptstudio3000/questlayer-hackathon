@@ -71,6 +71,7 @@ import {
   EarningsPanel,
 } from "./lazy-panels";
 import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
+import type { NotePin } from "./gold-map-layer";
 import type { RollCall } from "./WispRolls";
 import type { InventoryTab } from "./Inventory";
 // Styles of the split-off screens stay in the main stylesheet, in their old
@@ -403,6 +404,8 @@ export default function App() {
     [myEmote, setMyEmote] = useState<{ id: string; until: number } | null>(null),
     [myFrame, setMyFrame] = useState<string | null>(null),
     [goldMapData, setGoldMapData] = useState<GoldMap | null>(null),
+    [mapNotes, setMapNotes] = useState<NotePin[]>([]),
+    [noteOpenId, setNoteOpenId] = useState<string | null>(null),
     [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
     [chatView, setChatView] = useState<LocalChatView>("notes"),
     [quickCreate, setQuickCreate] = useState<"note" | "topic" | "place" | null>(null),
@@ -1191,6 +1194,22 @@ export default function App() {
     }
   }
   const clearPlaceOpen = useCallback(() => setPlaceOpenId(null), []);
+  const clearNoteOpen = useCallback(() => setNoteOpenId(null), []);
+  // Free map notes near the player, drawn on the map (same area as Local chat · Notes).
+  const noteRead = useRef(0);
+  async function refreshMapNotes() {
+    if (!player) return;
+    const version = ++noteRead.current;
+    try {
+      const { messages } = await api<{ messages: NotePin[] }>(
+        `/messages?lat=${position.lat.toFixed(2)}&lng=${position.lng.toFixed(2)}&arena=${arena ? 1 : 0}`,
+      );
+      if (version === noteRead.current)
+        setMapNotes(messages.map(({ id, text, lat, lng, own }) => ({ id, text, lat, lng, own })));
+    } catch {
+      /* The map keeps the last notes; the next tick retries. */
+    }
+  }
   // A #task= / #secret= share link at load opens Nearby, where its dialog lives.
   useEffect(() => {
     if (!player?.id || nativePlay) return;
@@ -1206,6 +1225,16 @@ export default function App() {
     return () => clearInterval(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [player?.id, goldSpot]);
+  useEffect(() => {
+    if (!player?.id) {
+      setMapNotes([]);
+      return;
+    }
+    void refreshMapNotes();
+    const timer = setInterval(() => void refreshMapNotes(), 30_000);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [player?.id, goldSpot, arena]);
   useEffect(() => {
     if (player?.id) void readGoldLook();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -3697,6 +3726,14 @@ export default function App() {
             setTab("messages");
             setSheetExpanded(true);
           }}
+          notes={mapNotes}
+          onNotePin={(id) => {
+            setNoteOpenId(id);
+            setNotesView("browse");
+            setChatView("notes");
+            setTab("messages");
+            setSheetExpanded(true);
+          }}
           actorReports={npcTasks && npcTasks.worldId === world?.id ? npcTasks.tasks.filter((t) => t.ready).map((t) => t.actorId) : []}
           actorFocus={actorFocus}
           onActorFocus={(text, found) => notify(text, !found)}
@@ -4920,6 +4957,9 @@ export default function App() {
               onViewChange={setNotesView}
               recordAccount={recordAccount}
               onRecord={recordNote}
+              onChange={() => void refreshMapNotes()}
+              openId={noteOpenId}
+              onOpened={clearNoteOpen}
               onBlockChange={() => {
                 setOthers([]);
                 window.dispatchEvent(new Event("questlayer:social-blocks"));
@@ -5044,6 +5084,7 @@ export default function App() {
               fix={fix}
               arena={arena}
               notify={notify}
+              onChange={() => void refreshMapNotes()}
               onDone={() => setQuickCreate(null)}
             />
           )}

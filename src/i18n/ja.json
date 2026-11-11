@@ -3210,5 +3210,12 @@
  "followers": "フォロワー",
  "quest": "クエスト",
  "quests": "クエスト",
- "{0} away": "{0} 先"
+ "{0} away": "{0} 先",
+ "Chat with {0}": "{0}とチャット",
+ "Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.": "デモチャット：{0}は用意された文で答えます。何も保存されず、チェーンにも送られません。本物の探検者には暗号化された受信箱があります。",
+ "{0} is typing…": "{0}が入力中…",
+ "Write to {0}…": "{0}に書く…",
+ "Messages need your explorer account. Sign in with it to write.": "メッセージには探検者アカウントが必要です。そのアカウントでサインインしてください。",
+ "Your note: {0}": "あなたのメモ: {0}",
+ "Note: {0}": "メモ: {0}"
 }
