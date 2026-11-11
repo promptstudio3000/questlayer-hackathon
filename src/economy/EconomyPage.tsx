@@ -190,6 +190,29 @@ export default function EconomyPage() {
           One global prize pool pays every coin and zone prize on the map. Everything below is read from the NEAR
           chain or from the server's public records, with an explorer link for every transaction.
         </p>
+        <div className="eco-tldr">
+          <span className="eco-tldr-tag">TL;DR</span>
+          <ol>
+            <li>
+              <b>QGOLD</b> is the gold you earn: every unit is backed by NEAR in the vault, and you can always sell it back at R − 1 % (instantly within the daily limit, otherwise through a short queue).
+            </li>
+            <li>
+              <b>The prize pool</b> is funded by staking yield, fees and sponsors, never by players losing money.
+            </li>
+            <li>
+              <b>Every number below is checkable:</b> an audit re-runs before each new day, and every payout has an explorer link.
+            </li>
+          </ol>
+        </div>
+        <nav className="eco-jump" aria-label="On this page">
+          <a href="#eco-qgold">QGOLD token</a>
+          <a href="#eco-audit">Audit</a>
+          <a href="#eco-yield">Realized yield</a>
+          <a href="#eco-mix">Treasury mix</a>
+          <a href="#eco-budget">Daily budget</a>
+          <a href="#eco-payouts">Payouts</a>
+          <a href="/treasury">Treasury dashboard</a>
+        </nav>
         {data ? (
           <p className="eco-meta">
             <span className="eco-chip">{data.network === "mainnet" ? "NEAR mainnet" : "NEAR testnet"}</span>

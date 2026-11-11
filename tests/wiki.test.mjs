@@ -31,8 +31,24 @@ test("chapters have unique ids, a known group, a status, a date and sources", ()
 
 test("every picture a chapter names exists", () => {
   const diagrams = read("src/wiki/diagrams.tsx");
-  for (const c of CHAPTERS)
-    for (const b of c.blocks) if ("viz" in b) assert.match(diagrams, new RegExp(`"?${b.viz}"?: `), `${c.id} → ${b.viz}`);
+  for (const c of CHAPTERS) {
+    const ids = [...(c.hero ? [c.hero] : []), ...c.blocks.filter((b) => "viz" in b).map((b) => b.viz)];
+    for (const id of ids) assert.match(diagrams, new RegExp(`"?${id}"?: `), `${c.id} → ${id}`);
+    assert.equal(new Set(ids).size, ids.length, `${c.id} shows the same picture twice`);
+  }
+});
+
+test("every chapter reads short first: a TL;DR, a few key numbers, details folded", () => {
+  for (const c of CHAPTERS) {
+    const plain = c.tldr.replace(/\*\*|`/g, "");
+    assert.ok(plain.length >= 60 && plain.length <= 320, `${c.id} TL;DR is ${plain.length} characters (60–320)`);
+    assert.ok(c.keyFacts.length >= 2 && c.keyFacts.length <= 4, `${c.id} has ${c.keyFacts.length} key numbers (2–4)`);
+    for (const [value, label] of c.keyFacts) {
+      assert.ok(value.length > 0 && value.replace(/`/g, "").length <= 24, `${c.id} key value "${value}" is too long for a tile`);
+      assert.ok(label.length > 0 && label.length <= 60, `${c.id} key label "${label}" is too long for a tile`);
+    }
+    assert.equal(new Set(c.keyFacts.map(([, l]) => l)).size, c.keyFacts.length, `${c.id} repeats a key label`);
+  }
 });
 
 test("numbers come from the rules files", () => {

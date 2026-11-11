@@ -1,5 +1,7 @@
 // The QuestLayer wiki (/wiki): every mechanism that is in force, one chapter
 // per system. Maintenance rules live in docs/WIKI.md. In short:
+//   - each chapter reads short first: a TL;DR, up to four key numbers and one
+//     picture; everything else is a detail block folded under "More details";
 //   - each chapter lists the repository files it explains in `sources`;
 //   - docs/wiki-stamps.json stores a hash of every source doc, and
 //     tests/wiki.test.mjs fails when a doc changed but the wiki was not
@@ -52,7 +54,12 @@ export type VizId =
   | "fair-play"
   | "daily-jobs"
   | "ci-gates"
-  | "wiki-loop";
+  | "wiki-loop"
+  | "payout-round"
+  | "wearable-rarity"
+  | "inbox-seq"
+  | "phone-hud"
+  | "screen-map";
 
 export type Block =
   | { h: string }
@@ -63,17 +70,26 @@ export type Block =
   | { viz: VizId }
   | { note: string; tone?: "info" | "warn" };
 
+/** A key number shown as a tile: [value, what it means]. */
+export type KeyFact = [value: string, label: string];
+
 export type Status = "live" | "partial" | "off" | "planned";
 export type Chapter = {
   id: string;
   group: (typeof GROUPS)[number]["id"];
   title: string;
-  summary: string;
+  /** TL;DR: one or two sentences that say what the mechanism does for a player. */
+  tldr: string;
+  /** Up to four key numbers or facts, shown as tiles under the TL;DR. */
+  keyFacts: KeyFact[];
+  /** The one picture shown above the fold; more pictures can sit in the details. */
+  hero?: VizId;
   status: Status;
   /** Day the chapter was last checked against the code (YYYY-MM-DD). */
   updated: string;
   /** Repository files this chapter explains. Docs listed here are stamped. */
   sources: string[];
+  /** Everything else, folded under "More details". */
   blocks: Block[];
 };
 
@@ -119,6 +135,25 @@ const gateRows = STAKER_GATES.map((g) => [
   `L${g.level}`,
 ]);
 const premiumEmotes = GOLD.emotes.premium.map((e) => `${e.id} ${e.price}`).join(", ");
+const topXp = LEVELS[LEVELS.length - 1]?.xp ?? 0;
+const cityNames = LIVE_CITIES.map((c) => (c === "plzen" ? "Plzeň" : c)).join(", ");
+
+/** Contracts the project deployed on testnet (the on-chain chapter's table). */
+const CONTRACT_ROWS: string[][] = [
+  ["Rewards", "`questlayer-rewards-20261101b.testnet`", "Treasury, city and map days, QGOLD payout rounds, claims"],
+  ["QGOLD vault", "`questlayer-qgold-vault-20261104.testnet`", "Backed token, exits, insurance"],
+  ["QGOLD escrow", "`questlayer-qgold-escrow-20261109.testnet`", "Player-funded tasks, Secrets and sends"],
+  ["NEAR task escrow", "`questlayer-tasks-20261031.testnet`", "Sponsored NEAR tasks with reviewed completions"],
+  ["Staking vault factory", "`questlayer-vaults-20261101b.testnet`", "Personal keyless staking vaults"],
+  ["Yield vault", "`questlayer-yield-20261102.testnet`", "LST / stablecoin deposits"],
+  ["Collectibles", "`nfts.questlayer-dev-20261101.testnet`", "Aura NFTs (NEP-171/199), wardrobe"],
+  ["Badges", "`questlayer-badges-20261102.testnet`", "Soulbound place and player badges"],
+  ["NPC games", "`questlayer-npc-games-20261101.testnet`", "Commit-reveal wisp rolls"],
+  ["Intents verifier", "`intents.questlayer-dev-20261101.testnet`", "Self-deployed NEAR Intents (experimental)"],
+  ["Market v2", "`questlayer-market-20261101b.testnet`", "Signed Aura orders (fallback market)"],
+  ["Ledger (QXP)", "`questlayer-ledger-20261104.testnet`", "Soulbound XP mirror, record batches, day roots"],
+  ["Creators", "`questlayer-creators-20261101b.testnet`", "Creator money rounds"],
+];
 
 // -------------------------------------------------------------- chapters ----
 
@@ -127,45 +162,69 @@ export const CHAPTERS: Chapter[] = [
     id: "overview",
     group: "start",
     title: "What QuestLayer is",
-    summary: "A location game on real streets: walk, collect, meet NPCs, earn collectibles, with a real prize pool settled on NEAR.",
+    tldr: "A free location game on real streets: walk, collect backed coins, meet NPCs and beat monsters. XP and levels are yours, Auras are NFTs, and coins arrive as **QGOLD** in your own NEAR account within minutes, paid from treasury yield, **never by players losing money**.",
+    keyFacts: [
+      ["0", "wallets or deposits needed to start"],
+      ["5 min", "between QGOLD payout rounds"],
+      ["6", "quest zones a day in Plzeň"],
+      [String(EDITIONS.length), "Aura editions to collect"],
+    ],
+    hero: "phone-hud",
     status: "live",
-    updated: "2026-11-10",
-    sources: ["docs/ARCHITECTURE.md", "docs/GAME-RULES.md", "docs/SOURCES-AND-INTEGRATIONS.md", "README.md", "server/index.mjs", "src/main.tsx", "src/App.tsx", "src/DemoControls.tsx", "src/useDemoWalk.ts", "src/MapSurface.tsx", "src/nearby-action.ts", "src/Dialog.tsx", "src/QuestBrief.tsx", "src/activity-view.ts", "src/GameIntro.tsx", "src/learning-store.ts", "src/activity-help.ts", "src/FirstSession.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx", "src/zone-presence.ts", "src/ZonePresence.tsx", "src/MapSettings.tsx", "src/MapActions.tsx", "src/InfoTip.tsx", "src/PotRow.tsx", "src/useHudCard.ts"],
+    updated: "2026-11-11",
+    sources: ["docs/ARCHITECTURE.md", "docs/GAME-RULES.md", "docs/SOURCES-AND-INTEGRATIONS.md", "README.md", "server/index.mjs", "src/main.tsx", "src/App.tsx", "src/DemoControls.tsx", "src/useDemoWalk.ts", "src/MapSurface.tsx", "src/nearby-action.ts", "src/Dialog.tsx", "src/QuestBrief.tsx", "src/activity-view.ts", "src/GameIntro.tsx", "src/learning-store.ts", "src/activity-help.ts", "src/FirstSession.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx", "src/zone-presence.ts", "src/ZonePresence.tsx", "src/MapSettings.tsx", "src/MapActions.tsx", "src/InfoTip.tsx", "src/PotRow.tsx", "src/useHudCard.ts", "src/screens.tsx", "src/nearby-list.ts"],
     blocks: [
+      { h: "Where everything lives" },
+      { viz: "screen-map" },
       {
-        p: "QuestLayer turns the streets around you into a daily adventure. Coins lie along public paths, six quest zones open across the city every day, NPCs walk the map and offer errands, monsters guard chests, and everything you earn becomes yours: XP and levels on your account, Auras as NFTs, and coin rewards paid from one global prize pool that is funded by staking yield and sponsors, never by players losing money.",
+        list: [
+          "**Explore** opens the Nearby list: a row with today's unclaimed coins (within 10 km or everywhere; later waves not counted) and what is left in today's pot, then one list of everything around you. Chips filter All, Zones, Quests, NPCs and Community, each with its count. Sort by Nearest (default), Most XP or Top reward; the choice is remembered on the device.",
+          "Locked rows (higher tier, not open yet, resting monsters) always sit below open ones. Hidden lurkers stay out of the list until you are within their reveal range. A row opens exactly what its map pin opens.",
+          "Community rows cover player tasks and community tasks within 5 km, Secrets, place topics and shouts within 3 km, map notes and community places.",
+          "Lists use compact two-line rows. Explanations sit behind small i buttons; required disclosures (unverified maps, requirements) stay visible.",
+        ],
       },
+      { h: "One next action at a time" },
       {
-        p: "This wiki is the know-how center of the project. Every chapter describes a mechanism **that is in force today**, the numbers it uses, how it connects to the rest and where it lives in the code. Status chips say honestly what is live on testnet, what is built but switched off and what is only planned.",
+        list: [
+          "One dismissible objective holds the next action. Confirmed results, recovery notices and the first equipment step come before nearby suggestions.",
+          "An activity opens with its picture, objective, real reward availability and **Start quest**. Starting only focuses it: it never reserves or claims a reward.",
+          "Each step shows its requirement (location, footprint, question) before confirmation. A minimum distance between stops is never described as a walking route; an unknown duration stays unknown.",
+          "The confirmed result replaces the quest overlay; it is never stacked or repeated. Receipts, proofs and optional share actions sit under Learn more.",
+          "Browsing Explore never replaces the active adventure; closing the list restores it and its server checkpoint.",
+          "The zone you stand in gets a stronger outline and a short activity cue. It is a hint only: it never proves presence or grants a reward.",
+        ],
       },
-      { p: "The map is home: the avatar opens Profile, and compact shortcuts open Explore, Inventory and Community. Explore browses available places without replacing the active adventure. Inspecting another place is temporary; Start quest or Show on map selects its objective. Closing the place list restores the current adventure and its server checkpoint. One dismissible objective holds the next action. Nearby actors, quest checkpoints and street finds offer an Open action without requiring a marker tap. Confirmed results, recovery notices and the first equipment step keep priority over nearby suggestions until the player explicitly hides that objective. Discovery details and encounters open content-sized overlays with a persistent close action; the desktop map remains visible around them. Map controls and camera framing never depend on overlay height. World-read guards follow the requested GPS/demo mode immediately, so a fast response before the next render cannot leave the map stuck loading; stale responses from the previous mode remain rejected. The demo starts with an open joystick (drag the inner knob: up walks the way the explorer faces, sideways turns while walking, down steps back; arrows and WASD still work) and remembers an explicit collapse or reopen. Opening a modal releases held demo movement; closing it does not resume the previous input. A dismissed first-steps objective can be restored from Profile Settings without resetting its progress. Inventory, Profile and Community keep their own screens. Returning from a confirmed completion releases that finished target. Profile has Character, Badges, Stake, Rewards and Settings; Community has Quests, Tasks, Local chat, Places and Creators." },
-      { p: "Map layout on a phone: the logo and the daily board (0/3) sit top left; one bubble top right holds the avatar (Profile) and the GOLD balance, next to a gear for Map settings. Map settings hold the play mode (city demo or GPS, with a dot on the gear while the demo is on), My location, Turn the map with me (the camera follows the explorer's heading; off keeps the current bearing), Full map, City overview and Globe. The tab bar (Explore, Inventory, Community) is fixed to the bottom edge with icon and label in one row. The demo joystick sits bottom left, and the Actions button bottom right fans out round buttons for Leave a note, Change mood, Post a task, Hide a Secret and, for creators, Create a quest. An open card (a stop along the path, a selected place) sits directly on the tab bar and lifts the joystick and Actions button above it; closing the card drops them back down. The direction guide line has an X that hides it until the guide points somewhere else; it is a straight-line direction, never a walking route. Lists use compact two-line rows: icon, one-line name, then tier, distance, activity and reward. Explanations sit behind small i buttons with a flyout, while required disclosures (unverified maps, requirements) stay visible. Explore opens Nearby: one row with unclaimed coins within 10 km or everywhere (switchable, later waves not counted) and what is left in today's pot (full pot card under the chevron), then one list of everything on the map around the explorer. Filter chips switch between All, Zones (places), Quests (single activities), NPCs (NPCs and monsters walking now; hidden lurkers stay out of the list until the explorer is within their reveal range) and Community (player tasks, community tasks within 5 km, Secrets, place topics and shouts within 3 km, map notes, community places). Each chip shows its count. A small menu sorts by Nearest (default), Most XP or Top reward and is remembered on the device; locked rows (higher tier, not open yet, resting monsters) always sit below open ones. In All, a quest that its place row already shows is not listed twice. A row opens what its map pin opens: a place or one activity in it, a nearby NPC's encounter (a far one is marked on the map instead), a task or Secret dialog, a shout or topic in Local chat, the map notes, Community places or Community tasks. The Community filter adds Post a task, Hide a Secret and Send on a condition, plus your active tasks, sends and posted tasks below the list." },
-      { p: "Game moments use progressive disclosure. An activity opens with its illustration, objective, real reward availability and Start quest; starting only focuses that activity and never reserves or claims a reward. An active activity keeps its objective ahead of incidental nearby suggestions; its own nearby target or an explicit dismissal can still open the floating action. The next step shows its existing location or question requirement before confirmation. A nearby target still requires entering its actual zone footprint before the interface offers confirmation. Available activity choices appear above the objective. Visit, ordered trail, return trail, any-order hunt, landmark clue and chest keep distinct labels. A compact step diagram explains the published stop order; Learn more holds timing, safety and evidence. Duration stays unknown when the published activity has no duration; a minimum distance between stops is never described as a verified walking route. The confirmed result replaces the quest overlay rather than stacking dialogs or repeating success toasts. Confirmed Aura results prioritize the item, series limit when matched to the catalog, and one next action. Receipt history, ownership refresh, proofs and optional secure/share actions remain under Learn more; sharing stays an optional action from a confirmed receipt." },
-      { p: "Creating a new explorer without a deep link opens one skippable, illustrated guide before map interaction. Continue enables brief first-time tips; Skip or Escape keeps automatic teaching quiet. Restored sessions and deep links never open this guide automatically. Profile Settings can reopen it without changing preferences, or toggle first-time tips; its Help group keeps How to play, the guide and one row of links to How it works, Wiki, Economy and Treasury. A picked-up coin flies to the GOLD counter (a plain fade with reduced motion), and the last first-session step shows a single congratulation card. These preferences and acknowledged topics belong only to this browser and player; GPS and demo controls have separate topics. They never mark an activity complete or grant a reward. Compact objectives teach one action with prepared translated copy, independent of an AI reply. Completing the taught action or dismissing its hint acknowledges that topic. Activity details also offer How this works manually. Offline, closed, distance, footprint and GPS requirements remain visible in a selected compact objective even when teaching is disabled; these are explanations of existing checks, never proof of eligibility. Optional secure/share actions are not an automatic first-adventure step." },
-      { p: "A new server-confirmed wearable pickup opens a short, closable item moment when the map is free. Routine coins and duplicate wearables keep calm pickup feedback. This live moment is not reconstructed from inventory or replayed on reload. On desktop, Inventory, Community and Profile open as a centred card over the dimmed map (a click beside it closes it); on phones they stay full screen. The zone currently containing the map position receives a stronger static outline and a compact activity cue. In GPS mode this hint needs a fresh finite fix and reports uncertainty when its accuracy overlaps the boundary. Closed, paused, locked or completed zones do not advertise available activities. The hint never attests presence or changes server eligibility; no reward is granted merely by entering the footprint." },
-      { viz: "architecture" },
+      { h: "First play and teaching" },
+      {
+        list: [
+          "A new explorer without a deep link sees one skippable, illustrated guide before the map. Restored sessions and deep links never open it.",
+          "First-time tips teach one action each, independent of any AI reply. They belong to this browser and player and never mark progress or grant rewards.",
+          "Profile → Settings → Help reopens the guide, toggles first-time tips and shows the first steps again; the links to How it works, Wiki, Economy and Treasury sit at the bottom of Settings.",
+          "A picked-up coin flies to the GOLD counter (a fade under reduced motion). A new wearable opens a short, closable item moment once.",
+          "On desktop, Inventory, Community and Profile open as a centred card over the dimmed map; on phones they are full screen.",
+        ],
+      },
       { h: "Three kinds of value" },
-      {
-        p: "There is no practice money. XP is soulbound experience; backed map coins and funded zone prizes settle as QGOLD to the player's NEAR account within minutes (payout rounds), in GPS play and in the city demo alike. XP, cosmetic wearables and Aura ownership remain distinct.",
-      },
       { viz: "money-modes" },
       {
         table: {
           head: ["Unit", "What it is", "Where it lives", "Transferable"],
           rows: [
             ["XP / QXP", "Experience from play. Drives levels and gates.", "Game DB; QXP mirror contract on NEAR", "Never (soulbound)"],
-            ["QGOLD (shown as GOLD in play)", "Token fully backed by NEAR in the QGOLD vault; 6 decimals. Map coins and zone prizes earn it, a payout round mints it to the player's account within minutes, every purchase burns it. Its rate R only rises.", "`questlayer-qgold-vault-20261104.testnet`; collected but unpaid amounts wait in the game DB", "Yes (NEP-141)"],
+            ["QGOLD (shown as GOLD)", "Token fully backed by NEAR, 6 decimals. Coins and zone prizes earn it, payout rounds mint it, every purchase burns it. Its rate R only rises.", "`questlayer-qgold-vault-20261104.testnet`; unpaid amounts wait in the game DB", "Yes (NEP-141)"],
             ["NEAR / test NEAR", "Prize pool money, stake, fees, Aura prices.", "Rewards, vault, market and Intents contracts", "Yes"],
           ],
         },
       },
+      { h: "How the parts connect" },
+      { viz: "architecture" },
       { h: "Where to look next" },
       {
         list: [
-          "[How it works](/how-it-works) is the short animated player intro.",
-          "[Economy](/economy) is the public ledger: treasury, realized yield, payouts with transaction links.",
-          "[Treasury](/treasury) is the treasury dashboard and its votes.",
-          "This wiki explains the machinery behind all three.",
+          "[How it works](/how-it-works): the short animated player intro.",
+          "[Economy](/economy): the public ledger with transaction links.",
+          "[Treasury](/treasury): the treasury dashboard and its model.",
         ],
       },
     ],
@@ -175,44 +234,53 @@ export const CHAPTERS: Chapter[] = [
     id: "walk-and-collect",
     group: "play",
     title: "Walking, coins and finds",
-    summary: "GPS-only movement, street coins in daily waves, street finds and calm reward feedback.",
+    tldr: "Real play moves **only with your phone's GPS**; the city demo walks with a joystick. Coins lie on public paths, appear in six daily waves and collect themselves as you pass. The server confirms each one exactly once.",
+    keyFacts: [
+      ["95–120 m", "between coins on a path (60 m near a zone)"],
+      ["6 waves", "of coins between 07:00 and 22:00 local"],
+      ["15 m/s", "fair-play speed cap"],
+      ["25 m", "range to confirm a quest stop"],
+    ],
+    hero: "core-loop",
     status: "live",
-    updated: "2026-11-07",
+    updated: "2026-11-11",
     sources: ["docs/MAP-REWARDS.md", "docs/NATIVE-AUTO-COLLECT.md", "docs/NATIVE-GAME-MAP.md", "docs/PEER-APPEARANCES.md", "docs/FIRST-SESSION.md", "src/useDemoWalk.ts", "src/map-motion.ts", "src/gps-facing.ts", "src/quest-route.ts", "src/QuestBrief.tsx", "src/GameMap.tsx", "src/RewardBursts.tsx"],
     blocks: [
-      { viz: "core-loop" },
       { h: "Movement" },
       {
         list: [
-          "**Real play moves only with the phone's GPS.** There is no tap-to-walk anywhere.",
-          "The city demo has an open, collapsible single row of controls (arrows / WASD). Up and down walk along the character's facing, left and right turn it. Running (14 m/s) is the default and Shift walks (5 m/s), both under the 15 m/s fair-play jump cap.",
-          "Quest buttons only turn the explorer toward the target. Within 3 m the demo snaps onto it so thin path zones count.",
-          "Starting demo movement or turning puts the camera behind the character, looking along its facing with room ahead. Movement after the city overview restores street zoom and perspective. Arrows and WASD still control the demo when the map canvas has focus; these keys do not pan the map, while native map zoom shortcuts remain available. Separate held keys and pointer contacts cannot cancel one another. Dialogs, editable fields, other interactive widgets, hidden pages and window blur release movement; closing them never resumes an old key press. The globe keeps map navigation instead of demo movement.",
-          "In GPS play the character and follow camera share a fresh moving course. When the device omits it, meaningful successive accurate fixes supply a direction. Stationary jitter, stale/inaccurate observations and large jumps do not invent a turn. This is course over ground, not a stationary phone compass. Manual map exploration pauses follow; My location, resumed walking after a pause, or movement after showing a quest restores it. Reduced motion uses immediate camera updates without animated travel. GPS fixes and server eligibility checks are unchanged.",
-          "Multi-stop walks keep their original checkpoint numbers after each confirmation. The next required stop is prominent; later stops are quieter. Co-located departure and return steps share a badge so a future number cannot cover the current one. Tapping a checkpoint opens the quest, never confirms it automatically. Ordered walks accept only the server's next point; any-order hunts explicitly say Any order and use the nearest remaining point consistently for the map, distance and confirmation. Confirmation still requires the existing 25 m range, zone footprint and current GPS evidence; the server alone advances progress and confirms the final reward.",
+          "**GPS play:** no tap-to-walk anywhere. The character and the follow camera use your moving course; stationary jitter, stale or inaccurate fixes and big jumps never invent a turn. Manual panning pauses follow; My location or walking on restores it.",
+          "**City demo:** a collapsible joystick (drag the knob: up walks the way you face, sideways turns, down steps back at 0.6× speed); arrows and WASD work too. A Run toggle, on by default, moves at 14 m/s; walking is 5 m/s. Both stay under the 15 m/s cap.",
+          "Opening a dialog releases held movement; closing it never resumes an old key press.",
+          "Quest buttons only turn the explorer toward the target; within 3 m the demo snaps onto it so thin path zones count.",
+          "Multi-stop walks keep their stop numbers. Ordered walks accept only the server's next stop; any-order hunts say **Any order** and use the nearest remaining stop. Confirmation needs the 25 m range, the zone footprint and fresh GPS; the server alone advances progress.",
+          "Reduced motion moves the camera without animated travel.",
         ],
       },
       { h: "Coins" },
-      {
-        p: "Coins sit on mapped public paths, spaced 95–120 m apart (60 m within 300 m of a zone). Every coin of a day is backed QGOLD of the same value (a pioneer coin counts twice). They appear in **six waves between 07:00 and 22:00 local time**, each start shifted by up to ±30 min from the day seed; a later wave's coins stay hidden and cannot be claimed early. The demo arena has no waves so remote visitors in any time zone can play; its coins carry the same backed value and are paid in QGOLD.",
-      },
       { viz: "map-coins" },
       {
-        p: "Coins near the player are collected automatically. Every claim is confirmed by the server before a floating reward chip appears, and each claim is exactly-once: retrying a request returns the original receipt.",
+        list: [
+          "Coins sit on mapped public paths, 95–120 m apart (60 m within 300 m of a zone). Every coin of a day is backed QGOLD of the same value; a pioneer coin counts twice.",
+          "Six waves between 07:00 and 22:00 local time, each start shifted by up to ±30 min from the day seed. A later wave's coins stay hidden and cannot be claimed early.",
+          "The city demo has no waves, so visitors in any time zone can play; its coins carry the same backed value.",
+          "Every claim is confirmed by the server before the floating reward chip appears. Retrying a request returns the original receipt.",
+        ],
       },
       { h: "Street finds and the first session" },
       {
         list: [
           "Street finds are bonus objects next to paths. Lurker monsters hide next to them (60 m reveal).",
-          "A newcomer anywhere in Czechia gets a coach: nearest find, first coin, first chest, an Aura to try on, then the nearest quest with a map pin and a numbered route for multi-stop quests.",
-          "\"Search this area\" plans the cell you panned to; walking 650 m from searched spots searches automatically.",
+          "A newcomer anywhere in Czechia gets a coach: nearest find, first coin, first chest, an Aura to try on, then the nearest quest with a pin and a numbered route.",
+          "Search this area plans the cell you panned to; walking 650 m from searched spots searches automatically.",
         ],
       },
-      { h: "Practice mode, NEAR mode and other explorers" },
+      { h: "Reward ledgers and other explorers" },
       {
         list: [
-          "Explore has two ledgers. The default map pays backed QGOLD for every coin and zone prize: it waits as \"on its way\" in Profile · Rewards and the next payout round mints it to the player's NEAR account (created automatically at sign-in). The test network ledger instead projects the funded Plzeň NEAR day onto the map and collects as you walk with fresh GPS, one request at a time, showing only confirmed results. Map coins stay the ledger after any sign-in (NEAR or Ethereum wallet); the test network ledger runs only when the player picks it in Settings or opens Expeditions.",
-          "Other explorers appear only if they opt in: sharing publishes a name, look and position for at most 15 minutes and stops when the tab is hidden. Wallets, balances and inventory are never exposed.",
+          "**Map coins (default):** every coin and zone prize is backed QGOLD. It shows as on its way in Profile → Stake → Earnings and the next payout round mints it to your NEAR account, created automatically. This stays the ledger after any wallet sign-in.",
+          "**Test network ledger:** projects the funded Plzeň NEAR day onto the map and collects with fresh GPS, one request at a time. It runs only when you pick it in Settings → Developer or open Expeditions.",
+          "Other explorers appear only if they opt in: a name, look and position for at most 15 minutes, stopped when the tab is hidden. Wallets, balances and inventory are never shown.",
         ],
       },
     ],
@@ -221,18 +289,22 @@ export const CHAPTERS: Chapter[] = [
     id: "zones-and-quests",
     group: "play",
     title: "Zones, quests and the daily board",
-    summary: "Six city zones a day, POI quests in every street cell, landmark clues, NPC errands and three daily goals.",
+    tldr: "Every day Plzeň gets **six quest zones**, and every street cell can hold up to six POI quests, two landmark clues and NPC errands. Three small daily goals pay **+50 XP**; there are no streaks and no penalty for skipping a day.",
+    keyFacts: [
+      ["6", "city zones a day"],
+      ["≈ 400 m", "demo zones from náměstí Republiky"],
+      ["≤ 6", "POI quests per street cell a day"],
+      ["+50 XP", "for today's three goals"],
+    ],
+    hero: "day-clock",
     status: "live",
     updated: "2026-11-11",
     sources: ["docs/WORLD-GENERATION.md", "docs/DEMO-ZONES.md", "server/demo-zones.mjs", "docs/LANDMARK-ERRANDS.md", "docs/DAILY-BOARD.md", "docs/QUEST-TEMPLATES.md", "server/world-planner.mjs", "server/poi-quests.mjs", "server/landmark-clue.mjs", "server/npc/routes.mjs", "src/DailyBoard.tsx", "src/actors-layer.ts"],
     blocks: [
+      { h: "City zones" },
       {
-        p: "A reviewed city (Plzeň today) gets **six citywide zone slots** every day: varied, non-overlapping polygons that need real movement between them. A zone is marked by a tall 3D totem showing its type, a translucent wall, an aura on the ground and the loot it holds. Rarer zones open for a shorter window, and the countdown is visible to everybody.",
+        p: "A reviewed city gets six citywide zone slots a day: varied, non-overlapping polygons that need real walking between them. A zone shows a tall 3D totem of its type, a translucent wall, an aura on the ground and the loot it holds. Rarer zones open for a shorter window, with a countdown everyone sees.",
       },
-      {
-        p: "**Demo layout (testnet now).** For the demo, Plzeň runs a compact layout: all six zones sit on the ring of parks around náměstí Republiky (náměstí Republiky, sady Pětatřicátníků North and West, Smetanovy sady, Šafaříkovy sady, sady 5. května), each within about 400 m of the start, and every zone, the rarer ones too, is open the whole day with no countdown. Zone chests, their guardians, NPCs and monsters stay near the centre too. The table below is the normal rule, which returns when `DEMO_ZONES` is switched off.",
-      },
-      { viz: "day-clock" },
       {
         table: {
           head: ["Zone tier", "Open window", "Typical reward"],
@@ -243,27 +315,23 @@ export const CHAPTERS: Chapter[] = [
           ],
         },
       },
-      { viz: "quest-kinds" },
-      { h: "POI quests in every street cell" },
       {
-        list: [
-          "Every H3 res-7 cell (about 5 km²) can hold **up to 6 quests a day**, at least 250 m apart, chosen from checked public places. At most 2 are category hunts (visit any 3 cafés, for example).",
-          "Open 08:00–20:00 local. They rotate every 72 h. Rewards are XP only: 40 visit, 90 hunt, 60 chest (one chest per cell and day).",
-          "An empty cell says \"Nothing here yet\" instead of inventing content.",
-          "Nightly AI flavour texts (see AI chapter) give each quest a short line; short action-led template text is the fallback when the batch is missing.",
-        ],
+        note: "Demo layout on testnet now (`DEMO_ZONES`): the six Plzeň zones are 55–85 m circles, at least 80 m apart, on the park ring around náměstí Republiky (náměstí Republiky, sady Pětatřicátníků North and West, Smetanovy sady, Šafaříkovy sady, sady 5. května), each within about 400 m of the start on a loop of about 2 km. All of them are open the whole day with no countdown, and chests, guardians, NPCs and monsters stay near the centre. Each compact day is its own world, mainnet refuses the switch, and the table above returns when it is off.",
       },
-      { h: "Landmark clues and errands" },
+      { h: "Quest kinds" },
+      { viz: "quest-kinds" },
       {
         list: [
-          "Up to 2 landmark clues per cell and day. The answer is a Wikidata fact (for example the century a building dates from). One answer per player: 70 XP right, 20 XP wrong.",
-          "Quest givers hand out one errand per day each: visit a place, then come back for a fresh encounter to turn it in. 40 XP, +10 for a right clue. Once every step of an errand or quest line is done, the result names the NPC to go back to and that NPC carries a gold **Report back** sign on the map until the turn-in (`GET /api/actors/tasks`, information only).",
-          "A zone guardian stands on its zone's chest (zones without a chest get no guardian). The chest returns `423 GUARDED` until the player beats it; the win then drops the chest right there and **Open the chest** points the map at it.",
+          "**POI quests:** every H3 res-7 cell (about 5 km²) holds up to 6 a day, at least 250 m apart, from checked public places; at most 2 are category hunts (visit any 3 cafés). Open 08:00–20:00 local, rotating every 72 h. XP only: 40 visit, 90 hunt, 60 chest (one chest per cell and day). An empty cell says Nothing here yet.",
+          "**Landmark clues:** up to 2 per cell and day; the answer is a Wikidata fact. One answer per player: 70 XP right, 20 XP wrong.",
+          "**Errands:** each quest giver hands out one a day: visit a place, come back for a fresh encounter. 40 XP, +10 for a right clue. When every step is done, the NPC carries a gold **Report back** sign until the turn-in.",
+          "**Guardians:** a zone guardian stands on its zone's chest. The chest answers `423 GUARDED` until you win; the win drops the chest right there and **Open the chest** points the map at it.",
+          "Nightly AI flavour gives each quest a short line; short action-led template text is the fallback.",
         ],
       },
       { h: "Today's board" },
       {
-        p: "Three small goals per world day picked from today's world (default: 10 coins, 1 monster, 1 NPC; fallback finds, a quest, 20 coins). Finishing all three pays **+50 XP once**. There is no streak and no penalty for skipping a day. Each unfinished goal has **Show me**: it closes the board and points the map at the nearest monster, NPC, boss, open quest, street find or coin (hidden lurkers are never revealed).",
+        p: "Three small goals a world day, picked from today's world (default: 10 coins, 1 monster, 1 NPC; fallback finds, a quest, 20 coins). All three pay **+50 XP once**. Each unfinished goal has **Show me**, which points the map at the nearest monster, NPC, boss, open quest, find or coin; hidden lurkers are never revealed.",
       },
     ],
   },
@@ -271,23 +339,26 @@ export const CHAPTERS: Chapter[] = [
     id: "progression",
     group: "play",
     title: "XP, levels, season and badges",
-    summary: `A ${MAX_LEVEL}-level curve where every level unlocks something to do or wear, cosmetic season ranks and ${PLACE_BADGES} place badges.`,
+    tldr: `${MAX_LEVEL} levels on a \`100 × (level − 1)²\` curve. Every level unlocks something to do or wear, **never better odds or bigger payouts**. Seasons and badges are cosmetic.`,
+    keyFacts: [
+      [String(MAX_LEVEL), "levels"],
+      [topXp.toLocaleString("en-US"), "XP for the top level"],
+      ["2 weeks", "per season, goal 30 points"],
+      [String(PLACE_BADGES), "place badges, soulbound NFTs"],
+    ],
+    hero: "xp-curve",
     status: "live",
-    updated: "2026-11-05",
+    updated: "2026-11-11",
     sources: ["docs/LEVELS.md", "docs/GAME-LOOPS.md", "docs/NATIVE-PROGRESSION.md", "docs/SEASON.md", "docs/BADGES.md", "server/data/level-table.json", "server/data/place-badges.json", "src/levels.ts"],
     blocks: [
-      {
-        p: "Required XP follows `100 × (level − 1)²`. Levels unlock things to do or wear and contribute to monster duel power alongside skill. They do not change reward odds or financial payouts; equipment remains cosmetic. The table is read directly from `server/data/level-table.json`, the same file the server uses.",
-      },
-      { viz: "xp-curve" },
+      { h: "Levels" },
+      { p: "Levels add to monster duel power alongside skill. Equipment stays cosmetic. The table comes straight from `server/data/level-table.json`, the file the server uses." },
       { table: { head: ["Level", "XP needed", "Unlock", "Level Aura"], rows: levelRows } },
-      {
-        p: "A linked NEAR account keeps its own confirmed XP read from the rewards contract; practice XP is never added to it, so simulated play cannot look like native progress.",
-      },
+      { p: "A linked NEAR account shows its own confirmed XP, read from the rewards contract." },
       { h: "Season" },
       {
         list: [
-          "A two-week season with a cosmetic leaderboard. Points: monster hunt 1, zone visit 2, NPC line 3. Goal 30.",
+          "Two weeks, cosmetic leaderboard. Points: monster hunt 1, zone visit 2, NPC line 3. Goal 30.",
           "Ranks: Explorer, Season finisher (goal), Trailblazer (2×), Season legend (3×). A rank changes how the row looks and nothing else.",
           "Finishers claim a season mark and the season Aura once. Only play counts: never GOLD, NEAR, stake or purchases.",
         ],
@@ -295,8 +366,8 @@ export const CHAPTERS: Chapter[] = [
       { h: "Badges" },
       {
         list: [
-          `**Place badges:** ${PLACE_BADGES} curated notable places (peaks, viewpoints, landmarks, bigger cities). GPS only, never in the arena. Each earned badge is minted as a soulbound NFT on \`questlayer-badges-20261102.testnet\`.`,
-          "**Player badges:** POAP-like soulbound badges players design for visited places or finished quests, claimed with a server-signed claim.",
+          `**Place badges:** ${PLACE_BADGES} curated notable places (peaks, viewpoints, landmarks, bigger cities). GPS only, never in the demo. Minted as soulbound NFTs on \`questlayer-badges-20261102.testnet\`.`,
+          "**Player badges:** POAP-like soulbound badges players design for places or finished quests, claimed with a server-signed claim.",
           "Badges are decorations: not sellable and never part of the inventory economy.",
         ],
       },
@@ -306,57 +377,58 @@ export const CHAPTERS: Chapter[] = [
     id: "npcs-and-monsters",
     group: "play",
     title: "NPCs, monsters and mini-games",
-    summary: "Roaming NPCs with AI voices, monsters beaten by skill, an altar for crafting and earned dice rolls on chain.",
+    tldr: "NPCs walk real paths from 07:00 to 22:00 and offer quests, errands, trades and stories. **The server decides every offer; the AI only phrases it.** Monsters are beaten by skill, never by paying or wagering.",
+    keyFacts: [
+      ["07–22", "NPCs and monsters out, local time"],
+      ["1 h", "cooldown after a lost duel"],
+      ["1,200 HP", "weekly shared boss"],
+      ["12", "element shards a day at most"],
+    ],
+    hero: "actor-dialog",
     status: "live",
     updated: "2026-11-09",
     sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs"],
     blocks: [
-      { p: "A monster encounter lists today's challenge formats once, with a one-line hint each; picking one starts that challenge directly, so the same choice is never asked twice. A guardian win names the chest it guarded only while the player has not opened it." },
-      { p: "NPC and monster portraits are shown completely in bounded, scrollable encounter dialogs. The title sits beside or below the image. The close control remains reachable when content scrolls; desktop encounters leave the map visible around the modal. Nearby Open cues only open the existing encounter: the server still checks location, timing and availability." },
-      { p: "NPC greetings show up to two current quest offers directly, plus an active-tasks action when relevant. A compact original portrait keeps the task choices in view. Offers can be previewed before Start quest calls the existing accept endpoint; only its confirmed response shows acceptance. Returning to the map focuses the first unfinished step from that confirmed active task when it belongs to the current world. The full offer menu, active tasks, trader and keeper surfaces, conversation input and reply provenance sit under Learn more, which is folded on a phone and already open in a desktop-sized window. Trader premium gear rows wrap long item names instead of cutting them. Closing or folding that area preserves the current explorer/actor/world text draft. Financial actions and their terms keep their original handlers and checks." },
-      { p: "Unsent NPC messages are kept as bounded local text drafts for the current explorer, world and actor. Returning or reloading restores the text; a successful send clears only that submitted revision. Drafts never store encounter tokens or prove consent, position or a completed action." },
-      {
-        p: "Actors walk real pedestrian paths on a schedule. Reviewed cities have a hand-cast list; every other city and street cell gets a generic cast (quest giver, storyteller, wandering rare, one roamer, two lurkers). Actors are out **07:00–22:00 local** and switch between day and night casts by the real sun.",
-      },
+      { h: "Who walks the map" },
       {
         table: {
           head: ["Archetype", "What it does"],
           rows: [
-            ["Quest giver", "Quest lines and one errand a day; patron lines for stakers. Out day and night (07:00–22:00), so errands work on winter evenings too"],
-            ["Storyteller", "Story chapters; patron chapter for stakers"],
+            ["Quest giver", "Quest lines and one errand a day; patron lines for stakers. Out day and night (07:00–22:00)"],
+            ["Storyteller", "Story chapters; a patron chapter for stakers"],
             ["Trader", "Buys and sells Auras on NEAR Intents with a purse that must grow"],
-            ["Keeper", "Shows the player's stake, ceremonies and the inner vault (read-only)"],
+            ["Keeper", "Shows your stake, ceremonies and the inner vault (read-only)"],
             ["Wandering rare", "Rare encounter with a patron option at Tier 3"],
             ["Roamer / guardian / lurker / boss", "Monsters: roam, guard a zone chest, hide by finds, weekly shared boss"],
           ],
         },
       },
-      { h: "How a conversation works" },
-      {
-        p: "The server first computes the **offer menu** (quests, errands, trades) from game rules. The AI model only phrases the reply and may pick from that menu; it can never invent a reward, a price or an item.",
-      },
-      { viz: "actor-dialog" },
-      { p: "A new mini-game format can show a short translated explanation before Start challenge sends the real request. Play example runs only local synthetic quiz, rhythm, rune-path, memory or stance inputs; it has no encounter request, reward or attempt. Starting or closing this teaching acknowledges the format in the browser. Known formats start directly, with a question button to reopen an example. Timed challenges never open help automatically. Boss help explains shared progress and lets players choose local examples without sending a strike; the actual Strike action keeps its existing server checks and format selection." },
-      { h: "Monsters" },
-      { p: "Monster challenges support touch and keyboard input. The rune path has an arrow-key cursor; Space starts and finishes a trace. Both inputs send the same path samples for server scoring. A failed result request can retry the same input; a confirmed result is shown once." },
+      { p: "Reviewed cities have a hand-cast list; every other city and cell gets a generic cast (quest giver, storyteller, wandering rare, one roamer, two lurkers). Day and night casts switch with the real sun." },
+      { h: "Encounters" },
       {
         list: [
-          "Beaten by a quiz, a rhythm mini-game or a stance duel. Power = level (capped at 20) + skill. Auras and items are flavour only and never change odds.",
-          "A loss means a 1 h cooldown; one defeat per monster per day. No wagering of any kind.",
-          "Rewards: XP, element shards (max 12 a day) and roll tickets from lurkers.",
-          "The weekly boss has shared HP (1200); each player lands one hit every 10 minutes. Three or more hits on a defeated boss earn the Bossbane Aura once.",
+          "A greeting shows up to two current quest offers with a compact portrait; Start quest calls the real accept endpoint and only its confirmed answer shows acceptance.",
+          "The full menu, active tasks, trader and keeper surfaces and the chat input sit under Learn more (folded on a phone, open on desktop).",
+          "Unsent NPC messages are kept as local drafts per explorer, world and actor; they never store tokens or prove anything.",
+          "Nearby Open cues only open the encounter; the server still checks location, timing and availability.",
         ],
       },
+      { h: "Monsters" },
       { viz: "monster-flow" },
+      {
+        list: [
+          "Formats: quiz, rhythm, rune path, memory and stance duel. An encounter lists today's formats once with a one-line hint; picking one starts it. Power = level (capped at 20) + skill; Auras never change odds.",
+          "A new format can show a short example first (local, no request, no reward). Timed challenges never open help automatically. Touch and keyboard both work.",
+          "A loss means a 1 h cooldown; one defeat per monster per day. No wagering of any kind.",
+          "Rewards: XP, element shards (max 12 a day) and roll tickets from lurkers.",
+          "The weekly boss has 1,200 shared HP; each player lands one hit every 10 minutes. Three or more hits on a defeated boss earn the Bossbane Aura once.",
+        ],
+      },
       { h: "Golden Altar" },
-      {
-        p: "Shards plus common Auras craft rarer existing editions: Wardbreaker (10 shards + 1 common + a guardian win), Polar (6 frost + 1 common), Comet, Storm and Moon (8 element shards + 2 commons + a guardian win). The daily offering limit rises at L6.",
-      },
-      { h: "Wisp rolls (npc-games contract)" },
-      {
-        p: "A lurker quiz win earns a roll ticket. The roll is played on chain with **commit-reveal** and NEAR's block randomness, so neither the server nor the player can bias it. Tickets are earned only; nothing can be bought or wagered.",
-      },
+      { p: "Shards plus common Auras craft rarer existing editions: Wardbreaker (10 shards + 1 common + a guardian win), Polar (6 frost + 1 common), Comet, Storm and Moon (8 element shards + 2 commons + a guardian win). The daily offering limit rises at L6." },
+      { h: "Wisp rolls" },
       { viz: "wisp-roll" },
+      { p: "A lurker quiz win earns a roll ticket. The roll runs on chain with commit-reveal and NEAR block randomness, so neither the server nor the player can bias it. Tickets are earned only; nothing can be bought or wagered." },
       { h: "Traders" },
       {
         list: [
@@ -372,18 +444,29 @@ export const CHAPTERS: Chapter[] = [
     id: "collectibles",
     group: "play",
     title: "Auras and collectibles",
-    summary: `${EDITIONS.length} Aura editions, ${SUPPLY_PER_EDITION} per edition, minted on NEAR and secured automatically.`,
+    tldr: `Auras are wearable effects in two slots: ${EDITIONS.length} editions, capped at ${SUPPLY_PER_EDITION} each, minted as NFTs on NEAR. Chest, level and roll Auras are **secured to your account automatically**, with no wallet pop-up.`,
+    keyFacts: [
+      [String(EDITIONS.length), "Aura editions"],
+      [String(SUPPLY_PER_EDITION), "at most per edition"],
+      ["2", "slots: above and below the character"],
+      ["2 %", "royalty to the treasury on resales"],
+    ],
+    hero: "aura-catalog",
     status: "live",
-    updated: "2026-11-10",
+    updated: "2026-11-11",
     sources: ["docs/NATIVE-AURA-CLAIMS.md", "docs/COLLECTIBLES-REVIEW.md", "docs/ASSET-CATALOG.md", "server/data/aura-catalog.json", "server/earned-editions.mjs", "src/Inventory.tsx", "src/MarketBoard.tsx", "src/GoldShop.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx"],
     blocks: [
-      { p: "Confirmed Aura results present the awarded item and one equipment or map action first. Matched catalog editions show their set, serial and configured edition limit; that limit is never labelled as remaining stock. Full receipts, ownership refresh, optional secure/share actions and outfit previews remain under Learn more. Newly collected wearable clones have a separate short live pickup moment, with the original-network distinction and proof available in its details. Neither a result preview nor zone entry changes ownership or claims another reward." },
+      { h: "Inventory: Wardrobe and Shop" },
       {
-        p: "Auras are wearable effects in two slots (above and below the character). Each edition is capped on chain. The catalog in `server/data/aura-catalog.json` is the single source for the server, the client and this page.",
+        list: [
+          "**Wardrobe** shows the character with its two Aura slots, then one grid of everything owned: game Auras, Auras secured on NEAR (wallet badge) and Aavegotchi wearables (Clone tag or gold check). Worn items first; filters All, Auras, Wearables, Worn.",
+          "Tap an item for Try it on / Take it off and Sell. Sell asks for a price in test NEAR and lists the Aura in Shop → Market (a game Aura is secured first). A worn secured Aura must be taken off first.",
+          "Unowned editions sit in a separate catalog; catalog art never implies ownership or current availability.",
+          "**Shop → Items:** everything GOLD buys as illustrated cards (emotes, marker frames, lures, trader gear); every purchase burns QGOLD.",
+          "**Shop → Market:** every Aura for sale as a card, from the NEAR Intents book (NPC traders included) and the market contract. Filters All, Above, Below, Mine; sort by newest, name, rarity or price. Buying signs with the explorer account; card prices are rounded up to 4 decimals.",
+        ],
       },
-      { p: "Inventory has two tabs in one tab style: **Wardrobe** and **Shop**. Wardrobe shows the character with its two Aura slots, then one grid of everything owned: game Auras, Auras already secured on NEAR (wallet badge) and Aavegotchi wearables (Clone tag or gold check), worn items first, filterable by All, Auras, Wearables and Worn. Tapping an item opens Try it on / Take it off and Sell. Sell asks for a price in test NEAR and lists the Aura in Shop → Market (a game Aura is secured first); a worn secured Aura must be taken off first, and secured Auras need the secured explorer before they can be worn. Unowned editions remain in a separate expandable catalog; catalog art does not imply ownership or current reward availability. The original Aavegotchi look, the NEAR collection tools and display settings sit in closed sections under the grid. Item actions still wait for the existing server or chain confirmation." },
-      { p: "**Shop** has two sub-tabs. Items shows everything GOLD buys as illustrated cards (emotes, marker frames, lures, premium gear sold by traders), explanations behind i buttons; every purchase still burns GOLD. Market lists every Aura for sale as a card (art, name, rarity, price the buyer pays), from the NEAR Intents order book including NPC traders and from the market contract. Filters: All, Above, Below, Mine; sort by newest, name, rarity or price. A card opens a large preview with the seller and one Buy button (Cancel listing for your own market-contract listing). Buying signs with the explorer account (no wallet popup); prices shown on cards are rounded up to 4 decimals. Older trading panels (Intents withdrawals, signed orders, your trade history) stay under More trading tools." },
-      { viz: "aura-catalog" },
+      { h: "Where Auras come from" },
       {
         table: {
           head: ["Source", "How you get it", "Claim prefix"],
@@ -398,9 +481,9 @@ export const CHAPTERS: Chapter[] = [
       },
       {
         list: [
-          "Claim-only editions mint only for their claim prefix; the oracle cannot mint them and chests never drop them.",
-          "Earned editions are awarded **once per player ever** through the `earned_editions` ledger.",
-          "Set bonuses are cosmetic only.",
+          "Claim-only editions mint only for their claim prefix; chests never drop them.",
+          "Earned editions are awarded **once per player ever** (`earned_editions` ledger). Set bonuses are cosmetic.",
+          "Confirmed results show the set, serial and edition limit; that limit is never labelled as remaining stock.",
         ],
       },
       { h: "Securing and trading" },
@@ -408,7 +491,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "Chest, roll and level Auras are secured automatically: the device key signs `redeem_aura` and the relayer pays gas. A worn Aura waits until it is taken off.",
-          "Collection Sell lists the Aura on NEAR Intents (see the Intents chapter). A 2 % NEP-199 royalty goes to the treasury on outside marketplaces such as Mintbase.",
+          "Selling lists the Aura on NEAR Intents (see the Intents chapter). A 2 % NEP-199 royalty goes to the treasury on outside marketplaces such as Mintbase.",
         ],
       },
     ],
@@ -417,40 +500,55 @@ export const CHAPTERS: Chapter[] = [
     id: "wearables-and-explorers",
     group: "play",
     title: "Wearables, explorer cards and your profile",
-    summary: "Free Aavegotchi wearable clones on the map, a gold check for owned originals, explorer cards with waves, and your own profile with its story and stake.",
+    tldr: "About **one street find in three** is a free clone of an official Aavegotchi wearable; a linked Base wallet adds a gold check to originals you own. Tap any explorer for a public profile; your own Profile holds your story, your stake and settings.",
+    keyFacts: [
+      ["≈ 1 in 3", "street finds is a wearable"],
+      ["12", "wearable finds per world at most"],
+      ["6", "ready wave phrases, no free text"],
+      ["512 px", "texture limit so every gotchi fits a phone in 3D"],
+    ],
+    hero: "wearable-rarity",
     status: "live",
-    updated: "2026-11-10",
-    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx", "server/player-journey.mjs", "src/CharacterJourney.tsx", "src/StakeEarn.tsx"],
+    updated: "2026-11-11",
+    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx", "server/player-journey.mjs", "src/CharacterJourney.tsx", "src/StakeEarn.tsx", "server/gotchi-models.mjs"],
     blocks: [
-      {
-        p: "About one street find in three becomes a **wearable find** (at most 12 per world): a free in-game clone of the official Aavegotchi wearable catalogue. The catalogue is read from the Aavegotchi contract on Base and the artwork is served from the contract, never copied. The find card shows that official pixel art inside the same rarity ring as its map marker, with the rarity named; if the art cannot be read, the marker shows a sparkle and the card a discovery picture instead of a broken image. Picking one up is a normal street coin claim (GPS check, travel guard, XP caps), logged like any street find. The clone is a database row, never an NFT, and lands in **Inventory → Wardrobe** next to the Auras: the pickup moment's See it in your Wardrobe opens the grid filtered to wearables. Wearables cannot be sold there: clones are not NFTs and originals stay in the wallet.",
-      },
-      {
-        table: {
-          head: ["Rarity", "Share of wearable finds"],
-          rows: [["Common", "40 %"], ["Uncommon", "26 %"], ["Rare", "18 %"], ["Legendary", "10 %"], ["Mythical", "5 %"], ["Godlike", "1 %"]],
-        },
-      },
+      { h: "Wearable finds" },
       {
         list: [
-          "A clone is a cosmetic row: not an NFT, not tradable, no GOLD value. Rewards, XP and the economy do not change.",
-          "One item per slot (head, face, eyes, body, hand, pet), drawn on the character at its official canvas place.",
-          "**Verified originals:** a player who links a Base wallet with a signed message gets a gold check on every clone whose original sits in that wallet. The check lasts 24 hours after the last wallet read. Other players see only \"verified\", never the address.",
-          "**Owned Aavegotchis:** signing in with an ETH wallet (or linking one) reads its Aavegotchis on Base right away. The explorer is dressed in the owned gotchi with the highest rarity score (BRS with its wearables; portals are skipped) unless they chose the starter ghost. The backpack lists the owned gotchis, best first, to switch with one tap, and the wallet's wearables open in the Wardrobe. While the explorer plays, the wallet is re-read every few minutes; a gotchi that left the wallet is taken off.",
+          "The catalogue is read from the Aavegotchi contract on Base and the artwork is served from the contract, never copied. A find shows that pixel art inside the rarity ring of its map marker; unreadable art falls back to a sparkle.",
+          "Picking one up is a normal street claim (GPS check, travel guard, XP caps). The clone is a database row, never an NFT: not tradable, no GOLD value. It lands in Inventory → Wardrobe.",
+          "One item per slot (head, face, eyes, body, hand, pet), drawn at its official canvas place.",
+          "**Verified originals:** link a Base wallet with a signed message and every clone whose original is in that wallet gets a gold check for 24 hours after the last read. Others see only verified, never the address.",
+        ],
+      },
+      { h: "Your own Aavegotchis" },
+      {
+        list: [
+          "Signing in with an ETH wallet (or linking one) reads its Aavegotchis on Base. You are dressed in the one with the highest rarity score (BRS) unless you chose the starter ghost; Inventory → Wardrobe lists them, best first, to switch in one tap.",
+          "The wallet is re-read every few minutes while you play; a gotchi that left the wallet is taken off.",
+          "Restyle your gotchi with anything you own (map clones and wallet originals). The outfit is a look in the game only and changes nothing on Base.",
+          "**3D:** a Settings switch turns 3D characters on. The official Aavegotchi renderer draws a restyled look (at most once per 15 minutes per look, 40 looks an hour); a new combination shows in 2D until it is ready. Textures are shrunk to 512 px so every owned gotchi fits a phone.",
         ],
       },
       { h: "Explorer cards and waves" },
       {
         list: [
-          "Tapping any explorer on the map opens their **profile**: name, level and XP bar, the original Aavegotchi they wear with its rarity score (BRS), play stats (finds, quests, monsters won, wearables found, badges, month they started) and the equipment slots in Aavegotchi order (body, face, eyes, head, left and right hand, pet, Auras above and below) with what they wear now. A gold seal marks an original their wallet holds.",
-          "A profile is public: it opens without either side sharing a position and never shows one. Others see only what is worn, never the wallet address or the rest of the collection; a block hides it both ways.",
-          "Tapping **your own** explorer opens your own profile, with **Change outfit** leading to the Inventory.",
-          "On your own profile, tap a slot to dress it. While you wear one of your Aavegotchis you can restyle it with anything you own: wearables you found on the map as clones and originals your linked wallet holds now. A slot can also stay empty or go back to the gotchi's own gear. The outfit is only a look in the game and changes nothing on Base; items you no longer own drop out of it. Others see the outfit on the map and on your profile, but not the rest of your collection. In 3D the restyled gotchi uses the official Aavegotchi renderer: a look it has already drawn shows right away; a new combination is requested from the renderer and the 2D look shows until it is ready. Official renders of fully dressed gotchis can carry over 100 megapixels of textures; the server shrinks them to 512 px per texture before sending, so every owned gotchi fits a phone.",
-          "**Demo bots:** the test world (TEST_SEED=1) keeps a few bots walking the map. Their dialog is the same, with a **demo-bot** tag after the name; they take no waves and cannot be blocked.",
-          "**Write a message** opens the encrypted inbox (see the Encrypted player inbox chapter); it stays off for demo bots and for explorers whose account is not ready yet.",
-          "Waves are six ready phrases, no free text. Limits: one per pair per minute, 20 sent and 30 received per hour; delivered by the presence poll and deleted after an hour.",
-          "Block hides presence, notes, waves, messages and the card both ways. The Local chat tab holds the public nearby notes and the shouts and topics, with the same publication consent, reporting and blocking rules (see the Community chapter).",
+          "Tap any explorer for their profile: name, level, the original Aavegotchi they wear with its BRS, play stats and equipment slots. A gold seal marks an original their wallet holds. A profile never shows a position, a wallet or the rest of a collection.",
+          "Waves are six ready phrases. Limits: one per pair per minute, 20 sent and 30 received per hour; deleted after an hour.",
+          "**Write a message** opens the encrypted inbox. Block hides presence, notes, waves, messages and the card both ways.",
+          "Demo bots in the test world carry a **demo-bot** tag; they take no waves and cannot be blocked.",
         ],
+      },
+      { h: "Your Profile" },
+      {
+        table: {
+          head: ["Tab", "What it holds"],
+          rows: [
+            ["Character", "Avatar, level and XP, your totals (finds, quests, tasks, monsters, wearables, badges, GOLD earned), Badges, a Messages tile for the inbox, and **Your story**: what happened, newest first (`GET /api/me/journey`)"],
+            ["Stake", "A switch: **Stake** (animated picture of your NEAR into the vault, the tier ladder, your stake, the form) and **Earnings** (QGOLD balance, the next payout, GOLD earned, the yield your stake kept)"],
+            ["Settings", "Game, Help (How to play, the guide, Game economy, first-time tips), Account and devices, Sign out, then the reference links; the reward ledger switch sits in a small Developer section"],
+          ],
+        },
       },
     ],
   },
@@ -458,31 +556,28 @@ export const CHAPTERS: Chapter[] = [
     id: "community-local",
     group: "play",
     title: "Community: local chat and places",
-    summary: "Free map notes that fade after a day or a week, shouts and topics, and community places, all created from small dialogs over the map.",
+    tldr: "Notes, topics and places are created from **small dialogs over the map**. Notes and places are free; shouts and topics are paid place messages. Reports and blocks work both ways.",
+    keyFacts: [
+      ["1 day · 1 week · keep", "how long a note stays"],
+      ["7 days", "longest shout"],
+      ["6 authors", "make a topic free for good"],
+      ["10 km", "community places shown nearest first"],
+    ],
     status: "live",
-    updated: "2026-11-10",
+    updated: "2026-11-11",
     sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/MapNotes.tsx", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx"],
     blocks: [
+      { h: "Create from the map" },
       {
-        p: "The **Actions** button on the map opens three small create dialogs: **Leave a note**, **Open a topic** and **Add a place**. Each shows a message pinned into the ground, a text field, one small switch and one button; the map stays where it was. Community holds the lists: **Local chat** (sub tabs Notes, and Shouts & topics) and **Places**.",
+        p: "Three of the seven items in the map's Actions menu, **Leave a note**, **Open a topic** and **Add a place**, open small dialogs: a pin in the ground, a text field, one switch and one button. The map stays where it was. Community holds the lists: Quests, Tasks, **Local chat** (Notes, and Shouts & topics), **Places** and Creators.",
       },
       {
         list: [
-          "**Map notes** are free. The author picks how long a note stays: 1 day, 1 week (default) or Keep until removed. Expired notes leave every list. The author can edit the text of their own note; the pin, photo and time stay.",
-          "Every row shows author, time and time left, the text, and a **GPS line** with the pin coordinates and distance. Tapping it shows the spot on a plain map with only the pin, your position and an X back to the list.",
-          "**Shouts and topics** are the paid place messages (see Fees and spending): a shout is a short bubble for up to 7 days; a topic is a discussion that becomes free for good once 6 different players wrote in it.",
-          "**Community places** are free recommendations of spots worth a visit, nearest first within 10 km, with a kind (view, nature, history, art, food & drink, hidden gem, walk & play), a kind filter and sorting (nearest, newest, A to Z). The author edits or removes a place; three different reports hide it until a moderator looks. No links, contacts or private addresses. No GOLD or XP moves.",
-          "Blocks hide notes, shouts, topics and places both ways. Demo maps and the real GPS map keep separate notes and places.",
-          "The test world (TEST_SEED=1) seeds notes, community places, two shouts and two topics with replies around náměstí Republiky in Plzeň.",
-        ],
-      },
-      { h: "Your own profile" },
-      {
-        list: [
-          "**Profile** has three tabs: **Character**, **Stake** and **Settings**.",
-          "**Character:** the avatar with level and XP, then the same totals as an explorer card plus a few of your own: finds, quests, tasks done, tasks and quests posted, monsters won, wearables found, badges and GOLD earned (coins, quests, task pay and sales). **Badges** is a chapter that shows one row until opened. **Your story** lists what happened, newest first: street coins (one row per day), finds, quests, tasks, badges, sales, stake matured and tier reached. It reads `GET /api/me/journey` (`server/player-journey.mjs`), which only reads tables the game already writes.",
-          "**Stake** has a two-way switch. **Stake** opens with a small animated picture (your NEAR into the vault, yield back to you and into the prize pool at your chosen share), the tier ladder Free → Staker → Tier 2 → Tier 3 with what the next step needs, your stake today, the stake form and Manage stakes. **Earnings** shows the QGOLD balance and the next payout, GOLD earned on the map and the yield your stake kept for you; on the test network ledger it also shows the secured NEAR rewards.",
-          "**Settings:** Game, Help (with Game economy), Account and devices, Sign out, then the reference links (How it works, Wiki, Economy, Treasury). The reward ledger switch sits in a small Developer section at the very bottom.",
+          "**Map notes** are free. The author picks 1 day, 1 week (default) or Keep until removed; expired notes leave every list. Authors can edit their own text; pin, photo and time stay.",
+          "Every row shows author, time, time left, the text and a **GPS line** with the pin and its distance. Tapping it shows the spot on a plain map with only the pin and your position.",
+          "**Shouts** are short paid bubbles for up to 7 days; a **topic** becomes free for good once 6 different players wrote in it (see Fees and spending).",
+          "**Community places** are free recommendations: nearest first within 10 km, with a kind (view, nature, history, art, food & drink, hidden gem, walk & play), filters and sorting. Three reports from different players hide a place until a moderator looks. No links, contacts or private addresses; no GOLD or XP moves.",
+          "Demo maps and the real GPS map keep separate notes and places. The test world seeds a few of each around náměstí Republiky.",
         ],
       },
     ],
@@ -491,78 +586,90 @@ export const CHAPTERS: Chapter[] = [
     id: "player-inbox",
     group: "play",
     title: "Encrypted player inbox",
-    summary: "Private messages between explorers, end-to-end encrypted on the device and stored on NEAR Social as ciphertext.",
+    tldr: "Private messages between explorers, **end-to-end encrypted on the device** and stored on NEAR Social as ciphertext. Only the two explorers can read them: not other players, not the network, not the game server.",
+    keyFacts: [
+      ["1–500", "characters per message"],
+      ["1 h", "after mutual waves a chat can open"],
+      ["128 B", "padding steps hide the length"],
+      ["< 0.01 NEAR", "storage, sponsored by the relayer"],
+    ],
+    hero: "inbox-seq",
     status: "live",
-    updated: "2026-11-10",
+    updated: "2026-11-11",
     sources: ["docs/PLAYER-INBOX.md", "server/inbox/crypto.mjs", "src/signing-vault/inbox.ts", "server/inbox/service.mjs", "server/inbox/routes.mjs", "src/inbox/Inbox.tsx"],
     blocks: [
-      {
-        p: "Explorers can write short private messages (1–500 characters). Each message is encrypted on the sender's device and written by the sender's own NEAR account to NEAR Social, so it lives on chain, but only the two explorers can read it: not other players, not the network and not the QuestLayer server.",
-      },
+      { h: "Where to find it" },
+      { p: "The inbox opens from the map's inbox pill, from the Messages tile in Profile → Character and from **Write a message** on an explorer's profile." },
       { h: "Who may write" },
       {
         list: [
-          "A conversation opens after both explorers **waved at each other** within the last hour, or after one tapped **Ask to message** and the other accepted. A declined request stays declined for the one who asked.",
+          "A conversation opens after both explorers **waved at each other** within the last hour, or after one tapped **Ask to message** and the other accepted. A declined request stays declined.",
           "**Block** stops requests, messages and delivery both ways. Demo explorers cannot write or receive.",
           "Limits: 10 new requests a day (20 unanswered at most), 30 messages an hour and 150 a day per sender, 120 received an hour, one message every 2 seconds per pair.",
-          "**Report** on a received message discloses the key of that one message only; the server checks it opens the on-chain record, and moderators read exactly that text. Three different reporters within 7 days pause the sender until a moderator decides.",
+          "**Report** discloses the key of that one message only; three different reporters within 7 days pause the sender until a moderator decides.",
         ],
       },
       { h: "How the encryption works" },
       {
         list: [
-          "Every explorer account has an X25519 **inbox key** generated in the separate secure signing origin; the secret never leaves it. The public key is published at `<account>/questlayer/inbox_key`.",
-          "A message is sealed with X25519 + HKDF-SHA256 + XChaCha20-Poly1305 (the NaCl box idea) using a fresh key per message, and written to `<sender>/questlayer/inbox/msg_<id>`. The text is padded to 128-byte steps so its length tells little.",
-          "On chain anyone sees that the sender wrote a message, when and roughly how long. The recipient appears only as a tag that only the two explorers can compute, never as an account.",
-          "The signing origin reads keys and records from NEAR Social itself, never from the game server, so the server cannot swap a key or forge a message. It only keeps the delivery index: who writes to whom and when.",
-          "A message counts as delivered only once the server reads the exact record from chain; the relayer sponsors the gas and the small storage deposit (under 0.01 NEAR for a short message).",
+          "Every explorer has an X25519 inbox key made in the separate secure signing origin; the secret never leaves it. The public key is published at `<account>/questlayer/inbox_key`.",
+          "A message is sealed with X25519 + HKDF-SHA256 + XChaCha20-Poly1305 with a fresh key per message and written to `<sender>/questlayer/inbox/msg_<id>`.",
+          "On chain anyone sees that the sender wrote, when and roughly how long. The recipient appears only as a tag the two explorers can compute.",
+          "The signing origin reads keys and records from NEAR Social itself, so the server cannot swap a key or forge a message. The server keeps only the delivery index.",
         ],
       },
-      {
-        note: "The inbox key lives in one browser. A new device can take over for new messages, but older messages stay readable only on the device that received them. A wallet-based key backup is proposed, not built.",
-        tone: "warn",
-      },
+      { note: "The inbox key lives in one browser. A new device can take over for new messages, but older messages stay readable only where they were received. A wallet-based key backup is proposed, not built.", tone: "warn" },
     ],
   },
-  // ----------------------------------------------------------------- world
   {
     id: "gotchiverse-test-app",
     group: "play",
     title: "Gotchiverse-test-app",
-    summary: "A free 16 × 16 voxel workshop behind a server switch: shape terrain, place a lantern and build with invited friends.",
+    tldr: "A free **16 × 16 voxel workshop** behind a server switch: shape terrain, place a garden lantern and build with invited friends. No QGOLD, XP, items or land.",
+    keyFacts: [
+      ["16 × 16", "blocks per workshop"],
+      ["off", "unless the server switch is on"],
+      ["1 day", "invite link lifetime"],
+      ["0", "QGOLD, XP or items"],
+    ],
     status: "partial",
     updated: "2026-11-08",
     sources: ["docs/GOTCHIVERSE.md", "server/gotchiverse/store.mjs", "server/gotchiverse/routes.mjs", "src/Gotchiverse.tsx", "src/WorldSwitcher.tsx"],
     blocks: [
       {
         list: [
-          "**Switch:** off unless the server runs with `GOTCHIVERSE_TEST_APP=1`. When it is on, the logo opens a world picker with QuestLayer and **Gotchiverse-test-app**; when it is off, the logo and the API routes behave as before.",
-          "**Play:** each explorer opens one private workshop, raises and lowers blocks, paints grass, stone, sand or water and places a garden lantern. The first activity asks for three changed blocks and a lantern. Owners invite friends with a one-day link and can remove them again.",
-          "**No money:** the workshop has no QGOLD, XP, item grants, land claims or permits. Virtual movement never counts as GPS and the outdoor map pauses its requests while the workshop is open.",
-          "**Storage:** one JSON file per workshop in a `gotchiverse` folder next to the game database, written under a lock with an atomic rename. Edits carry a revision and a request id, so a retry never applies twice.",
+          "**Switch:** off unless the server runs with `GOTCHIVERSE_TEST_APP=1`. When on, the logo opens a world picker with QuestLayer and Gotchiverse-test-app.",
+          "**Play:** each explorer opens one private workshop, raises and lowers blocks, paints grass, stone, sand or water and places a lantern. The first activity asks for three changed blocks and a lantern. Owners invite friends with a one-day link.",
+          "**No money:** no QGOLD, XP, item grants, land claims or permits. Virtual movement never counts as GPS; the outdoor map pauses while the workshop is open.",
+          "**Storage:** one JSON file per workshop, written under a lock with an atomic rename. Edits carry a revision and a request id, so a retry never applies twice.",
         ],
       },
     ],
   },
+  // ----------------------------------------------------------------- world
   {
     id: "world-and-places",
     group: "world",
     title: "Cities, cells and places",
-    summary: "Reviewed cities, Czech map rewards and optional prepared Atlas discoveries in supplied global regions.",
+    tldr: `${cityNames} is the reviewed city; the reward map covers **all of Czechia**; prepared Atlas discoveries can open in other supplied regions with personal XP only. Every quest place sits on a public path and passes a safety filter.`,
+    keyFacts: [
+      [String(LIVE_CITIES.length), `reviewed live city (${cityNames})`],
+      ["≈ 290,000", "places in the first Czech import"],
+      ["40 m", "max snap to a public path"],
+      ["27", "EU countries in the first Atlas collection"],
+    ],
+    hero: "coverage-tiers",
     status: "live",
-    updated: "2026-11-09",
+    updated: "2026-11-11",
     sources: ["docs/WORLDS-PLAN.md", "docs/POI-PIPELINE.md", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "docs/GLOBAL-WORLD-PREPARATION.md", "server/world-preparation/worker.mjs", "server/world-preparation/geography.mjs", "server/world-preparation/export.mjs", "server/world-preparation/collector.mjs", "server/world-preparation/launch-scope.mjs", "server/world-preparation/source-audit.mjs", "server/global-activities.mjs", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
     blocks: [
-      {
-        p: `Live reviewed cities: **${LIVE_CITIES.join(", ")}**. The current reward map covers Czechia. Prepared Atlas discoveries can also run in supplied global regions with personal XP; worldwide funding and full data coverage remain separate release work.`,
-      },
-      { viz: "coverage-tiers" },
+      { h: "Coverage tiers" },
       {
         table: {
           head: ["Tier", "What", "Content", "Money"],
           rows: [
             ["A · reviewed city", "Hand-checked city pack (Plzeň)", "Six city zones, cast NPCs, POI quests", "Funded NEAR days"],
-            ["B · auto city", "GeoNames towns ≥ 15,000 people (85 cities)", "Zones with an \"Unverified map\" notice, generic cast", "Practice only, never funded"],
+            ["B · auto city", "GeoNames towns ≥ 15,000 people (85 cities)", "Zones with an Unverified map notice, generic cast", "No funded NEAR days"],
             ["C · street cell", "Every H3 res-7 cell", "Up to 6 POI quests, generic cast, cell zones", "Map rewards plan"],
           ],
         },
@@ -572,41 +679,34 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "A weekly worker builds a SQLite file from OpenStreetMap (ODbL), Overture (CDLA-P-2.0) and Wikidata (CC0). The first Czech import held about 290,000 places, 198,000 of them quest-ready.",
-          "Every place passes a taxonomy and a safety filter: snapped within 40 m of a public path, 25 m buffer from excluded areas (schools, private grounds, dangerous sites), stable reason codes.",
-          "The game reads the file read-only. A missing file simply means no POI quests.",
+          "Every place is snapped within 40 m of a public path and kept 25 m from excluded areas (schools, private grounds, dangerous sites), with stable reason codes.",
+          "The game reads the file read-only; a missing file simply means no POI quests.",
         ],
       },
-      { h: "Daily preparation and operator controls" },
+      { h: "Daily preparation" },
       {
         list: [
-          "A worker prepares today's and tomorrow's geography per local date under a database lease: six separated zones, their mapped targets and opening windows. Preparation creates no money; funding is a separate step.",
+          "A worker prepares today's and tomorrow's geography per local date under a database lease: six separated zones, targets and opening windows. Preparation creates no money; funding is a separate step.",
           "Daylight-saving days keep their real 23 or 25 hours.",
           "An operator with server access can pause a day or zone, close a place or adjust a future unpublished day. There is no web route for these changes.",
         ],
       },
       { h: "Global Atlas discoveries" },
       {
-        p: "When a geographic catalog is connected, a background worker selects mapped zones and Atlas quests for today and tomorrow before players load them. It checks public-path targets, exclusions, polygon boundaries and the whole supplied region inventory. The live game opens only a completely imported UTC day. Already checked regions can form the next day while additional map-data processing waits for resources. Loading a place does not generate extra activities. Missing or incomplete regions remain unavailable outside Czechia; inside Czechia the normal street world (POI quests, landmark clues, coins) takes over whenever no ready prepared day covers the spot, so a missed daily manifest never empties the country (`GLOBAL_CZECHIA_FALLBACK=off` disables this).",
+        list: [
+          "With a connected geographic catalog, a background worker prepares mapped zones and Atlas quests for today and tomorrow before players load them. Only a completely imported UTC day opens; an interrupted import resumes without duplicates.",
+          "Inside Czechia the normal street world takes over whenever no prepared day covers the spot (`GLOBAL_CZECHIA_FALLBACK=off` disables this). Elsewhere missing regions stay unavailable.",
+          "Atlas visits and three-stop hunts use the normal GPS checks and give personal XP. Without a separately confirmed financial day they promise no money or item.",
+          "The launch selection covers European and US extracts with national-capital footprints elsewhere (Russia, North Korea and Iran excluded). The first active phase is EU-only: all 27 member countries. Completing it never reports a complete planet.",
+          "A bulk collector continues from verified map downloads to real polygon selection and isolated checks, and reports unsafe or oversized areas instead of dropping them. This is map-derived coverage, not field verification.",
+        ],
       },
+      { h: "Theme layers, day and night" },
       {
-        p: "The game imports regions in separate steps so it can handle other requests between them. An interrupted import resumes the same day without opening partial content or duplicating quests. Preparation reports each date separately and identifies regions whose content failed validation. A failed date retries with increasing pauses and does not stop work on the next day.",
-      },
-      {
-        p: "Atlas visits and three-stop hunts use the normal GPS checks, personal XP and durable completion receipts. Without a separately confirmed financial day they promise no money or item. The optional testnet financial adapter fixes one first-completion NEAR prize per prepared zone before opening; it requires reviewed contract upgrades, a complete received-funding inventory and an exact on-chain day reservation. Map-derived places remain unverified on foot, and known opening restrictions are excluded from this all-day mode. Plzen keeps its existing six shared slots; other cells select up to three actual polygons and explain missing slots. The collected catalog determines coverage: a pilot is not a fully seeded planet.",
-      },
-      {
-        p: "An optional bulk collector continues from verified map downloads through export, real polygon selection and isolated gameplay checks without another AI prompt. It retains complete neighboring path and exclusion geometry, preserves polygon holes, and reports unsafe or oversized areas instead of dropping them. Accepted regions join the next unpublished preparation; a published day stays unchanged. The source worker plans every mapped candidate cell of each selected owner, including places without parks; an incomplete section withholds its owner. Complete neighboring geometry is indexed in compressed chunks. Incomplete unrestricted polygon candidates are rejected with source identities and reasons; an incomplete restricted ground blocks that source. This is map-derived coverage, not field verification.",
-      },
-      {
-        p: "A versioned launch selection can cover European extracts and US extracts in full, with national-capital footprints elsewhere. Russia, North Korea and Iran are excluded from that selection. Capital coordinates and timezones come from a pinned GeoNames snapshot. The same hashed selection controls acquisition and owner planning; existing downloads are retained. The first active collection phase is EU-only: all 27 member countries, including Cyprus even though its extract is grouped under Asia. Non-EU collection is paused, with no automatic expansion after EU completion. EU daily outputs are kept separate from earlier global pilots. Missing capitals and incomplete sources remain explicit, and completing this selected footprint never reports a complete planet. Financial activation still requires separate confirmed reservations.",
-      },
-      { h: "Theme layers" },
-      {
-        p: "A world layer is a JSON pack (default `aavegotchi-v1`) that sets actor models, object kinds and design tokens over the place layer. Layers never create money: the validator refuses any pack whose rewards are not `none`. Published plan hashes are pinned so a day never changes after the fact.",
-      },
-      { h: "Day and night" },
-      {
-        p: "The map follows the real sun at the city (day, dusk, dawn, night palettes), and actors have day, night or any-time casts.",
+        list: [
+          "A world layer is a JSON pack (default `aavegotchi-v1`) that sets actor models, object kinds and design tokens. Layers never create money: the validator refuses any pack whose rewards are not `none`.",
+          "The map follows the real sun at the city (day, dusk, dawn, night), and actors have day, night or any-time casts.",
+        ],
       },
     ],
   },
@@ -614,32 +714,35 @@ export const CHAPTERS: Chapter[] = [
     id: "map-rewards",
     group: "world",
     title: "Map rewards plan",
-    summary: "One daily plan for all 16,346 cells of Czechia: every coin backed and equal, a published Merkle root and claims verified on chain.",
+    tldr: "One plan a day for all **16,346 cells of Czechia**, built from the real budget: every coin of the day is backed and worth the same, and the plan's Merkle root is published so anyone can check a cell.",
+    keyFacts: [
+      ["16,346", "cells in Czechia"],
+      ["400", "coin shares per cell (pioneer cell 800)"],
+      ["≤ 50 %", "of zone prizes steered by votes"],
+      ["1 %", "of the zone budget per cell at most"],
+    ],
+    hero: "map-formula",
     status: "live",
-    updated: "2026-11-05",
+    updated: "2026-11-11",
     sources: ["docs/MAP-REWARDS.md", "docs/GLOBAL-TREASURY.md", "server/map-rewards/policy.mjs", "server/map-rewards/budget.mjs", "server/map-rewards/chain.mjs"],
     blocks: [
-      {
-        p: "At the first request of a local day the server builds the day plan once from the **real daily budget**: the map's share of the rewards contract's per-date cap, priced in micro-QGOLD at the vault's backing rate R. There is no practice money: **every coin on the map is backed and all coins of a day are worth the same**.",
-      },
-      {
-        p: "Every cell holds 400 coin shares (a pioneer cell 800), so one coin = coin budget ÷ all shares. At the testnet default of 0.05 NEAR and R = 0.001 NEAR that is 50 QGOLD over 6.5 to 13 million shares, a few micro-QGOLD per coin. The value grows with the treasury; shares a cell's paths cannot hold stay in the treasury.",
-      },
-      { viz: "map-formula" },
+      { h: "How a day is planned" },
       {
         list: [
-          "Zone prizes follow the formula: votes may steer up to 50 %; with no voters their share goes to the other parts.",
-          "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area. What a capped cell cannot take is offered to the others.",
-          "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest. New places get more, not less.",
-          "The demo arena (no GPS, arrow keys) pays the same backed coins as the map. Outside Czechia a cell gets no coins until more countries have a plan.",
+          "At the first request of a local day the server builds the plan once from the **real daily budget**: the map's share of the rewards contract's per-date cap, priced in micro-QGOLD at the vault's rate R.",
+          "**One coin = coin budget ÷ all shares.** At a 0.05 NEAR map budget and R = 0.001 NEAR that is 50 QGOLD over 6.5–13 million shares, a few micro-QGOLD per coin. The value grows with the treasury; shares a cell cannot hold stay in the treasury.",
+          "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area; what a capped cell cannot take goes to the others.",
+          "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest.",
+          "The city demo pays the same backed coins. Outside Czechia a cell gets no coins until more countries have a plan.",
         ],
       },
+      { viz: "map-coins" },
       { h: "Proof on chain" },
       { viz: "map-merkle" },
       {
         list: [
-          "One leaf per funded cell, sorted, hashed with sha256. `GET /api/map/rewards/day` shows the root, `GET /api/map/rewards/proof?cell=` the leaf and its proof.",
-          "The map-day contract supports cell proofs through `publish_map_day`, `claim_map` and `close_map_day`. When payouts are enabled, the worker records map budgets without sending per-coin `claim_map`; the daily-payout chapter describes settlement without the former per-coin limit. The city demo pays the same backed coins through payout rounds.",
+          "One leaf per funded cell, sorted, hashed with sha256. `GET /api/map/rewards/day` shows the root, `GET /api/map/rewards/proof?cell=` a leaf and its proof.",
+          "The map-day contract supports `publish_map_day`, `claim_map` and `close_map_day`. While payout rounds run, map days record budgets without per-coin `claim_map`; see Daily QGOLD payouts.",
           "Each published day holds 256 storage slots (≈ 2.6 NEAR) until it is closed.",
         ],
       },
@@ -647,14 +750,12 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "The rewards contract caps each date at **max(0.1 NEAR, 10 % of each bucket's funding)**.",
-          "City days together take at most max(0.006 NEAR, 4 % of a bucket's funding); a map day at most half of the date cap, within what the city days left.",
-          "With 0.2 NEAR funded nothing changes. With 1,000 NEAR a date may commit 50 NEAR per bucket: 20 to cities, 25 to the map.",
+          "City days together take at most max(0.006 NEAR, 4 % of a bucket's funding); a map day at most half of the date cap, within what city days left.",
+          "With 1,000 NEAR funded a date may commit 50 NEAR per bucket: 20 to cities, 25 to the map.",
         ],
       },
       { h: "Plzeň's native days" },
-      {
-        p: "The reviewed city also publishes native NEAR days: exactly six slots with fixed coin denominations and backed reservations, funding split 50/50 between street coins and zones. A published day is never rewritten. The daily budget is split between live cities by demand (1 + distinct claimers in the last 7 days), never by fixed city pots.",
-      },
+      { p: "The reviewed city also publishes native NEAR days: exactly six slots with fixed coin denominations and backed reservations, funding split 50/50 between street coins and zones. A published day is never rewritten. The daily budget is split between live cities by demand (1 + distinct claimers in the last 7 days)." },
     ],
   },
   // --------------------------------------------------------------- economy
@@ -662,40 +763,49 @@ export const CHAPTERS: Chapter[] = [
     id: "economy",
     group: "economy",
     title: "The money model",
-    summary: "One global treasury, funded by yield and fees, paying players through daily budgets. Nobody pays to win.",
+    tldr: "All money flows through **one global treasury**. It earns yield and fees, releases a daily budget that players collect as coins and prizes, and never spends principal. **Nobody pays to win.**",
+    keyFacts: [
+      ["1", "global treasury, no city pots"],
+      ["100 %", "of map coins backed by NEAR"],
+      ["yield only", "is spent; principal stays"],
+      ["0", "paid chance, streaks or energy"],
+    ],
+    hero: "money-flow",
     status: "live",
-    updated: "2026-11-05",
+    updated: "2026-11-11",
     sources: ["docs/GLOBAL-TREASURY.md", "docs/ECONOMY-RULES.md", "docs/ECONOMY-PAGE.md", "IMPLEMENTATION-PLAN.md", "server/native/public-ledger.mjs"],
     blocks: [
-      {
-        p: "All money flows through **one global treasury**. It earns staking and lending yield, collects fees and sponsor funds, and every day releases a budget that players collect as coins and zone prizes. Unclaimed budget simply stays for later days. Per-city pots do not exist: money follows players.",
-      },
-      { viz: "money-flow" },
+      { h: "The rules" },
       {
         list: [
           "**No paid chance.** Randomness is free or earned (wisp rolls, chests), never bought or wagered.",
-          "**No streaks, energy or loot purchases.** Spending only burns the player's own QGOLD (`ft_burn`) for cosmetics and conveniences; the backing stays in the vault, so every burn raises R for all holders.",
-          "**No practice money.** Every map coin and zone prize is backed by the day's budget and paid as QGOLD by a payout round within minutes.",
-          "**Players never fund the prizes.** Principal you stake stays yours; only the yield share you choose goes to the game.",
-          "Everything is published: [Economy](/economy) lists the treasury, audits and every payout with a transaction link; [Treasury](/treasury) shows the treasury dashboard.",
+          "**No streaks, energy or loot purchases.** Spending only burns your own QGOLD (`ft_burn`) for cosmetics and conveniences; the backing stays in the vault, so every burn raises R for all holders.",
+          "**No practice money and no welcome credit.** A new explorer starts at 0 GOLD; every coin and zone prize is backed by the day's budget and paid as QGOLD within minutes.",
+          "**Players never fund the prizes.** Stake principal stays yours; only the yield share you choose goes to the game.",
+          "Unclaimed budget stays for later days. Money follows players, not cities.",
+          "Everything is published: [Economy](/economy) lists treasury, audits and payouts with transaction links; [Treasury](/treasury) shows the dashboard.",
         ],
       },
-      { note: "This page runs on NEAR testnet. Test NEAR has no monetary value and mainnet needs an explicit go from the owner plus external review of the new contracts.", tone: "warn" },
+      { note: "This page runs on NEAR testnet. Test NEAR has no monetary value; mainnet needs an explicit go from the owner plus external review of the new contracts.", tone: "warn" },
     ],
   },
   {
     id: "treasury-and-yield",
     group: "economy",
     title: "Treasury, yield and the mix",
-    summary: "The treasury holds liquid staking tokens, lent stablecoins and a NEAR reserve, and only the yield is ever spent.",
+    tldr: "The treasury targets **50 % liquid staking, 40 % lent stablecoins and 10 % NEAR**. A daily job harvests growth and rebalances within hard limits; only the yield ever becomes the map budget.",
+    keyFacts: [
+      ["50 / 40 / 10", "% target: staking / stablecoins / NEAR"],
+      ["40 %", "max with any one protocol"],
+      ["25 %", "of the treasury moved per run at most"],
+      ["3 points", "of drift before a rebalance"],
+    ],
+    hero: "treasury-mix",
     status: "live",
-    updated: "2026-11-09",
-    sources: ["docs/STNEAR-TREASURY.md", "docs/TREASURY-MIX.md", "docs/TREASURY-PAGE.md", "docs/YIELD-VAULT.md", "docs/YIELD-VAULT-PLAN.md", "docs/NATIVE-REWARDS-AND-VAULT.md", "docs/LIQUID-STAKE.md", "server/native/treasury-mix.mjs"],
+    updated: "2026-11-11",
+    sources: ["docs/STNEAR-TREASURY.md", "docs/TREASURY-MIX.md", "docs/TREASURY-PAGE.md", "docs/YIELD-VAULT.md", "docs/YIELD-VAULT-PLAN.md", "docs/NATIVE-REWARDS-AND-VAULT.md", "docs/LIQUID-STAKE.md", "server/native/treasury-mix.mjs", "scripts/faucet-to-treasury-testnet.mjs"],
     blocks: [
-      {
-        p: "The treasury targets **50 % liquid staking tokens, 40 % stablecoins lent on Rhea and 10 % NEAR**. A daily job on the operator machine first harvests stNEAR growth above the principal, then rebalances towards the target, then keeps the reserve. The live split below comes from `/api/treasury/mix`.",
-      },
-      { viz: "treasury-mix" },
+      { h: "Limits" },
       {
         table: {
           head: ["Limit", "Value"],
@@ -707,72 +817,79 @@ export const CHAPTERS: Chapter[] = [
           ],
         },
       },
+      { p: "Order of a daily run: harvest stNEAR growth above the principal, rebalance toward the target, keep the reserve. The live split comes from `/api/treasury/mix`." },
       { h: "From yield to a daily budget" },
-      { p: "Play with the numbers: the treasury size and the blended yield decide how much the map can pay every day without touching principal." },
+      { p: "Try it: the treasury size and the blended yield decide how much the map can pay every day without touching principal." },
       { viz: "yield-sim" },
       { h: "Three yield sources" },
       {
         list: [
           "**stNEAR treasury.** The operator holds stNEAR (Meta Pool). Harvest sells only growth above the recorded principal and funds the rewards contract (`fund_rewards`, source sponsor).",
-          "**Yield vault** `questlayer-yield-20261102.testnet`. Players or the treasury deposit stNEAR, LiNEAR, USDC or USDT. A deposit makes the player a Staker at once; withdrawal opens after 24 h. Stables keep a 20 % buffer and are supplied to Rhea only below 95 % utilization, and never while a Rhea withdrawal is still on its way back (that would make the withdrawal look bounced and strand it); LST growth goes to the treasury. The contract pays position storage (about 0.007 NEAR each, 1 000 at most) and refunds new deposits once that reserve is short; a permissionless `reconcile_idle` can only raise the tracked balance to what the token reports, so no held principal stays untracked.",
-          "**Staking vaults.** A personal keyless vault per player stakes NEAR with a validator and gives a chosen 0–100 % share of the yield to the game. Harvest → unlock (4+ epochs) → withdraw → flush to the treasury, all permissionless calls. A harvest needs a fee of at least 0.001 test NEAR and waits 4 epochs after the previous one cashed; the basis then moves only by the gain whose fee was actually settled, so yield that grew during the unlock still pays its share later. An operation whose callback never ran can be settled by anyone after 2 epochs with `recover_stuck`, which settles a lost transfer from the account balance and a lost pool step from the next pool read, never paying twice. A position the pool no longer holds anything for closes instead of waiting for cash forever. A keyless vault never changes code after it is created: these rules reach the positions created after the factory is moved to the v3 vault build, and the yield vault gets its fixes by an in-place code upgrade that must leave every position byte for byte unchanged.",
+          "**Yield vault** `questlayer-yield-20261102.testnet`. Deposit stNEAR, LiNEAR, USDC or USDT and you are a Staker at once; withdrawal opens after 24 h. Stables keep a 20 % buffer and are lent to Rhea only below 95 % utilization and never while a Rhea withdrawal is still on its way back.",
+          "**Staking vaults.** A personal keyless vault per player stakes NEAR with a validator and gives a chosen 0–100 % share of the yield to the game. Harvest → unlock (4+ epochs) → withdraw → flush to the treasury, all permissionless. A lost callback can be settled by anyone after 2 epochs (`recover_stuck`), never paying twice.",
         ],
       },
       { viz: "staking-vault" },
+      { h: "Funding and proof" },
       {
-        p: "The [Treasury](/treasury) dashboard shows all of this live: the money flow, the mix, the daily budget, QGOLD backing and its own model.",
+        list: [
+          "The first prize day paid entirely from realized staking yield was proven on testnet (day `plzen-2026-11-05-v2`, `public/native-yield-day-proof.json`).",
+          "Testnet LST prices are frozen, so stNEAR growth there is zero; mainnet LSTs earn about 4 %.",
+          "An operator script can sweep throwaway testnet faucet accounts (12 × 10 test NEAR) into the rewards contract as sponsor funding (`fund_rewards`) and then delete them.",
+          "A keyless vault never changes code after creation; the yield vault gets fixes only by an in-place upgrade that must leave every position byte for byte unchanged.",
+        ],
       },
-      {
-        p: "The first prize day paid entirely from realized staking yield was proven on testnet (day `plzen-2026-11-05-v2`, proof `public/native-yield-day-proof.json`). Testnet LST prices are frozen, so stNEAR growth there is zero; mainnet LSTs earn about 4 %.",
-      },
+      { p: "The [Treasury](/treasury) dashboard shows all of this live: the money flow, the mix, today's budget, QGOLD backing and a model." },
     ],
   },
   {
     id: "qgold",
     group: "economy",
     title: "QGOLD token and vault",
-    summary: "A transferable token that is always fully backed by NEAR. Burns and fees only push its rate up.",
+    tldr: "QGOLD is the gold you earn, always fully backed by NEAR in one vault contract. **R = backing ÷ supply**: mints keep R flat, burns and fees raise it, and there is **no admin withdraw**.",
+    keyFacts: [
+      ["0.001 NEAR", "starting rate R per QGOLD"],
+      ["±1 %", "to buy from or sell to the vault"],
+      ["5 % / 24 h", "of the backing as instant exits"],
+      ["0", "access keys on the vault account"],
+    ],
+    hero: "qgold-sim",
     status: "live",
-    updated: "2026-11-08",
+    updated: "2026-11-11",
     sources: ["docs/QGOLD-VAULT.md", "docs/QGOLD-MARKET.md", "contracts/qgold/src/lib.rs", "server/qgold/keeper.mjs", "server/qgold/token-page.mjs"],
     blocks: [
-      {
-        p: "QGOLD is the player's share of the game's daily yield. One contract is both the token and the vault that backs it, so a burn, a payout and the rate are decided in one synchronous call. **R = backing / supply** (NEAR per QGOLD). It started at 0.001 NEAR.",
-      },
+      { h: "Actions" },
       {
         table: {
           head: ["Action", "Who", "Price", "Fee"],
           rows: [
-            ["`mint_for` (claim a coin as QGOLD)", "Only the rewards contract", "exactly R", "none"],
+            ["`mint_for` (pay out a coin)", "Only the rewards contract", "exactly R", "none"],
             ["`deposit` (buy at the vault)", "Anyone", "R + 1 %", "1 %"],
             ["`redeem` (sell back)", "Holder, own balance only", "R − 1 %", "1 %"],
             ["`ft_burn` (spend in game)", "Holder", "–", "burned: R rises for everyone"],
           ],
         },
       },
-      { p: "Try it: mints never change R, burns raise it, fees add to the backing." },
-      { viz: "qgold-sim" },
       { h: "Exits and safety" },
       { viz: "qgold-exit" },
       {
         list: [
-          "Instant exits: at most 5 % of the backing per 24 h (at least 1 NEAR) and 1 % per account (at least 0.2 NEAR). The rest queues for a 24–48 h safe window; `claim_exit` pays only the account that burned. A queued exit is at least 0.005 NEAR: that first 0.005 NEAR is a storage bond for its record and comes back with the claim.",
-          "Every payout follows a burn of the payee's own QGOLD. There is **no admin withdraw**, and the vault account has no access keys.",
-          "A burn or redeem leaves either no supply or at least 1 QGOLD, so one early holder cannot leave a single unit behind a large backing and price every coin at zero. When the last QGOLD leaves, the leftover backing goes to insurance and R returns to its initial value for the next minter.",
-          "After every change the contract asserts balance ≥ backing + insurance + treasury due + queued exits + storage. If anything ever drains NEAR, every later call fails and the vault freezes.",
-          "10 % of fees build an insurance fund; `reconcile` books a missing-money loss against insurance first and refills R to its peak. Storage that outgrew the operating balance is not a loss: sponsored records (coin payouts to new players, conversion receipts) stop first, `fund_operating` refills the balance, and old receipts can be pruned after 30 days.",
-          "A guardian or council member can pause for at most 72 h, once per 7 days per account; ending a pause early, like cancelling a proposal, takes the council threshold (or the proposer). Upgrades and parameter changes need the council multisig and a timelock: 48 h by default. The council can change it through the same timelocked vote, to 10 min–48 h on testnet and 24–48 h on any other network; each proposal keeps the timelock in force when it was proposed. On testnet, the upgrade that adds this setting also sets it to 10 min if it was never set; other networks stay at 48 h.",
+          "Instant exits: at most 5 % of the backing per 24 h (at least 1 NEAR) and 1 % per account (at least 0.2 NEAR). The rest queues for a 24–48 h safe window; `claim_exit` pays only the account that burned.",
+          "After every change the contract asserts balance ≥ backing + insurance + treasury due + queued exits + storage; if anything drains NEAR, the vault freezes.",
+          "10 % of fees build an insurance fund; `reconcile` books a loss against insurance first and refills R to its peak.",
+          "A guardian can pause for at most 72 h, once per 7 days. Upgrades and parameter changes need the council multisig and a 48 h timelock.",
         ],
+      },
+      {
+        note: "Pending upgrade on testnet: council proposal 4 (executable from 11 November 2026, 23:52 UTC) moves the vault to the reviewed build with a dust-supply rule (a burn leaves no supply or at least 1 QGOLD), a 0.005 NEAR storage bond on queued exits, an operating-balance refill (`fund_operating`) and a timelock the council can set (10 min–48 h on testnet, 24–48 h elsewhere). Until it is applied, the deployed build and its 48 h timelock are in force.",
       },
       { h: "Market and keeper" },
       { viz: "qgold-keeper" },
       {
         list: [
           "A Rhea (Ref) testnet pool #2895 pairs wNEAR and QGOLD near R + 1 %.",
-          "A keeper acts at 12 secret times a day, committed in advance and revealed from NEAR block randomness: inverse buy-and-burn below R, buyback-and-burn from 20 % of fees below 1.1 R, sales on a 1.1 / 1.2 / 1.3 R ladder above it.",
-          "The keeper stays idle while the pool is too small (threshold set on the server).",
-          "The keeper records each operation before spending and preserves completed steps after a restart. A failed burn does not repeat its purchase or erase money already committed from the limits. Uncertain outcomes wait for reconciliation; ordinary gameplay needs no extra confirmation.",
-          "When Rhea retains an undelivered swap output, the keeper can register its token account and recover the exact verified amount automatically. Recovery has its own saved transaction record, so a restart does not repeat the purchase. Ambiguous or mixed balances wait for reconciliation without burning unrelated tokens.",
+          "A keeper acts at 12 secret times a day, committed in advance and revealed from NEAR block randomness: buy-and-burn below R, buyback-and-burn from 20 % of fees below 1.1 R, sales on a 1.1 / 1.2 / 1.3 R ladder above it. It stays idle while the pool is too small.",
+          "The keeper records each step before spending, so a restart never repeats a purchase; uncertain outcomes wait for reconciliation.",
         ],
       },
       { note: "QGOLD is not an investment product. The vault is unaudited testnet code; mainnet needs an external audit and a legal opinion.", tone: "warn" },
@@ -782,72 +899,72 @@ export const CHAPTERS: Chapter[] = [
     id: "fees-and-spending",
     group: "economy",
     title: "Fees, spending and the task market",
-    summary: "Where fees go, what GOLD can buy, and how tasks, Secrets and conditional sends settle.",
+    tldr: "Every fee goes to the treasury and comes back through the daily budget. GOLD buys cosmetics and conveniences, and **every purchase burns QGOLD on chain**. Tasks, Secrets and conditional sends settle in a QGOLD escrow.",
+    keyFacts: [
+      ["10 %", "on top of a paid task's reward"],
+      ["2 %", "on Aura trades"],
+      ["90 %", "of a Secret's reveal price to its creator"],
+      ["0 %", "on sends, earning and spending"],
+    ],
+    hero: "fees",
     status: "partial",
-    updated: "2026-11-09",
+    updated: "2026-11-11",
     sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json", "src/signing-vault/policy.ts", "src/GameMap.tsx"],
     blocks: [
-      { viz: "fees" },
-      {
-        p: "All fees go to the treasury and come back to players through the daily budget. Sends between players and conditional escrow sends are free. There is no 24 h lock on anything a player owns.",
-      },
       { h: "What GOLD buys (every spend is a burn)" },
       { viz: "gold-prices" },
       {
         list: [
-          `Emotes: ${GOLD.emotes.free.length} free, premium ones shown to others for ${GOLD.emotes.showSeconds} s (${premiumEmotes}).`,
+          `Emotes: ${GOLD.emotes.free.length} free; premium ones are shown to others for ${GOLD.emotes.showSeconds} s (${premiumEmotes}).`,
           `NPC gear: one chest-edition Aura a day from a trader (rare ${GOLD.gear.price.rare}, epic ${GOLD.gear.price.epic} QGOLD).`,
-          `Prices are in QGOLD and sized to play: a map coin is worth about 0.0004 QGOLD on testnet and a cell-zone prize a few hundredths, so a premium emote (${Math.min(...GOLD.emotes.premium.map((e) => e.price))}–${Math.max(...GOLD.emotes.premium.map((e) => e.price))} QGOLD) is about one good walk and a frame a few days of play.`,
-          `Lures: ${GOLD.lures.minutes} minutes, GPS only, ${GOLD.lures.hours.join("–")}, at least ${GOLD.lures.spacingM} m apart, snapped to a safe place within ${GOLD.lures.poiSnapM} m. They attract actors; they never change odds.`,
-          "Place messages: paid shouts live up to 7 days; a topic with posts from 6 distinct authors becomes free forever and is archived after 90 days without activity.",
-          "Every spend burns real QGOLD: the player's own account calls `ft_burn` on the QGOLD token with the game's memo (sponsored, no popup on the explorer account), the server verifies that transaction on chain, and only then the purchase happens. The backing stays in the vault, so every burn raises R for all holders.",
+          `Lures: ${GOLD.lures.minutes} minutes, GPS only, ${GOLD.lures.hours.join("–")}, at least ${GOLD.lures.spacingM} m apart, snapped to a safe place within ${GOLD.lures.poiSnapM} m. They attract actors and never change odds.`,
+          "Place messages: paid shouts live up to 7 days; a topic with posts from 6 distinct authors becomes free and is archived after 90 days without activity.",
+          "Every spend calls `ft_burn` from your own account (sponsored, no pop-up), the server verifies it on chain, and only then the purchase happens. One saved reference follows each purchase from quote to delivery; retries return the saved result.",
         ],
       },
-      { h: "Task market, Secrets and conditional sends" },
+      { h: "Tasks, Secrets and conditional sends" },
       {
         list: [
           "A poster pays the reward plus 10 % on top. The fee reaches the treasury only on payout; a refund returns both.",
           "**Secrets:** a creator hides a place; finders pay to reveal it and the creator gets 90 % after a GPS visit or 7 days without dispute. A sponsor can prepay finder rewards so the reveal is free.",
-          "Open player tasks (scroll pin) and Secrets (magnifier pin at the centre of their fog circle, never the hidden place) within the Nearby range are drawn on the GPS map; tapping one opens it in Explore · Nearby (Community filter).",
           "**Conditional sends:** escrow that releases on a condition, no fee.",
-          "In the security candidate, each shop purchase keeps one saved reference from price quote through burn and delivery. The server verifies direct or relayed payment receipts; retries return the saved result. If an item becomes unavailable after payment, its credit stays recorded for resolution.",
-          "Everything settles in real QGOLD. The poster, buyer or sender pays it from their own NEAR account into the `qgold-escrow` contract with one sponsored `ft_transfer_call` (with the secure account, every escrow payment, whether a task, a Secret or a send, opens its approval window, which names the contract, method, amount and who can be paid, decoded from the exact message; a game page alone can never fund one). The server confirms the exact payment, recipient, deadline and conditions before opening the task, Secret or send.",
-          "A returned payment never opens a paid Secret or creates a new reward. A completed payment stays completed after a restart, and existing confirmations are preserved. An uncertain payment waits for verification without another approval from the player; normal exploration stays available.",
-          "In the security candidate, sponsored token registration is a lifetime grant that cannot be cashed out by unregistering; the escrow sponsors it only for workers and creators who earned a payout, never for the recipient of a send. A send or refund to an account the token does not know yet waits (the market shows this) until the account's first QGOLD payout registers it. The funder of a task, Secret or send holds a native NEAR storage deposit on the escrow: each agreement locks its storage headroom from that deposit, consumes about 0.01 NEAR for its permanent record and returns the rest when it closes, so dust agreements cannot exhaust the escrow's reserve. When the deposit is short, the funding response carries a `storage_deposit` the app signs first; the relayer pays it in 0.05 NEAR steps (at most 0.5 NEAR, only for the signer, only when the escrow does not already cover it) and the escrow keeps it as a grant that can never be withdrawn as NEAR. Genuine appeals remain available, while unrelated workers cannot freeze an unassigned slot.",
-          "If a reward or refund transfer fails, the escrow keeps the credit and the worker retries after verifying the failure. Restart recovery checks the same payment before sending again. New rewards remain owed even while an earlier payment is in progress; no extra player confirmation is required.",
-          "A publisher call the escrow contract rejects with a final receipt (for example an approval for a task its poster already cancelled on chain) is recorded as failed for the operator and never holds up other players' payouts; only payments with an unknown outcome pause the queue until they are verified.",
-          "The game server is the escrow's publisher: it approves GPS-checked or reviewed completions, confirms Secret visits, releases or refunds sends and pushes each payout to the receiver's account (`withdraw_for`). It can only pay the named counterparty or refund the funder; there is no admin withdrawal and the escrow has no access keys.",
-          "A proof waiting for review holds its slot on chain, so the poster cannot cancel it away. One escrow task pays at most 50 completions, and each account once per task.",
-          "Sponsored NEAR tasks already run on a separate escrow contract that holds each sponsor's exact reward until a reviewed completion; it never touches stake, yield or prize money.",
+          "Open tasks (scroll pin) and Secrets (magnifier pin at the centre of their fog circle, never the hidden place) show on the GPS map and open in Explore · Nearby.",
+          "Funds move with one sponsored `ft_transfer_call` from your account into the QGOLD escrow; with the secure account the approval window names contract, method, amount and payee. The server confirms the exact payment before opening anything.",
+          "The game server is the escrow's publisher: it approves GPS-checked or reviewed completions and pushes each payout (`withdraw_for`). It can only pay the named counterparty or refund the funder; the escrow has no admin withdrawal and no access keys.",
+          "One escrow task pays at most 50 completions, each account once. A proof waiting for review holds its slot, so a poster cannot cancel it away.",
+          "Failed transfers keep the credit and retry after verification; only payments with an unknown outcome pause the queue.",
+          "The funder holds a small NEAR storage deposit on the escrow (about 0.01 NEAR per agreement record); the relayer can top it up in 0.05 NEAR steps, at most 0.5 NEAR.",
+          "Sponsored NEAR tasks run on a separate escrow contract that holds each sponsor's exact reward until a reviewed completion; it never touches stake, yield or prize money.",
         ],
       },
       { h: "Creators" },
-      {
-        p: "Players can publish their own quests by committing earned XP (200 on testnet) while a quest is live. Verified explorers vote each UTC day on which community quests earn the next day's creator bonus (3 votes each, top 3 win). Creator money is paid from a bounded on-chain round.",
-      },
+      { p: "Players can publish their own quests by committing earned XP (200 on testnet) while a quest is live. Verified explorers vote each UTC day on which community quests earn the next day's creator bonus (3 votes each, top 3 win). Creator money is paid from a bounded on-chain round." },
     ],
   },
   {
     id: "staking-and-gates",
     group: "economy",
     title: "Staker step, tiers and patron perks",
-    summary: `Become a Staker from ${STAKER_MIN_NEAR} NEAR (about 5 €) and open patron content gradually by step and level.`,
+    tldr: `Stake **${STAKER_MIN_NEAR} NEAR** (about 5 €) to become a Staker; Tier 2 and Tier 3 follow your weighted stake. Perks open by step **and** level, are things to do or wear, and never change odds or payouts. Your principal stays yours.`,
+    keyFacts: [
+      [`${STAKER_MIN_NEAR} NEAR`, "matured stake for the Staker step"],
+      ["50 / 100 NEAR", "for Tier 2 / Tier 3"],
+      ["0–100 %", "of your yield you choose to give"],
+      ["60 epochs", "to the top patron rank, Hearthfire"],
+    ],
+    hero: "staker-ladder",
     status: "live",
     updated: "2026-11-05",
     sources: ["docs/KEEPER-VAULT.md", "docs/LIQUID-STAKE.md", "docs/NATIVE-STAKING-FOUNDATION.md", "server/data/staker-gates.json", "server/staker-gates.mjs", "server/npc/patron-rank.mjs"],
     blocks: [
-      {
-        p: `A player becomes a **Staker** with at least ${STAKER_MIN_NEAR} NEAR of matured stake (or an instant yield-vault deposit). Tier 2 and Tier 3 follow the vault's weighted stake. Content opens by step **and** level so beginners are never blocked, and every perk is something to do or wear, never odds or payouts.`,
-      },
-      { viz: "staker-ladder" },
+      { h: "Perks by step and level" },
       { table: { head: ["Perk", "Step", "Level"], rows: gateRows } },
+      { p: "A yield-vault deposit makes you a Staker at once. Content opens by step and level so beginners are never blocked. Tier 2 and Tier 3 places on the map are open to everyone until launch." },
       { h: "Patron rank" },
-      {
-        p: "Rank 0 is the Staker step. One point per epoch of matured stake climbs the ladder Spark (1), Ember (4), Lantern (14), Beacon (28), Hearthfire (60). There is no decay.",
-      },
       { viz: "patron-rank" },
       {
         list: [
+          "Rank 0 is the Staker step. One point per epoch of matured stake climbs Spark (1), Ember (4), Lantern (14), Beacon (28), Hearthfire (60). There is no decay.",
           "**Patron's Path:** three patron lines across NPCs, each revealing a story chapter; the third awards the Patron's Lantern Aura once.",
           "**Keeper:** shows stake, maturity countdown (E+2 epochs), ceremonies at Tier 2/3 and the inner vault chapters.",
           "**Liquid staking** (stNEAR/LiNEAR held 24 h) can count toward the Staker step only; that reader is built and switched off.",
@@ -861,75 +978,62 @@ export const CHAPTERS: Chapter[] = [
     id: "on-chain",
     group: "chain",
     title: "What is on chain",
-    summary: "Contracts, proof icons, the QXP ledger and how private location stays private.",
+    tldr: `Ownership and money settle on **NEAR testnet** across ${CONTRACT_ROWS.length} project contracts. GPS fixes never go on chain: only a ~150 m cell and a hash of the evidence. Every contract build is reproducible and its hash pinned.`,
+    keyFacts: [
+      [String(CONTRACT_ROWS.length), "project contracts on testnet"],
+      ["≈ 150 m", "geohash cell on chain, never the GPS fix"],
+      ["4", "stages of the proof icon"],
+      ["0", "contracts on mainnet yet"],
+    ],
+    hero: "chain-states",
     status: "partial",
-    updated: "2026-11-10",
-    sources: ["docs/CHAIN-PROOF.md", "docs/CHAIN-LEDGER.md", "docs/NEAR-INTEGRATION-STATUS.md", "docs/MAINNET-PLAN.md", "contracts/wasm-sha256.json", "src/ChainLink.tsx"],
+    updated: "2026-11-11",
+    sources: ["docs/CHAIN-PROOF.md", "docs/CHAIN-LEDGER.md", "docs/NEAR-INTEGRATION-STATUS.md", "docs/MAINNET-PLAN.md", "contracts/wasm-sha256.json", "src/ChainLink.tsx", "public/native-qgold-escrow-testnet.json", "public/native-rewards-testnet.json", "public/native-tasks-testnet.json"],
     blocks: [
+      { h: "What settles where" },
       { viz: "chain-split" },
       { h: "Contracts on NEAR testnet" },
-      {
-        table: {
-          head: ["Contract", "Account", "Role"],
-          rows: [
-            ["Rewards", "`questlayer-rewards-20261101b.testnet`", "Treasury, daily days, map days, daily QGOLD payouts, claims"],
-            ["QGOLD vault", "`questlayer-qgold-vault-20261104.testnet`", "Backed token, exits, insurance"],
-            ["QGOLD escrow", "`questlayer-qgold-escrow-20261105.testnet`", "Player-funded tasks, Secrets and sends"],
-            ["Collectibles", "`nfts.questlayer-dev-20261101.testnet`", "Aura NFTs (NEP-171/199), wardrobe"],
-            ["Badges", "`questlayer-badges-20261102.testnet`", "Soulbound place and player badges"],
-            ["NPC games", "`questlayer-npc-games-20261101.testnet`", "Commit-reveal wisp rolls"],
-            ["Intents verifier", "`intents.questlayer-dev-20261101.testnet`", "Self-deployed NEAR Intents (experimental)"],
-            ["Market v2", "`questlayer-market-20261101b.testnet`", "Signed Aura orders (fallback market)"],
-            ["Yield vault", "`questlayer-yield-20261102.testnet`", "LST / stablecoin deposits"],
-            ["Ledger (QXP)", "`questlayer-ledger-20261104.testnet`", "Soulbound XP mirror, record batches, day roots"],
-            ["Creators", "`questlayer-creators-20261101b.testnet`", "Creator money rounds"],
-          ],
-        },
-      },
-      {
-        note: "Mainnet: nothing is deployed there yet. Once the base game is finished, every contract goes to mainnet with the owner's explicit go; the one-command deploy covers collectibles, the player factory and relayer, badges, NPC games and the stNEAR treasury today. Sponsored actions are capped at 2 NEAR a day (500 operations). See docs/MAINNET-PLAN.md §7.",
-        tone: "warn",
-      },
-      {
-        note: "Retired: the first-alpha game contract `game.questlayer-dev-20261101.testnet` (coin batches, quests, `withdraw_reward`) was retired on 10 November 2026. The live game never called it; its account is being paused and deleted. Its source and WASM pin stay in the repository as history.",
-      },
-      { h: "The proof icon" },
-      { p: "One cube icon follows every on-chain action through four stages." },
-      { viz: "chain-states" },
-      { h: "The QXP ledger" },
+      { table: { head: ["Contract", "Account", "Role"], rows: CONTRACT_ROWS } },
+      { p: "Profiles, map-note records and the encrypted inbox are written to NEAR Social (`v1.social08.testnet`), a shared contract the project does not run. The player factory and the relayer are accounts, not contracts." },
+      { note: "Mainnet: nothing is deployed yet. Every contract goes to mainnet only with the owner's explicit go; the one-command deploy covers collectibles, the player factory and relayer, badges, NPC games and the stNEAR treasury today. Sponsored actions are capped at 2 NEAR a day (500 operations).", tone: "warn" },
+      { note: "Retired: the first-alpha game contract `game.questlayer-dev-20261101.testnet` (10 November 2026) and the first QGOLD escrow `questlayer-qgold-escrow-20261105.testnet`, which is empty. The live game never called the game contract; its source and WASM pin stay in the repository as history." },
+      { h: "The proof icon and the QXP ledger" },
       {
         list: [
-          "Every earning action (coin, find, quest, chest, clue, monster, boss, errand, board, roll) can be recorded with its XP, a **geohash-7 cell (about 150 m)** and the sha256 of the evidence. The exact GPS fix never goes on chain.",
+          "One cube icon follows every on-chain action through four stages, from signing to final.",
+          "Every earning action (coin, find, quest, chest, clue, monster, boss, errand, board, roll) can be recorded with its XP, a **geohash-7 cell (about 150 m)** and the sha256 of the evidence.",
           "Daily Merkle roots let anyone verify a record against the day. Players without a NEAR account are back-filled once they register.",
-          "The public testnet health checkpoint on 5 November reports the recorder ready in per-action mode, with confirmed records and a confirmed daily root. This is a dated observation; readers should check the current health and public ledger for later state.",
         ],
       },
       { h: "Reproducible builds" },
-      {
-        p: "Every contract WASM is built in Docker (Rust 1.97.0, linux/amd64) and its sha256 is pinned in `contracts/wasm-sha256.json`. CI fails when a build or a deployed manifest does not match. Collectibles changes also need an independent re-review.",
-      },
+      { p: "Every contract WASM is built in Docker (Rust 1.97.0, linux/amd64) and its sha256 is pinned in `contracts/wasm-sha256.json`. CI fails when a build or a deployed manifest does not match. Collectibles changes also need an independent re-review." },
     ],
   },
   {
     id: "daily-payouts",
     group: "chain",
-    title: "Daily QGOLD payouts",
-    summary: "One Merkle root per day of what every account earned, paid straight into the QGOLD vault with no daily claim limit.",
+    title: "QGOLD payout rounds",
+    tldr: "Every 5 minutes the reward worker sums what each account earned, publishes **one Merkle root** for the round, and the rewards contract mints each account's QGOLD. Nothing is paid twice and nothing is lost.",
+    keyFacts: [
+      ["5 min", "between payout rounds on testnet"],
+      ["8", "accounts per claim transaction"],
+      ["262,144", "accounts per day at most"],
+      ["3 days", "before a fully paid day can close"],
+    ],
+    hero: "payout-round",
     status: "live",
-    updated: "2026-11-10",
+    updated: "2026-11-11",
     sources: ["docs/DAILY-PAYOUTS.md", "contracts/rewards/src/payouts.rs", "contracts/rewards/src/reconcile.rs", "contracts/rewards/src/world_days.rs", "contracts/qgold/src/lib.rs", "server/global-rewards.mjs", "server/global-reward-worker.mjs", "server/map-rewards/global-plan.mjs", "server/payouts/payout-tree.mjs", "server/payouts/worker.mjs"],
     blocks: [
-      {
-        p: "Every backed coin is real QGOLD. After the day ends the server sums each account's earnings in NEAR and the rewards contract pays every account once from a single published root, instead of one receipt per coin (which allowed only 240 claims a day).",
-      },
+      { h: "The contract side" },
       {
         list: [
-          "`publish_payout_day` commits the root and reserves the day's total from the coin and zone treasury, under the same per-date cap as city and map days.",
-          "`claim_payout` (anyone, 8 leaves per transaction) checks each leaf against the root and calls the vault's `mint_for` for exactly that account and amount. A repeated leaf is skipped; a refused mint reopens the leaf, so nothing is lost or paid twice.",
-          "Gas allowances come from an actual-WASM sandbox run: 15 TGas per mint and 10 TGas per payout callback, about 5x and 3.7x what they burned there. A batch without enough gas for every leaf's mint and callback is refused before anything changes.",
-          "Each mint records an attempt with a nonce, so a callback settles it at most once. If a callback itself fails (for example out of gas), the attempt can be settled a day later: anyone settles a world payout leaf from QGOLD's durable conversion receipt, and the owner settles a daily leaf or a withdrawal from the finalized mint receipt. A paid mint is booked paid; a refused one reopens the leaf or restores the credit for an ordinary retry.",
-          "`close_payout_day` can close a day after three days only when every leaf has a finalized successful mint and no mint is pending. Unpaid earned rights remain available.",
-          "Amounts below 0.00000001 NEAR carry over to the next day: the vault cannot mint less than one QGOLD unit.",
+          "`publish_payout_day` commits the root and reserves the total from the coin and zone treasury, under the same per-date cap as city and map days.",
+          "`claim_payout` (anyone, 8 leaves per transaction) checks each leaf and calls the vault's `mint_for` for exactly that account and amount. A repeated leaf is skipped; a refused mint reopens the leaf.",
+          "Gas comes from an actual-WASM sandbox run: 15 TGas per mint and 10 TGas per callback. A batch without enough gas for every leaf is refused before anything changes.",
+          "Each mint records an attempt with a nonce, so a callback settles it at most once; a failed callback can be settled a day later from the finalized receipt.",
+          "`close_payout_day` closes a day after three days only when every leaf has a finalized successful mint.",
+          "Amounts below 0.00000001 NEAR carry over: the vault cannot mint less than one QGOLD unit.",
         ],
       },
       {
@@ -937,52 +1041,63 @@ export const CHAPTERS: Chapter[] = [
           ["Leaf", "`sha256(\"payout|<day_id>|<index>|<account>|<amount_yocto>\")`"],
           ["Tree", "Sorted-pair sha256, the same as map days and the QXP ledger"],
           ["Storage", "Root, totals and a bitmap of claimed leaves; no receipt per account"],
-          ["Limits", "Up to 262,144 accounts a day; 8 leaves per claim transaction"],
           ["Recovery", "Attempts older than 1 day; world receipts decide within 29 days of the claim"],
         ],
       },
       { h: "The payout worker" },
       {
         list: [
-          "Every few minutes (`PAYOUT_ROUND_MINUTES`, default 5 on testnet; 0 = once after local midnight) the reward worker collects every backed map coin and cell-zone prize of GPS worlds and the city demo that is not paid yet and was collected at least a minute ago, prices it in NEAR at the rate its day was planned with, sums it per account and publishes the round as the next `payout-<date>-v<n>`. A round with nothing to pay publishes nothing.",
-          "Then it submits `claim_payout` in batches of 8. Submission is not payment: finalized per-leaf chain status confirms each receipt. Failed mints restore the same reservation for retry. Restart recovery reconciles pending leaves before sending new ones; an exclusive fenced lease prevents overlapping workers from changing the same payout. A fully paid day may close after the grace period.",
-          "A player without a NEAR account yet keeps their coins waiting; they join the first payout after the account exists. `GET /api/qgold/pending` shows what is still on its way (in micro-QGOLD `units`, with `awaitingAccount` for coins collected before an account existed).",
-          "Profile · Rewards shows the QGOLD balance on the linked NEAR account and the amount the next payout brings. Pickup messages count QGOLD; there is no practice GOLD, and a new explorer starts at 0 GOLD (no welcome credit). The old practice stake is closed (its fake yield could have become real QGOLD). Tier 2 and Tier 3 places on the map are open to everyone until launch; after that they can be gated by the real vault tier (50 / 100 NEAR matured).",
-          "While payouts are on, map days no longer send `claim_map`, so a coin is never paid twice. The city demo behaves like the real map (only movement differs): its coins are backed and paid the same way.",
+          "Every `PAYOUT_ROUND_MINUTES` (5 on testnet; 0 = once after local midnight) it collects every backed coin and cell-zone prize not paid yet and at least a minute old, prices it at the rate its day was planned with, sums it per account and publishes `payout-<date>-v<n>`. A round with nothing to pay publishes nothing.",
+          "Submission is not payment: finalized per-leaf chain status confirms each receipt. Restart recovery reconciles pending leaves first; an exclusive fenced lease prevents overlapping workers.",
+          "A player without a NEAR account yet keeps their coins waiting and joins the first payout after the account exists. `GET /api/qgold/pending` shows what is on its way.",
+          "Profile → Stake → Earnings shows the QGOLD balance and what the next payout brings. While payouts run, map days no longer send `claim_map`, so a coin is never paid twice.",
         ],
       },
-      {
-        note: "Payout rounds run on testnet. The prepared Atlas adapter separately reserves a UTC day before opening, records exact earned NEAR, releases only unearned rewards and transfers original reservations into payouts without charging the date cap twice. Unlinked and small earnings retain their source and day. World payouts use a reviewed QGOLD conversion method that keeps fractional NEAR as account-bound credit and stores a durable conversion receipt. This requires both reviewed testnet contract upgrades, including QGOLD's existing 48-hour governance timelock. Until confirmed activation, Atlas quests award personal XP only; prepared coins and item stock are not yet supported by this adapter.",
-        tone: "info",
-      },
-      {
-        p: "Funding inputs are refreshed from finalized NEAR receipts and reconciled against the shared treasury, including prior liabilities. [NearBlocks](https://testnet.nearblocks.io) supplies transaction discovery hints; its indexed amounts never authorize a reward. Incomplete evidence blocks new financial activation. The refresh cannot sign transactions or change an already opened day's promises.",
-      },
+      { note: "The prepared Atlas adapter separately reserves a UTC day before opening and needs two reviewed testnet contract upgrades, including QGOLD's governance timelock. Until confirmed activation, Atlas quests award personal XP only." },
+      { p: "Funding inputs are refreshed from finalized NEAR receipts and reconciled against the treasury. [NearBlocks](https://testnet.nearblocks.io) supplies discovery hints; its indexed amounts never authorize a reward." },
     ],
   },
   {
     id: "accounts",
     group: "chain",
     title: "Accounts, wallets and the relayer",
-    summary: "Play without a wallet: an invisible NEAR account with a key that never leaves the device, and gas paid by the game.",
+    tldr: "Play without a wallet: your explorer gets an **invisible NEAR account** whose only key is made on your device, and the game's relayer pays the gas. A wallet app is asked only when you choose one.",
+    keyFacts: [
+      ["0.1 NEAR", "funds a new explorer account"],
+      ["0", "player keys held by the server"],
+      ["1", "action per sponsored meta-transaction"],
+      ["2 NEAR/day", "sponsorship cap planned for mainnet"],
+    ],
+    hero: "account-seq",
     status: "live",
-    updated: "2026-11-10",
+    updated: "2026-11-11",
     sources: ["docs/RELAYER.md", "docs/IDENTITY-RECOVERY.md", "docs/NATIVE-TRANSACTION-CONFIRMATION.md", "docs/DURABLE-NATIVE-RECOVERY.md", "docs/ETH-WALLETS.md", "docs/NATIVE-PROFILES.md", "server/relayer/policy.mjs"],
     blocks: [
-      { viz: "account-seq" },
-      { p: "The local security candidate separates the signing key from the game page. Normal purchases, equipment and earned mini-games remain seamless. Withdrawals, asset transfers and account recovery require approval in a separate account window. This candidate has not been deployed or rotated into existing accounts." },
+      { h: "Your explorer account" },
       {
         list: [
-          "A new explorer gets `<name>.play-…testnet`, funded with 0.1 NEAR, once they have earned their first XP on the map (a find, coin or quest); the first steps play solo without it. Its only full-access key is generated on the device; the server never holds a player key. New accounts per network address are capped per day.",
-          "Every in-game action (tasks, Secrets, Aura listings and equipment, staking, level rewards, badges, profile and note records) signs with this explorer account without a wallet popup, and screens default to it. Before the account exists, an **Activate my account** button prepares it instead of asking for a wallet; if this device holds no key of the explorer, the app points to Profile → Account and devices to restore it with the recovery passkey. A wallet app is asked only when the player picks another linked NEAR account on purpose or links one in Profile.",
-          "Game actions are signed as NEP-366 meta-transactions. The relayer checks a strict policy (one action, allowed receiver + method + deposit, nonce, expiry, gas) and pays the gas.",
-          "Attached deposits retain the per-account cap. The security candidate also reserves one service-wide budget for new accounts, relays and topups. Unknown payments retain their reservation across restarts and midnight; refunds are not counted as new allowance. A reservation for an action that never reached the chain is released back to the day's budget. Free solo play remains available without sponsorship.",
-          "A saved sponsored transaction that a later one of the same service key overtook is signed again only after the network has rejected the exact bytes by nonce, does not know the transaction, and confirms the key nonce passed it, twice over at least 30 seconds. Nothing is paid twice.",
-          "Some sponsored calls are checked against game and chain state first, so the relayer never pays for a call that only leaks its budget. NEAR Social writes are sponsored only for the game's own profile, map-note, place and encrypted inbox records (at most 4 KiB), and the 0.05 NEAR storage deposit only while the account's Social storage is short. `redeem_aura` is sponsored only for a voucher the game signed for that account, still valid and not yet redeemed. Cancelling one signed market order is sponsored only for your own open order in the game's book, at most 4 a day per account (16 across the game); Cancel all orders has no such limit.",
-          "Adding a sign-in method to a secured explorer requires a recent sign-in with an existing method. Ordinary play uses the game session. A NEAR wallet links with a NEP-413 signature; MetaMask or Rabby sign in with SIWE and can sign Intents trades (erc191). A SocialDB profile is published once per account. On the test network one owner test explorer can also sign in with a name and password, stored only as a salted scrypt hash; mainnet refuses that sign-in.",
+          "A new explorer gets `<name>.play-…testnet`, funded with 0.1 NEAR, once they earned their first XP on the map; the first steps play solo without it. New accounts per network address are capped per day.",
+          "Every in-game action (tasks, Secrets, Aura listings and equipment, staking, level rewards, badges, profile and note records) signs with this account, without a wallet pop-up. Before it exists, **Activate my account** prepares it.",
+          "The device key lives in a separate signing origin, deployed with the game. If a browser blocks its storage, no account is created, Profile → Settings → Account and devices says so, and free play continues. Keys made before that origin are not rotated yet.",
+          "Withdrawals, asset transfers and account recovery need approval in a separate account window.",
+        ],
+      },
+      { h: "Sign-in methods" },
+      {
+        list: [
+          "A NEAR wallet links with a NEP-413 signature; MetaMask or Rabby sign in with SIWE and can sign Intents trades (erc191).",
           "Passkeys sign in to the game identity; they are not NEAR keys. Recovery restores the explorer by signing again with the linked wallet.",
-          "A wallet transaction counts only after the server reads it as FINAL and matches it against the terms reviewed before signing. Unresolved transactions survive reloads in a local journal so a retry never signs twice.",
-          "The device key lives in the signing origin's own storage, which browsers partition per game site. If a browser blocks that storage (some private windows, blocked site data), no account is created and Profile → Account and devices says so, with Try again; free play continues. `npm run e2e:signing-vault` covers creation, a sponsored signature, reload and blocked storage on Chromium and WebKit.",
+          "Adding a sign-in method to a secured explorer needs a recent sign-in with an existing one.",
+          "On the test network one owner test explorer can also sign in with a name and password (salted scrypt hash); mainnet refuses that sign-in.",
+        ],
+      },
+      { h: "The relayer" },
+      {
+        list: [
+          "Game actions are NEP-366 meta-transactions. The relayer checks a strict policy (one action, allowed receiver + method + deposit, nonce, expiry, gas) and pays the gas.",
+          "Some calls are checked against game and chain state first: NEAR Social writes only for the game's own records (≤ 4 KiB), `redeem_aura` only for a valid unredeemed voucher, cancelling a market order only for your own open order (4 a day).",
+          "A service-wide daily budget covers new accounts, relays and top-ups; unknown payments keep their reservation, and a transaction is re-signed only after the network provably rejected it. Nothing is paid twice.",
+          "A wallet transaction counts only after the server reads it as FINAL and it matches the terms reviewed before signing; unresolved transactions survive reloads in a local journal.",
         ],
       },
     ],
@@ -991,23 +1106,27 @@ export const CHAPTERS: Chapter[] = [
     id: "intents-market",
     group: "chain",
     title: "NEAR Intents market",
-    summary: "Auras trade peer to peer through a NEAR Intents verifier, with a 2 % fee to the treasury.",
+    tldr: "Auras trade peer to peer through a **NEAR Intents** verifier: both sides sign, one transaction settles both, and 2 % of the buyer's leg goes to the treasury. Nobody can take the Aura without paying, or the reverse.",
+    keyFacts: [
+      ["2 %", "fee to the treasury"],
+      ["1 tx", "settles both sides"],
+      ["v0.4.5", "open-source verifier, self-deployed"],
+      ["3", "trades per player, trader and day with NPCs"],
+    ],
+    hero: "intents-seq",
     status: "live",
-    updated: "2026-11-10",
+    updated: "2026-11-11",
     sources: ["docs/NEAR-INTENTS-MARKET.md", "docs/ONCHAIN-TRADES.md", "docs/SIGNED-AURA-ORDERS.md", "docs/NATIVE-MARKET.md", "src/intents-order.ts"],
     blocks: [
       {
-        p: "The verifier is the open-source NEAR Intents (defuse) contract v0.4.5, deployed by the project on testnet and labelled experimental. Both sides sign a `token_diff`; the solver (the relayer account) settles both intents in one transaction, so nobody can take the Aura without paying or the reverse.",
-      },
-      { viz: "intents-seq" },
-      {
         list: [
+          "The verifier is the open-source NEAR Intents (defuse) contract v0.4.5, deployed by the project on testnet and labelled experimental. Both sides sign a `token_diff`; the solver (the relayer account) settles both intents in one transaction.",
           "Fee: 20,000 pips (2 %) on the buyer's wNEAR leg, collected for the treasury.",
           "NPC traders keep their stock and purse inside the verifier; a fill pairs the player's signed diff with a server-signed trader intent.",
-          "The solver's gas counts against the game's shared daily sponsorship budget, like every relayed action. When that budget is used up, fills and withdrawals wait for the next day (`SUBSIDY_BUDGET`); signed orders stay in the book.",
-          "Proof: every settled trade and withdrawal is a History row for both explorers with the settlement transaction, so History and Settings → On chain link it; Shop → Market → More trading tools lists your own Intents trades with the same link. Aavegotchi wearables are never traded (originals stay in the wallet, map clones are not NFTs).",
-          "Signed market-v2 orders (NEP-413) remain as a fallback. The old practice GOLD market is closed (`410 MARKET_ON_CHAIN`).",
-          "Mainnet `intents.near` is planned; it needs the owner's go.",
+          "The solver's gas counts against the shared daily sponsorship budget. When it is used up, fills and withdrawals wait for the next day; signed orders stay in the book.",
+          "Every settled trade and withdrawal is a History row for both explorers with the settlement transaction (Settings → Account and devices → On chain); Shop → Market → More trading tools lists your own trades.",
+          "Aavegotchi wearables are never traded: originals stay in the wallet, map clones are not NFTs.",
+          "Signed market-v2 orders (NEP-413) remain as a fallback. The old practice GOLD market is closed (`410 MARKET_ON_CHAIN`). Mainnet `intents.near` is planned and needs the owner's go.",
         ],
       },
     ],
@@ -1017,18 +1136,24 @@ export const CHAPTERS: Chapter[] = [
     id: "ai",
     group: "platform",
     title: "AI in the game",
-    summary: "NPC voices on NEAR AI Cloud with attestation, nightly quest texts and bounded quest drafts.",
+    tldr: "AI phrases NPC replies and writes nightly quest flavour, but it **only ever picks from options the server computed**. It never sets rewards, prices or links, and no model call slows play.",
+    keyFacts: [
+      ["3", "providers in order: NEAR AI Cloud, Ollama, template"],
+      ["01:00 UTC", "nightly flavour batch"],
+      ["0", "model calls on the player's path for quest texts"],
+      ["0", "drafts published without review"],
+    ],
+    hero: "ai-chain",
     status: "live",
     updated: "2026-11-05",
     sources: ["docs/NEAR-AI-CLOUD.md", "docs/QUEST-FLAVOUR.md", "docs/AI-QUEST-DRAFTS.md", "server/ai/near-ai.mjs", "server/ai/flavour.mjs"],
     blocks: [
-      { viz: "ai-chain" },
       {
         list: [
-          "**NPC talk:** the configured provider order is NEAR AI Cloud, then Ollama, then a deterministic template. Signed responses are checked against their attestation report in the background. The reply shows its verification state; provider configuration alone does not establish attestation.",
-          "**Quest flavour:** a nightly batch after 01:00 UTC writes short texts for places in active regions; the player path only reads the cache, so no model call ever slows play. Rejected texts are logged with reasons.",
+          "**NPC talk:** NEAR AI Cloud, then Ollama, then a deterministic template. Signed responses are checked against their attestation report in the background; the reply shows its verification state.",
+          "**Quest flavour:** a nightly batch after 01:00 UTC writes short texts for places in active regions; play only reads the cache. Rejected texts are logged with reasons.",
           "**Creator drafts:** an editor helper suggests quest drafts; suggestions are never saved or published automatically and pass the normal review.",
-          "Rule for every model: it picks from options the server computed, by index. It never sets rewards, links or prices; outputs are filtered for unsafe text and prompt leaks.",
+          "Rule for every model: it picks from options the server computed, by index. Outputs are filtered for unsafe text and prompt leaks.",
         ],
       },
     ],
@@ -1037,20 +1162,26 @@ export const CHAPTERS: Chapter[] = [
     id: "safety",
     group: "platform",
     title: "Fair play and safety",
-    summary: "Travel guard, XP caps, safe places, moderation and the money invariants.",
+    tldr: "The server is the trusted validator of GPS evidence, with a travel guard, XP caps and safety-filtered public places. The contracts bound what even a compromised server could pay.",
+    keyFacts: [
+      ["15 m/s", "travel guard in GPS worlds"],
+      ["600 XP", "per cell a day from location play"],
+      ["3,000 XP", "a day from location play"],
+      ["12", "cells a day count for XP"],
+    ],
+    hero: "fair-play",
     status: "live",
     updated: "2026-11-05",
     sources: ["docs/FAIR-PLAY.md", "docs/POI-SAFETY.md", "docs/SOCIAL-CONTROLS.md", "docs/MAP-NOTES-UI.md", "docs/MODERATION-AND-EVIDENCE.md", "server/fair-play.mjs"],
     blocks: [
-      { viz: "fair-play" },
       {
         list: [
-          "Travel guard in GPS worlds: faster than 15 m/s returns `422 IMPLAUSIBLE_MOVE` (wait capped at 2 h).",
-          "Location XP caps: 600 per cell per day, 3000 per day, 12 cells per day. The claim still succeeds; the XP is trimmed and the response says so.",
+          "Faster than 15 m/s returns `422 IMPLAUSIBLE_MOVE` (wait capped at 2 h).",
+          "XP caps: the claim still succeeds, extra XP is trimmed and the response says so.",
           "Rate limits on sign-up and APIs; all quests sit on safety-filtered public places.",
-          "Map notes, place messages and creator quests have reports, blocks and moderators.",
-          "Money paths use database transactions with exactly-once ids, and contracts keep their own invariants independent of the server.",
-          "GPS can be spoofed: the server is the trusted validator of physical evidence, and the contracts bound what a compromised validator could do.",
+          "Map notes, place messages, places and creator quests have reports, blocks and moderators.",
+          "Money paths use database transactions with exactly-once ids; contracts keep their own invariants independent of the server.",
+          "GPS can be spoofed: the server validates physical evidence, and the contracts bound what a compromised validator could do.",
         ],
       },
     ],
@@ -1059,25 +1190,43 @@ export const CHAPTERS: Chapter[] = [
     id: "operations",
     group: "platform",
     title: "Runtime and operations",
-    summary: "One Node service with SQLite, background workers, daily jobs and the CI gates every change passes.",
+    tldr: "One Node 24 service with SQLite on a VPS, background workers on fixed rhythms, a daily backup, and CI gates every change must pass before it can merge.",
+    keyFacts: [
+      ["5 min", "payout rounds and QGOLD keeper"],
+      ["10 min", "trader keeper"],
+      ["03:20 UTC", "daily backup"],
+      ["220 KB", "first-load JS budget (gzip)"],
+    ],
+    hero: "daily-jobs",
     status: "live",
-    updated: "2026-11-10",
-    sources: ["docs/RUNTIME-RELIABILITY.md", "docs/PERFORMANCE-BUDGET.md", "docs/STATE-RECOVERY.md", "docs/OWNER-RUNBOOK.md", "docs/TEST-SEED.md", ".github/workflows/check.yml", "scripts/check-bundle-budget.mjs"],
+    updated: "2026-11-11",
+    sources: ["docs/RUNTIME-RELIABILITY.md", "docs/PERFORMANCE-BUDGET.md", "docs/STATE-RECOVERY.md", "docs/OWNER-RUNBOOK.md", "docs/TEST-SEED.md", ".github/workflows/check.yml", "scripts/check-bundle-budget.mjs", "server/cli/tester-account.mjs"],
     blocks: [
+      { p: "A React + MapLibre client talks to one Node 24 service (systemd, Caddy). SQLite in WAL mode is the durable store with strict schema modules. Server-sent events push coins and quests to nearby players." },
       {
-        p: "A React + MapLibre client talks to one Node 24 service on a VPS (systemd, Caddy). SQLite in WAL mode is the durable store with strict schema modules. Server-sent events push coins and quests to nearby players.",
+        table: {
+          head: ["Worker", "Rhythm"],
+          rows: [
+            ["Reward worker (claims, publications, map days)", "every 30 s"],
+            ["QGOLD payout rounds", "every 5 min (inside the reward worker)"],
+            ["QGOLD keeper", "every 5 min"],
+            ["Trader keeper", "every 10 min"],
+            ["Relay and market escrow", "every 15 s"],
+            ["Badge mint queue", "every 15 s"],
+            ["Creator money, signed-order index", "every 30 s"],
+            ["Intents reconcile", "every 60 s"],
+          ],
+        },
       },
-      { viz: "daily-jobs" },
       {
         list: [
-          "Reward worker every 30 s (claims, publications, map days); trader and QGOLD keepers every 10 min; badge mint queue every 15 s.",
-          "Mainnet runs as a separate service (`deploy/questlayer-mainnet.service`, own database and keys) and is not started yet; the owner runbook §7 has the one-command deploy and the 10 November state.",
+          "Mainnet runs as a separate service with its own database and keys, and is not started yet.",
           "Backups at 03:20 UTC, after Prague midnight publication. After a restore, days whose chain count is ahead refuse new claims (`NATIVE_RECONCILING`) until they end.",
-          "Capacity depends on the build and workload. Dated load-test measurements are recorded in the performance report; physical-phone acceptance is a separate check.",
-          "Phone budget: welcome-screen JS and CSS are capped; every big screen, this wiki included, loads lazily.",
+          "Phone budget: first-load JS and CSS are capped; every big screen, this wiki included, loads lazily.",
           "English is the default language; other languages are opt-in dictionaries, checked on 390 px phones in CI.",
-          "The testnet runs a removable test seed (bots, quests, community tasks and free Secrets for Explore · Nearby); every seeded row has a `seed-` id. The starter kit of Auras and XP for real explorers is off unless `TEST_SEED_KIT=1`, and earlier kits are taken back on start, so a new explorer starts with an empty backpack.",
-          "A deploy reinstalls the separate signing-vault origin by itself whenever its code or contract list changed.",
+          "The testnet runs a removable test seed (bots, quests, community tasks, free Secrets); every seeded row has a `seed-` id. Starter kits for real explorers are off unless `TEST_SEED_KIT=1`.",
+          "A tester-account command line sets the owner test explorer's password, removes the old practice-GOLD credit from explorers created before 10 November and retires duplicate test explorers (GOLD 0, sessions revoked).",
+          "A deploy reinstalls the separate signing-vault origin whenever its code or contract list changed.",
         ],
       },
       { viz: "ci-gates" },
@@ -1087,20 +1236,26 @@ export const CHAPTERS: Chapter[] = [
     id: "maintaining",
     group: "platform",
     title: "How this wiki stays current",
-    summary: "Every change to a mechanism updates its chapter, and CI refuses changes that skip it.",
+    tldr: "A mechanism change is not done until its chapter is: **CI fails** when a source doc changed but the chapter was not reviewed and stamped.",
+    keyFacts: [
+      ["1 PR", "mechanism and chapter change together"],
+      ["`wiki:stamp`", "records the reviewed docs"],
+      ["TL;DR first", "short text, key numbers, one picture"],
+      ["0", "secrets, keys or private hosts (tested)"],
+    ],
+    hero: "wiki-loop",
     status: "live",
-    updated: "2026-11-05",
+    updated: "2026-11-11",
     sources: ["docs/WIKI.md", "AGENTS.md", "scripts/wiki-check.mjs", "tests/wiki.test.mjs"],
     blocks: [
-      { viz: "wiki-loop" },
       {
         list: [
-          "Each chapter lists its sources. A hash of every source doc is kept in `docs/wiki-stamps.json`.",
-          "When a mechanism doc changes, `npm test` fails until the matching chapter is reviewed and `npm run wiki:stamp` records the new hashes.",
-          "A new doc must be added to a chapter's sources or explicitly marked as not a mechanism (plans, audits, hand-offs) in `docs/wiki-coverage.json`.",
-          "Rule tables are imported from their owning files. Narrative examples and activation labels still need review against the current source and public checkpoint.",
-          "The page never names events or contains secrets, keys or private hosts; the test checks the copy.",
-          "Outside coding agents work from `docs/HANDOFF-WEEKEND.md`. A protected-paths CI guard lists every protected file a pull request touches (contracts, deploy or signing scripts, money code, sign-in and transaction signing, economy numbers, deployment records, CI and dependencies) for review, and fails any pull request that adds anything that looks like a secret.",
+          "Each chapter lists its sources; a hash of every source doc is kept in `docs/wiki-stamps.json`.",
+          "When a mechanism doc changes, `npm test` fails until the chapter is reviewed and `npm run wiki:stamp` records the new hashes.",
+          "A new doc must join a chapter's sources or be marked as not a mechanism (plans, audits, hand-offs) in `docs/wiki-coverage.json`.",
+          "Every chapter has a short TL;DR, at most four key numbers and details folded below; the test enforces the limits.",
+          "Rule tables are imported from their owning files. The page never names events or contains secrets, keys or private hosts; the test checks the copy.",
+          "Outside coding agents work from `docs/HANDOFF-WEEKEND.md`; a protected-paths CI guard lists protected files a pull request touches and fails anything that looks like a secret.",
         ],
       },
     ],
