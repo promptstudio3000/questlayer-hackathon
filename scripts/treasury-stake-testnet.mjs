@@ -220,10 +220,18 @@ assert.equal(poolInfo.code_hash, POOL_CODE, "Pool code is not the official staki
 assert.equal((await provider.query({ request_type: "view_access_key_list", account_id: POOL, finality: "final" })).keys.length, 0, "Pool has access keys.");
 assert.equal(await view(POOL, "is_staking_paused"), false, "Pool staking is paused.");
 assert.equal((await view(rewardsId, "get_config")).owner, operator.accountId, "Operator must own the rewards contract.");
-const entryOf = (vaultId) => ({ accountId: vaultId, beneficiary: operator.accountId, pool: POOL, codeHash, wasmSha256: sha });
+const entryOf = (vaultId, pool = POOL) => ({ accountId: vaultId, beneficiary: operator.accountId, pool, codeHash, wasmSha256: sha });
+// Staggered vaults spread over the allowlisted pools (lowest fee first), so no
+// single validator holds most of the treasury (the mix caps one protocol at 40 %).
+const STAGGER_POOLS = ["ts.pool.f863973.m0", "aurora.pool.f863973.m0", "stakely_v2.pool.f863973.m0"];
+async function checkPool(pool) {
+  assert.equal((await accountOf(pool)).code_hash, POOL_CODE, `${pool} is not the official staking pool.`);
+  assert.equal((await provider.query({ request_type: "view_access_key_list", account_id: pool, finality: "final" })).keys.length, 0, `${pool} has access keys.`);
+  assert.equal(await view(pool, "is_staking_paused"), false, `${pool} staking is paused.`);
+}
 
 /** Create, initialize, approve and make keyless one treasury vault; stakes nothing. */
-async function setupVault(vaultId) {
+async function setupVault(vaultId, pool = POOL) {
   let info = await accountOf(vaultId);
   if (!info) {
     assert.ok(vaultId.endsWith("." + operator.accountId), `Create ${vaultId} first, or use a sub-account of the operator.`);
@@ -246,7 +254,7 @@ async function setupVault(vaultId) {
           actions.deployContract(wasm),
           actions.functionCall(
             "new",
-            { beneficiary_id: operator.accountId, pool_id: POOL, rewards_id: rewardsId, contribution_bps: 10000 },
+            { beneficiary_id: operator.accountId, pool_id: pool, rewards_id: rewardsId, contribution_bps: 10000 },
             100n * TGAS,
             0n,
           ),
@@ -259,7 +267,7 @@ async function setupVault(vaultId) {
   const state = await view(vaultId, "get_state");
   assert.equal(state.beneficiary, operator.accountId);
   assert.equal(state.rewards, rewardsId);
-  assert.equal(state.pool, POOL);
+  assert.equal(state.pool, pool);
   assert.equal(state.contribution_bps, 10000);
   if (!record.transactions.some((t) => t.label === `Approve ${vaultId} as a yield source of ${rewardsId}`))
     await step(`Approve ${vaultId} as a yield source of ${rewardsId}`, () =>
@@ -297,8 +305,12 @@ const ids = Array.from({ length: count }, (_, i) => VAULT_ID.replace(base, `${ba
 const op = BigInt((await accountOf(operator.accountId)).amount);
 const need = BigInt(count) * (amount + VAULT_RESERVE + NEAR / 2n);
 assert.ok(op >= need, `Operator has ${near(op)} NEAR, stagger needs ${near(need)}; run faucet first.`);
-for (const id of ids) await setupVault(id);
-log({ manifestEntries: ids.map(entryOf), note: "List these in the manifest and deploy the VPS now; vaults with no stake are ignored by the worker until their deposit." });
+const poolOf = (i) => STAGGER_POOLS[i % STAGGER_POOLS.length];
+for (const [i, id] of ids.entries()) {
+  await checkPool(poolOf(i));
+  await setupVault(id, poolOf(i));
+}
+log({ manifestEntries: ids.map((id, i) => entryOf(id, poolOf(i))), note: "List these in the manifest and deploy the VPS now; vaults with no stake are ignored by the worker until their deposit." });
 const fromIdx = rest.indexOf("--from-epoch");
 const first = fromIdx >= 0 ? BigInt(rest[fromIdx + 1]) : (await epochNow()) + 1n;
 for (const [i, id] of ids.entries()) {
