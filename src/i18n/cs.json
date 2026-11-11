@@ -3198,5 +3198,7 @@
  "Demo chat: {0} answers with ready lines. Nothing is stored or sent on chain; real explorers get the encrypted inbox.": "Ukázkový chat: {0} odpovídá připravenými větami. Nic se neukládá ani neposílá na chain; skuteční hráči mají šifrovanou poštu.",
  "{0} is typing…": "{0} píše…",
  "Write to {0}…": "Napiš {0}…",
- "Messages need your explorer account. Sign in with it to write.": "Zprávy potřebují tvůj účet průzkumníka. Přihlas se jím a piš."
+ "Messages need your explorer account. Sign in with it to write.": "Zprávy potřebují tvůj účet průzkumníka. Přihlas se jím a piš.",
+ "Your note: {0}": "Tvoje poznámka: {0}",
+ "Note: {0}": "Poznámka: {0}"
 }
