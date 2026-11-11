@@ -15,7 +15,6 @@ import {
   Compass,
   Crown,
   Eye,
-  Flag,
   Footprints,
   HandCoins,
   Key,
@@ -30,7 +29,6 @@ import {
   Sparkle,
   Storefront,
   Sword,
-  Trophy,
   UserCircle,
   Vault,
 } from "@phosphor-icons/react";
@@ -38,16 +36,14 @@ import { ArrowRight } from "../dir-icons";
 import { Ghost } from "../Ghost";
 import { GameObjectArt } from "../game-object-art";
 import { AuraSprite } from "../aura-art";
-import { AURA_SUPPLY, catalogEdition } from "../aura-catalog";
+import { catalogEdition } from "../aura-catalog";
 import { loadFeedbackPreferences, prefersReducedMotion } from "../feedback";
 import {
   CHAPTERS,
-  DAILY_ZONES,
   LEVEL_LADDER,
   MAX_LEVEL,
   PLACE_BADGE_COUNT,
   SAMPLE_PLACES,
-  SEASON,
   STAKER_LADDER,
   STAKER_MIN_NEAR,
   TIER_NEAR,
@@ -236,7 +232,7 @@ function WalkScene({ active, reduce }: { active: boolean; reduce: boolean }) {
               </svg>
             </g>
             <text x="11" y="-4" className="hiw-pickup-label">
-              {p.kind === "coin" ? "+0.01" : "+15 XP"}
+              {p.kind === "coin" ? "+1" : "+15 XP"}
             </text>
           </g>
         ))}
@@ -258,7 +254,7 @@ function WalkScene({ active, reduce }: { active: boolean; reduce: boolean }) {
       </svg>
       <div className="hiw-tally">
         <span>
-          <GameObjectArt kind="coin" size={22} /> <Counter to={0.03} decimals={2} active={active} reduce={reduce} duration={WALK_MS} /> GOLD
+          <GameObjectArt kind="coin" size={22} /> <Counter to={3} active={active} reduce={reduce} duration={WALK_MS} /> {tr("coins")}
         </span>
         <span>
           <Lightning size={20} weight="fill" /> <Counter to={45} active={active} reduce={reduce} duration={WALK_MS} /> XP
@@ -268,37 +264,120 @@ function WalkScene({ active, reduce }: { active: boolean; reduce: boolean }) {
   );
 }
 
-// 02 Daily zones: six zones light up, the free chest opens and an Aura rises.
-function ZonesScene() {
+// 02 Daily zones, drawn like the live map: a night city, irregular zone
+// outlines with a soft ground glow in the tier colour (src/zone-landmarks.ts),
+// the altar pin with its quest art and the countdown nameplate at its base.
+const ZONE_COLOR = { 1: "#45d6a0", 2: "#ae77ff", 3: "#ffd25a" } as const;
+const MAP_ZONES = [
+  {
+    tier: 1 as const,
+    d: "M38 128 C 52 98, 104 92, 132 108 C 158 122, 166 158, 146 182 C 124 206, 70 210, 46 190 C 28 174, 28 148, 38 128 Z",
+    pin: { x: 26, y: 47 },
+    art: "chest",
+  },
+  {
+    tier: 2 as const,
+    d: "M200 40 C 222 22, 280 20, 306 36 C 328 50, 326 84, 304 98 C 282 112, 236 114, 212 100 C 190 86, 184 54, 200 40 Z",
+    pin: { x: 71, y: 22 },
+    art: "trail",
+  },
+  {
+    tier: 3 as const,
+    d: "M232 160 C 246 146, 286 142, 306 156 C 324 168, 320 196, 302 208 C 280 220, 246 218, 232 204 C 220 192, 222 172, 232 160 Z",
+    pin: { x: 76, y: 66 },
+    art: "visit",
+  },
+];
+const BLOCKS = [
+  [12, 12, 70, 52], [96, 14, 84, 44], [16, 74, 44, 38], [74, 70, 58, 26], [190, 120, 30, 70],
+  [326, 14, 26, 90], [12, 214, 80, 20], [104, 220, 110, 16], [180, 64, 18, 40], [330, 120, 22, 96],
+  [60, 128, 50, 34], [248, 52, 44, 30], [252, 168, 36, 26], [140, 132, 34, 30], [228, 222, 96, 14],
+] as const;
+const clock = (sec: number) => {
+  const t = Math.max(0, sec);
+  return `${Math.floor(t / 3600)}:${String(Math.floor(t / 60) % 60).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`;
+};
+/** Counts down once a second while the chapter is on screen. */
+function useCountdown(from: number, active: boolean, reduce: boolean) {
+  const [left, setLeft] = useState(from);
+  useEffect(() => {
+    if (!active || reduce) return;
+    const id = setInterval(() => setLeft((v) => (v > 0 ? v - 1 : from)), 1000);
+    return () => clearInterval(id);
+  }, [active, reduce, from]);
+  return left;
+}
+function ZonesScene({ active, reduce }: { active: boolean; reduce: boolean }) {
+  const closes = useCountdown(9 * 3600 + 41 * 60 + 7, active, reduce);
+  const opens = useCountdown(14 * 60 + 5, active, reduce);
+  const pill = (tier: 1 | 2 | 3) =>
+    tier === 1 ? (
+      <span className="hiw-zpill open">{tr("Closes in {0}", { 0: clock(closes) })}</span>
+    ) : tier === 2 ? (
+      <span className="hiw-zpill upcoming">{tr("Opens in {0}", { 0: clock(opens) })}</span>
+    ) : (
+      <span className="hiw-zpill locked">
+        <LockSimple size={12} weight="bold" /> {tr("Opens at Tier {0}", { 0: 3 })}
+      </span>
+    );
   return (
     <div className="hiw-zones">
       <div className="hiw-zone-map">
-        {DAILY_ZONES.map((z, i) => (
-          <span key={z.id} className={`hiw-zone t${z.tier}`} style={stagger(i)}>
-            {z.tier === 1 ? <MapPin size={18} weight="fill" /> : <LockSimple size={16} weight="bold" />}
-            <b>{z.tier === 1 ? tr("Free") : tr("Tier {0}", { 0: z.tier })}</b>
+        <svg viewBox="0 0 360 240" preserveAspectRatio="none" className="hiw-zone-svg">
+          <defs>
+            <filter id="hiw-zone-blur" x="-20%" y="-20%" width="140%" height="140%">
+              <feGaussianBlur stdDeviation="4" />
+            </filter>
+          </defs>
+          <g className="hiw-zone-streets">
+            <path d="M0 68 H360 M0 118 C 120 112, 240 124, 360 112 M0 208 H360 M88 0 V240 M186 0 C 180 80, 196 160, 186 240 M318 0 V240" />
+          </g>
+          <g className="hiw-zone-blocks">
+            {BLOCKS.map(([x, y, w, h], i) => (
+              <g key={i}>
+                <rect x={x} y={y + 4} width={w} height={h} className="side" />
+                <rect x={x} y={y} width={w} height={h} />
+              </g>
+            ))}
+          </g>
+          {MAP_ZONES.map((z, i) => (
+            <g key={z.tier} className={`hiw-zone t${z.tier}`} style={{ ...stagger(i), color: ZONE_COLOR[z.tier] } as CSSProperties}>
+              <path d={z.d} className="fill" />
+              <path d={z.d} className="glow" filter="url(#hiw-zone-blur)" />
+              <path d={z.d} className="line" />
+            </g>
+          ))}
+        </svg>
+        {MAP_ZONES.map((z, i) => (
+          <span
+            key={z.tier}
+            className={`hiw-altar t${z.tier}`}
+            style={{ ...stagger(i), left: `${z.pin.x}%`, top: `${z.pin.y}%`, "--zone": ZONE_COLOR[z.tier] } as CSSProperties}
+          >
+            <span className="hiw-altar-pin">
+              <img src={`/art/map-kit/quests/${z.art}.png`} alt="" width={28} height={28} draggable={false} />
+            </span>
+            <i className="hiw-altar-stem" />
+            {pill(z.tier)}
           </span>
         ))}
-        <div className="hiw-chest">
-          <span className="hiw-chest-aura">
-            <AuraSprite edition="polar" slot="above" size={2} animated={false} />
-          </span>
-          <span className="hiw-chest-closed">
-            <GameObjectArt kind="chest" state="ready" size={64} />
-          </span>
-          <span className="hiw-chest-open">
-            <GameObjectArt kind="chest" state="open" size={64} />
-          </span>
-        </div>
+        <span className="hiw-zone-loot" style={{ left: "24%", top: "74%" }}>
+          <AuraSprite edition="polar" slot="above" size={1} animated={false} />
+        </span>
+        <span className="hiw-zone-coin" style={{ left: "38%", top: "66%" }}>
+          <GameObjectArt kind="coin" size={22} />
+        </span>
+        <span className="hiw-zone-coin" style={{ left: "52%", top: "34%" }}>
+          <GameObjectArt kind="coin" size={22} />
+        </span>
       </div>
-      <ol className="hiw-zone-steps">
-        <li style={stagger(0)}>
-          <Footprints size={18} /> {" "}{tr("Trail")}</li>
-        <li style={stagger(1)}>
-          <Flag size={18} /> {" "}{tr("Visit")}</li>
-        <li style={stagger(2)}>
-          <Sparkle size={18} weight="fill" /> {" "}{tr("Chest")}</li>
-      </ol>
+      <ul className="hiw-zone-legend">
+        {([1, 2, 3] as const).map((t, i) => (
+          <li key={t} style={{ ...stagger(i), "--zone": ZONE_COLOR[t] } as CSSProperties}>
+            <i /> {t === 1 ? tr("Free zone") : tr("Tier {0}", { 0: t })}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
@@ -363,7 +442,7 @@ function CollectiblesScene() {
                 <div className="hiw-card-face back">
                   <ShieldCheck size={28} weight="duotone" />
                   <b>{tr("Edition")}</b>
-                  <small>{AURA_SUPPLY ? tr("Max {0} ever", { 0: AURA_SUPPLY }) : tr("No supply cap")}</small>
+                  <small>{tr("Serial number")}</small>
                   <small>{tr("Secured on NEAR")}</small>
                 </div>
               )}
@@ -377,7 +456,7 @@ function CollectiblesScene() {
         </span>
         <Ghost className="hiw-wear-ghost" />
         <span className="hiw-switch">
-          <span>{tr("Practice")}</span>
+          <span>{tr("Found")}</span>
           <span>{tr("Secured")}</span>
           <i />
         </span>
@@ -434,7 +513,7 @@ function BadgesScene() {
 const NPCS = [
   { id: "story", get name() { return tr("Storyteller"); }, get line() { return tr("Want to hear chapter one?"); }, icon: BookOpen, aura: "comet" },
   { id: "quest", get name() { return tr("Quest giver"); }, get line() { return tr("Three stops, one chest."); }, icon: Scroll, aura: "polar" },
-  { id: "trader", get name() { return tr("Trader"); }, get line() { return tr("Three commons for a rare?"); }, icon: Storefront, aura: "gold" },
+  { id: "trader", get name() { return tr("Trader"); }, get line() { return tr("Buying or selling Auras?"); }, icon: Storefront, aura: "gold" },
   { id: "keeper", get name() { return tr("Keeper"); }, get line() { return tr("The inner vault opens for stakers."); }, icon: Vault, aura: "moon" },
 ] as const;
 function NpcScene() {
@@ -534,54 +613,6 @@ function StakingScene({ active, reduce }: { active: boolean; reduce: boolean }) 
   );
 }
 
-// 08 Seasons: points from three kinds of play fill the bar to the goal.
-function SeasonScene({ active, reduce }: { active: boolean; reduce: boolean }) {
-  // An example finisher: 6 hunts, 6 zone visits, 4 NPC lines = 30 points.
-  const mix = [
-    { ...SEASON.points[0], count: 6 },
-    { ...SEASON.points[1], count: 6 },
-    { ...SEASON.points[2], count: 4 },
-  ];
-  return (
-    <div className="hiw-season">
-      <div className="hiw-season-head">
-        <Trophy size={28} weight="duotone" />
-        <span>
-          <b>
-            <Counter to={SEASON.goal} active={active} reduce={reduce} duration={2200} /> / {SEASON.goal}
-          </b>{" "}
-          {tr("season points")}</span>
-      </div>
-      <div className="hiw-season-bar">
-        {mix.map((m, i) => (
-          <span
-            key={m.id}
-            className={`seg ${m.id}`}
-            style={{ ...stagger(i), flexGrow: (m.points * m.count) / SEASON.goal } as CSSProperties}
-          >
-            {m.count}× {m.label}
-          </span>
-        ))}
-      </div>
-      <ul className="hiw-season-points">
-        {SEASON.points.map((p, i) => (
-          <li key={p.id} style={stagger(i)}>
-            <b>+{p.points}</b> {p.label}
-          </li>
-        ))}
-      </ul>
-      <ol className="hiw-ranks">
-        {SEASON.ranks.map((r, i) => (
-          <li key={r} style={stagger(i)}>
-            {r}
-            <small>{i === 0 ? tr("any points") : i === 1 ? tr("the goal") : tr("{0}× the goal", { 0: i })}</small>
-          </li>
-        ))}
-      </ol>
-    </div>
-  );
-}
-
 const PRINCIPLES = [
   { icon: Eye, get title() { return tr("Looks, not power"); }, get text() { return tr("Auras and badges change how you look, never your odds, damage or payouts."); } },
   { icon: Scales, get title() { return tr("No betting"); }, get text() { return tr("Nothing to wager. Rolls and rewards are earned by playing."); } },
@@ -606,7 +637,7 @@ const JOIN_STEPS = [
   { icon: UserCircle, get title() { return tr("Pick a name"); }, get text() { return tr("No sign-up, no e-mail, no deposit."); } },
   { icon: Footprints, get title() { return tr("Walk to your first coin"); }, get text() { return tr("The coach shows the nearest find on the map."); } },
   { icon: Sparkle, get title() { return tr("Open a chest, wear your Aura"); }, get text() { return tr("Your ghost changes on the map right away."); } },
-  { icon: ShieldCheck, get title() { return tr("Secure it on NEAR"); }, get text() { return tr("A passkey keeps your game account safe."); }, optional: true },
+  { icon: ShieldCheck, get title() { return tr("Get your NEAR account"); }, get text() { return tr("Created for you after your first XP. Gas is on us."); } },
   { icon: Crown, get title() { return tr("Stake {0} NEAR, become a Staker", { 0: STAKER_MIN_NEAR }); }, get text() { return tr("Opens the inner vault and patron lines."); }, optional: true },
 ] as const;
 
@@ -773,9 +804,9 @@ export default function HowItWorks() {
           flip
           eyebrow={tr("Daily zones")}
           title={tr("Six new zones every day.")}
-          lead={tr("Each day every live city gets six zones with trails, visits and chests, all paid from the same global prize pool. Three are open to everyone; the others open as you stake. Chests hold Auras.")}
-          chips={[tr("3 free"), tr("2 for Tier 2"), tr("1 for Tier 3")]}
-          scene={<ZonesScene />}
+          lead={tr("Each day every live city gets six zones with trails, visits and chests, all paid from the same global prize pool. Every zone stays on the map all day and opens on its own schedule, with a countdown everyone sees. Free and Tier 2 zones are open to everyone; the Tier 3 zone opens with a Tier 3 stake.")}
+          chips={[tr("Always on the map"), tr("Live countdowns"), tr("Chests hold Auras")]}
+          scene={<ZonesScene active={is("zones")} reduce={reduce} />}
         />
 
         <Chapter
@@ -794,8 +825,8 @@ export default function HowItWorks() {
           flip
           eyebrow={tr("Collectibles and editions")}
           title={tr("Wear what you earn. Own it on NEAR.")}
-          lead={tr("Auras are the glow your ghost wears, above or below. There is no supply cap: they keep appearing as quest rewards and in chests at harder spots on the map. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.")}
-          chips={[tr("Limited editions"), tr("Above and below slots"), tr("Market and traders")]}
+          lead={tr("Auras are the glow your ghost wears, above or below. They come as quest rewards and wait on the map, more of them in harder places. Secure one and it becomes yours on NEAR: keep it, wear it or trade it on the market.")}
+          chips={[tr("Quest rewards"), tr("Above and below slots"), tr("Market and traders")]}
           scene={<CollectiblesScene />}
         />
 
@@ -815,8 +846,8 @@ export default function HowItWorks() {
           flip
           eyebrow={tr("NPCs, monsters and traders")}
           title={tr("The city is alive.")}
-          lead={tr("Friendly ghosts roam the map. Storytellers and quest givers hand out quest lines, monsters wait for a duel, a weekly boss calls everyone out, and traders swap three Auras for a better one.")}
-          chips={[tr("Quest lines"), tr("Monster duels"), tr("Weekly boss"), tr("Trade-ups")]}
+          lead={tr("Friendly ghosts roam the map day and night. Storytellers and quest givers hand out quest lines, monsters wait for a duel, a weekly boss calls everyone out, traders buy and sell Auras, and the Golden Altar crafts rarer ones from shards.")}
+          chips={[tr("Day and night"), tr("Quest lines"), tr("Monster duels"), tr("Weekly boss"), tr("Golden Altar")]}
           scene={<NpcScene />}
         />
 
@@ -840,17 +871,6 @@ export default function HowItWorks() {
         />
 
         <Chapter
-          id="seasons"
-          seen={seen}
-          flip
-          eyebrow={tr("Seasons")}
-          title={tr("Seasons give every week a goal.")}
-          lead={tr("A season runs about {0} days. Hunts, zone visits and NPC lines earn points, never money. Reach the goal for the season mark and the season Aura; go further for cosmetic ranks on the board.", { 0: SEASON.lengthDays })}
-          chips={[tr("Points for play only"), tr("Cosmetic ranks"), tr("Season Aura for finishers"), tr("No streaks")]}
-          scene={<SeasonScene active={is("seasons")} reduce={reduce} />}
-        />
-
-        <Chapter
           id="fair-play"
           seen={seen}
           eyebrow={tr("Fair play")}
@@ -860,6 +880,7 @@ export default function HowItWorks() {
         />
 
         <section id="join" className="hiw-chapter hiw-join" data-inview={is("join")} aria-labelledby="join-title">
+          <div className="hiw-join-bg" aria-hidden="true" />
           <div className="hiw-copy">
             <p className="hiw-eyebrow">
               <span>{String(CHAPTERS.length - 1).padStart(2, "0")}</span> {" "}{tr("How to join")}</p>
@@ -881,12 +902,10 @@ export default function HowItWorks() {
                 </li>
               ))}
             </ol>
-            <div className="hiw-actions">
-              <a className="hiw-button primary" href={PLAY_URL}>
-                {tr("Start exploring")}{" "}<ArrowRight size={20} weight="bold" />
+            <div className="hiw-join-cta">
+              <a className="hiw-button primary hiw-button-big" href={PLAY_URL}>
+                {tr("Start exploring")}{" "}<ArrowRight size={24} weight="bold" />
               </a>
-              <a className="hiw-button ghost" href="#start">
-                <ArrowUp size={20} weight="bold" /> {" "}{tr("Back to the top")}</a>
             </div>
             <p className="hiw-fine">
               <Key size={16} /> {" "}{tr("QuestLayer never asks for your recovery phrase.")}</p>
@@ -895,6 +914,9 @@ export default function HowItWorks() {
           </div>
         </section>
       </main>
+      <a className={`hiw-to-top ${active === "start" ? "" : "shown"}`} href="#start" aria-label={tr("Back to the top")}>
+        <ArrowUp size={22} weight="bold" />
+      </a>
     </div>
   );
 }

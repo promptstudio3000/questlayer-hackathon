@@ -5,7 +5,7 @@ import { PLZEN } from "../server/spatial/city-pack.mjs";
 import { localDateStart } from "../server/spatial/calendar.mjs";
 import { distance } from "../server/domain.mjs";
 import { loadCityActors } from "../server/actors/definitions.mjs";
-import { npcAroundTheClock, pathGraph, planDay, positionAt } from "../server/actors/schedule.mjs";
+import { pathGraph, planDay, positionAt } from "../server/actors/schedule.mjs";
 import { planSpawns, GUARDIAN_CHEST_RADIUS_M } from "../server/actors/spawns.mjs";
 import { createActorService } from "../server/actors/service.mjs";
 
@@ -18,19 +18,25 @@ function onGraph(g, [lng, lat]) {
   return g.nodes.some((i) => g.lng[i] === lng && g.lat[i] === lat);
 }
 
+test("Plzeň NPCs walk around the clock (owner decision 11 Nov 2026)", () => {
+  assert.deepEqual(city.hours, ["00:00", "23:59"]);
+});
+
+// The schedule mechanics below are checked against a shorter opening window.
+// NPCs ignore opening hours in code too (npcAroundTheClock), so these checks
+// plan each definition as a monster, which keeps them.
+const SHORT_HOURS = ["07:00", "22:00"];
+const timed = (def) => ({ ...def, kind: "monster" });
+
 test("day plans are deterministic, contiguous and stay on mapped paths", () => {
   const g = pathGraph(PLZEN);
-  for (const def of city.actors.filter((a) => a.home && a.enabled)) {
-    const a = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: city.hours });
-    const b = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: city.hours });
+  for (const def of city.actors.filter((a) => a.home && a.enabled).map(timed)) {
+    const a = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS });
+    const b = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS });
     assert.deepEqual(a, b, def.id);
     assert.ok(a.length >= 1, def.id);
-    // NPCs walk around the clock; monsters keep the city's opening hours.
-    const npc = npcAroundTheClock(def);
-    if (npc || !def.phase || def.phase === "any") {
-      assert.equal(a[0].from, dayStart + (npc ? 0 : 7 * 3600_000), def.id);
-      assert.equal(a.at(-1).to, dayStart + (npc ? 23 * 3600_000 + 59 * 60_000 : 22 * 3600_000), def.id);
-    }
+    assert.equal(a[0].from, dayStart + 7 * 3600_000);
+    assert.equal(a.at(-1).to, dayStart + 22 * 3600_000);
     for (let i = 1; i < a.length; i++) assert.equal(a[i].from, a[i - 1].to);
     for (const s of a) for (const p of s.path) assert.ok(onGraph(g, p), `${def.id} off path`);
     // Walking speed matches the definition (no teleporting NPC).
@@ -41,22 +47,21 @@ test("day plans are deterministic, contiguous and stay on mapped paths", () => {
       assert.ok(m / ((s.to - s.from) / 1000) <= def.speedMps + 0.01, def.id);
     }
   }
-  const other = planDay(city.actors[1], PLZEN, "seed", "2026-11-03", { dayStart, hours: city.hours });
-  assert.notDeepEqual(other.map((s) => s.path), planDay(city.actors[1], PLZEN, "seed", DAY, { dayStart, hours: city.hours }).map((s) => s.path));
+  const other = planDay(timed(city.actors[1]), PLZEN, "seed", "2026-11-03", { dayStart, hours: SHORT_HOURS });
+  assert.notDeepEqual(other.map((s) => s.path), planDay(timed(city.actors[1]), PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS }).map((s) => s.path));
 });
 
 test("positions interpolate inside segments and are null outside hours", () => {
   const trader = city.actors.find((a) => a.id === "kupec-vojtech");
-  assert.ok(positionAt(planDay(trader, PLZEN, "seed", DAY, { dayStart, hours: city.hours }), dayStart + 3600_000), "NPCs are out at 01:00");
-  // A walking monster keeps the city's hours.
-  const def = { ...trader, kind: "monster" };
-  const segs = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: city.hours });
+  assert.ok(positionAt(planDay(trader, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS }), dayStart + 3600_000), "NPCs ignore opening hours");
+  const def = timed(trader);
+  const segs = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS });
   assert.equal(positionAt(segs, dayStart + 3600_000), null);
   const walk = segs.find((s) => !s.dwell);
   const start = positionAt(segs, walk.from), mid = positionAt(segs, (walk.from + walk.to) / 2);
   assert.deepEqual([start.lng, start.lat], walk.path[0]);
   assert.equal(mid.dwell, false);
-  const practice = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: city.hours, allDay: true });
+  const practice = planDay(def, PLZEN, "seed", DAY, { dayStart, hours: SHORT_HOURS, allDay: true });
   assert.ok(positionAt(practice, dayStart + 3600_000));
 });
 
