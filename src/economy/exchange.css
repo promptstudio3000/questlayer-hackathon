@@ -1,0 +1,54 @@
+/* QGOLD ⇄ NEAR exchange card. Game palette from tokens.css: purple action
+   buttons always carry white text (--on-action). */
+.qx {
+  display: grid;
+  gap: 10px;
+  padding: 18px;
+  border-radius: 20px;
+  background: var(--surface-raised);
+  border: 1px solid var(--decorative-border);
+  box-shadow: 0 10px 30px rgba(61, 16, 166, 0.08);
+  color: var(--ink);
+  min-width: 0;
+}
+.qx-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 12px; }
+.qx-head h2 { margin: 0; font-size: 20px; font-weight: 500; }
+.qx-rate { font-size: 14px; color: var(--ink-secondary); font-variant-numeric: tabular-nums; }
+.qx-seg, .qx-paths { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border-radius: 12px; background: var(--surface-soft); }
+.qx-seg button, .qx-paths button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  min-height: 44px; border: 0; border-radius: 9px; background: transparent; color: var(--ink);
+  font: inherit; font-size: 15px; cursor: pointer;
+}
+.qx-seg button.on, .qx-paths button.on { background: var(--action); color: var(--on-action); }
+.qx-paths button.on { background: var(--surface-raised); color: var(--action); box-shadow: 0 0 0 2px var(--action) inset; }
+.qx-box { display: grid; gap: 4px; padding: 12px 14px; border-radius: 14px; background: var(--surface-soft); border: 1px solid transparent; }
+.qx-box:focus-within { border-color: var(--action); }
+.qx-box-top { display: flex; justify-content: space-between; align-items: center; font-size: 14px; color: var(--ink-secondary); min-height: 24px; }
+.qx-box-row { display: flex; align-items: center; gap: 10px; }
+.qx .qx-box input, .qx-out-value {
+  flex: 1; min-width: 0; min-height: 44px !important; padding: 0; border: 0 !important; border-radius: 0; background: transparent !important; box-shadow: none; color: var(--ink);
+  font: inherit; font-size: 28px !important; font-weight: 500; font-variant-numeric: tabular-nums; outline: none;
+}
+.qx-out-value { display: flex; align-items: center; overflow-wrap: anywhere; }
+.qx-token { display: inline-flex; align-items: center; gap: 6px; padding: 6px 12px; border-radius: 999px; font-weight: 500; font-size: 15px; background: var(--surface-raised); }
+.qx-token::before { content: ""; width: 16px; height: 16px; border-radius: 50%; }
+.qx-qgold::before { background: radial-gradient(circle at 35% 35%, #fffbd0, #fef87d 45%, #d8a849); box-shadow: 0 0 0 1px #806000 inset; }
+.qx-near::before { background: var(--ink); }
+.qx-max { min-height: 32px !important; min-width: 0 !important; padding: 0 8px; border: 0; border-radius: 8px; background: var(--surface-raised); color: var(--action); font-size: 13px !important; cursor: pointer; }
+.qx-arrow { justify-self: center; display: grid; place-items: center; width: 36px; height: 36px; margin: -16px 0; z-index: 1; border-radius: 12px; background: var(--action); color: var(--on-action); border: 3px solid var(--surface-raised); }
+.qx-fine, .qx-who { margin: 0; font-size: 14px; color: var(--ink-secondary); }
+.qx-go {
+  display: inline-flex; align-items: center; justify-content: center; width: 100%; min-height: 52px;
+  border: 0; border-radius: 12px; background: var(--action); color: var(--on-action) !important;
+  font: inherit; font-size: 17px; font-weight: 500; text-decoration: none; cursor: pointer;
+  transition: transform var(--motion-press) var(--ease-out);
+}
+.qx-go:active:not(:disabled) { transform: scale(0.98); }
+.qx-go:disabled { background: var(--surface-soft); color: var(--ink-secondary) !important; cursor: default; }
+.qx-msg { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 15px; }
+.qx-msg.ok { background: var(--success-surface); color: var(--success); }
+.qx-msg.bad { background: var(--error-surface); color: var(--error); }
+.qx-links { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; font-size: 14px; }
+.qx-links a, .qx-msg a { display: inline-flex; align-items: center; gap: 4px; min-height: 32px; color: var(--action); }
+.qx svg[fill="currentColor"] { display: inline-block; width: auto; height: auto; flex: none; }
