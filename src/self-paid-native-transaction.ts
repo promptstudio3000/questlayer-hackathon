@@ -91,11 +91,18 @@ export async function sendSelfPaid(
     actions: nearActions,
   } = await loadNearApi();
   const provider = new JsonRpcProvider({ url: await resolveRpcUrl() });
-  const account = new Account(
-    transaction.signerId,
-    provider,
-    await signerFor(key),
-  );
+  // A failure before the signature exists (the approval window was refused or
+  // could not open) is certain not to have reached the chain, so the caller can
+  // release its reservation instead of blocking the retry.
+  const signer = await signerFor(key);
+  let signed = false;
+  const guarded = Object.create(signer) as typeof signer;
+  guarded.signTransaction = async (tx) => {
+    const result = await signer.signTransaction(tx);
+    signed = true;
+    return result;
+  };
+  const account = new Account(transaction.signerId, provider, guarded);
   let outcome: Awaited<ReturnType<Account["signAndSendTransaction"]>>;
   try {
     outcome = await account.signAndSendTransaction({
@@ -112,6 +119,13 @@ export async function sendSelfPaid(
     });
   } catch (error) {
     const text = String((error as Error)?.message || error);
+    if (!signed)
+      throw new SelfPaidError(
+        text && text.length <= 300
+          ? text
+          : "This action was not signed. Nothing was sent; try again.",
+        "SELF_PAID_NOT_SENT",
+      );
     if (/NotEnoughBalance|LackBalanceForState/i.test(text))
       throw new SelfPaidError(
         "Your account balance does not cover this amount.",

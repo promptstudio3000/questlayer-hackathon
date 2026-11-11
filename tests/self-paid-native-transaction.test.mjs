@@ -98,3 +98,34 @@ test('a lost self-paid response survives reload without signing or paying again'
   await checkPendingNativeTransaction({...context,confirm:async()=>({confirmed:true,network:'testnet',accountId:transaction.signerId,contractId:transaction.receiverId,transactionHash:hash})},pending.id,hash);
   assert.equal(readPendingNativeTransactions(context.playerId,storage).length,0);
 });
+
+test('a self-paid action refused before signing releases its reservation so a retry can sign', async () => {
+  const { sendJournaledSelfPaid, SelfPaidError } = await import('../src/self-paid-native-transaction.ts');
+  const { readPendingNativeTransactions } = await import('../src/confirmed-native-transaction.ts');
+  const values = new Map(), storage = { getItem: k => values.get(k) ?? null, setItem: (k,v) => values.set(k,v), removeItem: k => values.delete(k) };
+  const context = { playerId:'self_paid_unsigned', storage, getAnchor:async()=>100, withLock:async(_,f)=>f() };
+  let sends = 0;
+  const refuse = async () => { sends++; throw new SelfPaidError('Account action cancelled.', 'SELF_PAID_NOT_SENT'); };
+  const transaction = quote('3520000000000000000000000', {}, 'create_position');
+  await assert.rejects(sendJournaledSelfPaid(key, transaction, context, refuse), /Account action cancelled/);
+  assert.equal(readPendingNativeTransactions(context.playerId, storage).length, 0);
+  await assert.rejects(sendJournaledSelfPaid(key, transaction, context, refuse), /Account action cancelled/);
+  assert.equal(sends, 2);
+});
+
+test('the signer reviews function-call args decoded from borsh transaction bytes', async () => {
+  const { actionView } = await import('../src/signing-vault/action-view.ts');
+  const { actions, createTransaction, encodeTransaction, decodeTransaction, KeyPair } = await import('near-api-js');
+  const pk = KeyPair.fromRandom('ed25519').getPublicKey();
+  const tx = createTransaction('alice.testnet', pk, 'vaults.testnet', 1n,
+    [actions.functionCall('create_position', { pool_id: 'p.testnet', contribution_bps: 5000 }, 100000000000000n, 3520000000000000000000000n)],
+    new Uint8Array(32));
+  const decoded = decodeTransaction(encodeTransaction(tx));
+  assert.deepEqual(actionView(decoded.actions[0]), {
+    kind: 'functionCall',
+    methodName: 'create_position',
+    args: { pool_id: 'p.testnet', contribution_bps: 5000 },
+    gas: '100000000000000',
+    deposit: '3520000000000000000000000',
+  });
+});
