@@ -4,7 +4,6 @@ import {
   CheckCircle,
   Clock,
   Flame,
-  LockKeyOpen,
   WarningCircle,
 } from "@phosphor-icons/react";
 import { api } from "./api";
@@ -23,6 +22,7 @@ import {
 } from "./city-fuel";
 import { NativeStaking, type VaultSnapshot } from "./NativeStaking";
 import { StakeToday } from "./StakeToday";
+import { StakeStory, TierLadder, type StakerStep } from "./StakeEarn";
 import { STAKER_SUGGEST_NEAR, takeStakePrefill } from "./LockedChip";
 import { parseTestNear, type VaultRequest } from "./native-vault-quote";
 import type { Player } from "./types";
@@ -172,17 +172,43 @@ export function FuelTheCity({
     }
   }
 
+  // Where the explorer stands on Free → Staker → Tier 2 → Tier 3.
+  const stakerMin = Number(gates?.minNear || STAKER_SUGGEST_NEAR) || 2;
+  const ladderStep: StakerStep =
+    summary.tier >= 3
+      ? "tier3"
+      : summary.tier === 2
+        ? "tier2"
+        : gates?.access.staker
+          ? "staker"
+          : "none";
+  const ladderProgress =
+    ladderStep === "none"
+      ? summary.myStakeNear / stakerMin
+      : summary.next
+        ? (summary.myWeightedGold - (ladderStep === "tier2" ? 50_000 : 0)) /
+          (summary.next.gold - (ladderStep === "tier2" ? 50_000 : 0))
+        : 1;
+  const ladderNext =
+    ladderStep === "none"
+      ? summary.myStakeNear > 0
+        ? tr("Your stake counts after about two epochs (1–2 days). Then you are a Staker.")
+        : tr("Stake {0} NEAR to become a Staker.", { 0: stakerMin })
+      : summary.next
+        ? tr("{0} GOLD more fuel opens Tier {1} places.", { 0: fmt(summary.next.missingGold), 1: summary.next.tier })
+        : tr("Every place on the map is open to you.");
   const busy = outcome.kind === "pending";
-  const tierPct = summary.next
-    ? Math.min(100, (summary.myWeightedGold / summary.next.gold) * 100)
-    : 100;
-  // Full bar = all fuel in the city; the coin-coloured part is yours.
-  const cityPct = summary.cityWeightedGold ? 100 : 0;
 
   return (
     <section className="fuel" aria-labelledby="fuel-title">
-      <p className="fuel-intro">
-        {tr("Stake test NEAR. Its yield grows the prize pool and opens Tier 2 and 3 places. Your stake stays yours.")}</p>
+      {active ? (
+        <details className="stake-story-more">
+          <summary>{tr("How staking works")}</summary>
+          <StakeStory sharePct={pct} />
+        </details>
+      ) : (
+        <StakeStory sharePct={pct} />
+      )}
 
       {readError && !vaults && (
         <div className="fuel-state fuel-failed" role="alert">
@@ -200,60 +226,16 @@ export function FuelTheCity({
 
       {vaults?.config && (
         <>
-          <div className="fuel-meter-card">
-            <div className="fuel-meter-head">
-              <Flame size={28} weight="duotone" aria-hidden="true" />
-              <div>
-                <h2 id="fuel-title">{tr("Prize pool fuel")}</h2>
-                <p>
-                  {summary.cityWeightedGold === null
-                    ? tr("Pool total not readable right now")
-                    : tr("{0} GOLD of stake fueling the prize pool{1}", { 0: fmt(summary.cityWeightedGold), 1: summary.stakers ? ` · ${summary.stakers} explorers` : "" })}
-                </p>
-              </div>
-            </div>
-            <span
-              className="fuel-meter"
-              role="img"
-              aria-label={
-                summary.share === null
-                  ? tr("Prize pool fuel meter")
-                  : tr("You give {0} % of the prize pool's fuel", { 0: fmt(summary.share * 100, 1) })
-              }
-            >
-              <span style={{ width: `${cityPct}%` }} />
-              {summary.share !== null && summary.share > 0 && (
-                <i style={{ width: `${Math.max(2, cityPct * summary.share)}%` }} />
-              )}
-            </span>
-            <dl className="fuel-numbers">
-              <div>
-                <dt>{tr("Your fuel")}</dt>
-                <dd>{fmt(summary.myWeightedGold)} GOLD</dd>
-              </div>
-              <div>
-                <dt>{tr("Your share")}</dt>
-                <dd>
-                  {summary.share === null ? "–" : `${fmt(summary.share * 100, 1)} %`}
-                </dd>
-              </div>
-              <div>
-                <dt>{tr("Your tier")}</dt>
-                <dd>{summary.tier === 1 ? tr("Free") : tr("Tier {0}", { 0: summary.tier })}</dd>
-              </div>
-            </dl>
-            <div className="fuel-tier">
-              <span className="fuel-tier-bar" aria-hidden="true">
-                <span style={{ width: `${tierPct}%` }} />
-              </span>
-              <p>
-                <LockKeyOpen size={16} aria-hidden="true" />{" "}
-                {summary.next
-                  ? tr("{0} GOLD more fuel opens Tier {1} places.", { 0: fmt(summary.next.missingGold), 1: summary.next.tier })
-                  : tr("Every place on the map is open to you.")}
-              </p>
-            </div>
-          </div>
+          <TierLadder
+            step={ladderStep}
+            progress={ladderProgress}
+            next={ladderNext}
+            numbers={[
+              [tr("Staked"), `${fmt(summary.myStakeNear, 3)} NEAR`],
+              [tr("Your share"), summary.share === null ? "–" : `${fmt(summary.share * 100, 1)} %`],
+              [tr("Explorers"), summary.stakers ?? "–"],
+            ]}
+          />
 
           {positions.length > 0 && (
             <ul className="fuel-positions" aria-label={tr("Your stakes")}>

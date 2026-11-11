@@ -95,6 +95,10 @@ export const AccountSessions = lazyNamed(
 );
 export const DeviceKeys = lazyNamed(() => import("./DeviceKeys"), "DeviceKeys");
 export const BadgeBook = lazyNamed(() => import("./BadgeBook"), "BadgeBook");
+export const CharacterJourney = lazyNamed(() => import("./CharacterJourney"), "CharacterJourney");
+const stakeEarn = () => import("./StakeEarn");
+export const StakeEarnSwitch = lazyNamed(stakeEarn, "StakeEarnSwitch", true);
+export const EarningsPanel = lazyNamed(stakeEarn, "EarningsPanel");
 export const NativeLevelRewards = lazyNamed(
   () => import("./NativeLevelRewards"),
   "NativeLevelRewards",

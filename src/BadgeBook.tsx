@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { ChainLink } from "./ChainLink";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  CaretDown,
   Medal,
   X,
 } from "@phosphor-icons/react";
@@ -96,8 +97,16 @@ function km(m: number) {
 const date = (t: number) => new Date(t).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 const freshFix = (fix: Fix | null) => (fix && Date.now() - fix.timestamp < 15_000 ? fix : null);
 
-export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: Fix | null; arena: boolean; onConnectNear?: () => void; inline?: boolean }) {
+export function BadgeBook({ fix, arena, onConnectNear, inline = false, collapsible = false }: {
+  fix: Fix | null;
+  arena: boolean;
+  onConnectNear?: () => void;
+  inline?: boolean;
+  /** Inline chapter that shows one row of badges until opened (Profile → Character). */
+  collapsible?: boolean;
+}) {
   const [data, setData] = useState<Overview | null>(null);
+  const [expanded, setExpanded] = useState(!collapsible);
   const [loadError, setLoadError] = useState(false);
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<"places" | "player">("places");
@@ -156,11 +165,46 @@ export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: 
       </button>}
       {(open || inline) && (
         <BadgeSurface inline={inline} onClose={() => setOpen(false)}>
-          <section className="badge-book">
+          <section className={`badge-book${collapsible ? " badge-chapter" : ""}${expanded ? " is-open" : ""}`}>
             {!inline && <button className="sheet-close" aria-label={tr("Close")} onClick={() => setOpen(false)}>
               <X size={16} aria-hidden="true" />
             </button>}
-            <h2>{tr("Badges")}</h2>
+            {collapsible ? (
+              <button
+                type="button"
+                className="badge-chapter-toggle"
+                aria-expanded={expanded}
+                onClick={() => setExpanded((v) => !v)}
+              >
+                <Medal size={22} weight="duotone" aria-hidden="true" />
+                <h2>{tr("Badges")}</h2>
+                <small>
+                  {places.earned}/{places.total}
+                  {data.user?.held.length ? ` · +${data.user.held.length}` : ""}
+                </small>
+                <CaretDown size={18} aria-hidden="true" />
+              </button>
+            ) : (
+              <h2>{tr("Badges")}</h2>
+            )}
+            {!expanded ? (
+              <ul className="badge-grid badge-grid-row" aria-label={tr("Badges")}>
+                {places.badges.slice(0, 4).map((b) => (
+                  <li key={b.id}>
+                    <button
+                      className={`badge-medal rarity-${b.rarity}${b.earnedAt ? " is-earned" : ""}`}
+                      onClick={() => setDetail(b)}
+                      aria-label={b.earnedAt ? tr("{0}, earned", { 0: b.nameCs }) : tr("{0}, not yet", { 0: b.nameCs })}
+                    >
+                      <span className="badge-medal-face" aria-hidden="true">
+                        <PlaceIcon b={b} />
+                      </span>
+                      <span className="badge-medal-name">{b.nameCs}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (<>
             <div className="badge-tabs" role="tablist" aria-label={tr("Badge kind")}>
               <button role="tab" aria-selected={view === "places"} onClick={() => setView("places")}>
                 {tr("Places")}{" "}{places.earned}/{places.total}
@@ -229,6 +273,7 @@ export function BadgeBook({ fix, arena, onConnectNear, inline = false }: { fix: 
             ) : (
               <PlayerBadges data={data} gps={freshFix(gps)} reload={load} onConnectNear={onConnectNear} />
             )}
+            </>)}
           </section>
         </BadgeSurface>
       )}

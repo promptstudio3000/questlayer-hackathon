@@ -66,6 +66,9 @@ import {
   CommunityPlaces,
   AddPlaceDialog,
   EmotePicker,
+  CharacterJourney,
+  StakeEarnSwitch,
+  EarningsPanel,
 } from "./lazy-panels";
 import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
 import type { RollCall } from "./WispRolls";
@@ -229,6 +232,9 @@ import {
   ArrowsOut,
   ArrowsIn,
   SlidersHorizontal,
+  GameController,
+  Lifebuoy,
+  Code,
 } from "@phosphor-icons/react";
 import { ArrowRight, ArrowLeft } from "./dir-icons";
 import { ArrowRight as PhArrowRight } from "@phosphor-icons/react";
@@ -532,7 +538,6 @@ export default function App() {
   const showProfileTabs = tab === "settings" || tab === "fuel" || tab === "wallet";
   function chooseProfileTab(next: ProfileTab) {
     if (next === "stake") setTab("fuel");
-    else if (next === "rewards") setTab("wallet");
     else navigation.update({ tab: "settings", profileView: next });
   }
   const communityTab = communityTabOf(tab, creatorView);
@@ -762,7 +767,7 @@ export default function App() {
       nativeAccount.ready &&
       (nativePlay ||
         tab === "expeditions" ||
-        (tab === "wallet" && walletView === "rewards")),
+        tab === "wallet"),
     player?.id,
     playAccount,
     position,
@@ -4211,14 +4216,27 @@ export default function App() {
                     {tr("This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.", { 0: detailZone.tier, 1: detailZone.tier === 2 ? 50 : 100 })}</p>
                   <button
                     className="primary-button"
-                    onClick={() => {
-                      setWalletView("staking");
-                      setTab("wallet");
-                    }}
+                    onClick={() => setTab("fuel")}
                   >
                     {tr("Staking")}{" "}<ArrowRight />
                   </button>
                 </div>
+              }
+            />
+          )}
+          {(tab === "wallet" || tab === "fuel") && (
+            <StakeEarnSwitch
+              value={tab === "fuel" ? "stake" : "earnings"}
+              onChange={(v) => setTab(v === "stake" ? "fuel" : "wallet")}
+            />
+          )}
+          {tab === "wallet" && (
+            <EarningsPanel
+              refreshKey={`${player.id}:${player.gold_u}:${player.xp}`}
+              onLink={
+                invisible.status === "ready" && invisible.accountId
+                  ? undefined
+                  : () => void activateExplorer()
               }
             />
           )}
@@ -4418,11 +4436,8 @@ export default function App() {
           )}
           {((tab === "explore" && nativePlay) ||
             tab === "expeditions" ||
-            (tab === "wallet" && walletView === "rewards")) && (
+            (tab === "wallet" && nativePlay)) && (
             <>
-              {tab === "wallet" && (
-                <WalletNavigation value={walletView} onChange={setWalletView} />
-              )}
               {tab === "explore" && nativePlay && (
                 <NativeCollectionControl
                   collection={nativeCollection}
@@ -4489,38 +4504,7 @@ export default function App() {
               />
             </>
           )}
-          {tab === "wallet" && walletView !== "rewards" && (
-            <>
-              <WalletNavigation value={walletView} onChange={setWalletView} />
-              {walletView === "staking" ? (
-                <NativeStaking
-                  player={player}
-                  onConnect={activateExplorer}
-                  onTransaction={operateNativeVault}
-                />
-              ) : (
-                <WalletPanel
-                  player={player}
-                  busy={busy}
-                  action={action}
-                  onPlayer={setPlayer}
-                  onNear={connectNear}
-                  notify={notify}
-                />
-              )}
-            </>
-          )}
-          {tab === "wallet" && (
-            <button className="play-entry" onClick={() => setTab("fund")}>
-              <ChartDonut size={22} />
-              <span>
-                <b>{tr("Game economy")}</b>
-                <small>{tr("Where rewards come from")}</small>
-              </span>
-              <ArrowRight size={20} />
-            </button>
-          )}
-          {tab === "settings" && profileView === "character" && (
+          {tab === "settings" && (profileView === "character" || profileView === "badges") && (
             <ScreenTabPanel idBase="profile" value="character">
               <ProfileHero
                 avatar={
@@ -4552,23 +4536,10 @@ export default function App() {
                     : tr("Secure your explorer to keep progress")
                 }
               />
-              <div className="profile-tiles">
-                <ProfileTile
-                  primary
-                  icon={Backpack}
-                  label={tr("Wardrobe")}
-                  hint={tr("Items and Auras")}
-                  onClick={() => setTab("inventory")}
-                />
-                <ProfileTile
-                  icon={Storefront}
-                  label={tr("Market")}
-                  hint={tr("Trade Auras")}
-                  onClick={() => setTab("market")}
-                />
-                {invisible.signer?.kind === "managed" && (
-                  // The inbox pill shows only with new messages; this opens
-                  // older conversations too (src/inbox/Inbox.tsx).
+              {invisible.signer?.kind === "managed" && (
+                // The inbox pill shows only with new messages; this opens
+                // older conversations too (src/inbox/Inbox.tsx).
+                <div className="profile-tiles">
                   <ProfileTile
                     icon={ChatCircle}
                     label={tr("Messages")}
@@ -4577,26 +4548,21 @@ export default function App() {
                       window.dispatchEvent(new CustomEvent("questlayer:inbox-open", { detail: {} }))
                     }
                   />
-                )}
-              </div>
-              <p className="fine-print">
-                {nativePlay
-                  ? tr("You are playing on the test network. Test NEAR has no monetary value.")
-                  : tr("Map coins are real QGOLD on the test network, paid to your NEAR account each night. Test tokens have no monetary value.")}
-              </p>
-            </ScreenTabPanel>
-          )}
-          {tab === "settings" && profileView === "badges" && (
-            <ScreenTabPanel idBase="profile" value="badges">
-              <div className="play-menu">
-                <BadgeBook
-                  inline
-                  key={player.id}
-                  fix={fix}
-                  arena={arena}
-                  onConnectNear={() => void activateExplorer()}
-                />
-              </div>
+                </div>
+              )}
+              <CharacterJourney
+                refreshKey={`${player.id}:${player.xp}:${player.gold_u}`}
+                badges={
+                  <BadgeBook
+                    inline
+                    collapsible
+                    key={player.id}
+                    fix={fix}
+                    arena={arena}
+                    onConnectNear={() => void activateExplorer()}
+                  />
+                }
+              />
             </ScreenTabPanel>
           )}
           {tab === "settings" && profileView === "settings" && (
@@ -4605,12 +4571,13 @@ export default function App() {
                 className="settings-group"
                 aria-labelledby="settings-game-title"
               >
-                <h2 id="settings-game-title">{tr("Game")}</h2>
-                <button className="settings-row" onClick={() => setPresence(value => !value)}>
-                  {presence ? <EyeSlash /> : <Eye />}<span>{presence ? tr("Stop sharing my position") : tr("Share my position for 15 min")}</span>
-                </button>
-                <details className="presence-consent"><summary>{tr("Location sharing")}</summary><p>{tr("Sharing shows your name, look and map position to nearby explorers for up to 15 minutes while this tab is open. Players you blocked never see you, and you never see them.")}</p></details>
-
+                <h2 id="settings-game-title"><GameController size={20} aria-hidden="true" />{tr("Game")}</h2>
+                <div className="settings-row-with-tip">
+                  <button className="settings-row" onClick={() => setPresence(value => !value)}>
+                    {presence ? <EyeSlash /> : <Eye />}<span>{presence ? tr("Stop sharing my position") : tr("Share my position for 15 min")}</span>
+                  </button>
+                  <InfoTip label={tr("Location sharing")}>{tr("Sharing shows your name, look and map position to nearby explorers for up to 15 minutes while this tab is open. Players you blocked never see you, and you never see them.")}</InfoTip>
+                </div>
                 <LanguageSetting />
                 <SettingsSwitch
                   icon={Cube}
@@ -4651,11 +4618,10 @@ export default function App() {
                 className="settings-group"
                 aria-labelledby="settings-help-title"
               >
-                <h2 id="settings-help-title">{tr("Help")}</h2>
+                <h2 id="settings-help-title"><Lifebuoy size={20} aria-hidden="true" />{tr("Help")}</h2>
                 <button type="button" className="settings-row" onClick={() => setManualIntro(player.id)}>
                   <BookOpen size={22} aria-hidden="true" /><span>{tr("How to play")}</span><ArrowRight size={18} aria-hidden="true" />
                 </button>
-                <SettingsSwitch icon={Question} label={tr("First-time tips")} hint={tr("Short help for new activities.")} checked={learning.state.enabled} onChange={learning.enable} />
                 <button
                   type="button"
                   className="settings-row"
@@ -4665,12 +4631,18 @@ export default function App() {
                   <span>{tr("Help & guide")}</span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </button>
-                {/* The public pages are reference reading, not separate help: one quiet row. */}
-                <nav className="settings-links" aria-label={tr("How it works")}>
-                  {[["/how-it-works", tr("How it works")], ["/wiki", tr("Wiki")], ["/economy", tr("Economy")], ["/treasury", tr("Treasury")]].map(([href, label]) => (
-                    <a key={href} href={href}>{label}</a>
-                  ))}
-                </nav>
+                <button
+                  type="button"
+                  className="settings-row"
+                  onClick={() => setTab("fund")}
+                >
+                  <ChartDonut size={22} aria-hidden="true" />
+                  <span>
+                    {tr("Game economy")}<small>{tr("Where rewards come from")}</small>
+                  </span>
+                  <ArrowRight size={18} aria-hidden="true" />
+                </button>
+                <SettingsSwitch icon={Question} label={tr("First-time tips")} hint={tr("Short help for new activities.")} checked={learning.state.enabled} onChange={learning.enable} />
                 {(!firstSession.visible || (objective === "coach" && dismissedObjective === objectiveKey)) && (
                   <button
                     type="button"
@@ -4688,20 +4660,9 @@ export default function App() {
                     <ArrowRight size={18} aria-hidden="true" />
                   </button>
                 )}
-                <button
-                  type="button"
-                  className="settings-row"
-                  onClick={() => setTab("fund")}
-                >
-                  <BookOpen size={22} aria-hidden="true" />
-                  <span>
-                    {tr("Game economy")}<small>{tr("Where rewards come from")}</small>
-                  </span>
-                  <ArrowRight size={18} aria-hidden="true" />
-                </button>
               </section>
               <details className="settings-group screen-details">
-                <summary>{tr("Account and devices")}</summary>
+                <summary><UserCircle size={20} aria-hidden="true" />{tr("Account and devices")}</summary>
                 <ChainSettings accountId={invisible.accountId} />
                 <div className="settings-pad">
                   <AccountSessions
@@ -4729,8 +4690,16 @@ export default function App() {
               <button className="settings-row" onClick={() => void action("logout", async () => {
                 await api("/logout", {}); setPlayer(null); setWorld(null); setPresence(false);
               })}><SignOut /><span>{tr("Sign out")}</span></button>
-              <details className="advanced-settings settings-group">
-                <summary>{tr("Advanced: reward ledger")}</summary>
+                            {/* The public pages are reference reading: one quiet row at the bottom. */}
+              <nav className="settings-links" aria-label={tr("How it works")}>
+                {[["/how-it-works", tr("How it works")], ["/wiki", tr("Wiki")], ["/economy", tr("Economy")], ["/treasury", tr("Treasury")]].map(([href, label]) => (
+                  <a key={href} href={href}>{label}</a>
+                ))}
+              </nav>
+              {/* Owner-only switches and notes, kept out of the way (Lubos, 10 Nov 2026). */}
+              <details className="advanced-settings settings-developer">
+                <summary><Code size={16} aria-hidden="true" />{tr("Developer")}</summary>
+                <p className="fine-print">{tr("Reward ledger")}</p>
                 <div className="settings-pad">
                   <div
                     className="play-mode-switch"
@@ -4775,21 +4744,6 @@ export default function App() {
                 onConnect={activateExplorer}
                 onTransaction={operateNativeVault}
               />
-              <button
-                type="button"
-                className="play-entry"
-                onClick={() => {
-                  setWalletView("staking");
-                  setTab("wallet");
-                }}
-              >
-                <Leaf size={22} />
-                <span>
-                  <b>{tr("Vault staking")}</b>
-                  <small>{tr("Your staked balance and practice staking")}</small>
-                </span>
-                <ArrowRight size={20} />
-              </button>
             </ScreenTabPanel>
           )}
           {tab === "fund" && (
@@ -5505,34 +5459,6 @@ function Welcome({
         </div>
       </section>
     </Dialog>
-  );
-}
-function WalletNavigation({
-  value,
-  onChange,
-}: {
-  value: "rewards" | "staking" | "demo";
-  onChange: (v: "rewards" | "staking" | "demo") => void;
-}) {
-  return (
-    <div className="play-switch" role="group" aria-label={tr("Rewards section")}>
-      {(
-        [
-          { id: "rewards", label: tr("Rewards"), icon: Wallet },
-          { id: "staking", label: tr("Staking"), icon: Leaf },
-          { id: "demo", label: "QGOLD", icon: Compass },
-        ] as const
-      ).map((v) => (
-        <button
-          key={v.id}
-          aria-pressed={value === v.id}
-          onClick={() => onChange(v.id)}
-        >
-          <v.icon size={20} />
-          {v.label}
-        </button>
-      ))}
-    </div>
   );
 }
 function Npc({
