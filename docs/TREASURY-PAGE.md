@@ -27,7 +27,10 @@ Overview, `#tr-budget` Money flow, `#tr-fees` QGOLD, `#tr-safety` Safety).
 
 1. **Overview**: the TL;DR as four icon rows, a "This week's vote is open"
    card that jumps to Vote, the mix donut (outer ring now, inner ring target)
-   with one row per bucket and the next run, and today's map tiles.
+   with one row per bucket (staked NEAR, liquid staking, stables, reserve;
+   empty buckets hidden) and the next run, the **treasury history** (one
+   stacked bar per day, last 30 days, from `GET /api/treasury/history`) and
+   today's map tiles.
 2. **Vote**: the weekly treasury mix vote, playable on this page
    (`src/economy/TreasuryVoteCard.tsx`). Each option shows its mix strip,
    votes and share, Recommended and In force tags. A browser with a game
@@ -60,3 +63,14 @@ The Vote tab (`#vote`, old `#dao`) reads `GET /api/treasury/dao`: the Sputnik DA
 the mix in force, today's run, this week's mix vote with approvals per option, extra votes and the decision log
 ([TREASURY-DAO.md](TREASURY-DAO.md)).
 
+
+## Treasury history (11 Nov 2026)
+
+`GET /api/treasury/history?days=90` returns `{ buckets, points: [{ day, at,
+total, buckets: { staked, lst, stable, near }, source }] }`, oldest first, yocto
+strings. `server/native/treasury-history.mjs` keeps one row per UTC day in the
+`treasury_history` table: every live read of the treasury mix (the endpoint,
+the page, an hourly timer) stores the newest view of the day. Days before the
+recorder existed are seeded from the public records (`stnear-treasury` first
+deposit, each `treasury-mix` run's before and after). Totals only, no player
+data.

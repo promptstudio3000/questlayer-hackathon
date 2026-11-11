@@ -9,7 +9,8 @@ import { useInvisibleAccount } from "../useInvisibleAccount";
 import { explorerAccountMessage } from "../explorer-account";
 import { NEAR_NETWORK, onNearNetwork } from "../near-network";
 
-type Targets = { lst: number; stable: number; near: number };
+type Targets = { staked?: number; lst: number; stable: number; near: number };
+const staking = (t: Targets) => (t.staked ?? 0) + t.lst;
 export type VoteOption = { proposalId: number; option: string; label: string; recommended: boolean; approvals: number; mine?: boolean; targets?: Targets };
 export type VotePoll = { poll: string; kind: string; title: string; closesAt: number | null; open: boolean; winner: string; voters: number; options: VoteOption[] };
 export type VoteView = {
@@ -40,8 +41,8 @@ export function closesIn(at: number, now = Date.now()) {
 
 function MixStrip({ t }: { t: Targets }) {
   return (
-    <span className="tr-strip" aria-label={`${t.lst / 100} % staking, ${t.stable / 100} % stables, ${t.near / 100} % reserve`}>
-      <span className="tr-c1" style={{ flexGrow: t.lst }} />
+    <span className="tr-strip" aria-label={`${staking(t) / 100} % staked, ${t.stable / 100} % stables, ${t.near / 100} % reserve`}>
+      <span className="tr-c1" style={{ flexGrow: staking(t) }} />
       <span className="tr-c2" style={{ flexGrow: t.stable }} />
       <span className="tr-c3" style={{ flexGrow: t.near }} />
     </span>
@@ -183,7 +184,7 @@ export default function TreasuryVoteCard({ initial }: { initial: VoteView }) {
                     <div className="tr-option-top">
                       <span className="tr-option-name">
                         <b>{o.label.replace(/\s+\d+\s*\/\s*\d+\s*\/\s*\d+$/, "")}</b>
-                        {o.targets ? <small>{`${o.targets.lst / 100} / ${o.targets.stable / 100} / ${o.targets.near / 100}`}</small> : null}
+                        {o.targets ? <small>{`${staking(o.targets) / 100} % staked · ${o.targets.stable / 100} % stables · ${o.targets.near / 100} % reserve`}</small> : null}
                       </span>
                       <span className="tr-option-tags">
                         {o.recommended ? (
@@ -237,7 +238,7 @@ export default function TreasuryVoteCard({ initial }: { initial: VoteView }) {
       ) : null}
       <p className="eco-small eco-muted">
         <span className="tr-legend-inline">
-          <i className="tr-c1" /> staking <i className="tr-c2" /> stablecoins <i className="tr-c3" /> NEAR reserve
+          <i className="tr-c1" /> staked NEAR <i className="tr-c2" /> stablecoins <i className="tr-c3" /> NEAR reserve
         </span>
       </p>
     </div>

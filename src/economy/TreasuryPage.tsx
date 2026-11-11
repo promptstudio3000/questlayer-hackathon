@@ -26,7 +26,7 @@ import "../public-polish.css";
 import { shortNear } from "./format";
 import { arc, blendedApr, niceScale, num, rateNear, simulate, tickLabel, toNear, toUnits } from "./treasury-model";
 
-type Bucket = { bucket: "lst" | "stable" | "near"; current: string; currentBps: number; policyBps: number };
+type Bucket = { bucket: "staked" | "lst" | "stable" | "near"; current: string; currentBps: number; policyBps: number };
 type Mix = {
   network: string;
   account: string;
@@ -99,9 +99,14 @@ function useJson<T>(url: string): Load<T> {
   return state;
 }
 
-const BUCKET_NAMES = { lst: "Liquid staking", stable: "Stablecoins on Rhea Lend", near: "NEAR reserve" } as const;
-const BUCKET_SHORT = { lst: "Staking", stable: "Stablecoins", near: "NEAR" } as const;
-const BUCKET_TONE = { lst: "tr-c1", stable: "tr-c2", near: "tr-c3" } as const;
+const BUCKET_NAMES = { staked: "Staked with validators", lst: "Liquid staking tokens", stable: "Stablecoins on Rhea Lend", near: "NEAR reserve" } as const;
+const BUCKET_SHORT = { staked: "Staked", lst: "Liquid staking", stable: "Stablecoins", near: "NEAR" } as const;
+const BUCKET_TONE = { staked: "tr-c1", lst: "tr-c4", stable: "tr-c2", near: "tr-c3" } as const;
+/** Buckets worth a row: anything held or targeted (liquid staking is 0 / 0 since 11 Nov). */
+const shown = (m: Mix) => m.buckets.filter((b) => b.currentBps > 0 || b.policyBps > 0);
+type Targets = { staked?: number; lst: number; stable: number; near: number };
+/** "90/10/0": staking (validators + liquid staking) / stablecoins / reserve. */
+const mixShort = (t: Targets) => `${((t.staked ?? 0) + t.lst) / 100}/${t.stable / 100}/${t.near / 100}`;
 const pct = (bps: number) => `${(bps / 100).toLocaleString("en-GB", { maximumFractionDigits: 1 })} %`;
 /** Two decimals, so a share just over a cap never reads as equal to it ("40.02 %", not "40 %"). */
 const pctExact = (bps: number) => `${(bps / 100).toLocaleString("en-GB", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} %`;
@@ -347,6 +352,88 @@ function ExposureBars({ mix }: { mix: Mix }) {
         </div>
       ))}
     </div>
+  );
+}
+
+type History = { buckets: string[]; points: { day: string; at: number; total: string; buckets: Record<string, string>; source: string }[] };
+const HISTORY_ORDER = ["staked", "lst", "stable", "near"] as const;
+
+/** The treasury day by day: one stacked bar per day, split by bucket. */
+function HistoryChart({ history }: { history: History }) {
+  const [tip, setTip] = useState<Tip>(null);
+  const [frame, width] = useWidth<HTMLDivElement>();
+  const data = history.points.slice(-30).map((p) => ({
+    day: p.day,
+    total: toNear(p.total),
+    parts: HISTORY_ORDER.map((b) => ({ b, v: toNear(p.buckets[b] ?? "0") })),
+  }));
+  if (!data.length) return <p className="eco-muted">No day is recorded on this host yet.</p>;
+  const used = HISTORY_ORDER.filter((b) => data.some((d) => d.parts.some((x) => x.b === b && x.v > 0)));
+  const W = width,
+    H = 220,
+    L = 52,
+    B = 28,
+    T = 24;
+  const { max, ticks } = niceScale(Math.max(...data.map((d) => d.total)));
+  const slot = (W - L - 8) / data.length;
+  const bw = Math.min(28, slot * 0.6);
+  const y = (v: number) => T + (H - T - B) * (1 - v / max);
+  const first = data[0],
+    last = data[data.length - 1];
+  return (
+    <>
+      <div className="tr-history-head">
+        <span>
+          <b>{num(last.total, 2)} NEAR</b> on {last.day}
+        </span>
+        {data.length > 1 ? (
+          <span className={last.total >= first.total ? "tr-up" : "tr-down"}>
+            {last.total >= first.total ? "+" : "−"}
+            {num(Math.abs(last.total - first.total), 2)} NEAR since {first.day}
+          </span>
+        ) : null}
+      </div>
+      <Legend items={used.map((b) => ({ tone: BUCKET_TONE[b], label: BUCKET_SHORT[b] }))} />
+      <ChartFrame tip={tip} label="Treasury total by day, split by where it is held" frameRef={frame}>
+        <svg viewBox={`0 0 ${W} ${H}`} onMouseLeave={() => setTip(null)}>
+          {ticks.map((t) => (
+            <g key={t}>
+              <line x1={L} x2={W - 4} y1={y(t)} y2={y(t)} className="tr-grid" />
+              <text x={L - 6} y={y(t) + 4} textAnchor="end" className="tr-axis">
+                {tickLabel(t, ticks[1] - ticks[0])}
+              </text>
+            </g>
+          ))}
+          {data.map((d, i) => {
+            const x = L + i * slot + (slot - bw) / 2;
+            let acc = 0;
+            const hit = () =>
+              setTip({
+                x: ((x + bw / 2) / W) * 100,
+                y: (y(d.total) / H) * 100,
+                lines: [d.day, `total ${num(d.total, 3)} NEAR`, ...d.parts.filter((p) => p.v > 0).map((p) => `${BUCKET_SHORT[p.b].toLowerCase()} ${num(p.v, 3)}`)],
+              });
+            return (
+              <g key={d.day} onMouseMove={hit} onFocus={hit} tabIndex={0} aria-label={`${d.day}: ${num(d.total, 3)} NEAR`}>
+                <rect x={x - (slot - bw) / 2} y={T} width={slot} height={H - T - B} className="tr-hit" />
+                {d.parts.map((p) => {
+                  if (p.v <= 0) return null;
+                  const top = y(acc + p.v),
+                    bottom = y(acc);
+                  acc += p.v;
+                  return <rect key={p.b} x={x} y={top} width={bw} height={Math.max(1.5, bottom - top)} className={BUCKET_TONE[p.b]} />;
+                })}
+                {i % Math.ceil(data.length / 7) === 0 || i === data.length - 1 ? (
+                  <text x={x + bw / 2} y={H - 8} textAnchor="middle" className="tr-axis">
+                    {d.day.slice(5)}
+                  </text>
+                ) : null}
+              </g>
+            );
+          })}
+        </svg>
+      </ChartFrame>
+    </>
   );
 }
 
@@ -775,7 +862,7 @@ type Dao = VoteView & {
   keeper?: string;
   explorers?: number;
   week?: string;
-  adopted?: { proposalId: number; option: string; poll: string; targets: { lst: number; stable: number; near: number } } | null;
+  adopted?: { proposalId: number; option: string; poll: string; targets: Targets } | null;
   today?: { id: number; status: string; approvals: number; action: string } | null;
   decisions?: { id: number; type: string; title: string; status: string; approvals: number; submittedAt: number }[];
 };
@@ -798,6 +885,8 @@ const HASH_TAB: Record<string, TabId> = {
   dao: "vote",
   "tr-dao": "vote",
   "tr-mix": "overview",
+  "tr-history": "overview",
+  history: "overview",
   "tr-flow": "flow",
   "tr-budget": "flow",
   "tr-qgold": "qgold",
@@ -811,8 +900,8 @@ function tabFromHash(): TabId {
 }
 
 const TLDR = [
-  { Icon: Vault, title: "The treasury is never spent", text: "It holds staking tokens, lent stablecoins and NEAR in the mix explorers vote on each week." },
-  { Icon: Plant, title: "Only yield is spent", text: "Staking and lending interest becomes the daily map budget. Principal stays put." },
+  { Icon: Vault, title: "The treasury is never spent", text: "Most of it is NEAR staked with validators, a little sits in stablecoins, in the mix explorers vote on each week." },
+  { Icon: Plant, title: "Only yield is spent", text: "Staking rewards (and lending interest) become the daily map budget. Principal stays put." },
   { Icon: Coins, title: "Coins become QGOLD", text: "Every collected coin is minted to the player's own NEAR account, backed by NEAR in the vault." },
   { Icon: Fire, title: "Spending burns QGOLD", text: "So the NEAR behind each remaining QGOLD (the rate R) can only stay or rise." },
 ];
@@ -852,7 +941,7 @@ function DaoFacts({ d }: { d: Dao }) {
   return (
     <>
       <div className="tr-tiles tr-tiles-small" aria-label="DAO numbers">
-        <Tile label="Mix in force" value={d.adopted ? `${d.adopted.targets.lst / 100}/${d.adopted.targets.stable / 100}/${d.adopted.targets.near / 100}` : "…"} note="staking / stables / reserve" />
+        <Tile label="Mix in force" value={d.adopted ? mixShort(d.adopted.targets) : "…"} note="staked / stables / reserve" />
         <Tile label="Today's run" value={d.today ? d.today.status : "not filed"} note={d.today ? `${d.today.approvals} council approvals` : "filed at 06:30"} />
         <Tile label="Explorer voters" value={String(d.explorers ?? 0)} note="synced once a day" />
         <Tile label="Council" value={String(d.council?.length ?? 0)} unit="keys" note={`${d.approvals ?? "?"} approve a run`} />
@@ -906,6 +995,7 @@ export default function TreasuryPage() {
   const ledger = useJson<Ledger>("/api/economy/ledger");
   const qgold = useJson<Qgold>("/api/economy/qgold");
   const day = useJson<MapDay>("/api/map/rewards/day");
+  const hist = useJson<History>("/api/treasury/history");
   const [flow, setFlow] = useState<FlowId | null>(null);
   const [tab, setTabState] = useState<TabId>(tabFromHash);
   const tabsRef = useRef<HTMLDivElement>(null);
@@ -965,12 +1055,12 @@ export default function TreasuryPage() {
           {m ? (
             <>
               <span className="tr-strip tr-strip-big" aria-hidden="true">
-                {m.buckets.map((b) => (
+                {shown(m).map((b) => (
                   <span key={b.bucket} className={BUCKET_TONE[b.bucket]} style={{ flexGrow: Math.max(1, b.currentBps) }} />
                 ))}
               </span>
               <ul className="tr-hero-legend">
-                {m.buckets.map((b) => (
+                {shown(m).map((b) => (
                   <li key={b.bucket}>
                     <i className={BUCKET_TONE[b.bucket]} aria-hidden="true" /> {BUCKET_SHORT[b.bucket]} <b>{pct(b.currentBps)}</b>
                   </li>
@@ -1042,7 +1132,7 @@ export default function TreasuryPage() {
                   </div>
                   <div>
                     <ul className="tr-buckets">
-                      {m.buckets.map((b) => (
+                      {shown(m).map((b) => (
                         <li key={b.bucket}>
                           <i className={BUCKET_TONE[b.bucket]} aria-hidden="true" />
                           <span>
@@ -1068,6 +1158,9 @@ export default function TreasuryPage() {
               ) : !mix.error ? (
                 <p className="eco-muted">Reading the chain…</p>
               ) : null}
+            </Section>
+            <Section id="tr-history" title="Treasury history" lead="The treasury day by day, and where it was held. Staked NEAR counts from the day the staking vaults opened.">
+              {hist.error ? <p className="eco-muted">Not available on this host right now.</p> : hist.data ? <HistoryChart history={hist.data} /> : <p className="eco-muted">Reading…</p>}
             </Section>
             {day.data ? (
               <Section id="tr-today" title="Today on the map" lead={`What the yield put on the map on ${day.data.day}.`}>

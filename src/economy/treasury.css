@@ -123,7 +123,8 @@
 }
 .tr rect.tr-c1,
 .tr rect.tr-c2,
-.tr rect.tr-c3 {
+.tr rect.tr-c3,
+.tr rect.tr-c4 {
   fill: var(--c);
 }
 .tr-line {
@@ -627,3 +628,8 @@
 .tr .tr-stat svg { align-self: flex-start; }
 .tr :is(.tr-rules, .tr-vote-gate, .tr-tldr) svg { align-self: flex-start; }
 .tr .tr-tldr { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
+.tr .tr-history-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-bottom: 4px; font-size: 15px; }
+.tr .tr-history-head b { font-weight: 500; }
+.tr .tr-up { color: var(--success); }
+.tr .tr-down { color: var(--error); }
+.tr .tr-hero-card .tr-c4 { --c: #9db8ff; }
