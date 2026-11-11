@@ -56,6 +56,7 @@ for (const relative of [
   "./spatial/place-safety.mjs",
   "./social-note-expiry.mjs",
   "./community-places.mjs",
+  "./creators/creator-xp.mjs",
   "./staker-gates.mjs",
   "./task-evidence.mjs",
 ]) {

@@ -16,6 +16,7 @@ import goldSpend from "../../server/data/gold-spend.json" with { type: "json" };
 import auraCatalog from "../../server/data/aura-catalog.json" with { type: "json" };
 import placeBadges from "../../server/data/place-badges.json" with { type: "json" };
 import cities from "../../server/data/cities.json" with { type: "json" };
+import CREATOR_XP from "../../server/data/creator-xp.json" with { type: "json" };
 
 export type VizId =
   | "architecture"
@@ -582,6 +583,15 @@ export const CHAPTERS: Chapter[] = [
           "Demo maps and the real GPS map keep separate notes and places. The test world seeds a few of each around náměstí Republiky.",
         ],
       },
+      { h: "Quests, tasks and creators" },
+      {
+        list: [
+          "**Quests** is one compact list with filter chips: All, Near me (5 km), Following and Started. Each row shows the quest's pixel icon (visit, trail, chest or story), the creator's own avatar and name, the distance and type on one line, and the price or Free.",
+          "**Tasks** lists the QGOLD tasks explorers post for each other in the same rows, with a type badge, who posted it, the reward and places left.",
+          "**Creators** shows each creator's avatar (their map character), short bio, quests and followers, and a Follow button. Tapping a creator opens their profile as a dialog: level, quests, followers, finished runs and creator XP, a large Follow button, an (i) button with the safety notes and Block, and their quests in the same rows as the Quests list.",
+          "The test world adds demo-bot creators, quests and example tasks labelled demo-bot; example tasks hold no QGOLD and cannot be taken.",
+        ],
+      },
     ],
   },
   {
@@ -960,7 +970,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "fees",
     status: "partial",
     updated: "2026-11-11",
-    sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json", "src/signing-vault/policy.ts", "src/GameMap.tsx"],
+    sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "server/data/creator-xp.json", "server/creators/creator-xp.mjs", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json", "src/signing-vault/policy.ts", "src/GameMap.tsx"],
     blocks: [
       { h: "What GOLD buys (every spend is a burn)" },
       { viz: "gold-prices" },
@@ -985,11 +995,18 @@ export const CHAPTERS: Chapter[] = [
           "One escrow task pays at most 50 completions, each account once. A proof waiting for review holds its slot, so a poster cannot cancel it away.",
           "Failed transfers keep the credit and retry after verification; only payments with an unknown outcome pause the queue.",
           "The funder holds a small NEAR storage deposit on the escrow (about 0.01 NEAR per agreement record); the relayer can top it up in 0.05 NEAR steps, at most 0.5 NEAR.",
-          "Sponsored NEAR tasks run on a separate escrow contract that holds each sponsor's exact reward until a reviewed completion; it never touches stake, yield or prize money.",
+          "**Community · Tasks** is one list of these player tasks: open nearby, the ones you are taking, the ones you posted, and a type filter. Every row shows who posted it with their avatar. The older practice-GOLD tasks and the separate sponsored NEAR task contract are no longer in the app.",
         ],
       },
       { h: "Creators" },
-      { p: "Players can publish their own quests by committing earned XP (200 on testnet) while a quest is live. Verified explorers vote each UTC day on which community quests earn the next day's creator bonus (3 votes each, top 3 win). Creator money is paid from a bounded on-chain round." },
+      {
+        list: [
+          "Players publish their own quests after a moderator review. A live quest holds 200 earned XP (testnet), returned when it closes.",
+          `**The game pays creators in XP, never in QGOLD:** a first publication earns ${CREATOR_XP.publish.story} XP for a story, ${CREATOR_XP.publish.visit} for a visit, ${CREATOR_XP.publish.chest} for a chest and ${CREATOR_XP.publish.trail} for a trail (+${CREATOR_XP.trailStopBonus} per stop after the second), and every completion by another explorer adds ${CREATOR_XP.completion} XP, up to ${CREATOR_XP.completionsPerDay} a day. That makes building quests the best XP source in the game.`,
+          "A creator earns QGOLD only from QGOLD they put into a quest themselves (a paid task or a sponsored Secret).",
+          "The daily creator-bonus vote is no longer shown in the app (11 Nov 2026). Without votes the server gates nothing, so every community quest counts the same.",
+        ],
+      },
     ],
   },
   {

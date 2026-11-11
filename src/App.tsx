@@ -26,17 +26,14 @@ import {
   ChainSettings,
   WalletPanel,
   FundPanel,
-  Bounties,
   AutoSocialProfile,
   ChainLink,
   CreatorCommunity,
-  CommunityBonusVote,
   TreasuryVote,
   MapNotes,
   PlayerCard,
   Inbox,
   NativeCollectionControl,
-  NativeTasks,
   Inventory,
   AccountSessions,
   DeviceKeys,
@@ -62,6 +59,7 @@ import {
   ActorSheet,
   BadgeBook,
   NearbyList,
+  NearbyMarket,
   GoldShop,
   PlaceMessages,
   PlaceCompose,
@@ -4815,21 +4813,6 @@ export default function App() {
           )}
           {tab === "community" && (
             <ScreenTabPanel idBase="community" value={communityTab}>
-              {communityTab === "quests" && (
-                <TreasuryVote
-                  key={`treasury-${player.id}`}
-                  account={invisible.status === "ready" ? invisible.accountId || null : null}
-                  vote={voteTreasury}
-                  notify={notify}
-                />
-              )}
-              {communityTab === "creators" && (
-                <CommunityBonusVote
-                  key={`bonus-${player.id}`}
-                  playerId={player.id}
-                  notify={notify}
-                />
-              )}
               <CreatorCommunity
                 key={player.id}
                 section={communityTab === "creators" ? "creators" : "quests"}
@@ -4949,37 +4932,19 @@ export default function App() {
           )}
           {tab === "bounties" && (
             <ScreenTabPanel idBase="community" value="tasks">
-              <div
-                className="play-mode-switch"
-                role="group"
-                aria-label={tr("Task board")}
-              >
-                <button
-                  aria-pressed={taskRealm === "near"}
-                  onClick={() => setTaskRealm("near")}
-                >
-                  {tr("Sponsored tasks")}</button>
-                <button
-                  aria-pressed={taskRealm === "demo"}
-                  onClick={() => setTaskRealm("demo")}
-                >
-                  {tr("Practice tasks")}</button>
-              </div>
-              {taskRealm === "near" ? (
-                <NativeTasks
-                  player={player}
-                  onConnect={activateExplorer}
-                  onTransaction={operateNativeTask}
-                />
-              ) : (
-                <Bounties
-                  position={position}
-                  player={player}
-                  action={action}
-                  onPlayer={setPlayer}
-                  notify={notify}
-                />
-              )}
+              <NearbyMarket
+                key={player.id}
+                variant="board"
+                position={position}
+                fix={() =>
+                  arena || !fix
+                    ? { ...position, accuracy: 0, timestamp: Date.now() }
+                    : fix
+                }
+                fund={fundMarketEscrow}
+                notify={notify}
+                onBalance={() => void me()}
+              />
             </ScreenTabPanel>
           )}
         </main>

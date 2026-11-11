@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "note": "XP the game gives a quest creator (owner decision 11 Nov 2026): once when a quest is first published after review, by its type and size, and again each time another explorer's completion is accepted. Creator quests are the best XP source in the game (world quests give 50-100 XP, monsters 20-40). XP never moves QGOLD: a creator earns QGOLD only from QGOLD they put into the quest themselves.",
+  "publish": {
+    "story": 100,
+    "visit": 150,
+    "chest": 200,
+    "trail": 200
+  },
+  "trailStopBonus": 25,
+  "completion": 25,
+  "completionsPerDay": 10
+}
