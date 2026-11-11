@@ -372,8 +372,9 @@ async function runDevice(name, server, rpc, account) {
     await startPlaying(b, server.url, nameB);
     for (const p of [a, b]) {
       await openSettings(p);
-      await p.getByRole("button", { name: /Share my position for 15 min/ }).click();
-      await p.getByRole("button", { name: /Stop sharing my position/ }).waitFor();
+      // Nearby explorers see each other without opting in (11 Nov 2026).
+      const share = p.getByRole("switch", { name: /Show me to nearby explorers/ });
+      assert.equal(await share.getAttribute("aria-checked"), "true", "sharing is on by default");
       await closeOpenSheet(p);
     }
     const bob = a.locator(`.other-player-marker[aria-label^="${nameB}"]`);
