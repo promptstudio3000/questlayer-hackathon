@@ -358,6 +358,7 @@ test("refuel tops a low explorer back to the starting amount once a UTC day, ins
 test("testnet: an explorer whose only device key is lost, with no recovery passkey, starts a new account on this device", async (t) => {
   const f = fixture();
   t.after(() => f.db.close());
+  f.accounts.network = "testnet";
   const old = (await f.accounts.create(f.player, { publicKey: key() })).account.accountId;
   await f.relayer.runRelayJobs();
   assert.equal(f.accounts.view(f.player).account.state, "ready");
@@ -377,12 +378,16 @@ test("testnet: an explorer whose only device key is lost, with no recovery passk
   await assert.rejects(() => f.accounts.startOver(f.player, { publicKey: key() }), /already started over today/);
 });
 
-test("start over is refused with a recovery passkey or for a key the account already has", async (t) => {
+test("start over is refused on mainnet, with a recovery passkey or for a key the account already has", async (t) => {
   const f = fixture();
   t.after(() => f.db.close());
   const device = key();
   const accountId = (await f.accounts.create(f.player, { publicKey: device })).account.accountId;
   await f.relayer.runRelayJobs();
+  f.accounts.network = "mainnet";
+  assert.equal(f.accounts.view(f.player).account.canStartOver, false);
+  await assert.rejects(() => f.accounts.startOver(f.player, { publicKey: key() }), /only possible on testnet/);
+  f.accounts.network = "testnet";
   await assert.rejects(() => f.accounts.startOver(f.player, { publicKey: device }), /can already use/);
   f.db.prepare("INSERT INTO managed_account_keys VALUES(?,?,'recovery','active','passkey',?,?)").run(accountId, key(), NOW, NOW);
   assert.equal(f.accounts.view(f.player).account.canStartOver, false);

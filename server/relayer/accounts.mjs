@@ -62,8 +62,9 @@ export class ManagedAccounts {
     db,
     provider,
     factory,
-    { factoryId, fundYocto, topupCapYocto = 0n, clock = Date.now, subsidyBudget = null } = {},
+    { factoryId, fundYocto, topupCapYocto = 0n, clock = Date.now, subsidyBudget = null, network = NETWORK } = {},
   ) {
+    this.network = network;
     this.db = db;
     this.provider = provider;
     this.factory = factory;
@@ -271,7 +272,7 @@ export class ManagedAccounts {
    */
   canStartOver(row) {
     return (
-      NETWORK === "testnet" &&
+      this.network === "testnet" &&
       !!row &&
       row.state === "ready" &&
       !this.db
@@ -287,7 +288,7 @@ export class ManagedAccounts {
    * with `publicKey` as its first device key. Once a day per explorer.
    */
   async startOver(player, { publicKey, name, authorizeEnrollment = () => {} } = {}) {
-    assert(NETWORK === "testnet", "Starting over is only possible on testnet.", 403, "ACCOUNT_START_OVER_OFF");
+    assert(this.network === "testnet", "Starting over is only possible on testnet.", 403, "ACCOUNT_START_OVER_OFF");
     const row = this.row(player);
     assert(row, "You have no explorer account yet.", 404, "ACCOUNT_MISSING");
     assert(this.canStartOver(row), "Use your recovery passkey to add this device.", 409, "ACCOUNT_HAS_RECOVERY");
