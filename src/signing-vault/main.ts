@@ -8,6 +8,7 @@ import {
   decodeTransaction,
   encodeSignedDelegate,
 } from "near-api-js";
+import { actionView } from "./action-view.ts";
 import {
   createDeviceKey,
   DEVICE_KEY,
@@ -86,28 +87,6 @@ async function api<T = Record<string, unknown>>(
   if (!response.ok)
     throw Error(result.error ?? "The game could not verify this action.");
   return result;
-}
-function actionView(a: ReturnType<typeof actions.functionCall>): VaultAction {
-  if (a.functionCall)
-    return {
-      kind: "functionCall",
-      methodName: a.functionCall.methodName,
-      args: JSON.parse(
-        new TextDecoder("utf-8", { fatal: true }).decode(a.functionCall.args),
-      ),
-      gas: String(a.functionCall.gas),
-      deposit: String(a.functionCall.deposit),
-    };
-  if (a.addKey) {
-    need(
-      a.addKey.accessKey.permission.enum === "fullAccess",
-      "Unsupported key permission.",
-    );
-    return { kind: "addKey", publicKey: a.addKey.publicKey.toString() };
-  }
-  if (a.deleteKey)
-    return { kind: "deleteKey", publicKey: a.deleteKey.publicKey.toString() };
-  throw Error("This action is not supported by the secure account.");
 }
 function nearAction(a: VaultAction) {
   if (a.kind === "functionCall")
