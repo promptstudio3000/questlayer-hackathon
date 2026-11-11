@@ -69,6 +69,8 @@ import {
   CharacterJourney,
   StakeEarnSwitch,
   EarningsPanel,
+  LockedZoneCard,
+  LockedZoneDialog,
 } from "./lazy-panels";
 import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
 import type { NotePin } from "./gold-map-layer";
@@ -3428,6 +3430,17 @@ export default function App() {
     : player?.inventory || [];
   const equipped = appearanceItems.filter((x) => !!x.equipped);
   const zonePresence = !nativePlay && online ? currentZone(world, position, fix, arena, player?.tier || 1, now) : null;
+  // Entering a zone above the player's tier opens the locked-zone dialog once
+  // per visit (src/LockedZone.tsx); leaving and coming back shows it again.
+  const lockedHereId = zonePresence?.state === "locked" ? zonePresence.zone.id : null;
+  const [lockedZoneDialog, setLockedZoneDialog] = useState<Zone | null>(null);
+  const lockedShown = useRef<string | null>(null);
+  useEffect(() => {
+    if (lockedHereId === lockedShown.current) return;
+    lockedShown.current = lockedHereId;
+    const zone = lockedHereId ? world?.zones.find((z) => z.id === lockedHereId) : null;
+    if (zone) setLockedZoneDialog(zone);
+  }, [lockedHereId, world]);
   const recommendation = world
     ? nearestDiscovery({
         position,
@@ -4329,20 +4342,7 @@ export default function App() {
                   else { setSelected(detailZone, q.id); setCatalogView(null); }
                 }}
                 onPoint={() => { setCatalogView(null); guideToQuest(q); }} onLocate={() => void locate()} onComplete={() => void complete(q.id)} onMap={q.completed ? closeZone : closeMapPanel} />}
-              lockedContent={
-                <div className="locked-panel">
-                  <LockKey size={25} />
-                  <h3>{tr("Opens at Tier")}{" "}{detailZone.tier}</h3>
-                  <p>
-                    {tr("This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.", { 0: detailZone.tier, 1: detailZone.tier === 2 ? 50 : 100 })}</p>
-                  <button
-                    className="primary-button"
-                    onClick={() => setTab("fuel")}
-                  >
-                    {tr("Staking")}{" "}<ArrowRight />
-                  </button>
-                </div>
-              }
+              lockedContent={<LockedZoneCard zone={detailZone} />}
             />
           )}
           {(tab === "wallet" || tab === "fuel") && (
@@ -5172,6 +5172,9 @@ export default function App() {
           <strong>{tr("Connecting your explorer…")}</strong>
           <span>{tr("Approve the request in your wallet app.")}</span>
         </div>
+      )}
+      {lockedZoneDialog && player && !walletChoices && (
+        <LockedZoneDialog zone={lockedZoneDialog} onClose={() => setLockedZoneDialog(null)} />
       )}
       {walletChoices && (
         <Dialog label={walletChoiceKind === "evm" ? tr("Choose an Ethereum wallet") : tr("Choose a NEAR wallet")} onClose={() => chooseWallet(null)}>

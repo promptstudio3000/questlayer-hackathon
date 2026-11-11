@@ -4,7 +4,6 @@
  "Password": "पासवर्ड",
  "Tester sign-in": "टेस्टर साइन-इन",
  "Signing in…": "साइन इन हो रहा है…",
- "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "इस जगह के लिए टियर {0} चाहिए: वॉल्ट में {1} NEAR का परिपक्व स्टेक। पास की मुफ़्त जगहें सबके लिए खुली हैं।",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " (सबके लिए दिन में ज़्यादा से ज़्यादा {0}; उसके बाद रोल पक्का इनाम देता है)",
  " (create one above first).": " (पहले ऊपर एक बनाओ)।",
  " (held by the market)": " (मार्केट के पास)",
@@ -3221,5 +3220,8 @@
  "Your account isn't ready to stake yet. What can I do?": "आपका खाता अभी स्टेक के लिए तैयार नहीं है। मैं क्या कर सकता हूँ?",
  "Your explorer account is still being prepared. You can wait a moment, or connect a NEAR wallet you already have.": "आपका एक्सप्लोरर खाता अभी तैयार हो रहा है। थोड़ा इंतज़ार करें, या पहले से मौजूद NEAR वॉलेट जोड़ें।",
  "Your explorer account opens with your first find. Collect a coin or finish a quest on the map, or connect a NEAR wallet you already have.": "आपका एक्सप्लोरर खाता आपकी पहली खोज के साथ खुलता है। मैप पर एक सिक्का उठाएँ या कोई क्वेस्ट पूरा करें, या पहले से मौजूद NEAR वॉलेट जोड़ें।",
- "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "{0} के पास {1} टेस्ट NEAR है। स्टेकिंग के लिए लगभग {2} चाहिए (वॉल्ट सेटअप, स्टेक और थोड़ी गैस)।"
+ "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "{0} के पास {1} टेस्ट NEAR है। स्टेकिंग के लिए लगभग {2} चाहिए (वॉल्ट सेटअप, स्टेक और थोड़ी गैस)।",
+ "{0} is a Tier {1} zone. It opens with {2} NEAR of matured stake in the vault (at a 100 % prize-pool share). Free places nearby are open to everyone.": "{0} टियर {1} ज़ोन है। यह वॉल्ट में {2} NEAR परिपक्व स्टेक (पुरस्कार पूल के लिए 100 % हिस्सा) से खुलता है। पास की मुफ़्त जगहें सभी के लिए खुली हैं।",
+ "Already staking less? One stake per explorer: withdraw it and stake {0} NEAR at once.": "पहले से कम स्टेक कर रहे हैं? हर खोजकर्ता का एक स्टेक: उसे निकालें और एक बार में {0} NEAR स्टेक करें।",
+ "Tier {0} zone": "टियर {0} ज़ोन"
 }

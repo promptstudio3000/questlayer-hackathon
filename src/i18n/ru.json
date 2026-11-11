@@ -4,7 +4,6 @@
  "Password": "Пароль",
  "Tester sign-in": "Вход тестера",
  "Signing in…": "Вход…",
- "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "Для этого места нужен уровень {0}: {1} NEAR созревшего стейка в хранилище. Бесплатные места рядом открыты для всех.",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " (не больше {0} в день на всех; после этого розыгрыш даёт гарантированный приз)",
  " (create one above first).": " (сначала создай его выше).",
  " (held by the market)": " (удерживается рынком)",
@@ -3221,5 +3220,8 @@
  "Your account isn't ready to stake yet. What can I do?": "Ваш аккаунт пока не готов к стейкингу. Что можно сделать?",
  "Your explorer account is still being prepared. You can wait a moment, or connect a NEAR wallet you already have.": "Ваш аккаунт исследователя ещё готовится. Подождите немного или подключите кошелёк NEAR, который у вас уже есть.",
  "Your explorer account opens with your first find. Collect a coin or finish a quest on the map, or connect a NEAR wallet you already have.": "Ваш аккаунт исследователя откроется с первой находкой. Соберите монету или выполните квест на карте, или подключите кошелёк NEAR, который у вас уже есть.",
- "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "На {0} {1} тестовых NEAR. Для стейкинга нужно около {2} (создание хранилища, стейк и немного газа)."
+ "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "На {0} {1} тестовых NEAR. Для стейкинга нужно около {2} (создание хранилища, стейк и немного газа).",
+ "{0} is a Tier {1} zone. It opens with {2} NEAR of matured stake in the vault (at a 100 % prize-pool share). Free places nearby are open to everyone.": "{0} — зона уровня {1}. Она открывается при {2} NEAR зрелого стейка в хранилище (при 100 % доле для призового фонда). Свободные места рядом открыты для всех.",
+ "Already staking less? One stake per explorer: withdraw it and stake {0} NEAR at once.": "Уже стейкаете меньше? Один стейк на исследователя: выведите его и застейкайте сразу {0} NEAR.",
+ "Tier {0} zone": "Зона уровня {0}"
 }

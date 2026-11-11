@@ -4,7 +4,6 @@
  "Password": "密码",
  "Tester sign-in": "测试者登录",
  "Signing in…": "正在登录…",
- "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "此地点需要等级 {0}：金库中已成熟的 {1} NEAR 质押。附近的免费地点对所有人开放。",
  " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": "（所有人每天最多 {0} 次；之后掷骰只发放保底奖励）",
  " (create one above first).": "（请先在上方创建一个）。",
  " (held by the market)": "（由市场托管）",
@@ -3221,5 +3220,8 @@
  "Your account isn't ready to stake yet. What can I do?": "你的账户还不能质押。我能做什么？",
  "Your explorer account is still being prepared. You can wait a moment, or connect a NEAR wallet you already have.": "你的探索者账户仍在准备中。可以稍等片刻，或连接你已有的 NEAR 钱包。",
  "Your explorer account opens with your first find. Collect a coin or finish a quest on the map, or connect a NEAR wallet you already have.": "你的探索者账户会在第一次发现时开通。在地图上收集一枚金币或完成一个任务，或连接你已有的 NEAR 钱包。",
- "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "{0} 有 {1} 测试 NEAR。质押大约需要 {2}（金库创建、质押和少量 gas）。"
+ "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "{0} 有 {1} 测试 NEAR。质押大约需要 {2}（金库创建、质押和少量 gas）。",
+ "{0} is a Tier {1} zone. It opens with {2} NEAR of matured stake in the vault (at a 100 % prize-pool share). Free places nearby are open to everyone.": "{0}是{1}级区域。金库中有{2} NEAR已成熟质押(奖池分成100 %)即可开启。附近的免费地点对所有人开放。",
+ "Already staking less? One stake per explorer: withdraw it and stake {0} NEAR at once.": "已经质押得较少?每位探索者只能有一笔质押:先取出,再一次质押{0} NEAR。",
+ "Tier {0} zone": "{0}级区域"
 }
