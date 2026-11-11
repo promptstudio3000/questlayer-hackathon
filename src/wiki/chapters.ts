@@ -839,6 +839,7 @@ export const CHAPTERS: Chapter[] = [
           "**No streaks, energy or loot purchases.** Spending only burns your own QGOLD (`ft_burn`) for cosmetics and conveniences; the backing stays in the vault, so every burn raises R for all holders.",
           "**No practice money and no welcome credit.** A new explorer starts at 0 QGOLD; every coin and zone prize is backed by the day's budget and paid as QGOLD within minutes.",
           "**Players never fund the prizes.** Stake principal stays yours; only the yield share you choose goes to the game.",
+          "**City days run on yield only** (`NATIVE_YIELD_BACKED_DAYS=1`, set in the testnet unit since 13 Nov 2026, after the first realized yield reached the treasury). A day may spend one seventh (`NATIVE_YIELD_DRIP_DAYS`) of the realized staking yield that is still free: what the vaults paid into the pool, minus what open yield days hold and what closed ones actually awarded. Yield arrives in lumps every few epochs, so the drip keeps every day funded, however small the coin. A date that cannot be funded shows in `/api/health` under `unfundedDays`. The map-wide coin budget is not bound by yield yet.",
           "Unclaimed budget stays for later days. Money follows players, not cities.",
           "Everything is published: [Economy](/economy) lists treasury, audits and payouts with transaction links; [Treasury](/treasury) shows the dashboard.",
         ],
