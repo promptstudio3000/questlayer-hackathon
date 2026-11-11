@@ -1447,8 +1447,13 @@ export default function App() {
     s.addEventListener("coin", (e) => {
       if (latest.current.player?.id !== owner) return;
       const d = JSON.parse((e as MessageEvent).data);
+      // The same street coin can sit in several worlds: drop it by spot too.
+      const spot = (c: { lat: number; lng: number }) =>
+        typeof d.lat === "number" && c.lat === d.lat && c.lng === d.lng;
       setWorld((w) =>
-        w ? { ...w, coins: w.coins.filter((c) => c.id !== d.id) } : w,
+        w
+          ? { ...w, coins: w.coins.filter((c) => c.id !== d.id && !spot(c)) }
+          : w,
       );
     });
     // Every explorer's discovery is broadcast: coalesce bursts into one map

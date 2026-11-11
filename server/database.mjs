@@ -15,6 +15,7 @@ import "./chain-ledger/schema.mjs";
 import "./season/schema.mjs";
 import "./map-read-indexes.mjs";
 import "./hot-path-indexes.mjs";
+import "./coin-spots.mjs";
 import { GOLD, id, hash, dayKey, levelFor, assert } from "./domain.mjs";
 import { withChain } from "./native/chain-feed.mjs";
 
