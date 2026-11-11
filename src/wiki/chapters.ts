@@ -851,7 +851,7 @@ export const CHAPTERS: Chapter[] = [
           "A keyless vault never changes code after creation; the yield vault gets fixes only by an in-place upgrade that must leave every position byte for byte unchanged.",
         ],
       },
-      { p: "The [Treasury](/treasury) dashboard shows all of this live: the money flow, the mix, today's budget, QGOLD backing and a model." },
+      { p: "The [Treasury](/treasury) page shows all of this live: one headline card with the treasury and its mix, then tabs for Overview, Vote, Money flow, QGOLD, Model and Safety." },
     ],
   },
   {
@@ -868,7 +868,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "dao-flow",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/TREASURY-DAO.md", "server/native/treasury-dao.mjs", "scripts/treasury-dao-testnet.mjs", "src/TreasuryVote.tsx"],
+    sources: ["docs/TREASURY-DAO.md", "server/native/treasury-dao.mjs", "scripts/treasury-dao-testnet.mjs", "src/economy/TreasuryVoteCard.tsx"],
     blocks: [
       { p: "The treasury follows a stock **Sputnik DAO v2**, `questlayer-treasury.sputnik-v2.testnet`, with the role names Trezu uses: a keeper that only files proposals (Requestor), a council of three that approves with **2 of 3** (Admin, Approver), and **Explorers**, the players who may vote." },
       {
@@ -890,7 +890,7 @@ export const CHAPTERS: Chapter[] = [
           "Custody stays with the operator on testnet for now; the DAO decides the target and approves every run. The QGOLD vault council moves to the DAO next.",
         ],
       },
-      { p: "Vote in Community → Quests → **Treasury vote**. The live tally and the decision log are on the [Treasury](/treasury#dao) page." },
+      { p: "Vote on the [Treasury](/treasury#vote) page, tab **Vote**: each option shows its mix, votes and tags, and an explorer signed in on that device votes right there with no wallet popup. The same tab shows who decides and the decision log." },
     ],
   },
   {
