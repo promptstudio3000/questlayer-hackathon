@@ -3201,5 +3201,6 @@
   "Write a message": "اكتب رسالة",
   "Write to local chat": "اكتب في الدردشة المحلية",
   "{0} places": "{0} أماكن",
-  "now": "الآن"
+  "now": "الآن",
+  "Connection problem. Your blocks are kept and will be saved when it is back.": "مشكلة في الاتصال. مكعباتك محفوظة وستُحفظ عند عودة الاتصال."
 }

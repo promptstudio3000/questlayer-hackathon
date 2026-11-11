@@ -3201,5 +3201,6 @@
   "Write a message": "संदेश लिखें",
   "Write to local chat": "स्थानीय चैट में लिखें",
   "{0} places": "{0} जगहें",
-  "now": "अभी"
+  "now": "अभी",
+  "Connection problem. Your blocks are kept and will be saved when it is back.": "कनेक्शन में समस्या। आपके ब्लॉक सुरक्षित हैं और कनेक्शन लौटते ही सहेजे जाएंगे।"
 }

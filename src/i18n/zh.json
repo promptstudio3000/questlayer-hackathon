@@ -3201,5 +3201,6 @@
   "Write a message": "写消息",
   "Write to local chat": "写到本地聊天",
   "{0} places": "{0} 个地点",
-  "now": "刚刚"
+  "now": "刚刚",
+  "Connection problem. Your blocks are kept and will be saved when it is back.": "连接出现问题。你的方块已保留，连接恢复后会自动保存。"
 }

@@ -3201,5 +3201,6 @@
   "Write a message": "Napsat zprávu",
   "Write to local chat": "Napsat do místního chatu",
   "{0} places": "{0} míst",
-  "now": "teď"
+  "now": "teď",
+  "Connection problem. Your blocks are kept and will be saved when it is back.": "Problém se spojením. Tvoje bloky zůstávají a uloží se, jakmile se spojení vrátí."
 }

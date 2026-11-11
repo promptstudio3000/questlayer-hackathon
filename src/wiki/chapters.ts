@@ -677,7 +677,7 @@ export const CHAPTERS: Chapter[] = [
           "**Switch:** off unless the server runs with `LAYER_ENABLED=1` (never on mainnet). Then the logo opens a world picker with QuestLayer and the **Space Layer**.",
           "**Play:** walk and jump through one shared 3D world generated from a seed. Every explorer gets a free 16 × 16 home plot in a settlement and builds with ten blocks; only the owner can change a plot. Light pillars lead to beacons that activate when you stand on them. Daily goals: 8 blocks built, 3 beacons.",
           "**Explorers:** others within 128 blocks appear with name and a blocky outfit (six colour sets; an equipped Aura shows as a halo). Positions are kept in memory for 15 seconds and fast jumps are corrected.",
-          "**Storage:** SQLite tables for plots, changed blocks, edit receipts and beacon activations. Edits carry a request id, so a retry never applies twice. Virtual movement never counts as GPS.",
+          "**Storage:** SQLite tables for plots, changed blocks, edit receipts and beacon activations. Edits carry a request id, so a retry never applies twice. When the connection or the server fails, the blocks stay and the same request is retried; only a refusal (for example outside your plot) undoes them. Leaving the layer or closing the app still sends unsaved blocks. Others see a plot's new blocks within about 5 seconds. Virtual movement never counts as GPS.",
         ],
       },
       { h: "Community layers (agreed, not active)" },

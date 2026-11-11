@@ -3201,5 +3201,6 @@
   "Write a message": "Escribir un mensaje",
   "Write to local chat": "Escribir en el chat local",
   "{0} places": "{0} lugares",
-  "now": "ahora"
+  "now": "ahora",
+  "Connection problem. Your blocks are kept and will be saved when it is back.": "Problema de conexión. Tus bloques se conservan y se guardarán cuando vuelva."
 }

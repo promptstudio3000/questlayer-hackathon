@@ -3201,5 +3201,6 @@
   "Write a message": "Написать сообщение",
   "Write to local chat": "Написать в местный чат",
   "{0} places": "Мест: {0}",
-  "now": "сейчас"
+  "now": "сейчас",
+  "Connection problem. Your blocks are kept and will be saved when it is back.": "Проблема со связью. Твои блоки сохранены и будут записаны, когда связь вернётся."
 }
