@@ -18,12 +18,21 @@ the demo starts.
 
    | Zone | From the square | Shape |
    |---|---|---|
-   | náměstí Republiky | in the square (start) | 85 m circle |
-   | sady Pětatřicátníků North | ~290 m NW | 55 m circle |
-   | sady Pětatřicátníků West | ~250 m W | 55 m circle |
-   | Smetanovy sady | ~330 m SW | 55 m circle |
-   | Šafaříkovy sady | ~300 m SE | 55 m circle |
-   | sady 5. května | ~330 m E | 75 m circle |
+   | náměstí Republiky | in the square (start) | square outline, ~85 m |
+   | sady Pětatřicátníků North | ~290 m NW | irregular blob, ~55 m |
+   | sady Pětatřicátníků West | ~250 m W | irregular blob, ~55 m |
+   | Smetanovy sady | ~330 m SW | irregular blob, ~55 m |
+   | Šafaříkovy sady | ~300 m SE | irregular blob, ~55 m |
+   | sady 5. května | ~330 m E | park outline, ~75 m |
+
+   Shapes (11 Nov 2026): each zone is its OpenStreetMap park or square
+   outline cut to about 1.45× its radius around the anchor
+   (`server/data/demo-zones/plzen-compact-outlines.json` holds the two the
+   CityPack lacks). Where that leaves too little area (the narrow promenade,
+   tiny park pieces) the zone is a seeded irregular blob
+   (`server/spatial/organic-shape.mjs`). The Tier 3 zone of the day is
+   shown but locked until the explorer reaches Tier 3 (see
+   `placeTier` in `server/staker-gates.mjs`).
 
    Zones keep at least 80 m between them (250 m in the citywide layout). The
    round loop through all six is about 2 km.

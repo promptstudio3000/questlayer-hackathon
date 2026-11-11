@@ -3,7 +3,6 @@
   "Tester password": "Heslo testera",
   "Password": "Heslo",
   "Signing in…": "Přihlašuji…",
-  "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "Toto místo potřebuje Tier {0}: {1} NEAR dozrálého stake ve vaultu. Volná místa poblíž jsou otevřená všem.",
   " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " (nejvýš {0} denně pro všechny; potom losování dává zaručenou výhru)",
   " (create one above first).": " (nejdřív ho výše vytvoř).",
   " (held by the market)": " (drží ji trh)",
@@ -3223,5 +3222,8 @@
   "Your account isn't ready to stake yet. What can I do?": "Tvůj účet ještě není připravený ke stakování. Co můžu udělat?",
   "Your explorer account is still being prepared. You can wait a moment, or connect a NEAR wallet you already have.": "Tvůj účet průzkumníka se ještě připravuje. Můžeš chvíli počkat, nebo připojit NEAR peněženku, kterou už máš.",
   "Your explorer account opens with your first find. Collect a coin or finish a quest on the map, or connect a NEAR wallet you already have.": "Tvůj účet průzkumníka se otevře s prvním nálezem. Seber minci nebo dokonči úkol na mapě, nebo připoj NEAR peněženku, kterou už máš.",
-  "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "{0} má {1} test NEAR. Stakování potřebuje asi {2} (založení trezoru, stake a trochu gasu)."
+  "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "{0} má {1} test NEAR. Stakování potřebuje asi {2} (založení trezoru, stake a trochu gasu).",
+  "{0} is a Tier {1} zone. It opens with {2} NEAR of matured stake in the vault (at a 100 % prize-pool share). Free places nearby are open to everyone.": "{0} je zóna stupně {1}. Otevře se se {2} NEAR uzrálého stake ve vaultu (při 100% podílu pro prize pool). Volná místa poblíž jsou otevřená všem.",
+  "Already staking less? One stake per explorer: withdraw it and stake {0} NEAR at once.": "Už stakuješ méně? Jeden stake na průzkumníka: vyber ho a vlož rovnou {0} NEAR.",
+  "Tier {0} zone": "Zóna stupně {0}"
 }

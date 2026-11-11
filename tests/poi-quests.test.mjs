@@ -190,6 +190,16 @@ test("a street cell materialises one set on first load, the same after a restart
   assert.ok(prized.length >= 1 && prized.length <= 3, `cell zones ${prized.length}`);
   assert.equal(first.filter((q) => q.zone_id.includes(":zone:pioneer-")).length, 1);
   assert.equal(poi.filter((q) => q.kind === "chest").length, 1);
+  // One plain visit per street cell is a locked Tier 3 zone (bigger, double XP, never funded).
+  const tier3 = db.prepare("SELECT zone_id,xp,gold_u,kind FROM quests WHERE world_id=? AND tier=3").all(a.id);
+  assert.equal(tier3.length, 1);
+  assert.equal(tier3[0].kind, "visit");
+  assert.equal(tier3[0].gold_u, 0);
+  assert.equal(tier3[0].xp, POI_XP.visit * 2);
+  const stored = JSON.parse(db.prepare("SELECT manifest FROM worlds WHERE id=?").get(a.id).manifest);
+  const t3zone = stored.zones.find((z) => z.id === tier3[0].zone_id);
+  assert.equal(t3zone.tier, 3);
+  assert.equal(stored.zones.filter((z) => z.tier === 3).length, 1);
   source.close();
   db.close();
   // Restart: a new process with a new handle on the same files.

@@ -3,7 +3,6 @@
   "Tester password": "كلمة مرور المختبر",
   "Password": "كلمة المرور",
   "Signing in…": "جارٍ الدخول…",
-  "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "يحتاج هذا المكان إلى المستوى {0}: {1} NEAR من الحصة المستحقة في الخزنة. الأماكن المجانية القريبة مفتوحة للجميع.",
   " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " ({0} مرات يوميًا كحد أقصى للجميع؛ بعدها يمنح السحب الجائزة المضمونة)",
   " (create one above first).": " (أنشئ واحدة في الأعلى أولًا).",
   " (held by the market)": " (يحتفظ بها السوق)",
@@ -3223,5 +3222,8 @@
   "Your account isn't ready to stake yet. What can I do?": "حسابك ليس جاهزًا للتخزين بعد. ماذا يمكنني أن أفعل؟",
   "Your explorer account is still being prepared. You can wait a moment, or connect a NEAR wallet you already have.": "لا يزال حساب المستكشف قيد التجهيز. انتظر قليلًا أو اربط محفظة NEAR لديك بالفعل.",
   "Your explorer account opens with your first find. Collect a coin or finish a quest on the map, or connect a NEAR wallet you already have.": "يُفتح حساب المستكشف مع أول اكتشاف لك. اجمع عملة أو أكمل مهمة على الخريطة، أو اربط محفظة NEAR لديك بالفعل.",
-  "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "لدى {0} مقدار {1} NEAR تجريبي. يحتاج التخزين إلى نحو {2} (إعداد الخزنة والتخزين وقليل من الغاز)."
+  "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "لدى {0} مقدار {1} NEAR تجريبي. يحتاج التخزين إلى نحو {2} (إعداد الخزنة والتخزين وقليل من الغاز).",
+  "{0} is a Tier {1} zone. It opens with {2} NEAR of matured stake in the vault (at a 100 % prize-pool share). Free places nearby are open to everyone.": "{0} منطقة من المستوى {1}. تُفتح بـ {2} NEAR من الحصة الناضجة في الخزنة (بنسبة 100 % لصندوق الجوائز). الأماكن المجانية القريبة مفتوحة للجميع.",
+  "Already staking less? One stake per explorer: withdraw it and stake {0} NEAR at once.": "تراهن بأقل بالفعل؟ حصة واحدة لكل مستكشف: اسحبها وراهن بـ {0} NEAR دفعة واحدة.",
+  "Tier {0} zone": "منطقة المستوى {0}"
 }

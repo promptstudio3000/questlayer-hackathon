@@ -3,7 +3,6 @@
   "Tester password": "Senha do tester",
   "Password": "Senha",
   "Signing in…": "Entrando…",
-  "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "Este lugar precisa do nível {0}: {1} NEAR de stake maturado no cofre. Lugares livres por perto estão abertos a todos.",
   " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " (no máximo {0} por dia para todos; depois disso, a rolagem paga o prêmio garantido)",
   " (create one above first).": " (crie um acima primeiro).",
   " (held by the market)": " (retido pelo mercado)",
@@ -3223,5 +3222,8 @@
   "Your account isn't ready to stake yet. What can I do?": "Sua conta ainda não está pronta para stake. O que posso fazer?",
   "Your explorer account is still being prepared. You can wait a moment, or connect a NEAR wallet you already have.": "Sua conta de explorador ainda está sendo preparada. Aguarde um momento ou conecte uma carteira NEAR que você já tem.",
   "Your explorer account opens with your first find. Collect a coin or finish a quest on the map, or connect a NEAR wallet you already have.": "Sua conta de explorador abre com seu primeiro achado. Colete uma moeda ou conclua uma missão no mapa, ou conecte uma carteira NEAR que você já tem.",
-  "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "{0} tem {1} NEAR de teste. O stake precisa de cerca de {2} (criação do cofre, o stake e um pouco de gas)."
+  "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "{0} tem {1} NEAR de teste. O stake precisa de cerca de {2} (criação do cofre, o stake e um pouco de gas).",
+  "{0} is a Tier {1} zone. It opens with {2} NEAR of matured stake in the vault (at a 100 % prize-pool share). Free places nearby are open to everyone.": "{0} é uma zona de nível {1}. Abre com {2} NEAR de stake maturado no cofre (com 100 % para o prêmio). Lugares livres por perto estão abertos a todos.",
+  "Already staking less? One stake per explorer: withdraw it and stake {0} NEAR at once.": "Já faz stake de menos? Um stake por explorador: retire-o e faça stake de {0} NEAR de uma vez.",
+  "Tier {0} zone": "Zona de nível {0}"
 }

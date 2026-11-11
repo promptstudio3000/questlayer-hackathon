@@ -3,7 +3,6 @@
   "Tester password": "テスターのパスワード",
   "Password": "パスワード",
   "Signing in…": "サインイン中…",
-  "This place needs Tier {0}: {1} NEAR of matured stake in the vault. Free places nearby are open to everyone.": "この場所にはティア{0}が必要です：ボールトで成熟した{1} NEARのステーク。近くの無料の場所は誰でも利用できます。",
   " (at most {0} a day for everyone; after that the roll pays the guaranteed prize)": " （全員合計で1日最大{0}回。それ以降の抽選は確定賞品になります）",
   " (create one above first).": " （先に上で作成してください）。",
   " (held by the market)": " （マーケットで保管中）",
@@ -3223,5 +3222,8 @@
   "Your account isn't ready to stake yet. What can I do?": "アカウントはまだステークの準備ができていません。どうすればいい？",
   "Your explorer account is still being prepared. You can wait a moment, or connect a NEAR wallet you already have.": "エクスプローラーアカウントは準備中です。少し待つか、お持ちのNEARウォレットを接続してください。",
   "Your explorer account opens with your first find. Collect a coin or finish a quest on the map, or connect a NEAR wallet you already have.": "エクスプローラーアカウントは最初の発見で開きます。マップでコインを拾うかクエストを完了するか、お持ちのNEARウォレットを接続してください。",
-  "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "{0} のテストNEARは {1} です。ステークには約 {2} が必要です（ボールト作成、ステーク、少量のガス）。"
+  "{0} has {1} test NEAR. Staking needs about {2} (vault setup, the stake and a little gas).": "{0} のテストNEARは {1} です。ステークには約 {2} が必要です（ボールト作成、ステーク、少量のガス）。",
+  "{0} is a Tier {1} zone. It opens with {2} NEAR of matured stake in the vault (at a 100 % prize-pool share). Free places nearby are open to everyone.": "{0}はティア{1}のゾーンです。ボールトに成熟したステーク{2} NEAR(賞金プールへの配分100 %)で開きます。近くの無料スポットは誰でも入れます。",
+  "Already staking less? One stake per explorer: withdraw it and stake {0} NEAR at once.": "すでに少なくステーク中?ステークは1人1つ:引き出して{0} NEARをまとめてステークしてください。",
+  "Tier {0} zone": "ティア{0}ゾーン"
 }
