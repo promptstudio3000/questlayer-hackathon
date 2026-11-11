@@ -18,6 +18,7 @@ Repository: https://github.com/promptstudio3000/questlayer-hackathon. Pitch deck
 | NPCs with wallets | Vojtěch the Merchant trades from his own funded NEAR account with signed market orders and NEAR Intents; his surplus sweeps into the treasury. NPC replies run on NEAR AI Cloud | B2, C4 |
 | Player-owned markets | Secured Auras are NEP-171 NFTs in the player's account; signed orders, a NEAR Intents verifier for NFT swaps, 2 % NEP-199 royalty; player tasks and Secrets paid from a QGOLD escrow contract | A6, B3, B6 |
 | An economy that evolves without a dev patch | One global treasury whose yield becomes the daily map budget; collected coins mint QGOLD backed by that NEAR, spending burns it; books audited against the chain; new towns join from map data | B4, C1, C2, C7, D |
+| Shared budgets on Sputnik DAO and Trezu (track Social Money) | The treasury follows `questlayer-treasury.sputnik-v2.testnet`: explorers at level 3+ vote weekly on the mix from their own accounts, the council (2 of 3, Trezu role names) approves every daily run, and the mix script refuses to run without that approval | B8 |
 | Players, not just a token | Tap another explorer for their profile, wave, and send end-to-end encrypted messages stored on NEAR Social; bring your own Aavegotchi with an Ethereum wallet | B5, B7 |
 
 ## Path A: the core loop in a browser (about 3 minutes, no install)
@@ -52,6 +53,7 @@ all day).
 | B5 | Tap another explorer on the map (bots wander the Plzeň demo) | The player dialog: level, XP, badges, since when, what they wear, wave phrases and **Write a message**. Test-world bots carry a **demo-bot** label and cannot receive messages |
 | B6 | Explore → **Nearby** | Player tasks and Secrets with rewards held in the QGOLD escrow contract |
 | B7 | With a second browser or phone and a second explorer: both wave at each other (or **Ask to message** → **Accept**), then **Write a message** | "End-to-end encrypted. Only you and the other explorer can read a message." The message is stored as ciphertext under the sender's NEAR Social account ([PLAYER-INBOX.md](PLAYER-INBOX.md)) |
+| B8 | Open **/treasury#dao**, then Community → Quests → **Treasury vote** (an explorer at level 3+ who played this week) and vote | The DAO account with council 2 of 3, this week's mix options with their votes (the recommended one carries the automatic vote), the mix in force and today's approved run; your vote lands as `act_proposal` from your explorer account on https://testnet.nearblocks.io/address/questlayer-treasury.sputnik-v2.testnet | Treasury decisions on Sputnik DAO with Trezu roles, player votes without a wallet popup |
 | B8 | Optional, with an Ethereum wallet that holds Aavegotchis: Profile → Settings → **Account and devices** → **Ethereum wallets** | The wallet signs a readable message only; the explorer then wears your highest-rarity gotchi and Inventory → Items lists **Your Aavegotchis** |
 
 ## Path C: verify the economy yourself (about 5 minutes, terminal)

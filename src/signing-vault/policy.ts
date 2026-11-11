@@ -9,6 +9,7 @@ export type VaultConfig = {
     collectibles?: string;
     npcGames?: string;
     social?: string;
+    treasuryDao?: string;
   };
 };
 export type VaultAction =
@@ -165,6 +166,17 @@ export async function needsProtection(
     if (a.methodName === "redeem_aura" && a.args.receiver_id === call.accountId)
       return false;
   }
+  // A vote for a treasury DAO poll option (docs/TREASURY-DAO.md): no money moves.
+  if (
+    call.receiverId === config.contracts.treasuryDao &&
+    a.deposit === "0" &&
+    a.methodName === "act_proposal" &&
+    Object.keys(a.args).sort().join() === "action,id,proposal" &&
+    Number.isSafeInteger(a.args.id) &&
+    a.args.action === "VoteApprove" &&
+    a.args.proposal === "Vote"
+  )
+    return false;
   if (
     call.receiverId === config.contracts.npcGames &&
     a.deposit === "0" &&

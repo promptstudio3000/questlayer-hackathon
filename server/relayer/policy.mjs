@@ -125,6 +125,11 @@ function checkContext(ctx) {
         typeof ctx.contracts.qgoldEscrow === "string"
           ? ctx.contracts.qgoldEscrow
           : null,
+      // Treasury DAO (docs/TREASURY-DAO.md): explorers vote on its polls.
+      treasuryDao:
+        typeof ctx.contracts.treasuryDao === "string"
+          ? ctx.contracts.treasuryDao
+          : null,
     },
     factorySetupDeposit:
       ctx.factorySetupDeposit === undefined || ctx.factorySetupDeposit === null
@@ -556,6 +561,20 @@ export function validateDelegate(decoded, context) {
       depositIs(0n, "Position maintenance");
     else unsupported();
     }
+  } else if (c.treasuryDao && receiverId === c.treasuryDao) {
+    // A vote on a treasury poll: approve only, never a deposit, never a
+    // proposal or any other kind (the DAO's own roles enforce the rest).
+    depositIs(0n, "A treasury vote");
+    demand(
+      method === "act_proposal" &&
+        keysOf(args, ["id", "action", "proposal"]) &&
+        Number.isSafeInteger(args.id) &&
+        args.id >= 0 &&
+        args.action === "VoteApprove" &&
+        args.proposal === "Vote",
+      "RELAY_ARGS",
+      "Only a vote for a treasury poll option is sponsored.",
+    );
   } else if (c.npcGames && receiverId === c.npcGames) {
     // Earned mini-game rolls (docs/NPC-GAMES.md): never a deposit, so never a wager.
     depositIs(0n, "A mini-game roll");

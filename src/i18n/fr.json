@@ -3175,5 +3175,14 @@
  "Top reward": "Meilleure récompense",
  "Walk a little or check back later: places, NPCs and community posts change during the day.": "Marche un peu ou reviens plus tard : les lieux, les PNJ et les messages de la communauté changent au fil de la journée.",
  "Zones": "Zones",
- "Community place": "Lieu de la communauté"
+ "Community place": "Lieu de la communauté",
+ "The treasury vote is on another network.": "Le vote de la trésorerie est sur un autre réseau.",
+ "Vote saved on chain.": "Vote enregistré sur la chaîne.",
+ "Treasury vote": "Vote de la trésorerie",
+ "Explorers choose how the shared treasury is held. The council carries out the result.": "Les explorateurs choisissent comment la trésorerie commune est placée. Le conseil applique le résultat.",
+ "In force now: {0}": "En vigueur : {0}",
+ "Reach level 3 and play this week to vote. New voters join once a day.": "Atteins le niveau 3 et joue cette semaine pour voter. Les nouveaux votants sont ajoutés une fois par jour.",
+ "Other votes this week": "Autres votes de la semaine",
+ "{0} votes": "{0} votes",
+ "See the treasury DAO": "Voir la DAO de la trésorerie"
 }

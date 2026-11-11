@@ -3175,5 +3175,14 @@
  "Top reward": "奖励最高",
  "Walk a little or check back later: places, NPCs and community posts change during the day.": "走一走或稍后再来：地点、NPC 和社区帖子会在一天中变化。",
  "Zones": "区域",
- "Community place": "社区地点"
+ "Community place": "社区地点",
+ "The treasury vote is on another network.": "金库投票在另一个网络上。",
+ "Vote saved on chain.": "投票已保存到链上。",
+ "Treasury vote": "金库投票",
+ "Explorers choose how the shared treasury is held. The council carries out the result.": "探险者决定共享金库如何配置，由理事会执行结果。",
+ "In force now: {0}": "当前生效：{0}",
+ "Reach level 3 and play this week to vote. New voters join once a day.": "达到3级并在本周游玩即可投票。新投票者每天加入一次。",
+ "Other votes this week": "本周其他投票",
+ "{0} votes": "{0} 票",
+ "See the treasury DAO": "查看金库 DAO"
 }

@@ -484,10 +484,13 @@ const s = (v) =>
         : v;
 
 /** Public view for GET /api/treasury/mix (no keys, read-only). */
-export function createTreasuryMixView({ provider, settings, record, account, clock = Date.now }) {
+export function createTreasuryMixView({ provider, settings: base, record, account, target = null, clock = Date.now }) {
   let hit = null;
   return async function read() {
-    if (hit && clock() - hit.at < settings.cacheMs) return hit.value;
+    if (hit && clock() - hit.at < base.cacheMs) return hit.value;
+    // The treasury DAO's adopted mix (docs/TREASURY-DAO.md) replaces the configured target.
+    const adopted = target ? await target().catch(() => null) : null;
+    const settings = adopted ? { ...base, target: adopted, governedBy: "dao" } : base;
     const r = record();
     const who = settings.account || account() || r?.account || null;
     const live = await readMix(provider, settings, { account: who, record: r, now: clock() });
@@ -497,6 +500,7 @@ export function createTreasuryMixView({ provider, settings, record, account, clo
       vault: settings.vault,
       policy: {
         target: settings.target,
+        governedBy: settings.governedBy || "settings",
         maxProtocolBps: settings.maxProtocolBps,
         maxUtilBps: settings.maxUtilBps,
         driftBps: settings.driftBps,
