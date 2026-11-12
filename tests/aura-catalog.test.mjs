@@ -76,7 +76,7 @@ test("rarity follows zone tier and level entitlements on client and server", () 
   assert.equal(entitlementLabel("common"), "Any level · any zone chest");
   assert.equal(entitlementLabel("legendary"), "Level 4+ · gold zones");
 });
-test("chest drops stay within entitlements, prefer missing editions and respect supply", () => {
+test("chest drops stay within entitlements, prefer missing editions and have no supply cap", () => {
   const db = openDatabase(":memory:"),
     player = createPlayer(db, "Collector");
   const first = chooseChestAura(db, player, 1, 1);
@@ -91,8 +91,9 @@ test("chest drops stay within entitlements, prefer missing editions and respect 
   assert.equal(chooseChestAura(db, player, 1, 1).id, "dew");
   for (const name of server.DEMO_AURA_NAMES)
     db.prepare("INSERT INTO editions VALUES (?,256,256)").run(name);
-  assert.equal(chooseChestAura(db, player, 3, 9), null);
-  assert.equal(server.chestAuraAvailable(db, 3, 9), false);
+  // No capped supply (owner, 11 Nov 2026): a 257th copy still drops.
+  assert.ok(chooseChestAura(db, player, 3, 9));
+  assert.equal(server.chestAuraAvailable(db, 3, 9), true);
   db.close();
 });
 test("set bonuses are cosmetic pairs of different editions from one set", () => {

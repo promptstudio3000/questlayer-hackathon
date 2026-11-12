@@ -328,8 +328,18 @@ test("revocation during the account-name lookup prevents an account job or subsi
   assert.equal(f.rows("relay_jobs").length, 0);
 });
 
-test("refuel tops a low explorer back to the starting amount once a UTC day, inside the cap", async (t) => {
+test("starting NEAR comes once: refuel is off unless switched on", async (t) => {
   const f = fixture({ fundYocto: 2n * 10n ** 22n, topupCapYocto: 5n * 10n ** 22n });
+  t.after(() => f.db.close());
+  const acct = f.ready(f.player, "alice-novakova", { amount: 3n * 10n ** 21n });
+  const fuel = await f.accounts.fuel(f.player);
+  assert.deepEqual([fuel.canRefuel, fuel.reason], [false, "FUEL_START_ONLY"]);
+  await assert.rejects(f.accounts.refuel(f.player), (e) => e.code === "FUEL_START_ONLY");
+  assert.equal(f.state.accounts.get(acct.accountId).amount, 3n * 10n ** 21n);
+});
+
+test("refuel (PLAYER_REFUEL=1) tops a low explorer back to the starting amount once a UTC day, inside the cap", async (t) => {
+  const f = fixture({ fundYocto: 2n * 10n ** 22n, topupCapYocto: 5n * 10n ** 22n, refuel: true });
   t.after(() => f.db.close());
   const none = await f.accounts.fuel(f.player);
   assert.deepEqual([none.canRefuel, none.reason], [false, "ACCOUNT_NOT_READY"]);
@@ -353,4 +363,45 @@ test("refuel tops a low explorer back to the starting amount once a UTC day, ins
   f.advance(86400000);
   assert.equal((await f.accounts.refuel(f.player)).amount, (2n * 10n ** 22n).toString());
   assert.equal(f.rows("managed_account_funding").filter((r) => r.kind === "topup").length, 2);
+});
+
+test("testnet: an explorer whose only device key is lost, with no recovery passkey, starts a new account on this device", async (t) => {
+  const f = fixture();
+  t.after(() => f.db.close());
+  f.accounts.network = "testnet";
+  const old = (await f.accounts.create(f.player, { publicKey: key() })).account.accountId;
+  await f.relayer.runRelayJobs();
+  assert.equal(f.accounts.view(f.player).account.state, "ready");
+  assert.equal(f.db.prepare("SELECT native_account FROM players WHERE id=?").get(f.player).native_account, old);
+  assert.equal(f.accounts.view(f.player).account.canStartOver, true);
+  const fresh = key();
+  const r = await f.accounts.startOver(f.player, { publicKey: fresh });
+  const next = r.account.accountId;
+  assert.notEqual(next, old);
+  assert.equal(r.account.state, "creating");
+  assert.equal(f.db.prepare("SELECT 1 FROM wallet_links WHERE account_id=?").get(old), undefined, "the old account is no longer the explorer's");
+  await f.relayer.runRelayJobs();
+  assert.equal(f.accounts.view(f.player).account.state, "ready");
+  assert.equal(f.db.prepare("SELECT native_account FROM players WHERE id=?").get(f.player).native_account, next);
+  assert.ok(f.db.prepare("SELECT 1 FROM wallet_links WHERE account_id=? AND player_id=?").get(next, f.player));
+  // Once a day.
+  await assert.rejects(() => f.accounts.startOver(f.player, { publicKey: key() }), /already started over today/);
+});
+
+test("start over is refused on mainnet, with a recovery passkey or for a key the account already has", async (t) => {
+  const f = fixture();
+  t.after(() => f.db.close());
+  const device = key();
+  const accountId = (await f.accounts.create(f.player, { publicKey: device })).account.accountId;
+  await f.relayer.runRelayJobs();
+  f.accounts.network = "mainnet";
+  assert.equal(f.accounts.view(f.player).account.canStartOver, false);
+  await assert.rejects(() => f.accounts.startOver(f.player, { publicKey: key() }), /only possible on testnet/);
+  f.accounts.network = "testnet";
+  await assert.rejects(() => f.accounts.startOver(f.player, { publicKey: device }), /can already use/);
+  f.db.prepare("INSERT INTO managed_account_keys VALUES(?,?,'recovery','active','passkey',?,?)").run(accountId, key(), NOW, NOW);
+  assert.equal(f.accounts.view(f.player).account.canStartOver, false);
+  await assert.rejects(() => f.accounts.startOver(f.player, { publicKey: key() }), /recovery passkey/);
+  const bob = createPlayer(f.db, "Bob", NOW);
+  await assert.rejects(() => f.accounts.startOver(bob, { publicKey: key() }), /no explorer account/);
 });

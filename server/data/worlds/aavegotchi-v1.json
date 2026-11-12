@@ -165,117 +165,117 @@
     "editions": [
       {
         "id": "ember",
-        "supply": 256,
+        "supply": null,
         "slot": "above"
       },
       {
         "id": "dew",
-        "supply": 256,
+        "supply": null,
         "slot": "below"
       },
       {
         "id": "polar",
-        "supply": 256,
+        "supply": null,
         "slot": "above"
       },
       {
         "id": "bloom",
-        "supply": 256,
+        "supply": null,
         "slot": "below"
       },
       {
         "id": "storm",
-        "supply": 256,
+        "supply": null,
         "slot": "above"
       },
       {
         "id": "moon",
-        "supply": 256,
+        "supply": null,
         "slot": "below"
       },
       {
         "id": "comet",
-        "supply": 256,
+        "supply": null,
         "slot": "below"
       },
       {
         "id": "gold",
-        "supply": 256,
+        "supply": null,
         "slot": "above"
       },
       {
         "id": "nova",
-        "supply": 256,
+        "supply": null,
         "slot": "below"
       },
       {
         "id": "pilgrim",
-        "supply": 256,
+        "supply": null,
         "slot": "below"
       },
       {
         "id": "chronicle",
-        "supply": 256,
+        "supply": null,
         "slot": "above"
       },
       {
         "id": "ledger",
-        "supply": 256,
+        "supply": null,
         "slot": "below"
       },
       {
         "id": "wardbreaker",
-        "supply": 256,
+        "supply": null,
         "slot": "above"
       },
       {
         "id": "wisp",
-        "supply": 256,
+        "supply": null,
         "slot": "above"
       },
       {
         "id": "bossbane",
-        "supply": 256,
+        "supply": null,
         "slot": "below"
       },
       {
         "id": "stride",
-        "supply": 256,
+        "supply": null,
         "slot": "below"
       },
       {
         "id": "kindle",
-        "supply": 256,
+        "supply": null,
         "slot": "above"
       },
       {
         "id": "compass",
-        "supply": 256,
+        "supply": null,
         "slot": "below"
       },
       {
         "id": "quill",
-        "supply": 256,
+        "supply": null,
         "slot": "above"
       },
       {
         "id": "laurel",
-        "supply": 256,
+        "supply": null,
         "slot": "below"
       },
       {
         "id": "summit",
-        "supply": 256,
+        "supply": null,
         "slot": "above"
       },
       {
         "id": "patron",
-        "supply": 256,
+        "supply": null,
         "slot": "above"
       },
       {
         "id": "season",
-        "supply": 256,
+        "supply": null,
         "slot": "above"
       }
     ],

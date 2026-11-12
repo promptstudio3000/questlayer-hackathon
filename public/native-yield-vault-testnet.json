@@ -1,9 +1,9 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-11-02T03:22:21.720Z",
+  "verifiedAt": "2026-11-09T23:56:34.628Z",
   "contractId": "questlayer-yield-20261102.testnet",
-  "codeHash": "Hy9RJ8LxDzzLMwWtp2c4MuFq26xi6DQYz4K6Su6S6xUo",
-  "wasmSha256": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700",
+  "codeHash": "6TSUQ7csNZt9nqKKo4fkhXha94v3HvKrzyxSxUdjeV7N",
+  "wasmSha256": "5110565f1f24df4746ad3ca6ba8180bbe0170ea693534f6bf49a9512ce347989",
   "ownerId": "questlayer-dev-20261101.testnet",
   "treasuryId": "questlayer-dev-20261101.testnet",
   "rheaId": "contract.burrow.testnet",
@@ -70,5 +70,38 @@
       "safety_bps": 10
     }
   ],
-  "audited": false
+  "audited": false,
+  "previousDeployments": [
+    {
+      "codeHash": "Hy9RJ8LxDzzLMwWtp2c4MuFq26xi6DQYz4K6Su6S6xUo",
+      "wasmSha256": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700",
+      "verifiedAt": "2026-11-02T03:22:21.720Z",
+      "replacedAt": "2026-11-09T23:56:34.628Z",
+      "replacedBy": "7Zp3VT2LnNWweGX2Xbo7vtECFjSz1tjgm8iEAD1Svkux",
+      "backup": ".data/contract-backups/questlayer-yield-20261102.testnet-Hy9RJ8LxDzzLMwWtp2c4MuFq26xi6DQYz4K6Su6S6xUo.wasm"
+    }
+  ],
+  "upgrades": [
+    {
+      "at": "2026-11-09T23:56:34.628Z",
+      "from": "Hy9RJ8LxDzzLMwWtp2c4MuFq26xi6DQYz4K6Su6S6xUo",
+      "to": "6TSUQ7csNZt9nqKKo4fkhXha94v3HvKrzyxSxUdjeV7N",
+      "transactions": [
+        {
+          "label": "Pause yield vault deposits for the code upgrade",
+          "transaction": "3y6dYpRnxivrFY18iCNB4oueQTcJ9DdkBaqomKRzZgJm"
+        },
+        {
+          "label": "Upgrade yield vault: no supply over an inbound Rhea withdrawal, storage reserve, reconcile_idle (H4, M5)",
+          "transaction": "7Zp3VT2LnNWweGX2Xbo7vtECFjSz1tjgm8iEAD1Svkux"
+        },
+        {
+          "label": "Resume yield vault deposits",
+          "transaction": "AyvGqkKRTu7xEBkVKZGRSZ1DUjH7iQeBZyiaBVXKmx8z"
+        }
+      ],
+      "snapshots": "output/qa/yield-vault-upgrade/2026-11-09T23-56-19-603Z-*.json",
+      "stateDigest": "68b1aa398e1e7daefe89b1cc25d673b23e83e5f9497e91bb1e81ec1889691be7"
+    }
+  ]
 }

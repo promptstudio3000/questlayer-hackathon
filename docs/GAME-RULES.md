@@ -145,7 +145,7 @@ The first twelve entries correspond to the twelve game/UI rules in AGENTS.md. La
 | ID | Rule | Completion evidence |
 | --- | --- | --- |
 | O01 | A public note has anchor, author, time and optional sanitized image; actual author GPS needs separate consent. | EXIF removed; public persistence explained before chain publication. |
-| O02 | Presence is off by default, foreground only, renewed explicitly after 15 minutes and stale after 30 seconds. | Stop/hide/block works; no raw player trajectory goes on chain. |
+| O02 | Presence is on by default while the game is in the foreground (Settings switch turns it off, choice remembered), seen only within ~1.5 km, lease renewed automatically every 15 minutes, stale after 30 seconds. Profiles never show a position (Lubos, 11 Nov 2026). | Stop/hide/block works; no raw player trajectory goes on chain. |
 | O03 | Sponsored tasks lock their own budget before publication and have review, rejection, appeal, arbitration and timeout rules. | Earliest eligible evidence handled fairly; pending cases do not disappear or permit premature refunds. |
 | O04 | Public profiles/follows/notes and private evidence/paid content have separate storage policies. | SocialDB/IPFS failure, pinning, moderation tombstones and data retention work without duplicate charges. |
 | O05 | Operators can remove unsafe content, pause publication and investigate receipts without taking player keys. | Audited capabilities; player withdrawal and evidence obligations retain defined behavior. |

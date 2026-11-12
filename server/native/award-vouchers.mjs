@@ -20,6 +20,7 @@ import {
   LEGACY_NATIVE_EDITIONS,
   awardClaimPrefix,
   nativeEditionForName,
+  chainEditionOpen,
 } from "../aura-catalog.mjs";
 export function awardMessage(contractId, claim) {
   return `QuestLayer Aura claim v1\nContract: ${contractId}\nNetwork: ${NETWORK}\nClaim: ${claim.claim_id}\nReceiver: ${claim.receiver_id}\nEdition: ${claim.edition}\nExpires: ${claim.expires_at}`;
@@ -139,7 +140,7 @@ export class AwardVouchers {
         true,
       );
       assert(
-        minted < 256,
+        chainEditionOpen(minted),
         "This native edition is fully minted. Keep your demo Aura.",
         409,
       );

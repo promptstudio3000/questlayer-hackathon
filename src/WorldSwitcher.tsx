@@ -1,24 +1,45 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
-import { CaretDown, GlobeHemisphereWest, Cube, X } from "@phosphor-icons/react";
+import { CaretDown, GlobeHemisphereWest, Cube, Flask, X } from "@phosphor-icons/react";
 import { Dialog } from "./Dialog";
 import { BrandLogo } from "./Ghost";
 import { tr } from "./i18n";
 import { REALMS } from "./realms";
 import "./world-switcher.css";
 
+export type GameLayerConfig = {
+  id: "world" | "test";
+  test: boolean;
+  tour?: boolean;
+  testLayerUrl: string | null;
+  worldUrl: string | null;
+};
+
 export function WorldSwitcher({
   virtual,
   enabled,
   layerName,
   onChoose,
+  gameLayer,
 }: {
   virtual: boolean;
   enabled: boolean;
   /** Display name of the virtual voxel layer (docs/LAYER.md). */
   layerName: string;
   onChoose: (virtual: boolean) => void;
+  /** Test Layer or QuestLayer World (docs/TEST-LAYER.md), from /api/config. */
+  gameLayer?: GameLayerConfig | null;
 }) {
+  const test = !!gameLayer?.test;
+  const outdoorName = test ? tr("Test Layer") : REALMS.questlayer.name;
+  // The other server: the Test Layer from World (testnet only), World from the Test Layer.
+  const other = test
+    ? gameLayer?.worldUrl
+      ? { url: gameLayer.worldUrl, name: REALMS.questlayer.name, text: tr("The real game.") }
+      : null
+    : gameLayer?.testLayerUrl
+      ? { url: gameLayer.testLayerUrl, name: tr("Test Layer"), text: tr("Every feature with test coins. Nothing here is real money.") }
+      : null;
   const [open, setOpen] = useState(false);
   return (
     <>
@@ -35,7 +56,7 @@ export function WorldSwitcher({
         <span className="world-switcher-name">
           {REALMS.questlayer.name.toUpperCase()}
           <small>
-            {virtual ? layerName : REALMS.questlayer.name}
+            {virtual ? layerName : outdoorName}
           </small>
         </span>
         <CaretDown size={16} aria-hidden="true" />
@@ -65,11 +86,13 @@ export function WorldSwitcher({
                   onChoose(false);
                 }}
               >
-                <GlobeHemisphereWest size={32} aria-hidden="true" />
+                {test ? <Flask size={32} aria-hidden="true" /> : <GlobeHemisphereWest size={32} aria-hidden="true" />}
                 <span>
-                  <strong>{REALMS.questlayer.name}</strong>
+                  <strong>{outdoorName}</strong>
                   <small>
-                    {tr("Outdoor quests, real places and discoveries.")}
+                    {test
+                      ? tr("Every feature with test coins. Nothing here is real money.")
+                      : tr("Outdoor quests, real places and discoveries.")}
                   </small>
                 </span>
               </button>
@@ -94,6 +117,15 @@ export function WorldSwitcher({
                   </small>
                 </span>
               </button>
+              {other && (
+                <a className="world-choice" href={other.url}>
+                  {test ? <GlobeHemisphereWest size={32} aria-hidden="true" /> : <Flask size={32} aria-hidden="true" />}
+                  <span>
+                    <strong>{other.name}</strong>
+                    <small>{other.text}</small>
+                  </span>
+                </a>
+              )}
             </section>
           </Dialog>,
           document.body,

@@ -33,6 +33,7 @@ import type { ActorView } from "./actor-types";
 import type { ActorsLayer } from "./actors-layer";
 import type { MapRewardsLayer } from "./map-rewards-layer";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { api } from "./api";
 import { distanceLabel } from "./app-bits";
 import * as maplibregl from "maplibre-gl";
@@ -130,6 +131,8 @@ export type GameMapProps = {
   actorReports?: readonly string[];
   /** "Show me": pan to the nearest matching character (any distance). */
   actorFocus?: { revision: number; match: ActorFocusMatch } | null;
+  /** A plain point the explorer chose to walk to: flagged and brought into view. */
+  pointTarget?: { lat: number; lng: number; label: string; revision: number } | null;
   /** The "show me" result as player text; `found` false is a notice, not an error. */
   onActorFocus?: (text: string, found: boolean) => void;
   /** Draw player tasks and Secrets near the explorer (GPS play); tap opens them in Nearby. */
@@ -1153,6 +1156,18 @@ export function GameMap(props: GameMapProps) {
     return () => window.clearTimeout(timer);
     // Only the revision triggers a new "show me".
   }, [props.actorFocus?.revision, ready]);
+  useEffect(() => {
+    const m = map.current, t = props.pointTarget;
+    if (!ready || !m || !t) return;
+    const node = document.createElement("div");
+    node.className = "map-point-target";
+    node.setAttribute("role", "img");
+    node.setAttribute("aria-label", t.label);
+    const marker = new maplibregl.Marker({ element: node, anchor: "center" }).setLngLat([t.lng, t.lat]).addTo(m);
+    latest.current.onPan();
+    m.easeTo({ center: [t.lng, t.lat], zoom: Math.max(m.getZoom(), 16), duration: prefersReducedMotion() ? 0 : 900 });
+    return () => { marker.remove(); };
+  }, [props.pointTarget?.revision, ready]);
   // Player tasks and Secrets around the explorer (~55 m steps, like Nearby).
   const [marketPins, setMarketPins] = useState<MarketMapPin[]>([]);
   const marketLat = Math.round(props.position.lat * 2000) / 2000,
@@ -1676,7 +1691,10 @@ export function GameMap(props: GameMapProps) {
         className={`game-map maplibregl-map sky-${sky.phase}${props.globe ? " globe-view" : ""}`}
         aria-label={tr("Real OpenStreetMap world")}
       />
-      {!props.globe && (
+      {/* Day/night sits in the header next to the avatar (slot rendered by
+          App), not in a row of its own over the map. */}
+      {!props.globe && (() => {
+        const chip = (
         <div
           className={`map-sky-chip sky-${sky.phase}`}
           role="status"
@@ -1698,8 +1716,11 @@ export function GameMap(props: GameMapProps) {
             </span>
           )}
         </div>
-      )}
-      {!props.globe && guidePoints.length > 1 && (
+        );
+        const slot = document.getElementById("hud-sky-slot");
+        return slot ? createPortal(chip, slot) : chip;
+      })()}
+      {!props.globe && guidePoints.length > 1 && !props.focusZone && (
         <div className="map-guide-key" role="note" title={tr("Straight-line direction, not a walking route")}>
           <img src={mapKitUrl("navigation/arrow-forward.png")} width="24" height="24" alt="" aria-hidden />
           <span>{tr("Direction guide")}</span>

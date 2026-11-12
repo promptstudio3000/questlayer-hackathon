@@ -1,21 +1,19 @@
 #!/usr/bin/env node
 // Side-by-side quality check of NPC replies: the same persona, facts, offer
-// menu and player message go to Ollama and to NEAR AI Cloud, and each reply
+// menu and player message go to NEAR AI Cloud (one or two models), and each reply
 // is run through the production validator (validateNpcOutput). Prints a
 // Markdown report: pass rate, latency and the reply text per case.
 //
-//   npm run ai:compare                      both providers, default models
+//   npm run ai:compare                      default model
 //   npm run ai:compare -- --near-model deepseek-ai/DeepSeek-V4.1-Flash-1017
-//   npm run ai:compare -- --only near       one side only
+//   npm run ai:compare -- --compare-model <id>   a second model side by side
 //   npm run ai:compare -- --verify          also check NEAR enclave signatures
 //
-// Reads OLLAMA_API_KEY / NEAR_AI_API_KEY from the environment and never
+// Reads NEAR_AI_API_KEY from the environment and never
 // prints them. Works whether or not NEAR_AI_ENABLED is set: it is a test, not
 // the live switch.
 import { loadPersonas } from "../npc/personas.mjs";
-import { createOllamaNpcProvider, validateNpcOutput } from "../npc/talk.mjs";
-import { createNearAiNpcProvider } from "../npc/talk.mjs";
-import { ollamaConfiguration } from "../ai/ollama.mjs";
+import { createNearAiNpcProvider, validateNpcOutput } from "../npc/talk.mjs";
 import { createNearAiVerifier, nearAiConfiguration } from "../ai/near-ai.mjs";
 
 const args = process.argv.slice(2);
@@ -23,7 +21,6 @@ const opt = (name) => {
   const i = args.indexOf(`--${name}`);
   return i === -1 ? null : args[i + 1];
 };
-const only = opt("only");
 const verifyOn = args.includes("--verify");
 
 const personas = loadPersonas();
@@ -56,19 +53,15 @@ const CASES = [
 ];
 
 const providers = [];
-if (only !== "near") {
-  const o = ollamaConfiguration(process.env);
-  if (o.apiKey) providers.push({ label: `ollama ${o.model}`, p: createOllamaNpcProvider(o) });
-  else console.error("OLLAMA_API_KEY not set: skipping Ollama.");
-}
 let verifier = null;
-if (only !== "ollama") {
+{
   const n = nearAiConfiguration(process.env);
-  const model = opt("near-model") || n.model;
+  const models = [opt("near-model") || n.model, opt("compare-model")].filter(Boolean);
   if (n.apiKey) {
-    providers.push({ label: `near-ai ${model}`, p: createNearAiNpcProvider({ ...n, model }) });
+    for (const model of models)
+      providers.push({ label: `near-ai ${model}`, p: createNearAiNpcProvider({ ...n, model }) });
     if (verifyOn) verifier = createNearAiVerifier(n);
-  } else console.error("NEAR_AI_API_KEY not set: skipping NEAR AI.");
+  } else console.error("NEAR_AI_API_KEY not set.");
 }
 if (!providers.length) {
   console.error("No provider configured.");

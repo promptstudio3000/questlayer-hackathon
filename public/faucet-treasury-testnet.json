@@ -1,0 +1,104 @@
+{
+  "network": "testnet",
+  "rewardsContract": "questlayer-rewards-20261101b.testnet",
+  "beneficiary": "questlayer-dev-20261101.testnet",
+  "receiptPrefix": "faucet-",
+  "sweeps": [
+    {
+      "account": "ql-faucet-probe-1794351043.testnet",
+      "receiptId": "faucet-ql-faucet-probe-1794351043",
+      "fundTransaction": "BtrcJqp2Ro5Zm3Rkb3uWGVX9kwe7ZTL1Zs3c9a9nHHQZ",
+      "funded": "9900000000000000000000000"
+    },
+    {
+      "account": "ql-faucet-1794351069-1.testnet",
+      "receiptId": "faucet-ql-faucet-1794351069-1",
+      "fundTransaction": "E7w8buvzdtpwiXLqCZxinoQxCKkkPWmmgzPNMHvD9Rsb",
+      "funded": "9900000000000000000000000",
+      "deleteTransaction": "8uyDxZ2cfFF3YYuYGWzxuU45N73MyYSa1SwPMMbQmPwe",
+      "finishedAt": "2026-11-10T23:06:41.649Z"
+    },
+    {
+      "account": "ql-faucet-1794351075-2.testnet",
+      "receiptId": "faucet-ql-faucet-1794351075-2",
+      "fundTransaction": "6WMTm1qyKHhtK3CDUAfpYkJN2ZnLj4azpMGP86WYBGut",
+      "funded": "9900000000000000000000000",
+      "deleteTransaction": "DGMKLoRnJFoX3WhFvP5LgSLRFyRoybcDtmiL5dT44n2S",
+      "finishedAt": "2026-11-10T23:06:48.781Z"
+    },
+    {
+      "account": "ql-faucet-1794351079-3.testnet",
+      "receiptId": "faucet-ql-faucet-1794351079-3",
+      "fundTransaction": "GnuJEhQSTrbdiDM9osMs8U7c14kthanHFo5sGJV3NoHn",
+      "funded": "9900000000000000000000000",
+      "deleteTransaction": "GmmjVyB88wiVGNSgrDib6QD2sqXxnBmDDL19QXPFas3C",
+      "finishedAt": "2026-11-10T23:06:56.012Z"
+    },
+    {
+      "account": "ql-faucet-1794351084-4.testnet",
+      "receiptId": "faucet-ql-faucet-1794351084-4",
+      "fundTransaction": "9EPU4aYhHgbx4oiWy4DFkb27sThJp7UEwCuvDjtdfRVo",
+      "funded": "9900000000000000000000000",
+      "deleteTransaction": "EN4uPaLY4MjAcY8ZFLaYR87nCaxYSJMmUo2YQvKdTEiG",
+      "finishedAt": "2026-11-10T23:07:03.290Z"
+    },
+    {
+      "account": "ql-faucet-1794351089-5.testnet",
+      "receiptId": "faucet-ql-faucet-1794351089-5",
+      "fundTransaction": "5MkR2whGDZZS9EcxBjnobynzoNBbPhfiD9ui1Qtt91no",
+      "funded": "9900000000000000000000000",
+      "deleteTransaction": "JA8mx5rE4SRGbV17C4kAq87YKRjP2AphpiVvRcH4stFH",
+      "finishedAt": "2026-11-10T23:07:09.982Z"
+    },
+    {
+      "account": "ql-faucet-1794351093-6.testnet",
+      "receiptId": "faucet-ql-faucet-1794351093-6",
+      "fundTransaction": "CHeLZ4s3PhLM4wxgKxfYS5jq9U3UQu1BjVFa6YwPwYEt",
+      "funded": "9900000000000000000000000",
+      "deleteTransaction": "HaWnostQ14WJfb8WXzKjBiWk4etdYjR1uR2bw5p8SBQK",
+      "finishedAt": "2026-11-10T23:07:16.761Z"
+    },
+    {
+      "account": "ql-faucet-1794351097-7.testnet",
+      "receiptId": "faucet-ql-faucet-1794351097-7",
+      "fundTransaction": "CQNB1DcnUnMKxoENMw1pvhpDa8k6uya62yZwYJYMexuK",
+      "funded": "9900000000000000000000000",
+      "deleteTransaction": "C61UHqdhd6KnJ7oVda12qU4Vbvw37eJ2e3ii3cCPGMrr",
+      "finishedAt": "2026-11-10T23:07:23.306Z"
+    },
+    {
+      "account": "ql-faucet-1794351102-8.testnet",
+      "receiptId": "faucet-ql-faucet-1794351102-8",
+      "fundTransaction": "652ZRiy7UjuRqPJaGocK1yw23hrRCKxxChn9Kajy8dAX",
+      "funded": "9900000000000000000000000",
+      "deleteTransaction": "2uj66uhWTTKH8KAoeZYxrZy3zdqwsEJqFZg4xu7V7ftN",
+      "finishedAt": "2026-11-10T23:07:30.052Z"
+    },
+    {
+      "account": "ql-faucet-1794351106-9.testnet",
+      "receiptId": "faucet-ql-faucet-1794351106-9",
+      "fundTransaction": "92L6ETYE5XMFVWSwfX7i4nepFT7xMDkr5RnEYL8ag9jr",
+      "funded": "9900000000000000000000000",
+      "deleteTransaction": "Bckg2cQTBdJajABUZdDiCZaXNGTdK9qe9ZC7Z8EJeiaB",
+      "finishedAt": "2026-11-10T23:07:36.640Z"
+    },
+    {
+      "account": "ql-faucet-1794351110-10.testnet",
+      "receiptId": "faucet-ql-faucet-1794351110-10",
+      "fundTransaction": "2nhwdwfvLZ4SStZn4fz71fCPfMeUsCsDqMX8u18i5Hw6",
+      "funded": "9900000000000000000000000",
+      "deleteTransaction": "7h4i9tYjkBSrLyRCc5cnpc5UygtkV4ebr3fAGc9nVXtm",
+      "finishedAt": "2026-11-10T23:07:43.664Z"
+    },
+    {
+      "account": "ql-faucet-1794351116-11.testnet",
+      "receiptId": "faucet-ql-faucet-1794351116-11",
+      "fundTransaction": "AyowPaju6VQrv1xwFY6kZTZKMYwSHGn11tpyqrZGGb1B",
+      "funded": "9900000000000000000000000",
+      "deleteTransaction": "6HXG4vjWinf2EppZymNKAQ81XDixF7CpQfTWLSM5Xzi5",
+      "finishedAt": "2026-11-10T23:07:50.009Z"
+    }
+  ],
+  "updatedAt": "2026-11-10T23:07:50.009Z",
+  "totalFunded": "118.800000"
+}

@@ -17,6 +17,7 @@ import type { ChainRef } from "./chain-proof";
 import { Dialog } from "./Dialog";
 import { EmptyState } from "./EmptyState";
 import { FundsHelp } from "./FundsHelp";
+import { qgoldOfNear } from "./qgold-display";
 import { checkFunds, fundsReason, nearText, GAS_HEADROOM, type FundsShortfall } from "./funds-help";
 import type {
   NativeCollectionState,
@@ -308,7 +309,7 @@ export function MarketBoard({
       {credit && (
         <p className="market-board-credit">
           <span>
-            {tr("Available to withdraw:")} <strong>{formatNativeNear(credit.credit)} NEAR</strong>
+            {tr("Available to withdraw:")} <strong>{`${qgoldOfNear(formatNativeNear(credit.credit))} QGOLD`}</strong>
           </span>
           <button type="button" className="button secondary" disabled={locked} onClick={() => void withdraw()}>
             {tr("Withdraw market balance")}
@@ -332,7 +333,7 @@ export function MarketBoard({
                   setResult(null);
                   setOpenKey(l.key);
                 }}
-                aria-label={tr("{0}, {1}, {2} NEAR", { 0: l.title, 1: rarityLabel(l.rarity), 2: shortNear(l.pays) })}
+                aria-label={tr("{0}, {1}, {2} QGOLD", { 0: l.title, 1: rarityLabel(l.rarity), 2: qgoldOfNear(shortNear(l.pays)) })}
               >
                 {l.mine && <span className="market-card-mine">{tr("Yours")}</span>}
                 <span className="market-card-art" aria-hidden="true">
@@ -340,7 +341,7 @@ export function MarketBoard({
                 </span>
                 <strong>{l.title}</strong>
                 <small className={`inv-rarity rarity-${l.rarity}`}>{rarityLabel(l.rarity)}</small>
-                <span className="market-card-price">{shortNear(l.pays)} NEAR</span>
+                <span className="market-card-price">{`${qgoldOfNear(shortNear(l.pays))} QGOLD`}</span>
               </button>
             </li>
           ))}
@@ -367,7 +368,7 @@ export function MarketBoard({
             <dl className="market-detail-facts">
               <div>
                 <dt>{tr("Price")}</dt>
-                <dd>{shortNear(open.pays)} NEAR</dd>
+                <dd>{`${qgoldOfNear(shortNear(open.pays))} QGOLD`}</dd>
               </div>
               <div>
                 <dt>{tr("Seller")}</dt>
@@ -397,7 +398,7 @@ export function MarketBoard({
             ) : (
               <button type="button" className="inventory-action" disabled={locked} onClick={() => void buy(open)}>
                 <Tag size={20} aria-hidden="true" />
-                {working ? tr("Working…") : tr("Buy for {0} NEAR", { 0: shortNear(open.pays) })}
+                {working ? tr("Working…") : tr("Buy for {0} QGOLD", { 0: qgoldOfNear(shortNear(open.pays)) })}
               </button>
             )}
           </section>
@@ -406,7 +407,6 @@ export function MarketBoard({
       {help && (
         <FundsHelp
           title={tr("Why you can't buy this yet")}
-          needLine={tr("Buying it needs about {0} NEAR (the price and a little gas).", { 0: nearText(help.funds.need, 2) })}
           funds={help.funds}
           explorerAccount={explorerAccount}
           explorerStatus={explorerStatus}

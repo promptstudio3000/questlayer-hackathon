@@ -101,3 +101,12 @@ The public history starts on 1 Nov 2026: 31 Oct was a one-off pilot test
 (`publishedDays`, `confirmedPayouts` in `server/native/public-ledger.mjs`)
 lists days and claims from `PUBLIC_HISTORY_START` on; on-chain totals are
 unchanged.
+
+## Plain names (12 Nov 2026)
+
+The page never shows a bare "R": it says **backing per QGOLD** (vault NEAR ÷
+QGOLD supply). Names that still need a word of context (validator, liquid
+staking tokens, stablecoins, Rhea / Rhea Lend, NEAR reserve, keeper, council,
+Sputnik DAO, insurance fund, utilization) carry an info button with the
+explanation from `GLOSSARY` in `src/economy/TreasuryExplain.tsx` (`Term`,
+`InfoTip`).
