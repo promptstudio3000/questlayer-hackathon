@@ -54,22 +54,20 @@ function fixture(t, options = {}) {
   return { db, service, alice, bob, session, advance: (ms) => (now += ms) };
 }
 
-test("session view is owner-scoped, bounded and never returns credentials or fabricated legacy metadata", (t) => {
+test("session view is owner-scoped, bounded and never returns credentials", (t) => {
   const f = fixture(t),
     current = f.session(f.alice, "near-wallet"),
-    legacy = f.session(f.alice, "guest", false),
+    second = f.session(f.alice, "guest"),
     other = f.session(f.bob);
   const view = f.service.view(current);
   assert.equal(view.activeSessionCount, 2);
   assert.equal(view.sessions[0].current, true);
   assert.equal(view.sessions[0].kind, "near-wallet");
-  assert.equal(view.sessions[1].kind, "legacy");
-  assert.equal(view.sessions[1].createdAt, null);
-  assert.equal(view.sessions[1].lastSeenAt, null);
+  assert.equal(view.sessions[1].kind, "guest");
   assert.equal(view.recovery.nativePasskeyAccount, false);
   assert.deepEqual(view.recovery.nearAccounts, [`alice${SUFFIX}`]);
   const encoded = JSON.stringify(view);
-  for (const token of [current, legacy, other]) {
+  for (const token of [current, second, other]) {
     assert.ok(!encoded.includes(token));
     assert.ok(!encoded.includes(hash(token)));
   }
@@ -342,6 +340,7 @@ test("revocation remains effective after closing and reopening the on-disk datab
       origin: "https://game.example",
       verifyIdentity: async () => {},
     });
+    for (const token of [current, old]) service.record(token);
     const c = service.challenge(current, `alice${SUFFIX}`);
     const recovered = await service.recover(current, {
       challengeId: c.challengeId,

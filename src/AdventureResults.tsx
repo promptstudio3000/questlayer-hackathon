@@ -246,8 +246,7 @@ export function AdventureResultDialog({
                   <summary>{tr("Learn more")}</summary>
                   <p>{result.title}</p>
                   <p className="adventure-result-date">{tr("Confirmed")} {new Date(result.completedAt).toLocaleString()}{tr(". Viewing this does not collect the reward again.")}</p>
-                  {result.status === "legacy-unavailable" || !result.reward ? <p>{tr("This visit was confirmed before rewards were recorded in detail. The visit still counts.")}</p>
-                    : <p>+{result.reward.xp} {"XP"} · {gold(result.reward.goldU, 6)} QGOLD</p>}
+                  <p>+{result.reward.xp} {"XP"} · {gold(result.reward.goldU, 6)} QGOLD</p>
                   {edition && AURA_SUPPLY && <p>{tr("Edition size: {0}. This is the series limit, not the number remaining.", { 0: AURA_SUPPLY })}</p>}
                   {item && <p>{result.itemCurrent.reason || (result.itemCurrent.status === "owned" ? tr("This Aura is in your collection.") : tr("Check that you still own this Aura before trying it on."))}</p>}
                   {liveItem && result.itemCurrent.status === "owned" && <div className="reward-outfit-preview"><Character items={previewItems} originTokenId={player.appearance.originTokenId} preview /></div>}

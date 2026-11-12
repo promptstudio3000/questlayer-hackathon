@@ -44,14 +44,13 @@ const identifier = (v) =>
   v.length > 0 &&
   v.length <= 1024 &&
   !v.includes("\0");
-const legacyPrefix = "legacy-result_";
 const base = `SELECT qc.quest_id AS claimed_quest_id,qc.created_at AS claim_time,
 q.world_id AS current_world_id,q.title AS current_title,q.kind AS current_kind,
 w.manifest AS current_manifest,r.*,v.viewed_at
 FROM quest_claims qc JOIN quests q ON q.id=qc.quest_id JOIN worlds w ON w.id=q.world_id
-LEFT JOIN adventure_results r ON r.quest_id=qc.quest_id AND r.player_id=qc.player_id
+JOIN adventure_results r ON r.quest_id=qc.quest_id AND r.player_id=qc.player_id
 LEFT JOIN adventure_result_views v ON v.quest_id=qc.quest_id AND v.player_id=qc.player_id`;
-const domainFilter = "(r.id IS NOT NULL OR q.world_id LIKE 'demo:%')";
+const domainFilter = "r.domain='demo'";
 function checkPlayer(player) {
   assert(identifier(player), "Sign in to inspect your adventure results.", 401);
 }
@@ -213,33 +212,6 @@ export function currentAdventureItem(db, player, item) {
 }
 function present(db, player, row) {
   if (!row) return null;
-  if (!row.id) {
-    const world = demoAdventureWorld({
-      world_id: row.current_world_id,
-      manifest: row.current_manifest,
-    });
-    return {
-      id:
-        legacyPrefix + Buffer.from(row.claimed_quest_id).toString("base64url"),
-      version: 1,
-      domain: "demo",
-      source: "system-quest",
-      status: "legacy-unavailable",
-      playerId: player,
-      questId: row.claimed_quest_id,
-      worldId: row.current_world_id,
-      realm: world.arena ? "arena" : "gps",
-      questKind: row.current_kind,
-      title: row.current_title,
-      completedAt: row.claim_time,
-      viewedAt: row.viewed_at ?? null,
-      reward: null,
-      itemCurrent: unavailable(
-        "legacy-unavailable",
-        "This adventure predates detailed result receipts. Exact reward and item identity cannot be reconstructed; check history and inventory.",
-      ),
-    };
-  }
   const item = row.item_snapshot ? JSON.parse(row.item_snapshot) : null;
   const near=globalRewardReceipt(db,player,row.quest_id);
   return {
@@ -328,28 +300,15 @@ export function createAdventureResults(db) {
       "Invalid adventure result.",
       400,
     );
-    let result;
-    if (resultId.startsWith(legacyPrefix)) {
-      const encoded = resultId.slice(legacyPrefix.length);
-      const questId = Buffer.from(encoded, "base64url").toString("utf8");
-      assert(
-        identifier(questId) &&
-          Buffer.from(questId).toString("base64url") === encoded,
-        "Adventure result not found.",
-        404,
-      );
-      result = forQuest(player, questId);
-      if (result?.status !== "legacy-unavailable") result = null;
-    } else
-      result = present(
-        db,
-        player,
-        db
-          .prepare(
-            `${base} WHERE qc.player_id=? AND r.id=? AND r.domain='demo'`,
-          )
-          .get(player, resultId),
-      );
+    const result = present(
+      db,
+      player,
+      db
+        .prepare(
+          `${base} WHERE qc.player_id=? AND r.id=? AND r.domain='demo'`,
+        )
+        .get(player, resultId),
+    );
     assert(result, "Adventure result not found.", 404, "RESULT_NOT_FOUND");
     return result;
   }
@@ -360,11 +319,11 @@ export function createAdventureResults(db) {
       params = [player];
     if (realm) {
       where.push(
-        "COALESCE(r.realm,CASE WHEN json_extract(w.manifest,'$.arena')=1 THEN 'arena' ELSE 'gps' END)=?",
+        "r.realm=?",
       );
       params.push(realm);
     }
-    if (unviewedOnly) where.push("r.id IS NOT NULL AND v.viewed_at IS NULL");
+    if (unviewedOnly) where.push("v.viewed_at IS NULL");
     if (cursor) {
       let data;
       try {
@@ -433,12 +392,7 @@ export function createAdventureResults(db) {
 }
 
 export function replayAdventureResult(result) {
-  assert(
-    result?.status === "confirmed",
-    "This adventure was completed before detailed receipts. Exact rewards are unavailable; check history and inventory.",
-    409,
-    "RESULT_LEGACY_UNAVAILABLE",
-  );
+  assert(result, "Adventure result not found.", 404, "RESULT_NOT_FOUND");
   return {
     reward: result.reward.goldU,
     xp: result.reward.xp,

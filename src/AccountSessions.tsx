@@ -149,9 +149,7 @@ export function AccountSessions({
                         ? tr("Ethereum wallet")
                       : s.kind === "demo-passkey"
                         ? tr("Passkey")
-                        : s.kind === "legacy"
-                          ? tr("Earlier session")
-                          : tr("Guest")}
+                        : tr("Guest")}
                   </span>
                   {s.accountId && <small>{s.accountId}</small>}
                   <small>
