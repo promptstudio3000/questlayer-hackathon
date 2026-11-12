@@ -3248,5 +3248,19 @@
   "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "केवल टेस्ट नेटवर्क पर। आपका खोजकर्ता, XP, खोजें और आइटम बने रहेंगे। इस डिवाइस पर नया NEAR खाता बनेगा; पुराने खाते के QGOLD और टोकन वहीं रहेंगे और गेम उसे इस्तेमाल करना बंद कर देगा।",
   "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "यह डिवाइस अभी आपके खोजकर्ता खाते से नहीं जुड़ा है, इसलिए यह संदेश भेज या पढ़ नहीं सकता। इसे अपनी रिकवरी पासकी से जोड़ें या यहाँ नए खाते से शुरू करें।",
   "Closed · new zones tomorrow": "बंद · नए ज़ोन कल",
-  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "आपके खाते को शुरुआती NEAR केवल एक बार, बनाते समय मिला। अपना NEAR जोड़ें: किसी भी वॉलेट या एक्सचेंज से {0} पर भेजें।"
+  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "आपके खाते को शुरुआती NEAR केवल एक बार, बनाते समय मिला। अपना NEAR जोड़ें: किसी भी वॉलेट या एक्सचेंज से {0} पर भेजें।",
+  "Tester sign-in": "टेस्टर साइन-इन",
+  "Advanced": "एडवांस्ड",
+  "Create an explorer secured by a passkey": "पासकी से सुरक्षित खोजी बनाओ",
+  "Earn Auras, the glow your friendly ghost wears.": "ऑरा कमाओ, वह चमक जो तुम्हारा दोस्ताना घोस्ट पहनता है।",
+  "Going visible…": "दिखाई दे रहे हो…",
+  "Plzeň · city demo": "Plzeň · शहर डेमो",
+  "Position sharing ended. Share again to stay visible.": "पोज़िशन शेयरिंग ख़त्म हुई। दिखते रहने के लिए फिर से शेयर करो।",
+  "Share my position for 15 min": "15 मिनट के लिए मेरी पोज़िशन शेयर करो",
+  "Sharing shows your name, look and map position to nearby explorers for up to 15 minutes while this tab is open. Players you blocked never see you, and you never see them.": "शेयर करने पर, जब तक यह टैब खुला है, अधिकतम 15 मिनट तक तुम्हारा नाम, लुक और मैप पोज़िशन आस-पास के एक्सप्लोरर्स को दिखते हैं। जिन प्लेयर्स को तुमने ब्लॉक किया है वे तुम्हें कभी नहीं देखते, और तुम उन्हें नहीं देखते।",
+  "Stop sharing my position": "मेरी लोकेशन शेयर करना बंद करो",
+  "Visible · {0}": "दिख रहा है · {0}",
+  "Waiting for your wallet…": "तुम्हारे वॉलेट का इंतज़ार…",
+  "Your position could not be shared. Check your connection and try again.": "तुम्हारी पोज़िशन शेयर नहीं हो सकी। अपना कनेक्शन जाँचो और फिर से कोशिश करो।",
+  "Virtual world": "आभासी दुनिया"
 }

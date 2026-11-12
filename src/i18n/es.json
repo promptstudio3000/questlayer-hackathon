@@ -3248,5 +3248,19 @@
   "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "Solo en la red de pruebas. Tu explorador, XP, hallazgos y objetos se mantienen. Se crea una nueva cuenta NEAR en este dispositivo; el QGOLD y los tokens de la cuenta antigua se quedan allí y el juego deja de usarla.",
   "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Este dispositivo aún no está vinculado a tu cuenta de explorador, así que no puede enviar ni leer mensajes. Añádelo con tu passkey de recuperación o empieza aquí con una cuenta nueva.",
   "Closed · new zones tomorrow": "Cerrado · nuevas zonas mañana",
-  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "Tu cuenta recibió su NEAR inicial una sola vez, al crearse. Añade tu propio NEAR: envíalo desde cualquier billetera o exchange a {0}."
+  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "Tu cuenta recibió su NEAR inicial una sola vez, al crearse. Añade tu propio NEAR: envíalo desde cualquier billetera o exchange a {0}.",
+  "Tester sign-in": "Acceso de tester",
+  "Advanced": "Avanzado",
+  "Create an explorer secured by a passkey": "Crea un explorador protegido con passkey",
+  "Earn Auras, the glow your friendly ghost wears.": "Gana Auras, el brillo que lleva tu fantasma amistoso.",
+  "Going visible…": "Haciéndote visible…",
+  "Plzeň · city demo": "Plzeň · demo de ciudad",
+  "Position sharing ended. Share again to stay visible.": "Se dejó de compartir tu posición. Compártela de nuevo para seguir visible.",
+  "Share my position for 15 min": "Compartir mi posición 15 min",
+  "Sharing shows your name, look and map position to nearby explorers for up to 15 minutes while this tab is open. Players you blocked never see you, and you never see them.": "Al compartir, los exploradores cercanos ven tu nombre, aspecto y posición en el mapa hasta 15 minutos mientras esta pestaña esté abierta. Los jugadores que bloqueaste nunca te ven, y tú tampoco a ellos.",
+  "Stop sharing my position": "Dejar de compartir mi posición",
+  "Visible · {0}": "Visible · {0}",
+  "Waiting for your wallet…": "Esperando a tu monedero…",
+  "Your position could not be shared. Check your connection and try again.": "No se pudo compartir tu posición. Revisa tu conexión e inténtalo de nuevo.",
+  "Virtual world": "Mundo virtual"
 }
