@@ -510,17 +510,6 @@
 .play-native > .play-toolbar {
   margin-top: 4px;
 }
-.zone-access {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  font-size: 14px;
-  color: var(--ink-secondary);
-  margin-bottom: 16px;
-}
-.zone-access .badge {
-  font-size: 14px;
-}
 .main-panel .quest-detail {
   margin-top: 0;
 }

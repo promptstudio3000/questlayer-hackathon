@@ -489,32 +489,30 @@ async function runDevice(name, server) {
 
     console.log("4. First chest");
 
+    // One tap starts the chest quest: far away it goes straight to the map
+    // with the target chip; at the chest it opens the one confirm button.
     await page.locator(".first-session-action").click();
     const detail = page.locator(".quest-detail").first();
-    await detail.waitFor();
-    await capture(page, "chest-detail");
     for (let i = 0; i < 40; i++) {
-      const button = detail.locator(".primary-button").first();
-      const label = (await button.innerText()).trim();
-      if (/Open chest|Confirm visit/.test(label)) {
-        await button.click();
-        break;
-      }
-      assert.match(label, /Start quest|Guide me/, `unexpected chest action: ${label}`);
-      await button.click();
-      if (await detail.isVisible()) continue;
-      await page.locator(".map-guide-key").waitFor();
-      assert.equal(await detail.isVisible(), false, "Guidance folds the detail to reveal the map");
-      await walkToTarget(page);
-      await page.waitForTimeout(400);
-      // Guidance folds the sheet so the pad is free; the folded
-      // sheet keeps the chosen place, one tap opens it again.
       if (!(await detail.isVisible())) {
+        await page.locator(".compact-selection, .nearby-open").first().waitFor();
+        await walkToTarget(page);
+        await page.waitForTimeout(400);
         const nearby = page.locator(".nearby-open");
         if (await nearby.isVisible()) await nearby.click();
         else await page.locator(".compact-selection").click();
         await detail.waitFor();
       }
+      const button = detail.locator(".primary-button").first();
+      const label = (await button.innerText()).trim();
+      if (/Open chest|Confirm visit/.test(label)) {
+        await capture(page, "chest-detail");
+        await button.click();
+        break;
+      }
+      assert.match(label, /^Go/, `unexpected chest action: ${label}`);
+      await button.click();
+      await detail.waitFor({ state: "hidden" });
     }
     const reward = page.getByRole("dialog");
     await reward.waitFor({ timeout: 15_000 });

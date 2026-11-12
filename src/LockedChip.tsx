@@ -7,6 +7,7 @@ import { useState } from "react";
 import "./locked-chip.css";
 import { tr } from "./i18n";
 
+import { nearTextInQgold, qgoldOfNear } from "./qgold-display";
 export const OPEN_STAKE_EVENT = "questlayer:open-stake";
 export const STAKER_SUGGEST_NEAR = "2";
 
@@ -37,7 +38,7 @@ const stepName = (gate: LockGate) =>
   gate.step === "staker" ? tr("Stakers") : gate.step?.startsWith("tier") ? tr("Tier {0}", { 0: gate.step.slice(4) }) : gate.tier ? tr("Tier {0}", { 0: gate.tier }) : tr("Stakers");
 
 export const lockLabel = (gate: LockGate) =>
-  gate.missing?.length ? gate.missing.join(" · ") : `${stepName(gate)}${gate.level && gate.level > 1 ? ` · Level ${gate.level}` : ""}`;
+  gate.missing?.length ? nearTextInQgold(gate.missing.join(" · ")) : `${stepName(gate)}${gate.level && gate.level > 1 ? ` · Level ${gate.level}` : ""}`;
 
 const needsStake = (gate: LockGate) =>
   !gate.missing || gate.missing.some((m) => /^(Stake|Reach Tier|Your stake)/.test(m));
@@ -66,14 +67,14 @@ export default function LockedChip({
           {perk && <p>{perk}.</p>}
           <p>
             {gate.missing?.length
-              ? tr("Missing: {0}.", { 0: gate.missing.join(", ") })
-              : tr("Stake NEAR to reach {0}.", { 0: stepName(gate) })}{" "}
+              ? tr("Missing: {0}.", { 0: nearTextInQgold(gate.missing.join(", ")) })
+              : tr("Stake to reach {0}.", { 0: stepName(gate) })}{" "}
             {needsStake(gate) ? tr("A stake counts two epochs after the deposit.") : tr("Keep exploring to level up.")}
           </p>
           <p className="locked-chip-fair">{tr("Staking unlocks things to do and wear, never better odds.")}</p>
           {needsStake(gate) && (
             <button type="button" onClick={() => onStake(gate.stakeNear || STAKER_SUGGEST_NEAR)}>
-              {tr("Stake")}{" "}{gate.stakeNear || STAKER_SUGGEST_NEAR} NEAR
+              {tr("Stake {0} QGOLD", { 0: qgoldOfNear(gate.stakeNear || STAKER_SUGGEST_NEAR) })}
             </button>
           )}
         </div>

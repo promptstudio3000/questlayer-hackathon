@@ -2,8 +2,8 @@
 // server for an encounter (distance, GPS and speed are checked there), shows
 // the animated 3D model and the offer menu, and hands off to the NPC talk
 // sheet or the monster challenge when those slices are present.
-import { lazy, Suspense, useEffect, useRef, useState, type ComponentType } from "react";
-import { MapPin } from "@phosphor-icons/react";
+import { lazy, Suspense, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { Brain, MapPin, MusicNotes, Path, Question, Sword } from "@phosphor-icons/react";
 import { Dialog } from "./Dialog";
 import { api, ApiError } from "./api";
 import type { ActorEncounter, ActorView } from "./actor-types";
@@ -37,7 +37,7 @@ const MonsterChallenge = optional(import.meta.glob("./MonsterChallenge.tsx"), "M
 const BossFight = lazy(async () => ({ default: (await import("./BossFight")).BossFight }));
 
 const PROBLEM: Record<string, string> = {
-  get OUT_OF_RANGE() { return tr("Too far away. Walk closer: you need to be within about 35 m."); },
+  get OUT_OF_RANGE() { return tr("Too far. Get within 35 m."); },
   get GPS_ACCURACY() { return tr("Your GPS is not precise enough yet. Step into the open and try again."); },
   get GPS_STALE() { return tr("Waiting for a fresh location. Try again in a moment."); },
   get IMPLAUSIBLE_MOVE() { return tr("Your location jumped too fast. Wait for a steady GPS fix."); },
@@ -46,6 +46,14 @@ const PROBLEM: Record<string, string> = {
   get ENCOUNTER_LIMIT() { return tr("Take a short break before meeting more characters."); },
   get WORLD_PAUSED() { return tr("Operators paused today's world for a moment. Your progress is safe."); },
   get ACTORS_DISABLED() { return tr("Characters are not available on this server."); },
+};
+
+const FORMAT_ICON: Record<ChallengeFormat, ReactNode> = {
+  quiz: <Question size={22} weight="bold" aria-hidden="true" />,
+  rhythm: <MusicNotes size={22} weight="bold" aria-hidden="true" />,
+  trace: <Path size={22} weight="bold" aria-hidden="true" />,
+  memory: <Brain size={22} weight="bold" aria-hidden="true" />,
+  duel: <Sword size={22} weight="bold" aria-hidden="true" />,
 };
 
 export function ActorSheet({
@@ -173,7 +181,7 @@ export function ActorSheet({
             <p>{state.message}</p>
             {state.far && onShow ? (
               <button className="primary-button" onClick={onShow}>
-                <MapPin size={18} aria-hidden="true" /><span>{tr("Show me")}</span>
+                <MapPin size={18} aria-hidden="true" /><span>{tr("Go")}</span>
               </button>
             ) : state.retry && (
               <button className="secondary-button" onClick={() => void meet()}>
@@ -183,11 +191,9 @@ export function ActorSheet({
         )}
         {ready && (
           <>
-            <p className="actor-status" role="status">
-              {tr("You are")}{" "}{ready.distanceM} {" "}{tr("m away. This meeting lasts 5 minutes.")}</p>
             {ready.actor.boss && (
               <p className="actor-note">
-                {tr("Shared boss health:")}{" "}{ready.actor.boss.hp} / {ready.actor.boss.maxHp} · {ready.actor.boss.participants} {" "}{tr("hunters this week.")}</p>
+                {tr("HP {0}/{1} · {2} hunters", { 0: ready.actor.boss.hp, 1: ready.actor.boss.maxHp, 2: ready.actor.boss.participants })}</p>
             )}
             {ready.actor.state === "defeated" && ready.menu.length > 0 && (
               <p className="actor-note">{tr("You already beat this one today.")}</p>
@@ -203,15 +209,16 @@ export function ActorSheet({
                       <button
                         className="primary-button"
                         disabled={!canChallenge}
+                        title={picked ? FORMAT_COPY[picked].hint : undefined}
+                        aria-label={picked ? `${FORMAT_COPY[picked].label}. ${FORMAT_COPY[picked].hint}` : undefined}
                         onClick={() => {
                           if (!canChallenge) return;
                           setFormat(picked);
                           setHandoff(isBoss ? "boss" : "challenge");
                         }}
                       >
-                        {offer.label}
+                        {picked ? <>{FORMAT_ICON[picked]}<span>{FORMAT_COPY[picked].short}</span></> : offer.label}
                       </button>
-                      {picked && <small className="actor-offer-hint">{FORMAT_COPY[picked].hint}</small>}
                       {!canChallenge && <small>{tr("Opens in an upcoming update.")}</small>}
                     </li>
                   );

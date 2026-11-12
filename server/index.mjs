@@ -2,6 +2,7 @@ import { createLayerStore } from "./layer/store.mjs";
 import { createLayerRoutes } from "./layer/routes.mjs";
 import { LAYER_REGISTRY, publicLayer } from "./layer/layers.mjs";
 import { defaultDatabasePath } from "./state-path.mjs";
+import { readReleaseStatus } from "./release-status.mjs";
 import {
   cellProof,
   mapRewardsDay,
@@ -123,6 +124,7 @@ import { NativeCollectibles } from "./native/collectibles.mjs";
 import { chainFeed, chainItems } from "./native/chain-feed.mjs";
 import { clientAddress, RateWindows, pruneRateWindows, publicRpcUrl } from "./http-security.mjs";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
+import { tourState, tourAction, tourMark } from "./tour/tour.mjs";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -314,9 +316,11 @@ const linkOrigin = (value) => {
     return null;
   }
 };
+const tourEnabled = NETWORK === "testnet" && (TEST_LAYER || process.env.TOUR_ENABLED === "1");
 const gameLayerConfig = Object.freeze({
   id: LAYER,
   test: TEST_LAYER,
+  tour: tourEnabled,
   // The other world, for the picker: World links to the Test Layer only on testnet.
   testLayerUrl: TEST_LAYER || NETWORK !== "testnet" ? null : linkOrigin(process.env.TEST_LAYER_ORIGIN),
   worldUrl: TEST_LAYER ? linkOrigin(process.env.WORLD_ORIGIN) : null,
@@ -1537,6 +1541,10 @@ async function api(req, res, url) {
     assert(n <= 600, "Please try again shortly.", 429);
   }
   if (await creatorRuntime.handle(req, res)) return;
+  if (req.method === "GET" && path.startsWith("/api/release/")) {
+    const r = readReleaseStatus(path, { network: NETWORK });
+    return respond(res, r.body, r.status);
+  }
   if (path === "/api/health")
     return respond(res, {
       status: "ok",
@@ -3498,7 +3506,9 @@ async function api(req, res, url) {
     limit("bot-chat", player, 12, "Please wait a moment before writing again.");
     const i = await body(req);
     assert(auth(req) === player, "Please sign in again.", 401);
-    return respond(res, demoBotReply(db, player, i.playerId, i.text));
+    const reply = demoBotReply(db, player, i.playerId, i.text);
+    if (tourEnabled) tourMark(db, player, "message");
+    return respond(res, reply);
   }
   if (path === "/api/players/wave" && method === "POST") {
     limit("wave", player, 20, "Please wait before waving again.");
@@ -3773,6 +3783,14 @@ async function api(req, res, url) {
       "Cache-Control": "private,no-cache",
     });
     return res.end(svg);
+  }
+  // Guided tour with helper Pip (docs/GUIDED-TOUR.md): Test Layer, or TOUR_ENABLED=1.
+  if (path === "/api/tour" && method === "GET")
+    return respond(res, tourState(db, player, { enabled: tourEnabled }), 200, { "Cache-Control": "private,no-store" });
+  if (path === "/api/tour" && method === "POST") {
+    assert(tourEnabled, "The tour runs in the Test Layer.", 404, "TOUR_OFF");
+    tourAction(db, player, await body(req));
+    return respond(res, tourState(db, player, { enabled: true }));
   }
   if (path === "/api/guide/hint" && method === "POST") {
     // First-session coach: one grounded sentence for the player's current
