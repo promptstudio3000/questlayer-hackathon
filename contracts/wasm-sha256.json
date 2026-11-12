@@ -3,7 +3,7 @@
   "toolchain": "rust:1.97.0 linux/amd64",
   "contracts": {
     "questlayer_badges": "23cc54a71915bac02d595b6880363491f9a341fc54756a77f7d5d4e1fd72797a",
-    "questlayer_collectibles": "52edcff46ee1a6d55bb5833838637ae4bcb986b5c0ee2620086665a9f4f96a16",
+    "questlayer_collectibles": "d82f4dee87eccc225e83f6048faedc49c96840cfa0eed0de18e57b388884b62a",
     "questlayer_creators": "df12b5f9f544ebbfa545df7d80d0a7834fafc22605da366664472b063360c40b",
     "questlayer_game": "c7ab37be026f1aa1ec0441b3fbf0ea40af4dcfd70f31197d2e0046ddccdba34f",
     "questlayer_ledger": "3c4df45cdfa8854dc37553fc13be261fef09acd00a283d4c7fac0aa26704ffa5",
@@ -28,14 +28,6 @@
       "contract": "questlayer_market",
       "sha256": "bd1f74d2858e468b354c2bb174ca95d921e933898adb9738fced8b817a0439ee"
     },
-    "public/native-rewards-testnet.json:factory.wasmSha256": {
-      "contract": "questlayer_vault_factory",
-      "sha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9"
-    },
-    "public/native-rewards-testnet.json:factory.vaultWasmSha256": {
-      "contract": "questlayer_vault",
-      "sha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7"
-    },
     "public/native-rewards-testnet.json:vaults.0.wasmSha256": {
       "contract": "questlayer_vault",
       "sha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7"
@@ -55,32 +47,42 @@
     },
     "public/native-claims-testnet.json:wasmSha256": {
       "contract": "questlayer_collectibles",
-      "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
-      "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
+      "sha256": "52edcff46ee1a6d55bb5833838637ae4bcb986b5c0ee2620086665a9f4f96a16",
+      "note": "Live testnet code before uncapped editions (256 serials per edition). scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
     },
     "public/native-editions-testnet.json:wasmSha256": {
       "contract": "questlayer_collectibles",
-      "sha256": "e2a41b19830c79a25d42634d618e89dd09d6f75305a8e0573070f7a6f8d531e9",
-      "note": "Live testnet code before NEP-199 royalties. scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
-    },
-    "public/native-qgold-vault-testnet.json:wasmSha256": {
-      "contract": "questlayer_qgold",
-      "sha256": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
-      "note": "Public testnet still runs the prior QGOLD build. Exact NEAR game carry and durable conversion receipts require the existing council upgrade process and its 48-hour timelock. No deployment is implied."
+      "sha256": "52edcff46ee1a6d55bb5833838637ae4bcb986b5c0ee2620086665a9f4f96a16",
+      "note": "Live testnet code before uncapped editions (256 serials per edition). scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
     },
     "public/native-qgold-escrow-testnet.json:wasmSha256": {
       "contract": "questlayer_qgold_escrow",
       "sha256": "7dc6933af802454b1434d3a39ed2a3b85d32468e27f7d7f109e3bc14f24966da"
     },
-    "public/native-yield-vault-testnet.json:wasmSha256": {
+    "public/native-rewards-testnet.json:factoryHistory.0.wasmSha256": {
+      "contract": "questlayer_vault_factory",
+      "sha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9",
+      "note": "Replaced on testnet; kept as history (2026-11-09T23:55:59.017Z)."
+    },
+    "public/native-rewards-testnet.json:factoryHistory.0.vaultWasmSha256": {
+      "contract": "questlayer_vault",
+      "sha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7",
+      "note": "Replaced on testnet; kept as history (2026-11-09T23:55:59.017Z)."
+    },
+    "public/native-yield-vault-testnet.json:previousDeployments.0.wasmSha256": {
       "contract": "questlayer_yield_vault",
       "sha256": "fc1d090f7d7a86ddff2183e0b11f5450c1f0c98786dcd2e262b390a261727700",
-      "note": "Live yield vault before the 9 Nov H4/M5 fixes; redeploy and update the record to remove this entry."
+      "note": "Replaced on testnet; kept as history (2026-11-09T23:56:34.628Z)."
     },
-    "public/native-rewards-testnet.json:wasmSha256": {
+    "public/native-rewards-testnet.json:previousDeployments.0.wasmSha256": {
       "contract": "questlayer_rewards",
       "sha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
-      "note": "Live rewards before the 9 Nov M4 gas/reconcile fix; upgrading rewards and updating the record removes this entry."
+      "note": "Replaced on testnet; kept as history (2026-11-10T01:00:19.807Z)."
+    },
+    "public/native-qgold-vault-testnet.json:previousDeployments.0.wasmSha256": {
+      "contract": "questlayer_qgold",
+      "sha256": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
+      "note": "Public testnet still runs the prior QGOLD build. Exact NEAR game carry and durable conversion receipts require the existing council upgrade process and its 48-hour timelock. No deployment is implied."
     }
   }
 }

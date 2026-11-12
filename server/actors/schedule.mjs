@@ -249,6 +249,9 @@ function minutes(hhmm) {
   return h * 60 + m;
 }
 
+/** NPCs that talk, trade or give quests walk all day and night. */
+export const npcAroundTheClock = (def) => def?.kind === "npc" && !def.windows;
+
 /**
  * Active window(s) for a definition on one local day, as [start, end] ms.
  * `dayStart` is local midnight (calendar.localDateStart). Practice worlds pass
@@ -256,7 +259,10 @@ function minutes(hhmm) {
  * with phase "day" walks only between local sunrise and sunset, and a "night"
  * one only after sunset (and before sunrise), inside the same opening hours.
  */
-export function activeWindows(def, { dayStart, hours, allDay = false, rng, sky = null }) {
+export function activeWindows(def, { dayStart, hours, allDay: practice = false, rng, sky = null }) {
+  // NPCs stay on the map around the clock (owner, 11 Nov 2026); only
+  // monsters and short-appearance wanderers keep opening hours and day/night.
+  const allDay = practice || npcAroundTheClock(def);
   const [open, close] = allDay ? ["00:00", "23:59"] : def.hours || hours;
   const start = dayStart + minutes(open) * MINUTE,
     end = dayStart + minutes(close) * MINUTE;

@@ -5,7 +5,7 @@
 # /tmp/<app>-<tag>.tgz. Called over ssh by scripts/deploy-vps.sh (Mac) and
 # locally by the VPS release runner (scripts/release-runner.mjs, which runs the
 # copy installed from main, never one from the deploy branch).
-# Args: <release-tag> <testnet|mainnet> <app-name> <port> <domain>
+# Args: <release-tag> <testnet|mainnet|testlayer> <app-name> <port> <domain>
 set -Eeuo pipefail
 RELEASE_TAG="$1" TARGET="$2" APP_NAME="$3" APP_PORT="$4" APP_DOMAIN="$5"
 APP_DIR="/opt/ps3000/apps/$APP_NAME"
@@ -17,7 +17,17 @@ if [[ -e /opt/ps3000/apps/auratrail || -e /var/lib/auratrail || -e /etc/systemd/
 fi
 RELEASE_DIR="$APP_DIR/releases/$RELEASE_TAG"
 BACKUP_DIR="$APP_DIR/backups/$RELEASE_TAG"
-if [[ "$TARGET" == mainnet ]]; then CADDY_FILE=/opt/ps3000/config/caddy/questlayer-mainnet.caddy; else CADDY_FILE=/opt/ps3000/config/caddy/questlayer.caddy; fi
+if [[ "$TARGET" == mainnet ]]; then CADDY_FILE=/opt/ps3000/config/caddy/questlayer-mainnet.caddy
+elif [[ "$TARGET" == testlayer ]]; then CADDY_FILE=/opt/ps3000/config/caddy/questlayer-testlayer.caddy
+else CADDY_FILE=/opt/ps3000/config/caddy/questlayer.caddy; fi
+if [[ "$TARGET" == testlayer ]]; then
+ # The contracts trust only the keys scripts/deploy-testlayer.mjs created.
+ for KEY in award-attestor.pem player-factory.json relayer.json; do
+  if [[ ! -f "$STATE_DIR/$KEY" && ! -f "/var/lib/private/$APP_NAME/$KEY" ]]; then
+   echo "$STATE_DIR/$KEY is missing; run scripts/install-testlayer-keys-vps.sh first." >&2; exit 1
+  fi
+ done
+fi
 if [[ "$TARGET" == mainnet ]]; then
  # The server would create a fresh award key if none existed, and the mainnet
  # contract trusts only the one set by deploy-mainnet-slice.mjs.
@@ -85,7 +95,7 @@ if [[ "$TARGET" == mainnet ]]; then
  curl -fsS "http://127.0.0.1:$APP_PORT/api/health" | python3 -c 'import json,sys; h=json.load(sys.stdin); assert h["network"]=="mainnet", h["network"]; print("network:", h["network"], "features:", h["features"])'
 fi
 if [[ -f "$STATE_DIR/award-attestor.pem" && ! -f "$BACKUP_DIR/award-attestor.pem" ]]; then cp -a "$STATE_DIR/award-attestor.pem" "$BACKUP_DIR/award-attestor.pem"; fi
-if [[ "$TARGET" == mainnet ]]; then
+if [[ "$TARGET" == mainnet || "$TARGET" == testlayer ]]; then
  # A new site file of its own; the testnet questlayer.caddy is never edited.
  cat > "$CADDY_FILE" <<CADDY
 $APP_DOMAIN {

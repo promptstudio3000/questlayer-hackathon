@@ -196,7 +196,7 @@ function signingVault(dir) {
   asRoot(["install", "-d", "-m", "755", `${root}/releases/${release}`]);
   asRoot(["cp", "-R", `${stage}/.`, `${root}/releases/${release}/`]);
   asRoot(["chown", "-R", "root:root", `${root}/releases/${release}`]);
-  asRoot(["bash", join(INSTALL, "scripts/vps-install-signing-vault-release.sh"), root, release, "questlayer-signer.promptstudio3000.com", "7092"]);
+  asRoot(["bash", join(INSTALL, "scripts/vps-install-signing-vault-release.sh"), root, release, "questlayer-signer.promptstudio3000.com", "7092", "questlayer-signer"]);
   rmSync(stage, { recursive: true, force: true });
   return { status: "reinstalled", fingerprint: want, release };
 }

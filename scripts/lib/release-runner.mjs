@@ -181,4 +181,8 @@ export const RELEASE_FILES = [
   "deploy/questlayer-hackathon.service",
   "deploy/retain-static-assets.py",
   "scripts/poi",
+  "scripts/treasury-worker-vps.sh",
+  "scripts/stnear-treasury-testnet.mjs",
+  "scripts/treasury-mix-testnet.mjs",
+  "scripts/treasury-dao-testnet.mjs",
 ];

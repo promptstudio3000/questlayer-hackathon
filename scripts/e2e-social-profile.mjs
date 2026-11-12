@@ -1,7 +1,7 @@
 // Cross-browser journeys through the social and profile surfaces a player
 // reaches after the first session:
 //
-//   1. Sign in with an Ethereum wallet (Welcome → Advanced → "Continue with
+//   1. Sign in with an Ethereum wallet (Welcome → "I already have an explorer" → Ethereum, "Continue with
 //      MetaMask or Rabby"). The wallet is an EIP-1193 provider injected into
 //      the page whose personal_sign is answered in Node by a throwaway viem
 //      key, so the server verifies a real SIWE signature. Base RPC is a local
@@ -294,9 +294,9 @@ async function runDevice(name, server, rpc, account) {
     const signed = await injectWallet(eth, account);
     await eth.goto(server.url);
     await eth.getByPlaceholder("Your explorer name").fill(`Eth ${name}`);
-    await eth.locator("details.welcome-advanced > summary").click();
-    await scan(eth, "welcome-advanced");
-    await eth.getByRole("button", { name: "Continue with MetaMask or Rabby" }).click();
+    await eth.getByRole("button", { name: "I already have an explorer", exact: true }).click();
+    await scan(eth, "welcome-login");
+    await eth.getByRole("button", { name: "Ethereum", exact: true }).click();
     // A returning wallet (second device run) restores the same explorer.
     await eth.locator(".topbar .profile-pill").waitFor({ timeout: 30_000 });
     assert.equal(signed.length, 1, "the wallet signed one message");
@@ -372,8 +372,9 @@ async function runDevice(name, server, rpc, account) {
     await startPlaying(b, server.url, nameB);
     for (const p of [a, b]) {
       await openSettings(p);
-      await p.getByRole("button", { name: /Share my position for 15 min/ }).click();
-      await p.getByRole("button", { name: /Stop sharing my position/ }).waitFor();
+      // Nearby explorers see each other without opting in (11 Nov 2026).
+      const share = p.getByRole("switch", { name: /Show me to nearby explorers/ });
+      assert.equal(await share.getAttribute("aria-checked"), "true", "sharing is on by default");
       await closeOpenSheet(p);
     }
     const bob = a.locator(`.other-player-marker[aria-label^="${nameB}"]`);

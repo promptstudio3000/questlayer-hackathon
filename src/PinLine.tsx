@@ -10,7 +10,7 @@ const MapPeek = lazy(() => import("./MapPeek").then((m) => ({ default: m.MapPeek
 
 /**
  * The GPS line under a note, topic or place (Lubos, 10 Nov 2026): the pin's
- * coordinates and distance in one small row. Tapping it shows the spot on a
+ * distance and coordinates in one small row; the distance reads first. Tapping it shows the spot on a
  * plain map; its X comes back here.
  */
 export function PinLine({ at, you, title }: { at: Point; you?: Point | null; title: string }) {
@@ -26,10 +26,10 @@ export function PinLine({ at, you, title }: { at: Point; you?: Point | null; tit
       >
         <MapPin size={16} weight="fill" aria-hidden="true" />
         <span className="sr-only">{tr("Show on the map:")} </span>
+        {away && <span className="pin-line-away">{away}</span>}
         <span className="pin-line-gps">
-          {at.lat.toFixed(5)}, {at.lng.toFixed(5)}
+          {away ? "· " : ""}{at.lat.toFixed(5)}, {at.lng.toFixed(5)}
         </span>
-        {away && <span className="pin-line-away">· {away}</span>}
       </button>
       {open && (
         <Suspense fallback={null}>
