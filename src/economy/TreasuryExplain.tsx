@@ -118,7 +118,7 @@ const LOOP = [
   { Icon: Vault, title: "Treasury", text: "staked, never spent" },
   { Icon: Plant, title: "Daily yield", text: "becomes map coins" },
   { Icon: Coins, title: "QGOLD", text: "minted with its NEAR" },
-  { Icon: Fire, title: "Spent in game", text: "burned, R rises" },
+  { Icon: Fire, title: "Spent in game", text: "burned, backing per QGOLD rises" },
 ];
 
 export function YieldLoop() {
@@ -271,6 +271,31 @@ export function FaqList({ items }: { items: Faq[] }) {
         </details>
       ))}
     </div>
+  );
+}
+
+/** Plain-words explanations for the names and abbreviations the page uses. */
+export const GLOSSARY = {
+  backing: "Backing per QGOLD: the NEAR locked in the QGOLD vault for each QGOLD in circulation (vault NEAR ÷ QGOLD supply). Minting adds its own NEAR, spending burns QGOLD and leaves the NEAR behind, so it can only stay or rise.",
+  validator: "A validator runs the NEAR network. NEAR staked with one earns part of the network's new NEAR each epoch (about 7 hours) and can always be unstaked; the validator keeps a small fee.",
+  lst: "Liquid staking tokens (stNEAR from Meta Pool, LiNEAR): staked NEAR packed into a token that can be traded. On testnet their price is frozen, so they earn nothing here.",
+  stable: "Stablecoins follow the US dollar: USDC (Circle) and USDT (Tether). They keep part of the treasury steady in dollars when the NEAR price moves.",
+  rhea: "Rhea Finance is a NEAR exchange (formerly Ref Finance and Burrow). Rhea Lend is its lending market, where the treasury lends its stablecoins; the Rhea pool is where anyone swaps QGOLD and NEAR.",
+  reserve: "NEAR kept as wrapped NEAR (wNEAR) in the treasury account, ready to use. It earns nothing.",
+  keeper: "The keeper is a bot account with no power to move money on its own: it files the daily run as a DAO proposal and, on the Rhea pool, makes only small pre-announced sales above the backing and buy-backs below it.",
+  council: "The council is a set of keys in the DAO. A daily run happens only after enough of them approve it, and only within the voted mix and the safety limits.",
+  dao: "A DAO is a shared account on NEAR run by votes. This one is a Sputnik DAO; Trezu is the treasury app built for such DAOs.",
+  insurance: "The insurance fund gets a tenth of every fee and is kept apart. It is there for a protocol failure, never for paying rewards.",
+  utilization: "Utilization is how much of a lending market is lent out. Above 95 % new money stays out, because it might be hard to withdraw.",
+};
+
+/** A name with its explanation one tap away. */
+export function Term({ children, tip }: { children: React.ReactNode; tip: React.ReactNode }) {
+  return (
+    <span className="tr-term">
+      {children}
+      <InfoTip label={`What is ${typeof children === "string" ? children : "this"}?`}>{tip}</InfoTip>
+    </span>
   );
 }
 
