@@ -11,7 +11,7 @@
 //   - Sweep: credit above float + buffer goes to rewards fund_rewards("sponsor").
 // All amounts are yoctoNEAR as BigInt.
 import { hash } from "../domain.mjs";
-import { AURA_CATALOG } from "../aura-catalog.mjs";
+import { AURA_CATALOG, AURA_CHAIN_CAPPED } from "../aura-catalog.mjs";
 
 export const NPC_TRADER_POLICY = "npc-trader-v1";
 export const YOCTO = 10n ** 24n;
@@ -86,7 +86,8 @@ export const STOCK_MINTS_PER_DAY = 3;
 export const STOCK_DEPOSIT = 50n * MILLI; // attached to redeem_aura; the unused part is refunded
 export const STOCK_COST_ESTIMATE = 25n * MILLI; // mint storage + gas + escrow gas, checked before minting
 export const STOCK_RESERVE = YOCTO / 10n; // liquid NEAR a sweep leaves behind for restocking
-export const STOCK_EDITION_HEADROOM = 200; // never take an edition past 200 of its 256 on-chain copies
+// Never take a capped (old-build) edition past 200 of its 256 on-chain copies.
+export const STOCK_EDITION_HEADROOM = AURA_CHAIN_CAPPED ? 200 : Infinity;
 
 /** Least-stocked stock edition; ties rotate with the day's mint count. */
 export function pickStockEdition(heldEditions, n = 0, editions = STOCK_EDITIONS) {

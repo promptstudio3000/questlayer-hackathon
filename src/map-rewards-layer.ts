@@ -3,6 +3,7 @@
 // pioneer cells nobody has explored for 30 days. Loaded on demand by
 // GameMap; it fetches /api/map/rewards for the visible box after the map
 // stops moving. At street zoom the real coins take over and the overlay fades.
+import { formatGold } from "./gold-units.ts";
 import type * as maplibregl from "maplibre-gl";
 import { api } from "./api";
 import { tr } from "./i18n.ts";
@@ -36,10 +37,9 @@ const SOURCE = "map-rewards",
 export function rewardsResolution(zoom: number) {
   return zoom < 7 ? 4 : zoom < 9.5 ? 5 : zoom < 11.5 ? 6 : 7;
 }
+/** Whole GOLD: 1 GOLD is the smallest QGOLD unit (src/gold-units.ts). */
 export function goldLabel(valueU: number) {
-  const g = valueU / 1e6;
-  if (g > 0 && g < 0.01) return String(Number(g.toFixed(6)));
-  return g >= 100 ? g.toFixed(0) : g >= 10 ? g.toFixed(1) : g.toFixed(2);
+  return formatGold(valueU);
 }
 
 export function attachMapRewardsLayer(m: maplibregl.Map): MapRewardsLayer {

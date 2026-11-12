@@ -401,7 +401,7 @@ function Conversation({
       )}
       {(state === "none" || state === "declined") && (
         <div className="inbox-callout">
-          <p>{tr("Ask {0} first. They decide whether you may write. If you both wave at each other, you can write right away.", { 0: name })}</p>
+          <p>{tr("Ask {0} first. They decide whether you may write. When you are within 1 km of each other, you can write right away.", { 0: name })}</p>
           <button className="primary" disabled={busy || state === "declined"} onClick={() => void act(() => api("/inbox/request", { playerId: peerId }))}>
             {tr("Ask to message")}
           </button>

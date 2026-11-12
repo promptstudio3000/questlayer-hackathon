@@ -300,6 +300,7 @@ export function fakeTransport(state) {
 export function fixture({
   fundYocto = NEAR / 10n,
   topupCapYocto = NEAR / 5n,
+  refuel = false,
   maxJobsPerDay = 40,
   maxDepositYoctoPerDay,
   factoryOptions,
@@ -318,6 +319,7 @@ export function fixture({
     factoryId: FACTORY,
     fundYocto,
     topupCapYocto,
+    refuel,
     clock,
     subsidyBudget: new SubsidyBudget(db, { dailyYocto: 100n * NEAR, dailyOperations: 10000, gasReserveYocto: NEAR / 100n, clock, ...subsidyLimits }),
   });

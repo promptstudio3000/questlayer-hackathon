@@ -21,6 +21,12 @@
   --focus: #672eeb;
   --shell: #1a0335;
   --font-body: "Kanit", system-ui, sans-serif;
+  /* Compact type scale (owner decision, 11 Nov 2026): labels must fit one line
+     on a 360 px phone. Inputs stay at 16px so iOS does not zoom. */
+  --text-title: 18px;
+  --text-body: 15px;
+  --text-meta: 13px;
+  --text-note: 12px;
   --radius-control: 8px;
   --radius-item: 12px;
   --radius-sheet: 20px;

@@ -9,7 +9,7 @@
 //     only after the record is confirmed on chain,
 //   - reports, which carry the reporter's disclosed single-message key so a
 //     moderator can read exactly that message and nothing else.
-import { assert, id } from "../domain.mjs";
+import { assert, distance, id } from "../domain.mjs";
 import { isSocialBlocked } from "../social-content.mjs";
 import { ensureModuleVersion, registerModuleSchema } from "../schema-compatibility.mjs";
 import {
@@ -33,6 +33,10 @@ export const INBOX_LIMITS = Object.freeze({
   muteReports: 3,
   muteWindowMs: 7 * 86_400_000,
   pendingMs: 15 * 60_000,
+  // Explorers within this distance of each other (both sharing a position in
+  // the same realm) may write right away (Lubos, 11 Nov 2026).
+  nearMeters: 1000,
+  nearFreshMs: 10 * 60_000,
 });
 export const INBOX_REPORT_REASONS = ["spam", "harassment", "privacy", "other"];
 
@@ -129,10 +133,30 @@ export class PlayerInbox {
       return false;
     }
   }
+  /** Both explorers share a position in the same realm, within 1 km. */
+  near(x, y, now) {
+    try {
+      const at = (p) =>
+        this.db
+          .prepare("SELECT lat,lng,arena FROM presence WHERE player_id=? AND expires_at>? AND updated_at>?")
+          .get(p, now, now - INBOX_LIMITS.nearFreshMs);
+      const a = at(x),
+        b = at(y);
+      return !!(a && b && a.arena === b.arena && distance(a, b) <= INBOX_LIMITS.nearMeters);
+    } catch {
+      return false;
+    }
+  }
   /** What the conversation with `target` allows right now. */
   relation(player, target) {
     const c = this.contact(player, target),
       now = this.clock();
+    // Meeting within 1 km opens the conversation for good (a declined request
+    // stays declined).
+    if (c?.state !== "open" && c?.state !== "declined" && this.near(player, target, now)) {
+      this.openContact(player, target, now, null);
+      return "open";
+    }
     const state = c?.state === "open" || this.mutualWave(player, target, now)
       ? "open"
       : c?.state === "requested"
@@ -212,7 +236,7 @@ export class PlayerInbox {
         "INSERT INTO inbox_contacts(a_id,b_id,state,requested_by,created_at,updated_at) VALUES(?,?,'open',?,?,?) ON CONFLICT(a_id,b_id) DO UPDATE SET state='open',updated_at=excluded.updated_at",
       )
       .run(a, b, player, now, now);
-    return { state: "open", peer: { id: peer.id, name: peer.name } };
+    return { state: "open", peer: peer && { id: peer.id, name: peer.name } };
   }
   answer(player, target, accept) {
     const peer = this.peer(player, target),

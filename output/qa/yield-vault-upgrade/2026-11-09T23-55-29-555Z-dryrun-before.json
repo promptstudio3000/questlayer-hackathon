@@ -1,0 +1,334 @@
+{
+  "label": "before",
+  "contractId": "questlayer-yield-20261102.testnet",
+  "blockHeight": 276990506,
+  "takenAt": "2026-11-09T23:55:30.935Z",
+  "account": {
+    "codeHash": "Hy9RJ8LxDzzLMwWtp2c4MuFq26xi6DQYz4K6Su6S6xUo",
+    "amount": "9997716017758865599999998",
+    "storageUsage": 292430
+  },
+  "raw": {
+    "digest": "68b1aa398e1e7daefe89b1cc25d673b23e83e5f9497e91bb1e81ec1889691be7",
+    "values": [
+      {
+        "key": "U1RBVEU=",
+        "value": "HwAAAHF1ZXN0bGF5ZXItZGV2LTIwMjYxMTAxLnRlc3RuZXQfAAAAcXVlc3RsYXllci1kZXYtMjAyNjExMDEudGVzdG5ldBcAAABjb250cmFjdC5idXJyb3cudGVzdG5ldABcJgUAAAAAAAQAAAAUAAAAbWV0YS12Mi5wb29sLnRlc3RuZXQBEQAAAGdldF9zdF9uZWFyX3ByaWNlAAAAAOTSDMjc0rdSAAAAAAAAAABKSAEUFpVFCAAAAAAAAACA9krhxwItFQAAAAAAANAHHCUKAAAAoN7Frck1NgAAAAAAAADzo/rDG0wF8XiHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADtlcKPBVoqAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAAAAAAAXAAAAbGluZWFyLXByb3RvY29sLnRlc3RuZXQBCAAAAGZ0X3ByaWNlAAAAAOTSDMjc0rdSAAAAAAAAAABKSAEUFpVFCAAAAAAAAACA9krhxwItFQAAAAAAANAHHCUKAAAAoN7Frck1NgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAASAAAAdXNkYy5mYWtlcy50ZXN0bmV0AAAAAAABAOQLVAIAAAAAAAAAAAAAAADKmjsAAAAAAAAAAAAAAACghgEAAAAAAAAAAAAAAAAA0AccJQoA6AMAAAAAAAAAAAAAAAAAAEoCFwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6aBAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAMAAAAAAAAAP0lyb6hAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAACAAAAAAAAABIAAAB1c2R0LmZha2VzLnRlc3RuZXQAAAAAAAEA5AtUAgAAAAAAAAAAAAAAAMqaOwAAAAAAAAAAAAAAAKCGAQAAAAAAAAAAAAAAAADQBxwlCgDoAwAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAQAAAHABAAAAcQIAAAAAAAAA"
+      },
+      {
+        "key": "cDIAAABxdWVzdGxheWVyLWRldi0yMDI2MTEwMS50ZXN0bmV0I3VzZGMuZmFrZXMudGVzdG5ldA==",
+        "value": "AAAAAAAAAAAAAAAAAAAAAAIAAAAkWQ4AAAAAAAAAAAAAAAAAEJ4CrKEBAAAmqQgAAAAAAAAAAAAAAAAAoyZWr6EBAAAAAAAAAAAAAAAAAAAAAAAA"
+      },
+      {
+        "key": "cDQAAABxdWVzdGxheWVyLWRldi0yMDI2MTEwMS50ZXN0bmV0I21ldGEtdjIucG9vbC50ZXN0bmV0",
+        "value": "AAAAAAAAAAAAAAAAAAAAAAEAAADzo/rDG0wF8XiHAAAAAAAApdZtn6EBAAAAAAAAAAAAAAAAAAAAAAAA"
+      }
+    ]
+  },
+  "decoded": {
+    "state": {
+      "owner": "questlayer-dev-20261101.testnet",
+      "treasury": "questlayer-dev-20261101.testnet",
+      "rhea": "contract.burrow.testnet",
+      "lock_ms": "86400000",
+      "deposits_paused": false,
+      "tokens": [
+        {
+          "id": "meta-v2.pool.testnet",
+          "lst": true,
+          "price_method": "get_st_near_price",
+          "rhea": false,
+          "cap": "100000000000000000000000000",
+          "account_cap": "10000000000000000000000000",
+          "min_deposit": "100000000000000000000000",
+          "buffer_bps": 2000,
+          "max_util_bps": 9500,
+          "safety_bps": 10,
+          "min_harvest": "1000000000000000000000",
+          "principal": "639750451847467410039795",
+          "pending": "0",
+          "queued": "0",
+          "idle": "200000000000000000000000",
+          "outgoing": "0",
+          "inbound": "0",
+          "inbound_block": "0",
+          "inbound_threshold": "0",
+          "op": 0,
+          "op_nonce": "0",
+          "op_ms": "0",
+          "q_head": "0",
+          "q_tail": "0",
+          "harvested": "0",
+          "deposits": "1"
+        },
+        {
+          "id": "linear-protocol.testnet",
+          "lst": true,
+          "price_method": "ft_price",
+          "rhea": false,
+          "cap": "100000000000000000000000000",
+          "account_cap": "10000000000000000000000000",
+          "min_deposit": "100000000000000000000000",
+          "buffer_bps": 2000,
+          "max_util_bps": 9500,
+          "safety_bps": 10,
+          "min_harvest": "1000000000000000000000",
+          "principal": "0",
+          "pending": "0",
+          "queued": "0",
+          "idle": "0",
+          "outgoing": "0",
+          "inbound": "0",
+          "inbound_block": "0",
+          "inbound_threshold": "0",
+          "op": 0,
+          "op_nonce": "0",
+          "op_ms": "0",
+          "q_head": "0",
+          "q_tail": "0",
+          "harvested": "0",
+          "deposits": "0"
+        },
+        {
+          "id": "usdc.fakes.testnet",
+          "lst": false,
+          "price_method": "",
+          "rhea": true,
+          "cap": "10000000000",
+          "account_cap": "1000000000",
+          "min_deposit": "100000",
+          "buffer_bps": 2000,
+          "max_util_bps": 9500,
+          "safety_bps": 10,
+          "min_harvest": "1000",
+          "principal": "1507914",
+          "pending": "0",
+          "queued": "0",
+          "idle": "301582",
+          "outgoing": "0",
+          "inbound": "0",
+          "inbound_block": "0",
+          "inbound_threshold": "0",
+          "op": 0,
+          "op_nonce": "12",
+          "op_ms": "1794202215933",
+          "q_head": "0",
+          "q_tail": "0",
+          "harvested": "0",
+          "deposits": "2"
+        },
+        {
+          "id": "usdt.fakes.testnet",
+          "lst": false,
+          "price_method": "",
+          "rhea": true,
+          "cap": "10000000000",
+          "account_cap": "1000000000",
+          "min_deposit": "100000",
+          "buffer_bps": 2000,
+          "max_util_bps": 9500,
+          "safety_bps": 10,
+          "min_harvest": "1000",
+          "principal": "0",
+          "pending": "0",
+          "queued": "0",
+          "idle": "0",
+          "outgoing": "0",
+          "inbound": "0",
+          "inbound_block": "0",
+          "inbound_threshold": "0",
+          "op": 0,
+          "op_nonce": "0",
+          "op_ms": "0",
+          "q_head": "0",
+          "q_tail": "0",
+          "harvested": "0",
+          "deposits": "0"
+        }
+      ],
+      "positions_prefix": "p",
+      "queue_prefix": "q",
+      "position_count": "2"
+    },
+    "positions": {
+      "questlayer-dev-20261101.testnet#usdc.fakes.testnet": {
+        "free": "0",
+        "tranches": [
+          {
+            "amount": "940324",
+            "locked_until_ms": "1793887215120"
+          },
+          {
+            "amount": "567590",
+            "locked_until_ms": "1793943021219"
+          }
+        ],
+        "queued": "0"
+      },
+      "questlayer-dev-20261101.testnet#meta-v2.pool.testnet": {
+        "free": "0",
+        "tranches": [
+          {
+            "amount": "639750451847467410039795",
+            "locked_until_ms": "1793676138149"
+          }
+        ],
+        "queued": "0"
+      }
+    },
+    "queue": {}
+  },
+  "views": {
+    "config": {
+      "owner_id": "questlayer-dev-20261101.testnet",
+      "treasury_id": "questlayer-dev-20261101.testnet",
+      "rhea_id": "contract.burrow.testnet",
+      "lock_ms": "86400000",
+      "deposits_paused": false,
+      "max_tranches": 16,
+      "positions": 2,
+      "max_positions": 1000
+    },
+    "tokens": [
+      {
+        "token_id": "meta-v2.pool.testnet",
+        "kind": "lst",
+        "value_unit": "yoctoNEAR",
+        "price_source": {
+          "contract": "meta-v2.pool.testnet",
+          "method": "get_st_near_price",
+          "scale": "1000000000000000000000000"
+        },
+        "strategy": "hold",
+        "cap": "100000000000000000000000000",
+        "account_cap": "10000000000000000000000000",
+        "min_deposit": "100000000000000000000000",
+        "buffer_bps": 2000,
+        "max_util_bps": 9500,
+        "safety_bps": 10,
+        "principal": "639750451847467410039795",
+        "pending": "0",
+        "queued": "0",
+        "idle": "200000000000000000000000",
+        "outgoing": "0",
+        "inbound": "0",
+        "harvested": "0",
+        "deposits": 1,
+        "queue_length": 0,
+        "op": 0
+      },
+      {
+        "token_id": "linear-protocol.testnet",
+        "kind": "lst",
+        "value_unit": "yoctoNEAR",
+        "price_source": {
+          "contract": "linear-protocol.testnet",
+          "method": "ft_price",
+          "scale": "1000000000000000000000000"
+        },
+        "strategy": "hold",
+        "cap": "100000000000000000000000000",
+        "account_cap": "10000000000000000000000000",
+        "min_deposit": "100000000000000000000000",
+        "buffer_bps": 2000,
+        "max_util_bps": 9500,
+        "safety_bps": 10,
+        "principal": "0",
+        "pending": "0",
+        "queued": "0",
+        "idle": "0",
+        "outgoing": "0",
+        "inbound": "0",
+        "harvested": "0",
+        "deposits": 0,
+        "queue_length": 0,
+        "op": 0
+      },
+      {
+        "token_id": "usdc.fakes.testnet",
+        "kind": "stable",
+        "value_unit": "token",
+        "price_source": null,
+        "strategy": "rhea",
+        "cap": "10000000000",
+        "account_cap": "1000000000",
+        "min_deposit": "100000",
+        "buffer_bps": 2000,
+        "max_util_bps": 9500,
+        "safety_bps": 10,
+        "principal": "1507914",
+        "pending": "0",
+        "queued": "0",
+        "idle": "301582",
+        "outgoing": "0",
+        "inbound": "0",
+        "harvested": "0",
+        "deposits": 2,
+        "queue_length": 0,
+        "op": 0
+      },
+      {
+        "token_id": "usdt.fakes.testnet",
+        "kind": "stable",
+        "value_unit": "token",
+        "price_source": null,
+        "strategy": "rhea",
+        "cap": "10000000000",
+        "account_cap": "1000000000",
+        "min_deposit": "100000",
+        "buffer_bps": 2000,
+        "max_util_bps": 9500,
+        "safety_bps": 10,
+        "principal": "0",
+        "pending": "0",
+        "queued": "0",
+        "idle": "0",
+        "outgoing": "0",
+        "inbound": "0",
+        "harvested": "0",
+        "deposits": 0,
+        "queue_length": 0,
+        "op": 0
+      }
+    ],
+    "positions": {
+      "questlayer-dev-20261101.testnet": [
+        {
+          "token_id": "meta-v2.pool.testnet",
+          "kind": "lst",
+          "value_unit": "yoctoNEAR",
+          "principal": "639750451847467410039795",
+          "withdrawable": "639750451847467410039795",
+          "tranches": [],
+          "queued": "0"
+        },
+        {
+          "token_id": "usdc.fakes.testnet",
+          "kind": "stable",
+          "value_unit": "token",
+          "principal": "1507914",
+          "withdrawable": "1507914",
+          "tranches": [],
+          "queued": "0"
+        }
+      ]
+    },
+    "queues": {
+      "meta-v2.pool.testnet": [],
+      "linear-protocol.testnet": [],
+      "usdc.fakes.testnet": [],
+      "usdt.fakes.testnet": []
+    }
+  },
+  "external": {
+    "balances": {
+      "meta-v2.pool.testnet": "200000000000000000000000",
+      "linear-protocol.testnet": "0",
+      "usdc.fakes.testnet": "301582",
+      "usdt.fakes.testnet": "0"
+    },
+    "rheaSupplyShares": {
+      "usdc.fakes.testnet": "1206240612736170224"
+    }
+  }
+}

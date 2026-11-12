@@ -735,124 +735,11 @@ svg {
   max-height: 96dvh;
   overflow: auto;
 }
-.welcome-art {
-  height: 145px;
-  position: relative;
-  margin: 5px auto 2px;
-  width: 230px;
-  display: grid;
-  place-items: center;
-}
-.welcome-art > .ghost-art {
-  width: 101px;
-  height: 117px;
-  z-index: 2;
-  animation: float 4s ease-in-out infinite;
-  filter: drop-shadow(0 10px 10px #a08bb526);
-}
-.orbit {
-  position: absolute;
-  width: 138px;
-  height: 138px;
-  border: 1px solid #dfd1e8;
-  border-radius: 50%;
-  transform: rotate(-25deg);
-}
-.orbit.two {
-  width: 200px;
-  height: 95px;
-}
-.welcome-art .star {
-  position: absolute;
-  color: #ccae6a;
-}
-.star.one {
-  width: 22px;
-  left: 17px;
-  top: 35px;
-}
-.star.two {
-  width: 13px;
-  right: 26px;
-  bottom: 23px;
-}
-.floating-coin {
-  position: absolute;
-  font-size: 25px;
-  color: #dbb053;
-  right: 10px;
-  top: 22px;
-  transform: rotate(12deg);
-  text-shadow: 1px 2px #b68d3d;
-}
-.welcome-leaf {
-  position: absolute;
-  bottom: 13px;
-  left: 29px;
-  color: #9ab6a0;
-  width: 33px;
-  height: 33px;
-  transform: rotate(-22deg);
-}
-.welcome-card h1 {
-  font-size: 34px;
-  line-height: 1.13;
-  letter-spacing: -1.3px;
-  margin: 12px 0 16px;
-}
-.welcome-card h1 em {
-  font-style: normal;
-  color: #9a7aaf;
-}
 .welcome-card > p {
   font-size: 12px;
   color: #6e5d6c;
   line-height: 1.7;
   margin-bottom: 23px;
-}
-.welcome-card form {
-  text-align: left;
-}
-.welcome-card label {
-  font-size: 8px;
-  letter-spacing: 1.5px;
-  color: #6f5a79;
-  font-weight: 600;
-}
-.welcome-card input {
-  margin: 9px 0 12px;
-}
-.welcome-note {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  margin-top: 13px;
-  color: #6e616e;
-  font-size: 9px;
-  line-height: 1.6;
-}
-.welcome-note svg {
-  color: #90aa91;
-}
-.passkey-button {
-  width: 100%;
-  display: flex;
-  gap: 9px;
-  justify-content: center;
-  align-items: center;
-  color: #6c5785;
-  background: none;
-  border: 1px solid #e6ddec;
-  border-radius: 10px;
-  padding: 11px 8px;
-  font-size: 10px;
-  margin-top: 10px;
-}
-.welcome-card > .text-button {
-  font-size: 9px;
-  margin: 5px auto 0;
-  padding-bottom: 3px;
 }
 input:not([type="range"]):not([type="checkbox"]):not([type="file"]),
 textarea {
@@ -1627,43 +1514,12 @@ input[type="range"] {
     width: 360px;
     border-radius: 22px;
   }
-  .welcome-art {
-    height: 125px;
-    margin-bottom: 5px;
-  }
-  .welcome-art > .ghost-art {
-    width: 88px;
-    height: 102px;
-  }
-  .orbit.one {
-    height: 115px;
-    width: 115px;
-  }
-  .orbit.two {
-    height: 80px;
-    width: 170px;
-  }
-  .welcome-card h1 {
-    font-size: 31px;
-  }
   .welcome-card > p {
     font-size: 11px;
     margin-bottom: 17px;
   }
-  .welcome-card form input {
-    margin-top: 7px;
-    padding: 10px 12px;
-  }
   .welcome-card .primary-button {
     min-height: 43px;
-  }
-  .welcome-note {
-    font-size: 8px;
-    margin-top: 10px;
-  }
-  .welcome-card .passkey-button {
-    font-size: 9px;
-    padding: 10px;
   }
   .fund-hero {
     gap: 17px;
@@ -1717,10 +1573,6 @@ input[type="range"] {
   }
   .npc-modal h2 {
     font-size: 21px;
-  }
-  .main-panel.explore-panel:has(.zone-hero) {
-    height: 65dvh;
-    max-height: none;
   }
 }
 @media (prefers-reduced-motion: reduce) {
@@ -1839,17 +1691,6 @@ input[type="range"] {
   }
   .fine-print {
     font-size: 11px !important;
-  }  .welcome-note {
-    font-size: 10px;
-  }
-  .welcome-card label {
-    font-size: 10px;
-  }
-  .welcome-card > .text-button {
-    font-size: 11px;
-  }
-  .welcome-card .passkey-button {
-    font-size: 11px;
   }
   .wallet-hero small {
     font-size: 10px;
@@ -2153,29 +1994,8 @@ select {
   max-height: calc(100dvh - 32px);
   overflow: auto;
 }
-.welcome-card form > .primary-button,
-.welcome-card form > .secondary-button {
-  width: 100%;
-  min-height: 48px;
-}
-.identity-note {
-  font-size: 12px !important;
-  line-height: 1.5;
-  color: #665174;
-  margin: 12px 0;
-}
-.welcome-card input {
-  font-size: 16px;
-  min-height: 48px;
-}
-.welcome-card label {
-  font-size: 12px;
-}
 .welcome-card > p {
   font-size: 16px;
-}
-.welcome-note span {
-  font-size: 12px;
 }
 
 .game-dialog:has(.welcome-card) {
@@ -2188,9 +2008,6 @@ select {
   max-width: none;
   margin: 0;
   box-shadow: none;
-}
-.welcome-card h1:focus {
-  outline: none;
 }
 
 .inline-error {
@@ -2303,16 +2120,9 @@ select {
   overflow: visible;
 }
 
-.welcome-card form > .primary-button,
-.welcome-card form > .secondary-button,
-.welcome-card > .passkey-button,
 .wallet-select > .secondary-button {
   font-size: 16px;
   line-height: 1.3;
-}
-.welcome-card form > .primary-button {
-  justify-content: center;
-  gap: 12px;
 }
 .native-wardrobe {
   padding: 20px 0;
@@ -2918,14 +2728,12 @@ select {
 @media (max-width: 420px) { .original-item-grid { grid-template-columns: repeat(2,minmax(0,1fr)); } }
 
 /* E1 shell cleanup: progressive disclosure for optional identity and advanced settings. */
-.welcome-advanced,
 .advanced-settings {
   margin-top: 12px;
   border-top: 1px solid var(--border, #e4dcf2);
   padding-top: 8px;
   text-align: left;
 }
-.welcome-advanced > summary,
 .advanced-settings > summary {
   cursor: pointer;
   font-size: 14px;
@@ -2936,30 +2744,17 @@ select {
   align-items: center;
   list-style: none;
 }
-.welcome-advanced > summary::before,
 .advanced-settings > summary::before {
   content: "›";
   display: inline-block;
   width: 16px;
   transition: transform 160ms ease-out;
 }
-.welcome-advanced[open] > summary::before,
 .advanced-settings[open] > summary::before {
   transform: rotate(90deg);
 }
-.welcome-advanced .passkey-button,
-.welcome-advanced .identity-note {
-  margin-top: 8px;
-}
 .advanced-settings .play-mode-switch {
   margin: 8px 0;
-}
-.welcome-card .text-button {
-  min-height: 48px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 14px;
 }
 .welcome-card .primary-button {
   justify-content: center;
@@ -3021,25 +2816,6 @@ select {
   grid-template-columns: minmax(0, 1fr);
 }
 .map-placeholder {background:linear-gradient(160deg,#f3ecfb 0%,#e6dcf5 100%);}
-/* Welcome screen link to the "How it works" one-pager. */
-.welcome-how {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  min-height: 44px;
-  margin: -4px 0 12px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid var(--decorative-border);
-  background: var(--surface-soft);
-  color: var(--action);
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
-.welcome-how:hover {
-  background: #e6dbfb;
-}
 a.settings-row {
   text-decoration: none;
 }
@@ -3063,16 +2839,3 @@ a.settings-row:hover {
 .app-shell.hud-loading > :not(.map-stage) { visibility: hidden; }
 /* One loading message at a time: while the world loads, its message replaces the map's. */
 .app-shell:has(.world-loading) .map-loading:not(.map-failure) { display: none; }
-/* Owner tester sign-in (/?tester, testnet only). */
-.welcome-tester {
-  display: grid;
-  gap: 8px;
-  margin: 8px 0;
-}
-.welcome-tester input {
-  min-height: 44px;
-  padding: 0 12px;
-  border-radius: 10px;
-  border: 1px solid var(--line, #d0cfe0);
-  font: inherit;
-}
