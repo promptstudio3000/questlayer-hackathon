@@ -417,7 +417,6 @@ html.hiw-root {
 .hiw-scene {
   min-width: 0;
 }
-.hiw-panel,
 .hiw-walk,
 .hiw-zones,
 .hiw-levels,
@@ -1102,8 +1101,6 @@ html.hiw-root {
     justify-self: center;
   }
 }
-
-
 
 /* 08 Fair play */
 .hiw-principles {

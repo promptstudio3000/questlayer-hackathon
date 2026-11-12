@@ -9,8 +9,7 @@
 }
 .app-shell[data-screen] .rail-links button span { font-size: 16px; }
 .app-shell[data-screen] .topbar .profile-pill,
-.app-shell[data-screen] .topbar .daily-board-chip,
-.app-shell[data-screen] .map-toolbar > button {
+.app-shell[data-screen] .topbar .daily-board-chip {
   border: 0;
   box-shadow: 0 2px 12px #1a033514;
   background: var(--surface-raised);
@@ -21,10 +20,7 @@
 .app-shell[data-screen] .hud-xp-text b > span:last-child { font-size: 14px; font-weight: 400; color: var(--ink-secondary); }
 .app-shell[data-screen] .hud-xp-text small { font-size: 12px; color: var(--ink-secondary); }
 .app-shell[data-screen] .hud-xp-level { border: 2px solid var(--surface-raised); }
-.app-shell[data-screen] .map-toolbar > button { border-radius: var(--radius-item); }
 .app-shell .map-stage[aria-hidden="true"] .maplibregl-ctrl-attrib { visibility: hidden; }
-.app-shell[data-screen] .map-status-chip { border: 0; border-radius: 10px; background: var(--surface-raised); box-shadow: 0 2px 12px #1a03350c; }
-.app-shell[data-screen] .map-status-chip button { background: transparent; font-weight: 500; font-size: 14px; }
 .app-shell[data-screen] .main-panel.explore-panel.sheet-compact {
   padding: 16px;
   border: 0;
@@ -45,8 +41,6 @@
   background: var(--surface-raised);
   box-shadow: 0 2px 12px #1a033514;
 }
-.app-shell[data-screen] .demo-pad-grid button { border: 0; background: var(--surface-soft); border-radius: var(--radius-control); }
-.app-shell[data-screen] .demo-pad-grid button[aria-pressed="true"] { background: var(--action); color: var(--on-action); }
 .app-shell[data-screen] .demo-pad-open { display: inline-flex; align-items: center; gap: 8px; width: auto; min-width: 48px; padding: 8px 14px; color: var(--ink); font-size: 14px; }
 
 /* Existing native dialog: sticky close, truthful requirement and one main action. */
@@ -68,9 +62,6 @@
 .game-dialog-encounter .find-details-art img { width: 128px; height: 128px; }
 .game-dialog-encounter .find-details h2 { font-size: 28px; font-weight: 500; line-height: 1.2; }
 .game-dialog-encounter .find-details p { font-size: 16px; color: var(--ink-secondary); }
-
-
-
 
 /* phone-map.css owns control anchors for both expanded and collapsed movement. */
 @media (max-width: 390px) {

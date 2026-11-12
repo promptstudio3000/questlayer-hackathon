@@ -228,10 +228,6 @@ html.wk-root body {
   font-size: 19px;
   color: var(--t-money);
 }
-.wk-summary {
-  margin: 4px 0;
-  color: var(--wk-muted);
-}
 .wk-meta {
   display: flex;
   gap: 12px;
@@ -415,14 +411,6 @@ html.wk-root body {
 }
 .wk-edge-line.dashed {
   stroke-dasharray: 5 5;
-}
-.wk-edge-flow {
-  fill: none;
-  stroke: var(--tc);
-  stroke-width: 3;
-  stroke-linecap: round;
-  stroke-dasharray: 2 22;
-  animation: wk-flow 1.6s linear infinite;
 }
 .wk-arrowhead {
   fill: var(--wk-muted);
@@ -846,9 +834,6 @@ html.wk-root body {
   .wk-line.draw {
     stroke-dasharray: none;
     stroke-dashoffset: 0;
-  }
-  .wk-edge-flow {
-    display: none;
   }
   .wk-msg {
     opacity: 1;
