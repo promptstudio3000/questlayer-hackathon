@@ -3237,5 +3237,8 @@
  "{0} has {1} NEAR.": "{0} के पास {1} NEAR है।",
  "It didn't finish. If it was sent, your stake shows here in a minute.": "यह पूरा नहीं हुआ। अगर भेजा गया था, तो आपका स्टेक एक मिनट में यहाँ दिखेगा।",
  "It didn't finish. If it was sent, your vault shows here in a minute.": "यह पूरा नहीं हुआ। अगर भेजा गया था, तो आपका वॉल्ट एक मिनट में यहाँ दिखेगा।",
- "It didn't finish. If it was sent, it shows here in a minute.": "यह पूरा नहीं हुआ। अगर भेजा गया था, तो यह एक मिनट में यहाँ दिखेगा।"
+ "It didn't finish. If it was sent, it shows here in a minute.": "यह पूरा नहीं हुआ। अगर भेजा गया था, तो यह एक मिनट में यहाँ दिखेगा।",
+ "Test Layer": "टेस्ट लेयर",
+ "The real game.": "असली गेम।",
+ "Every feature with test coins. Nothing here is real money.": "टेस्ट सिक्कों के साथ हर सुविधा। यहाँ कुछ भी असली पैसा नहीं है।"
 }

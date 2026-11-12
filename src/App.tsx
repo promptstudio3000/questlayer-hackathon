@@ -4,7 +4,7 @@ import { MapSurface } from "./MapSurface";
 import { ActorPortrait } from "./ActorPortrait";
 import { nearbyAction, type NearbyActor } from "./nearby-action";
 import type { Coin } from "./types";
-import { WorldSwitcher } from "./WorldSwitcher";
+import { WorldSwitcher, type GameLayerConfig } from "./WorldSwitcher";
 import { questDisplayTitle } from "./quest-copy";
 import { mapObjective, canOfferNearbyAction } from "./map-objective";
 import { EmptyState } from "./EmptyState";
@@ -430,10 +430,16 @@ export default function App() {
     }),
     [now, setNow] = useState(Date.now()),
     // Server switch LAYER_ENABLED: adds the virtual voxel Layer to the logo world picker.
-    [virtualLayer, setVirtualLayer] = useState<PublicLayer | null>(null);
+    [virtualLayer, setVirtualLayer] = useState<PublicLayer | null>(null),
+    // Test Layer or QuestLayer World (docs/TEST-LAYER.md).
+    [gameLayer, setGameLayer] = useState<GameLayerConfig | null>(null);
   useEffect(() => {
-    void api<{ layer?: { layers?: PublicLayer[] } | null }>("/config")
-      .then((c) => setVirtualLayer(c.layer?.layers?.[0] ?? null))
+    void api<{ layer?: { layers?: PublicLayer[] } | null; gameLayer?: GameLayerConfig | null }>("/config")
+      .then((c) => {
+        setVirtualLayer(c.layer?.layers?.[0] ?? null);
+        setGameLayer(c.gameLayer ?? null);
+        if (c.gameLayer?.test) document.documentElement.dataset.testLayer = "1";
+      })
       .catch(() => {});
   }, []);
   // Read guards follow the requested mode before React commits its next render.
@@ -3823,7 +3829,7 @@ export default function App() {
       </aside>
       <header className="topbar">
         {virtualLayer && player ? (
-          <WorldSwitcher virtual={tab === "layer"} enabled layerName={virtualLayer.name} onChoose={(virtual) => { setTab(virtual ? "layer" : "explore"); setSheetExpanded(false); }} />
+          <WorldSwitcher virtual={tab === "layer"} enabled layerName={virtualLayer.name} gameLayer={gameLayer} onChoose={(virtual) => { setTab(virtual ? "layer" : "explore"); setSheetExpanded(false); }} />
         ) : (
         <div className="wordmark" onClick={() => setTab("explore")}>
           <img className="wordmark-logo" src="/icon.svg" alt="" width={36} height={36} />
