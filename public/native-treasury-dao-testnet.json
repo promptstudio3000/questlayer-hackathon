@@ -1,0 +1,49 @@
+{
+  "network": "testnet",
+  "contractId": "questlayer-treasury.sputnik-v2.testnet",
+  "factory": "sputnik-v2.testnet",
+  "keeper": "keeper.questlayer-dev-20261101.testnet",
+  "council": [
+    "council-a.questlayer-dev-20261101.testnet",
+    "council-b.questlayer-dev-20261101.testnet",
+    "questlayer-dev-20261101.testnet"
+  ],
+  "approvals": 2,
+  "explorerRule": {
+    "minLevel": 3,
+    "minXp": 400,
+    "activeDays": 7
+  },
+  "mixPresets": [
+    {
+      "id": "balanced",
+      "label": "Balanced 50 / 40 / 10",
+      "targets": {
+        "lst": 5000,
+        "stable": 4000,
+        "near": 1000
+      }
+    },
+    {
+      "id": "staking",
+      "label": "More staking 70 / 20 / 10",
+      "targets": {
+        "lst": 7000,
+        "stable": 2000,
+        "near": 1000
+      }
+    },
+    {
+      "id": "reserve",
+      "label": "Bigger reserve 40 / 30 / 30",
+      "targets": {
+        "lst": 4000,
+        "stable": 3000,
+        "near": 3000
+      }
+    }
+  ],
+  "recommended": "balanced",
+  "trezuUrl": null,
+  "createdAt": "2026-11-11T02:01:22.213Z"
+}

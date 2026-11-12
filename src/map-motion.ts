@@ -67,7 +67,7 @@ export function moveMapMarker(
 // follow the way the character faces, and left / right turn it.
 export const DEMO_TICK_MS = 100;
 export const DEMO_WALK_MPS = 5;
-// Under the 15 m/s GPS jump cap even though the demo arena is exempt.
+// The demo arena is exempt from the GPS travel cap (about 15 km/h).
 export const DEMO_RUN_MPS = 14;
 export const DEMO_BACK_FACTOR = 0.6;
 export const DEMO_TURN_DPS = 150;

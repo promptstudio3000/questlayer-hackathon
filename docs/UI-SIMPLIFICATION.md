@@ -69,3 +69,39 @@ Styles in `src/mobile-sheets.css` (imported after `compact-ui.css`).
 - NPC dialogs: grid tracks may shrink (`minmax(0, 1fr)`) and locked chips
   wrap their gate text under the label, so long gates ("Reach Tier 2 …")
   no longer push the dialog past the right edge.
+
+## Wave 4: arcade pass (11 Nov 2026)
+
+Source: a walk through every screen and dialog of the build at upbeat-gauss
+`976dfff` (phone 390 and 360, short landscape, desktop). Rule of the pass:
+one screen, one decision. Styles in `src/arcade-ui.css` (imported last) and
+`src/welcome.css`.
+
+- **Type scale.** Owner decision: smaller type so labels fit one line on a
+  360 px phone. Tokens `--text-title` 18, `--text-body` 15, `--text-meta` 13,
+  `--text-note` 12 in `src/tokens.css`; screen titles are 20 px and section
+  headings 16 px. Inputs stay at 16 px (iOS zoom). This replaces the 16/14
+  baseline of `DESIGN.md` for the game UI.
+- **Welcome is two steps** (`src/Welcome.tsx`). Step one asks for a name and
+  has one button; "I already have an explorer" opens step two with every way
+  back in: name and password (test explorers, not on mainnet), then Passkey,
+  NEAR, Ethereum and Recovery as a row of small buttons. Creating an explorer
+  with a passkey is no longer offered here; Profile keeps "Secure with a
+  passkey". The backdrop is solid, and a short landscape phone gets the art
+  beside the form so the name field and button stay on screen.
+- **Today's board.** A goal is one row and one button (it points the map at
+  the goal); the separate "Show me" button is gone.
+- **Characters.** Offers listed under "Choose a quest" are not repeated in the
+  Talk tab. Out of range shows "Show me" (marks the character on the map)
+  instead of "Try again".
+- **Zone activity.** The requirement, reward chips and one button; "How this
+  works" and "Learn more" share one row. "Ready to start" is not printed.
+- **Find card.** Art beside the name instead of above it.
+- **Task and Secret composers** are three steps (what, reward, review) with
+  the same fields and limits; the price is on the last step. Note, topic and
+  place composers put the pin art beside the title.
+- **Pin line.** Distance first, coordinates after it.
+
+Not done in this wave: Community detail pages, Shop, Profile, Stake, the
+creator quest form, desktop two-column screens, Treasury charts. Proposals
+and screenshots: the 11 Nov walk-through shared with the owner.

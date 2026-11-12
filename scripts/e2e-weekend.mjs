@@ -43,7 +43,7 @@ try {
     await page.goto(url);
     await page.getByLabel("What should we call you?").fill("UI explorer");
     if (width === 390) {
-      await page.locator(".welcome-card *").evaluateAll(elements => {
+      await page.locator(".signin *").evaluateAll(elements => {
         const saved=elements.map(el=>[el,el.style.fontSize,getComputedStyle(el).fontSize,el.style.getPropertyPriority("font-size")]);
         window.__restoreText=()=>saved.forEach(([el,style,,priority])=>el.style.setProperty("font-size",style,priority));
         saved.filter(([el])=>el.matches("input,textarea,select")||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,,size])=>el.style.setProperty("font-size",`${parseFloat(size)*2}px`,"important"));
@@ -61,7 +61,7 @@ try {
     if (width === 390) {
       await page.route("**/api/session", route => route.abort("failed"), { times: 1 });
       await page.getByRole("button", { name: "Start exploring", exact: true }).click();
-      await page.locator(".welcome-card .inline-error").waitFor();
+      await page.locator(".signin .inline-error").waitFor();
       assert.equal(await page.locator("#nickname").inputValue(), "UI explorer");
       await page.screenshot({ path: join(SHOTS, "welcome-lost-response.png") });
     }

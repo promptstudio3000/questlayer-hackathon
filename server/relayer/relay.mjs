@@ -1,3 +1,4 @@
+import { chainEditionOpen } from "../aura-catalog.mjs";
 import { ensurePurchases, existingPurchaseRelay } from "../gold-spend/purchases.mjs";
 import { ensureRelaySubmissions } from "./submissions.mjs";
 import { actions } from "near-api-js";
@@ -415,7 +416,7 @@ export class Relayer {
       "RELAY_CLAIM_USED",
     );
     assert(
-      Number.isSafeInteger(minted) && minted < 256,
+      chainEditionOpen(minted),
       "This Aura edition is fully minted on NEAR.",
       409,
       "RELAY_CLAIM_SUPPLY",

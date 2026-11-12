@@ -31,7 +31,7 @@ const WALKERS = Number(args.walkers || 500);
 const DURATION_S = Number(args.duration || 180);
 const RAMP_S = Number(args.ramp || 60);
 const OUT = args.out || "output/qa/load-test/latest";
-const SPEED_MPS = 4; // jogging: under the 15 m/s travel guard, finds coins fast
+const SPEED_MPS = 4; // jogging: under the ~15 km/h (4.2 m/s) travel guard, finds coins fast
 export const LOAD_BUDGET = {
   // Time inside the server (Server-Timing app) at p95 for the polled reads.
   serverP95Ms: Number(process.env.LOAD_SERVER_P95_MS || 100),

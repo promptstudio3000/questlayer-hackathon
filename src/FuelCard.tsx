@@ -1,7 +1,7 @@
 // Profile → Stake → Earnings: the explorer's own NEAR ("fuel"). Gas for game
 // actions is sponsored; this small balance covers account storage and the
 // player's own payments (Aura buys, deposits). When it runs low the player can
-// refuel once a day, send NEAR from any wallet or exchange, or sell QGOLD for
+// send NEAR from any wallet or exchange, or sell QGOLD for
 // NEAR at the vault (docs/RELAYER.md, "Fuel and refuel").
 import { useEffect, useState } from "react";
 import { ArrowsClockwise, Copy, GasPump } from "@phosphor-icons/react";
@@ -69,9 +69,11 @@ export function FuelCard({ refreshKey }: { refreshKey: string }) {
         {tr("The game pays the gas for every action. This small balance covers your account's storage and your own payments, such as buying an Aura.")}
       </p>
       <div className="fuel-actions">
-        <button type="button" className="secondary-button" onClick={refuel} disabled={busy || !fuel.canRefuel}>
-          <ArrowsClockwise size={18} aria-hidden="true" /> {tr("Refuel to {0} NEAR", { 0: near(fuel.targetYocto) })}
-        </button>
+        {fuel.reason !== "FUEL_START_ONLY" && (
+          <button type="button" className="secondary-button" onClick={refuel} disabled={busy || !fuel.canRefuel}>
+            <ArrowsClockwise size={18} aria-hidden="true" /> {tr("Refuel to {0} NEAR", { 0: near(fuel.targetYocto) })}
+          </button>
+        )}
         <a className="secondary-button" href="/economy#qgold">
           {tr("Convert QGOLD to NEAR")}
         </a>
@@ -80,7 +82,9 @@ export function FuelCard({ refreshKey }: { refreshKey: string }) {
         </button>
       </div>
       <small className="fuel-hint">
-        {fuel.reason === "FUEL_REFUELED_TODAY"
+        {fuel.reason === "FUEL_START_ONLY"
+          ? tr("Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.", { 0: fuel.accountId })
+          : fuel.reason === "FUEL_REFUELED_TODAY"
           ? tr("You already refuelled today. Tomorrow you can again.")
           : fuel.reason === "FUEL_NOT_LOW"
             ? tr("Refuel opens when your balance drops below {0} NEAR, once a day.", { 0: near(fuel.belowYocto) })

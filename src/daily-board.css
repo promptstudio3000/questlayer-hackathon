@@ -23,15 +23,17 @@
 }
 .daily-board-sheet {
   display: grid;
-  gap: 14px;
-  padding: 22px 20px;
+  gap: 10px;
   max-width: 420px;
 }
 .daily-board-sheet h2 {
   margin: 0;
+  padding-inline-end: 40px;
+  font-size: 18px;
 }
 .daily-board-lead {
   margin: 0;
+  font-size: 13px;
   color: var(--ink-secondary);
 }
 .daily-board-sheet ul {
@@ -39,14 +41,9 @@
   margin: 0;
   padding: 0;
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 .daily-board-sheet li {
-  display: grid;
-  grid-template-columns: auto 1fr auto auto;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
   border: 1px solid var(--decorative-border);
   border-radius: var(--radius-item);
   background: var(--surface-raised);
@@ -56,15 +53,35 @@
   background: var(--success-surface);
   color: var(--success);
 }
+/* One goal is one row; an open goal is a button that points the map at it. */
+.daily-board-go {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: inherit;
+  background: none;
+  color: inherit;
+  text-align: start;
+}
+.daily-board-go > svg:last-child {
+  color: var(--ink-secondary);
+}
 .daily-board-sheet li b {
   display: block;
   color: var(--ink);
+  font-size: 15px;
   font-weight: 500;
+  line-height: 1.25;
 }
 .daily-board-bar {
   display: block;
-  height: 6px;
-  margin-top: 6px;
+  height: 4px;
+  margin-top: 5px;
   border-radius: 3px;
   background: var(--surface-soft);
   overflow: hidden;
@@ -79,6 +96,7 @@
   background: var(--success);
 }
 .daily-board-sheet small {
+  font-size: 13px;
   font-variant-numeric: tabular-nums;
   color: var(--ink-secondary);
 }
@@ -92,7 +110,7 @@
   color: var(--error);
 }
 /* Phones: the chip shares the top bar with GOLD and the profile, so the
-   wordmark and the GOLD label give it room (profile stays fully visible). */
+   GOLD label gives it room (profile stays fully visible). */
 @media (max-width: 430px) {
   .daily-board-chip {
     padding: 7px 9px;
@@ -102,22 +120,8 @@
   .daily-board-chip b {
     font-size: 12px;
   }
-  .topbar .wordmark > span {
-    font-size: 17px;
-  }
   .topbar .balance-pill > span:not(.gold-icon) {
     display: none;
   }
 }
 .daily-board-sr { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
-
-/* "Show me" on an unfinished goal: closes the board and points the map. */
-.daily-board-go {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  min-height: 48px;
-  padding: 0 12px;
-  font-size: 14px;
-  white-space: nowrap;
-}

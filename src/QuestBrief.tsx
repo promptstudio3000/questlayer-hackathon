@@ -42,9 +42,12 @@ export function QuestBrief({ compact = false, playerId, quest: q, zone, position
   const status = q.completed ? tr("Completed") : !online ? tr("You're offline") : zone.operatorPause ? tr("Not open now") : !open
     ? q.opens_at > now ? tr("opens in {0}", { 0: remaining(q.opens_at) }) : tr("Closed for today")
     : activity ? tr("In progress") : tr("Ready to start");
-  return <section className="quest-detail quest-brief" role="region" aria-label={title} tabIndex={-1} id={"quest-" + q.id}>
+  const routeProgress = q.kind === "route" && !q.completed && open && online;
+  // In the zone list the row already says the activity is open; only say what differs.
+  const quietStatus = compact && !routeProgress && !q.completed && open && online && !activity;
+  return <section className={`quest-detail quest-brief${compact ? " quest-brief-compact" : ""}`} role="region" aria-label={title} tabIndex={-1} id={"quest-" + q.id}>
     {!compact && <div className="quest-detail-art" aria-hidden="true"><GameObjectArt {...questObjectPresentation(q, { now, playerTier: tier })} size={112} /></div>}
-    <p className={`quest-brief-status${q.kind === "route" && !q.completed && open && online ? " quest-brief-progress" : ""}`}>{q.kind === "route" && !q.completed && open && online ? <><strong>{q.visitedStops ? tr("Any order") : tr("Next stop")} · {tr("Stop {0} of {1}", {0: targetNumber, 1: steps})}</strong><br />{tr("Completed")} · {q.checkpoint || 0}/{steps}</> : status}</p>
+    {!quietStatus && <p className={`quest-brief-status${routeProgress ? " quest-brief-progress" : ""}`}>{routeProgress ? <><strong>{q.visitedStops ? tr("Any order") : tr("Next stop")} · {tr("Stop {0} of {1}", {0: targetNumber, 1: steps})}</strong><br />{tr("Completed")} · {q.checkpoint || 0}/{steps}</> : status}</p>}
     <h2 className={compact ? "sr-only" : undefined} ref={heading} tabIndex={-1}>{title}</h2>
     <p className="quest-brief-description activity-objective">{q.activity?.objective || q.description}</p>
     {q.kind === "route" && <ol className="activity-step-diagram" aria-label={q.visitedStops ? tr("Any order") : tr("Activity overview")}>
@@ -83,6 +86,7 @@ export function QuestBrief({ compact = false, playerId, quest: q, zone, position
         {busy ? tr("Checking visit…") : q.kind === "route" ? (q.checkpoint || 0) >= steps ? tr("Finish walk") : tr("Confirm stop {0}", { 0: targetNumber }) : q.kind === "chest" && q.itemAvailable === true ? tr("Open chest") : q.activity?.actionLabel || tr("Confirm visit")}<ArrowRight aria-hidden="true" />
       </button>}
     {q.clue && activity && !far && !outside && !choice && <p className="quest-brief-requirement">{tr("Choose an answer to continue.")}</p>}
+    <div className="quest-brief-help">
     <ActivityHelp topic={questHelpTopic(q)} onAcknowledge={() => learning.acknowledge(questHelpTopic(q))} />
     <details className="quest-brief-more">
       <summary>{tr("Learn more")}</summary>
@@ -95,5 +99,6 @@ export function QuestBrief({ compact = false, playerId, quest: q, zone, position
       {q.clue?.result && <LandmarkClue clue={q.clue} choice={q.clue.result.choice} disabled onChoose={() => {}} />}
       {children}
     </details>
+    </div>
   </section>;
 }

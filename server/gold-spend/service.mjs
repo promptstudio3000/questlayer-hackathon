@@ -251,7 +251,7 @@ export function createGoldSpend(db, { actors = null, poiSource = null, now = () 
       const a = pick(archetypes);
       options.push(
         a
-          ? { kind, actorId: a.id, name: a.name, archetype: a.archetype, distanceM: Math.round(a.d), price: LURE.price[a.archetype] ?? LURE.price[kind] ?? 10 }
+          ? { kind, actorId: a.id, name: a.name, archetype: a.archetype, distanceM: Math.round(a.d), price: LURE.price[a.archetype] ?? LURE.price[kind] ?? 1000 }
           : { kind, actorId: null, name: null, archetype: null, distanceM: null, price: null, reason: kind === "trader" ? "No trader is out near you right now." : "No monster is out near you right now." },
       );
     }

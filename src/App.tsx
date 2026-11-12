@@ -162,6 +162,7 @@ import "./styles.css";
 import "./theme-accents.css";
 import "./compact-ui.css";
 import "./mobile-sheets.css";
+import "./arcade-ui.css";
 import { activeQuestRoute, questTarget } from "./quest-route";
 import { HudXpRing } from "./HudXpRing";
 import { RewardBursts } from "./RewardBursts";
@@ -263,12 +264,13 @@ import {
 // Passkey helpers load on first use, outside the welcome screen's first load.
 const webauthn = () => import("@simplewebauthn/browser");
 import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
+import { goldFromYocto } from "./gold-units.ts";
 import { Dialog } from "./Dialog";
 import { Character } from "./Character";
-import { DeferredGameMap as GameMap, preloadGameMap } from "./DeferredGameMap";
+import { DeferredGameMap as GameMap, gameMapLoaded, preloadGameMap } from "./DeferredGameMap";
 import { useCreatorPlaces } from "./useCreatorPlaces";
 import { Ghost, AuraArt, BrandLogo } from "./Ghost";
-import { artUrl } from "./art-registry";
+import { Welcome } from "./Welcome";
 import type {
   Player,
   World,
@@ -488,9 +490,14 @@ export default function App() {
   // Once there is a player, fetch the map and the split-off screens in the
   // background so later taps do not wait for the network.
   const hasPlayer = !!player;
+  // The current HUD layout ships with the map chunk. The menu and the top bar
+  // render only once it is in, so a reload never flashes the old base layout.
+  // A failed load shows them anyway, so Inventory and Profile stay reachable.
+  const [hudReady, setHudReady] = useState(gameMapLoaded);
   useEffect(() => {
     if (!hasPlayer) return;
-    void preloadGameMap().catch(() => {});
+    const ready = () => setHudReady(true);
+    void preloadGameMap().then(ready, ready);
     const idle =
       window.requestIdleCallback ??
       ((f: () => void) => window.setTimeout(f, 200));
@@ -3762,7 +3769,7 @@ export default function App() {
         "QuestLayer";
   return (
     <div
-      className={`app-shell${player && tab !== "explore" ? " sheet-open" : ""}${player && mapFullOn ? " map-full" : ""}`}
+      className={`app-shell${player && tab !== "explore" ? " sheet-open" : ""}${player && mapFullOn ? " map-full" : ""}${player && !hudReady ? " hud-loading" : ""}`}
       data-screen={tab}
       data-area={showProfileTabs ? "profile" : showCommunityTabs ? "community" : undefined}
     >
@@ -3895,16 +3902,8 @@ export default function App() {
       )}
       <div className="map-vignette" />
       </div>
+      {player && hudReady && (<>
       <aside className="nav-rail">
-        <button
-          className="brand-mark"
-          aria-label={tr("QuestLayer home")}
-          onClick={() => {
-            setTab("explore");
-          }}
-        >
-          <BrandLogo />
-        </button>
         <div className="rail-links">
           {nav.filter((n) => n.id !== "settings").map((n) => (
             <button
@@ -3928,30 +3927,9 @@ export default function App() {
         </div>
       </aside>
       <header className="topbar">
-        {virtualLayer && player ? (
+        {virtualLayer && player && (
           <WorldSwitcher virtual={tab === "layer"} enabled layerName={virtualLayer.name} gameLayer={gameLayer} onChoose={(virtual) => { setTab(virtual ? "layer" : "explore"); setSheetExpanded(false); }} />
-        ) : (
-        <div className="wordmark" onClick={() => setTab("explore")}>
-          <img className="wordmark-logo" src="/icon.svg" alt="" width={36} height={36} />
-          {artUrl("brand/wordmark") ? (
-            <span className="wordmark-text">
-              <img className="wordmark-art" src={artUrl("brand/wordmark")!} alt="QuestLayer" draggable={false} />
-            </span>
-          ) : (
-            <span>
-              QUEST<span>LAYER</span>
-            </span>
-          )}
-        </div>
         )}
-        <div className="realm-label">
-          <span className="status-dot" />
-          <span>
-            {tab === "layer" ? tr("Virtual world") : nativePlay || !arena
-              ? world?.cityName || tr("Your surroundings")
-              : tr("Plzeň · city demo")}
-          </span>
-        </div>
         {player && (
           <div className="hud-left">
             {!virtualLayer && (
@@ -4023,12 +4001,7 @@ export default function App() {
                   <b>
                     {nativePlay
                       ? nativeGame.state?.balance
-                        ? (
-                            Number(
-                              BigInt(nativeGame.state.balance.credit) /
-                                1000000000000000n,
-                            ) / 1e6
-                          ).toLocaleString("en-US", { maximumFractionDigits: 3 })
+                        ? goldFromYocto(nativeGame.state.balance.credit)
                         : "—"
                       : gold(player.gold_u)}
                   </b>
@@ -4088,6 +4061,7 @@ export default function App() {
           )}
         </div>
       </header>
+      </>)}
       {player && zonePresence && !selected && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => selectZone(zonePresence.zone, zonePresence.questId)} />}
       {player && tab !== "explore" && (
         // Desktop: Inventory, Community and Profile open as a card over the
@@ -5471,6 +5445,12 @@ export default function App() {
             setSheetExpanded(false);
             if (arena) faceToward(questPoint(quest), quest.title, {questId:id});
           }}
+          onShow={() => {
+            const id = actorOpen.id;
+            setActorOpen(null);
+            setTab("explore");
+            showActor({ actorId: id });
+          }}
           onClose={() => setActorOpen(null)}
         />
       )}
@@ -5485,209 +5465,6 @@ export default function App() {
   );
 }
 
-function Welcome({
-  busy,
-  error,
-  onNear,
-  onEthereum,
-  action,
-  onPlayer,
-  onRestore,
-}: {
-  busy: string;
-  error?: string;
-  onRestore: () => Promise<boolean>;
-  onNear: (name: string) => Promise<void>;
-  onEthereum: (name: string) => Promise<void>;
-  action: <T>(n: string, f: () => Promise<T>) => Promise<T | undefined>;
-  onPlayer: (p: Player) => void;
-}) {
-  const [name, setName] = useState(""),
-    [existing, setExisting] = useState(false),
-    [testerPassword, setTesterPassword] = useState("");
-  // Owner tester sign-in (testnet only), shown at /?tester.
-  const tester = new URLSearchParams(location.search).has("tester");
-  async function testerSignIn(e: FormEvent) {
-    e.preventDefault();
-    await action("tester", async () => {
-      const r = await api<{ player: Player }>("/auth/tester", {
-        name: name.trim(),
-        password: testerPassword,
-      });
-      setTesterPassword("");
-      window.history.replaceState(null, "", location.pathname + location.hash);
-      onPlayer(r.player);
-    });
-  }
-  async function start(e?: FormEvent) {
-    e?.preventDefault();
-    await action("welcome", async () => {
-      const r = await api<{ player: Player }>("/session", {
-        name: name || tr("Explorer"),
-      });
-      if (!location.hash) beginLearning(r.player.id);
-      onPlayer(r.player);
-    });
-  }
-  async function passkey() {
-    await action("passkey", async () => {
-      const r = await api<{ options: any; challengeId: string }>(
-        "/passkey/options",
-        { action: existing ? "login" : "register", name: name || tr("Explorer") },
-      );
-      const response = existing
-        ? await (await webauthn()).startAuthentication({ optionsJSON: r.options })
-        : await (await webauthn()).startRegistration({ optionsJSON: r.options });
-      const verified = await api<{ player: Player }>("/passkey/verify", {
-        challengeId: r.challengeId,
-        response,
-      });
-      if (!existing && !location.hash) beginLearning(verified.player.id);
-      onPlayer(verified.player);
-    });
-  }
-  return (
-    <Dialog
-      label={tr("Welcome to QuestLayer")}
-      open={busy !== "near"}
-      onClose={() => {}}
-    >
-      <section className="welcome-card">
-        <div className="welcome-art">
-          <span className="orbit one" />
-          <span className="orbit two" />
-          <Sparkle className="star one" weight="fill" />
-          <Sparkle className="star two" weight="fill" />
-          <Ghost />
-          <span className="floating-coin">
-            <GameObjectArt kind="coin" size={32} />
-          </span>
-          <Leaf className="welcome-leaf" weight="duotone" />
-        </div>
-        <h1 tabIndex={-1} autoFocus>
-          {tr("Your city.")}<br />
-          <em>{tr("Your haunt to explore.")}</em>
-        </h1>
-        <p>
-          {tr("Walk real streets and open chests.")}<br />
-          {tr("Earn Auras, the glow your friendly ghost wears.")}</p>
-        <a className="welcome-how" href="/how-it-works">
-          <Sparkle size={16} weight="fill" aria-hidden="true" />
-          {tr("How it works")}<ArrowRight size={16} aria-hidden="true" />
-        </a>
-        {error && (
-          <p className="inline-error" role="alert">
-            {error}
-          </p>
-        )}
-        <form
-          noValidate
-          onSubmit={(e) => {
-            e.preventDefault();
-            void start();
-          }}
-        >
-          <label htmlFor="nickname">{tr("What should we call you?")}</label>
-          <input
-            id="nickname"
-            placeholder={tr("Your explorer name")}
-            value={name}
-            minLength={2}
-            maxLength={24}
-            onChange={(e) => setName(e.target.value)}
-            onFocus={preloadGameMap}
-            autoComplete="nickname"
-          />
-          <button className="primary-button" type="submit" disabled={!!busy}>
-            {busy === "welcome"
-              ? tr("Preparing your explorer…")
-              : tr("Start exploring")}
-            <ArrowRight size={20} />
-          </button>
-        </form>
-        <button
-          className="text-button"
-          disabled={!!busy}
-          onClick={() => {
-            setExisting(true);
-            void passkey();
-          }}
-        >
-          <Key size={16} /> {" "}{tr("I already have an explorer")}</button>
-        <button
-          className="text-button"
-          disabled={!!busy}
-          onClick={() => void onRestore()}
-        >
-          <Key size={16} />
-          {busy === "recovery-restore"
-            ? tr("Restoring your explorer…")
-            : tr("Restore with a recovery passkey")}
-        </button>
-        {tester && (
-          <form className="welcome-tester" onSubmit={(e) => void testerSignIn(e)}>
-            <input
-              aria-label={tr("Tester name")}
-              autoComplete="username"
-              placeholder={tr("Tester name")}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <input
-              aria-label={tr("Tester password")}
-              type="password"
-              autoComplete="current-password"
-              placeholder={tr("Password")}
-              value={testerPassword}
-              onChange={(e) => setTesterPassword(e.target.value)}
-            />
-            <button className="passkey-button" disabled={!!busy || !name.trim() || !testerPassword}>
-              <Key size={18} /> {busy === "tester" ? tr("Signing in…") : tr("Tester sign-in")}
-            </button>
-          </form>
-        )}
-        <details className="welcome-advanced">
-          <summary>{tr("Advanced")}</summary>
-          <button
-            className="passkey-button"
-            disabled={!!busy}
-            onClick={() => {
-              setExisting(false);
-              void passkey();
-            }}
-          >
-            <Key size={18} /> {" "}{tr("Create an explorer secured by a passkey")}</button>
-          <button
-            className="passkey-button"
-            disabled={!!busy}
-            onClick={() => void onNear(name || "Explorer")}
-          >
-            <Wallet size={18} />
-            {busy === "near"
-              ? tr("Waiting for your wallet…")
-              : tr("Continue with an external NEAR wallet")}
-          </button>
-          <button
-            className="passkey-button"
-            disabled={!!busy}
-            onClick={() => void onEthereum(name || "Explorer")}
-          >
-            <Wallet size={18} />
-            {busy === "evm-wallet"
-              ? tr("Waiting for your wallet…")
-              : tr("Continue with MetaMask or Rabby")}
-          </button>
-          <p className="identity-note">
-            {tr("A wallet signs a message, not a payment. Returning wallets restore the same explorer.")}</p>
-        </details>
-        <div className="welcome-note">
-          <ShieldCheck size={17} />
-          <span>{tr("No sign-up, no deposit. Play first, secure later.")}</span>
-        </div>
-      </section>
-    </Dialog>
-  );
-}
 function Npc({
   onClose,
   worldId,

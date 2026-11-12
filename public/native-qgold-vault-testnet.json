@@ -123,13 +123,23 @@
     }
   ],
   "pendingWorldUpgrade": {
-    "proposalId": 2,
-    "codeSha256": "d0fd8cc4e3dc110036b73613b9775d46ba87b7b1d1660367144b94893bbdd95f",
-    "executableAt": "1794244870054",
+    "proposalId": 4,
+    "codeSha256": "3734e361148e880ff1717edde0f774e541b8761fd8837bec690bde93ec49bf49",
+    "executableAt": "1794441121203",
     "proposer": "questlayer-dev-20261101.testnet",
-    "transaction": "GgXTWDQ3W6jFRD4HcQJo1EZernvQ9K1hFJ2My563ewGN",
+    "transaction": "GJbiz7wRxrPvdHEcNYfajYzJ1LakA9WxxoDoNj2eBU81",
     "state": "timelocked",
-    "sourceCommit": "346cf9dc8a9a5de8494b422f5d0e7ed40cbee709"
+    "sourceCommit": "59a5b26a",
+    "supersedes": [
+      {
+        "proposalId": 2,
+        "cancelTransaction": "HkMkaLtio5hNVKrZZz8yRaEhi1x2U2McibR59msRDNHj"
+      },
+      {
+        "proposalId": 3,
+        "cancelTransaction": "jLp2q54CjHvGSZqxad6AAz28reV31KWMik5TGbhHuf4"
+      }
+    ]
   },
   "supersededWorldUpgrade": {
     "proposalId": 1,

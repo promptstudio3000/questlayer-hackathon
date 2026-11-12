@@ -492,7 +492,7 @@ async function ensureBaseWorld(
                 kind: "chest",
                 title: "Find the park chest",
                 description:
-                  "Reach the chest on the marked path and discover a cosmetic Aura while edition supply remains.",
+                  "Reach the chest on the marked path and discover a cosmetic Aura.",
                 target: z.targets[1],
                 xp: 80,
                 reward: 0,
