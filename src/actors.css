@@ -232,6 +232,22 @@
     translate: 0 -3px;
   }
 }
+.actor-rest {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-item);
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+.actor-rest strong {
+  display: block;
+  font-size: 16px;
+}
+.actor-rest p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--ink-secondary);
+}
 
 /* Arcade pass (11 Nov 2026): compact type. */
 .game-dialog .actor-status,
