@@ -80,7 +80,7 @@ export function GoldShop({
     </div>
   ) : <EmptyState art="coin" title={tr("Opening the shop…")} status />;
   const can = (price: number) => shop.balanceU >= Math.round(price * GOLD);
-  const priceTag = (price: number) => tr("{0} GOLD", { 0: price });
+  const priceTag = (price: number) => tr("{0} QGOLD", { 0: price });
   const showEmote = (id: string) =>
     run(`show:${id}`, async () => {
       const r = await goldEmote(id);
@@ -94,7 +94,7 @@ export function GoldShop({
           {shop.realm === "qgold" ? tr("Your QGOLD") : tr("Your GOLD")}: <b>{gold(shop.balanceU, shop.realm === "qgold" ? 6 : 0)}</b>
         </span>
         <InfoTip label={tr("Shop")}>
-          {tr("Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.")}{" "}
+          {tr("Spending burns QGOLD: it leaves the game for good, so every QGOLD left is backed a little better.")}{" "}
           {shop.realm === "qgold" ? tr("each purchase burns QGOLD from your NEAR account") : tr("practice GOLD until the QGOLD vault opens")}
         </InfoTip>
       </p>
@@ -112,7 +112,7 @@ export function GoldShop({
               className={`shop-card${e.owned ? " owned" : ""}`}
               disabled={!!busy || (!e.owned && !can(e.price))}
               onClick={() => (e.owned ? showEmote(e.id) : run(`buy:${e.id}`, () => goldBuy(`emote:${e.id}`)))}
-              aria-label={`${e.owned ? tr("Show emote {0}", { 0: e.id }) : tr("Unlock emote {0} for {1} GOLD", { 0: e.id, 1: e.price })}, ${e.free ? tr("Free") : e.owned ? tr("Yours") : priceTag(e.price)}`}
+              aria-label={`${e.owned ? tr("Show emote {0}", { 0: e.id }) : tr("Unlock emote {0} for {1} QGOLD", { 0: e.id, 1: e.price })}, ${e.free ? tr("Free") : e.owned ? tr("Yours") : priceTag(e.price)}`}
             >
               <span className="shop-card-art gold-emote-glyph" aria-hidden="true">
                 {EMOTE_GLYPH[e.id]}
@@ -234,7 +234,7 @@ export function GoldShop({
           <h3 id="gold-gear">
             <Storefront weight="duotone" aria-hidden="true" /> {tr("Premium gear")}
             <InfoTip label={tr("Premium gear")}>
-              {tr("Traders on the map sell one premium Aura a day for GOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.")}
+              {tr("Traders on the map sell one premium Aura a day for QGOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.")}
             </InfoTip>
           </h3>
           <div className="shop-card-grid shop-card-grid-wide">
