@@ -17,7 +17,7 @@ thread instead of forking them.
 | Flag | `ACTORS_ENABLED=1` | Off by default (tests, mainnet); on for the testnet VPS. |
 
 Encounter rules: distance ≤ 35 m (≤ 50 m while the actor dwells at a station), GPS accuracy ≤ 30 m and a fix at most
-15 s old, no movement faster than 15 m/s since the player's previous fix. Practice (arena) worlds skip the GPS checks
+15 s old, no movement faster than about 15 km/h since the player's previous fix. Practice (arena) worlds skip the GPS checks
 like arena coins do. Tokens (`enc_…`) last 5 minutes and bind player, actor, day, segment and menu hash.
 
 Lurkers (60 m) and the wandering rare (300 m) are only listed for a player already within reveal range. `GET /api/actors` sends at most the next 20 minutes of segments (the map refetches every minute; see docs/PERFORMANCE-BUDGET.md).

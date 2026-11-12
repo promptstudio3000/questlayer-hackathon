@@ -7,8 +7,8 @@ spoofed location or a script can farm; they do not try to prove truth.
 
 `server/fair-play.mjs` keeps each player's last accepted fix
 (`fair_play_anchor`). A street coin, discovery or walk stop far from it is
-accepted only after the time the trip needs at `FAIR_PLAY_MAX_SPEED_MPS`
-(default 15 m/s), capped at `FAIR_PLAY_TRAVEL_COOLDOWN_MAX_MS` (default 2 h), so
+accepted only after the time the trip needs at `FAIR_PLAY_MAX_SPEED_KMH`
+(default 15 km/h, on foot or by bike; owner 11 Nov 2026), capped at `FAIR_PLAY_TRAVEL_COOLDOWN_MAX_MS` (default 2 h), so
 a real train ride is a wait, not a lock-out. Both fixes' GPS accuracy counts as
 slack. A rejected fix (`422 IMPLAUSIBLE_MOVE`) never moves the anchor, so
 hopping between spoofed places gains nothing. The arena (practice) world skips

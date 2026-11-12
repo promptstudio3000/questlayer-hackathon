@@ -3,6 +3,7 @@
 // the animated 3D model and the offer menu, and hands off to the NPC talk
 // sheet or the monster challenge when those slices are present.
 import { lazy, Suspense, useEffect, useRef, useState, type ComponentType } from "react";
+import { MapPin } from "@phosphor-icons/react";
 import { Dialog } from "./Dialog";
 import { api, ApiError } from "./api";
 import type { ActorEncounter, ActorView } from "./actor-types";
@@ -53,6 +54,7 @@ export function ActorSheet({
   worldId,
   location,
   onQuest,
+  onShow,
   onClose,
 }: {
   actor: ActorView;
@@ -60,12 +62,14 @@ export function ActorSheet({
   worldId: string;
   location: Location | null;
   onQuest?: (questId: string) => void;
+  /** Too far away: close the sheet and show this character on the map. */
+  onShow?: () => void;
   onClose: () => void;
 }) {
   const [state, setState] = useState<
     | { kind: "loading" }
     | { kind: "ready"; encounter: ActorEncounter }
-    | { kind: "error"; message: string; retry: boolean }
+    | { kind: "error"; message: string; retry: boolean; far?: boolean }
     | { kind: "rest"; message: string }
   >({ kind: "loading" });
   const [handoff, setHandoff] = useState<"npc" | "challenge" | "boss" | null>(null);
@@ -101,6 +105,7 @@ export function ActorSheet({
         kind: "error",
         message: PROBLEM[code] || (e instanceof ApiError ? e.message : tr("Could not reach the game. Try again.")),
         retry: code !== "ACTORS_DISABLED",
+        far: code === "OUT_OF_RANGE",
       });
     }
   }
@@ -164,9 +169,13 @@ export function ActorSheet({
         {state.kind === "loading" && <p className="actor-status" role="status">{tr("Walking up…")}</p>}
         {state.kind === "rest" && <RestNote message={state.message} />}
         {state.kind === "error" && (
-          <div className="actor-status actor-problem" role="alert">
+          <div className={`actor-status actor-problem${state.far && onShow ? " actor-far" : ""}`} role="alert">
             <p>{state.message}</p>
-            {state.retry && (
+            {state.far && onShow ? (
+              <button className="primary-button" onClick={onShow}>
+                <MapPin size={18} aria-hidden="true" /><span>{tr("Show me")}</span>
+              </button>
+            ) : state.retry && (
               <button className="secondary-button" onClick={() => void meet()}>
                 {tr("Try again")}</button>
             )}

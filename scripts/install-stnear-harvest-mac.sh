@@ -19,6 +19,11 @@ if [ "${1:-}" = "--remove" ]; then
   launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
   rm -f "$PLIST"; echo "removed $LABEL"; exit 0
 fi
+# Superseded on 11 Nov 2026 by the VPS timers (docs/TREASURY-WORKERS-VPS.md):
+# installing this again would run every step twice.
+if [ -f "$REPO/.data/treasury-vps/treasury-ops.json" ] && [ "${FORCE_MAC_TREASURY:-0}" != 1 ]; then
+  echo "The treasury workers run on the VPS now (docs/TREASURY-WORKERS-VPS.md); not installing the Mac LaunchAgent." >&2; exit 1
+fi
 [ -f "$REPO/.data/near-operator.json" ] || { echo "missing .data/near-operator.json" >&2; exit 1; }
 NODE="$(command -v node)"
 mkdir -p "$HOME/Library/LaunchAgents" "$REPO/.data/logs"

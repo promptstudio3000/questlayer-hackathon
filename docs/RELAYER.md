@@ -110,7 +110,7 @@ mode `0600`; both keys must be full-access keys of their account on testnet.
 | ----------------------------- | -------------------------------------------------------- | --------------------- |
 | `PLAYER_FACTORY_ACCOUNT`      | Parent of player accounts (`players.questlayer.testnet`) | required              |
 | `PLAYER_FACTORY_KEY_PATH`     | Factory full-access key file                             | required for accounts |
-| `PLAYER_FACTORY_FUND_YOCTO`   | Initial transfer to a new account (also the refuel target) | `2e22` (0.02 NEAR)  |
+| `PLAYER_FACTORY_FUND_YOCTO`   | Initial transfer to a new account, given once (refuel target only with `PLAYER_REFUEL=1`) | `2e22` (0.02 NEAR)  |
 | `RELAYER_KEY_PATH`            | Gas payer full-access key file                           | required for relaying |
 | `RELAY_TOPUP_CAP_YOCTO`       | Max sponsored top-up per account per day (storage + refuel) | `5e22` (0.05 NEAR) |
 | `RELAY_MAX_JOBS_PER_DAY`      | Max submissions per account per day                      | `40`                  |

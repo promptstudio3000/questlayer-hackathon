@@ -15,7 +15,9 @@ Tests: `tests/player-inbox.test.mjs`, `tests/relayer-policy.test.mjs`.
 
 ## Who may write to whom
 
-1. A conversation opens after **both explorers waved at each other within the last hour**, or after one asked
+1. Explorers **within 1 km** of each other (both sharing a fresh position in the same realm, `INBOX_LIMITS.nearMeters`)
+   can write at once; the server records an open contact, so the conversation stays open after they part
+   (Lubos, 11 November 2026). Otherwise a conversation opens after **both explorers waved at each other within the last hour**, or after one asked
    (**Ask to message**) and the other **accepted**. A declined request stays declined for the one who asked;
    the other explorer can still ask back.
 2. **Block** (the existing two-way block) stops requests, sending, the conversation list and delivery.
@@ -102,3 +104,13 @@ reaches it on phone-390 Chromium, iPhone 15 WebKit and Pixel 7: share the positi
 next to you, "Message" on their card, send (sealed in the vault, opened in Node with the peer's
 secret), read the peer's reply, then the envelope badge ("Messages: 1 new") → list → conversation, which is then
 read. NEAR, the relayer and NEAR Social are stubbed at the network layer; CI runs it on every device row.
+
+## Accounts whose device key is lost (testnet)
+
+Accounts created before the secure signing origin (8 November 2026) kept their only device key in a browser
+storage that later builds no longer read. Without a recovery passkey such an account can never sign again, so
+its explorer has no inbox. On testnet, `POST /api/account/start-over {publicKey}` (`ManagedAccounts.startOver`,
+button **Start with a new account** in Account and devices) marks the old managed account `failed`
+(`DEVICE_KEY_LOST`), unlinks it from the explorer and creates a new sponsored account with this device's key.
+Explorer data stays; tokens on the old account stay there. Once a day per explorer, never on mainnet, refused
+when a recovery passkey exists or when this device's key already belongs to the account.

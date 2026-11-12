@@ -28,14 +28,12 @@ import type {
 } from "./native-game-types";
 import { EXPLORER_BASE } from "./near-network.ts";
 import { tr } from "./i18n";
+import { goldFromYocto } from "./gold-units.ts";
 const nearAmount = (s: string) =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits: 8 }).format(
     Number(s) / 1e24,
   );
-const nativeGold = (s: string) =>
-  new Intl.NumberFormat("en-US", { maximumFractionDigits: 5 }).format(
-    Number(s) / 1e21,
-  );
+const nativeGold = (s: string) => goldFromYocto(s);
 export function NativeExpeditions({
   player,
   fix,

@@ -26,7 +26,7 @@ const reply = {
     { offerId: "a1", kind: "quest", label: "Deliver a letter to the chronicler", xp: 30, aura: false, steps: [{ questId: "s1", title: "Main square", kind: "visit", zone: null, done: true }] },
     { offerId: "a2", kind: "quest", label: "Visit three fountains", xp: 60, aura: true, steps: [{ questId: "s2", title: "Fountain 1", kind: "visit", zone: "Centre", done: true }, { questId: "s3", title: "Fountain 2", kind: "visit", zone: null, done: false }] },
   ],
-  source: "ollama",
+  source: "near-ai",
   note: undefined,
   npc: { id: "x", name: model === "pilgrim" ? "Ráda the Pilgrim" : model, title: "Wanderer with errands", archetype },
 };

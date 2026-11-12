@@ -24,13 +24,15 @@ import { planSpawns } from "./spawns.mjs";
 import { skyAt } from "../sun.mjs";
 import { streetFindIds } from "../street-finds.mjs";
 import { ACTOR_HOME_RADIUS_M, compactActorCast } from "../demo-zones.mjs";
+import { FAIR_PLAY } from "../fair-play.mjs";
 
 export const ENCOUNTER_TTL_MS = 5 * 60_000;
 export const ENCOUNTER_RADIUS_M = 35;
 export const STATION_RADIUS_M = 50;
 export const MAX_GPS_ACCURACY_M = 30;
 export const MAX_FIX_AGE_MS = 15_000;
-export const MAX_SPEED_MPS = 15;
+// Same cap as the shared travel guard (about 15 km/h, server/fair-play.mjs).
+export const MAX_SPEED_MPS = FAIR_PLAY.maxSpeedMps;
 export const SEGMENT_HORIZON_MS = 2 * 3600_000;
 // The map refetches every minute, so the list sends only the next 20 minutes
 // of each walk (was the full 2 h: ~80 KB a minute on a phone, see

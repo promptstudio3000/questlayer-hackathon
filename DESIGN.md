@@ -117,8 +117,10 @@ implementation. It is not imported by the app today.
 | Success | `#176553` on `#E3F6EE` | Confirmed completion, paired with text/icon. |
 | Error | `#A32947` on `#FFF0F3` | Actionable errors, paired with text/icon. |
 
-Use 16px/1.5 as the body and form baseline, 14px/1.45 for secondary labels,
-12px/1.4 only for optional annotations, and 20/24/32px for the heading hierarchy.
+Game UI type follows the compact scale adopted on 11 November 2026 (`--text-*` in
+`src/tokens.css`): 15px body, 13px secondary labels, 12px annotations, 16px form
+inputs, 20px screen titles and 16-18px section and dialog headings. The earlier
+16/14 baseline made labels wrap on phones.
 Use tabular numerals for balances and countdowns. Financial amounts must retain full
 precision in detail/review views; compact HUD rounding must not change settlement.
 Long player names, translated strings and 200% text must reflow.

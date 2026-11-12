@@ -28,7 +28,9 @@ const [command = "status", ...rest] = process.argv.slice(2);
 const dryRun = rest.includes("--dry-run");
 const TGAS = 10n ** 12n,
   NEAR = 10n ** 24n,
-  GAS_RESERVE = NEAR / 20n; // 0.05 NEAR stays for the two transactions, then returns via delete
+  // fund_rewards attaches the sponsor storage fee on top of the amount, so the
+  // reserve covers that fee plus gas; the rest returns via delete.
+  GAS_RESERVE = NEAR / 10n;
 const near = (y) => (Number(BigInt(y)) / 1e24).toFixed(6);
 const log = (o) => console.log(JSON.stringify(o));
 
@@ -135,7 +137,8 @@ for (const id of listed()) {
     log({ account: id, funded: near(amount), transaction: entry.fundTransaction });
   }
   const r = await from.signAndSendTransaction({ receiverId: id, actions: [actions.deleteAccount(operator.accountId)], waitUntil: "FINAL" });
-  assert.ok(!failed(r), "delete failed: " + JSON.stringify(r.status));
+  // The gas refund to the deleted account always fails; only the transaction status counts.
+  assert.ok(!r?.status?.Failure, "delete failed: " + JSON.stringify(r.status));
   entry.deleteTransaction = txOf(r);
   entry.finishedAt = new Date().toISOString();
   save();

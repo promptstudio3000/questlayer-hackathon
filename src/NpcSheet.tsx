@@ -212,6 +212,9 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
 
   const nextAcceptedStep = selectedOffer ? active.find(line => line.offerId === selectedOffer.id)?.steps.find(step => !step.done) : null;
   const questOffers = (reply?.menu || []).filter((offer) => offer.kind === "quest" || offer.kind === "chapter");
+  // Offers already listed under "Choose a quest" are not repeated in the Talk tab.
+  const shownAbove = new Set(reply && (flow === "greeting" || flow === "choices") ? questOffers.slice(0, 2).map((offer) => offer.id) : []);
+  const moreOffers = (reply?.menu || []).filter((offer) => !shownAbove.has(offer.id));
   const openServices = (next: Tab) => { setTab(next); setDetailsOpen(true); };
   const offerSteps = selectedOffer && Array.isArray(selectedOffer.terms.steps)
     ? selectedOffer.terms.steps.filter((step): step is { title: string } => !!step && typeof step === "object" && typeof step.title === "string")
@@ -274,7 +277,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
               {ready.map((line) => (
                 <div key={line.offerId}>{turnInButton(line)}</div>
               ))}
-              {reply?.menu.map((offer) => (
+              {moreOffers.map((offer) => (
                 <button
                   type="button"
                   key={offer.id}
@@ -308,7 +311,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
                 />
               ))}
               {archetype === "trader" && <NpcGear actorId={actorId} encounter={token} />}
-              {reply && !reply.menu.length && !ready.length && !reply.locked?.length && archetype !== "trader" && (
+              {reply && !moreOffers.length && !shownAbove.size && !ready.length && !reply.locked?.length && archetype !== "trader" && (
                 <p className="npc-empty" data-testid={encounter.comeBack ? "npc-come-back" : undefined}>
                   {encounter.comeBack ? `${comeBackLine(encounter.actor, encounter.comeBack)} ${tr("You can still ask me anything.")}` : t.noActions}
                 </p>
