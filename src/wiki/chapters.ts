@@ -267,6 +267,7 @@ export const CHAPTERS: Chapter[] = [
           "Coins sit on mapped public paths, 95–120 m apart (60 m within 300 m of a zone). Every coin of a day is backed QGOLD of the same value; a pioneer coin counts twice.",
           "Six waves between 07:00 and 22:00 local time, each start shifted by up to ±30 min from the day seed. A later wave's coins stay hidden and cannot be claimed early.",
           "The city demo has no waves, so visitors in any time zone can play; its coins carry the same backed value.",
+          "**One coin, one pick-up.** A coin can show in more than one world at the same spot (the GPS city map and the city demo share their street cells). Whoever picks it up first, in any world, takes it: every other explorer gets \"Another explorer got this coin first\", and the coin leaves their map at once.",
           "Every claim is confirmed by the server before the floating reward chip appears. Retrying a request returns the original receipt.",
         ],
       },
@@ -302,7 +303,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "day-clock",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/WORLD-GENERATION.md", "docs/DEMO-ZONES.md", "server/demo-zones.mjs", "docs/LANDMARK-ERRANDS.md", "docs/DAILY-BOARD.md", "docs/QUEST-TEMPLATES.md", "server/world-planner.mjs", "server/poi-quests.mjs", "server/landmark-clue.mjs", "server/npc/routes.mjs", "src/DailyBoard.tsx", "src/actors-layer.ts", "src/ZoneActivities.tsx", "src/zone-landmarks.ts"],
+    sources: ["docs/WORLD-GENERATION.md", "docs/DEMO-ZONES.md", "server/demo-zones.mjs", "docs/LANDMARK-ERRANDS.md", "docs/DAILY-BOARD.md", "docs/QUEST-TEMPLATES.md", "server/world-planner.mjs", "server/poi-quests.mjs", "server/landmark-clue.mjs", "server/npc/routes.mjs", "src/DailyBoard.tsx", "src/actors-layer.ts", "src/ZoneActivities.tsx", "src/zone-landmarks.ts", "server/spatial/organic-shape.mjs", "src/LockedZone.tsx"],
     blocks: [
       { h: "City zones" },
       {
@@ -325,7 +326,10 @@ export const CHAPTERS: Chapter[] = [
         ],
       },
       {
-        note: "Demo layout on testnet now (`DEMO_ZONES`): the six Plzeň zones are 55–85 m circles, at least 80 m apart, on the park ring around náměstí Republiky (náměstí Republiky, sady Pětatřicátníků North and West, Smetanovy sady, Šafaříkovy sady, sady 5. května), each within about 400 m of the start on a loop of about 2 km. All of them are open the whole day with no countdown, and chests, guardians, NPCs and monsters stay near the centre. Each compact day is its own world, mainnet refuses the switch, and the table above returns when it is off.",
+        note: "Demo layout on testnet now (`DEMO_ZONES`): the six Plzeň zones follow their OpenStreetMap park or square outlines (an irregular blob where OpenStreetMap has no usable area), about 55–85 m across, at least 80 m apart, on the park ring around náměstí Republiky (náměstí Republiky, sady Pětatřicátníků North and West, Smetanovy sady, Šafaříkovy sady, sady 5. května), each within about 400 m of the start on a loop of about 2 km. All of them are open the whole day with no countdown, and chests, guardians, NPCs and monsters stay near the centre. Each compact day is its own world, mainnet refuses the switch, and the table above returns when it is off.",
+      },
+      {
+        p: "Tier 3 zones are always on the map but locked until the explorer reaches Tier 3 in the vault (50 NEAR of matured weighted stake): a dashed edge, a lock on the pin and a \"🔒 Tier 3\" plate. Walking into one opens a dialog that says which tier it needs and how much to stake, with a Stake button and a How it works link. Tier 2 places stay open to everyone. Outside reviewed cities, one plain visit per street cell is such a Tier 3 place (70 m, double visit XP, never a funded cell zone). Zones outside reviewed cities are irregular blobs, not circles.",
       },
       { h: "Quest kinds" },
       { viz: "quest-kinds" },
@@ -472,7 +476,7 @@ export const CHAPTERS: Chapter[] = [
           "Tap an item for Try it on / Take it off and Sell. Sell asks for a price in test NEAR and lists the Aura in Shop → Market (a game Aura is secured first). A worn secured Aura must be taken off first.",
           "Unowned editions sit in a separate catalog; catalog art never implies ownership or current availability.",
           "**Shop → Items:** everything GOLD buys as illustrated cards (emotes, marker frames, lures, trader gear); every purchase burns QGOLD.",
-          "**Shop → Market:** every Aura for sale as a card, from the NEAR Intents book (NPC traders included) and the market contract. Filters All, Above, Below, Mine; sort by newest, name, rarity or price. Buying signs with the explorer account; card prices are rounded up to 4 decimals.",
+          "**Shop → Market:** every Aura for sale as a card, from the NEAR Intents book (NPC traders included) and the market contract. Filters All, Above, Below, Mine; sort by newest, name, rarity or price. Buying signs with the explorer account; card prices are rounded up to 4 decimals. Before a buy the game checks the paying account: with no explorer account yet or too little NEAR (price plus a little gas; wNEAR already in Intents counts), **Buy** opens a **Why you can't buy this yet** dialog instead of an error. It shows how much NEAR the account has, how much is missing and what to do: swap QGOLD for NEAR at the QGOLD vault when your QGOLD covers it (or say it is not enough yet), send test NEAR to the shown address or get it from the faucet, connect a NEAR wallet you already have, install one (Meteor, HOT, MyNearWallet), or pay from another crypto wallet with NEAR Intents (opens at mainnet). The same dialog backs the Intents **Buy** under More trading tools and the Stake page.",
         ],
       },
       { h: "Where Auras come from" },
@@ -566,7 +570,7 @@ export const CHAPTERS: Chapter[] = [
           head: ["Tab", "What it holds"],
           rows: [
             ["Character", "Avatar, level and XP, your totals (finds, quests, tasks, monsters, wearables, badges, GOLD earned), Badges, a Messages tile for the inbox, and **Your story**: what happened, newest first (`GET /api/me/journey`)"],
-            ["Stake", "A switch: **Stake** and **Earnings**. Stake shows at once and fills its numbers as the chain answers: the tier ladder with the **yield share to the prize pool** (25 / 50 / 100 %) right under it, then one **Stake 2 NEAR** button. One tap sets up your personal vault the first time (a one-time setup fee that is not returned) and stakes. There is **one stake per explorer**: afterwards the only action is **Withdraw** (about 1–7 days, 4 epochs; the game moves the unlocked NEAR back and you withdraw it to your balance). Earnings holds the QGOLD balance, the next payout, GOLD earned and the yield your stake kept"],
+            ["Stake", "A switch: **Stake** and **Earnings**. Stake shows at once and fills its numbers as the chain answers: the tier ladder with the **yield share to the prize pool** (25 / 50 / 100 %) right under it, then one **Stake 2 NEAR** button. The first tap sets up your personal vault (a one-time setup fee that is not returned), the next tap stakes; each money step asks for one Yes in a small QuestLayer confirmation window; when staking is not possible yet (no explorer account, too little test NEAR), the button opens a **Why you can't stake yet** dialog instead of an error: it names the reason and offers sending test NEAR to the shown address, swapping QGOLD for NEAR when your QGOLD covers the gap, connecting a NEAR wallet you already have (then **Pay from** picks it), installing a wallet (Meteor, HOT, MyNearWallet) or paying from another crypto wallet with NEAR Intents (opens at mainnet). There is **one stake per explorer**: afterwards the only action is **Withdraw** (about 1–7 days, 4 epochs; the game moves the unlocked NEAR back and you withdraw it to your balance). Earnings holds the QGOLD balance, the next payout, GOLD earned and the yield your stake kept"],
             ["Settings", "Game, Help (How to play, the guide, Game economy, first-time tips), Account and devices, Sign out, then the reference links; the reward ledger switch sits in a small Developer section"],
           ],
         },
@@ -577,29 +581,33 @@ export const CHAPTERS: Chapter[] = [
     id: "community-local",
     group: "play",
     title: "Community: local chat and places",
-    tldr: "Notes, topics and places are created from **small dialogs over the map**. Notes and places are free; shouts and topics are paid place messages. Reports and blocks work both ways.",
+    tldr: "Local chat is **the chat of the place you are in**: a distance filter (1–100 km), the most active shouts and topics on top, free messages below. Everything is created from **small dialogs over the map**. Messages and places are free; shouts and topics are paid. Reports and blocks work both ways.",
     keyFacts: [
-      ["1 day · 1 week · keep", "how long a note stays"],
+      ["1–100 km", "how far Local chat reaches"],
+      ["1 day · 1 week · keep", "how long a chat message stays"],
       ["7 days", "longest shout"],
       ["6 authors", "make a topic free for good"],
-      ["10 km", "community places shown nearest first"],
     ],
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/MapNotes.tsx", "src/gold-map-layer.ts", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx"],
+    sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/LocalChat.tsx", "src/MapNotes.tsx", "src/gold-map-layer.ts", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx"],
     blocks: [
       { h: "Create from the map" },
       {
-        p: "Three of the seven items in the map's Actions menu, **Leave a note**, **Open a topic** and **Add a place**, open small dialogs: a pin in the ground, a text field, one switch and one button. The map stays where it was. Community holds the lists: Quests, Tasks, **Local chat** (Notes, and Shouts & topics), **Places** and Creators.",
+        p: "Three of the seven items in the map's Actions menu, **Leave a note**, **Open a topic** and **Add a place**, open small dialogs: a pin in the ground, a text field, one switch and one button. The map stays where it was. Community holds the lists: Quests, Tasks, **Local chat**, **Places** and Creators.",
+      },
+      { h: "Local chat" },
+      {
+        p: "Local chat reads like the chat of the place you stand in. On top, one **distance filter** (1, 3, 10 (default), 25, 50 or 100 km; the choice is remembered on the device) decides how far away posts may be for everything below it. Then **Active around you**: the most active shouts and topics in that distance as swipeable cards (posts, author, distance), with Shout and Topic buttons and **See all** for every sort (latest, following, popular, recommended). Below it the **Chat**: free messages, oldest at the top and newest at the bottom like a chat, each with the author's avatar, how long ago, and the GPS line. **Write a message** at the bottom opens the small dialog; the message stays pinned where it was written.",
       },
       {
         list: [
-          "**Map notes** are free. The author picks 1 day, 1 week (default) or Keep until removed; expired notes leave every list. Authors can edit their own text; pin, photo and time stay.",
-          "Every note near you also stands **on the map** as a small paper pin with its text (your own with a coloured edge), refreshed every 30 seconds and right after you leave, edit or remove one. Tapping a pin opens Local chat · Notes with that note highlighted.",
-          "Every row shows author, time, time left, the text and a **GPS line** with the pin and its distance. Tapping it shows the spot on a plain map with only the pin and your position.",
+          "**Chat messages** (map notes) are free. The author picks 1 day, 1 week (default) or Keep until removed; expired messages leave every list. Authors can edit their own text; pin, photo and time stay.",
+          "Every message near you (about 3 km) also stands **on the map** as a small paper pin with its text (your own with a coloured edge), refreshed every 30 seconds and right after you leave, edit or remove one. Tapping a pin opens Local chat with that message highlighted.",
+          "Every message shows author, how long ago, time left, the text and a **GPS line** with the pin and its distance. Tapping it shows the spot on a plain map with only the pin and your position.",
           "**Shouts** are short paid bubbles for up to 7 days; a **topic** becomes free for good once 6 different players wrote in it (see Fees and spending).",
-          "**Community places** are free recommendations: nearest first within 10 km, with a kind (view, nature, history, art, food & drink, hidden gem, walk & play), filters and sorting. Three reports from different players hide a place until a moderator looks. No links, contacts or private addresses; no GOLD or XP moves.",
-          "Demo maps and the real GPS map keep separate notes and places. The test world seeds a few of each around náměstí Republiky.",
+          "**Community places** are free recommendations: nearest first within 10 km, each as a card with a large coloured picture of its kind (view, nature, history, art, food & drink, hidden gem, walk & play) and its distance, kind chips to filter and sorting. Three reports from different players hide a place until a moderator looks. No links, contacts or private addresses; no GOLD or XP moves.",
+          "Demo maps and the real GPS map keep separate messages and places. The test world seeds chat messages around náměstí Republiky and in towns 15–85 km away (Rokycany, Klatovy, Domažlice, Prague), so the distance filter has something to show.",
         ],
       },
       { h: "Quests, tasks and creators" },
@@ -674,7 +682,7 @@ export const CHAPTERS: Chapter[] = [
           "**Switch:** off unless the server runs with `LAYER_ENABLED=1` (never on mainnet). Then the logo opens a world picker with QuestLayer and the **Space Layer**.",
           "**Play:** walk and jump through one shared 3D world generated from a seed. Every explorer gets a free 16 × 16 home plot in a settlement and builds with ten blocks; only the owner can change a plot. Light pillars lead to beacons that activate when you stand on them. Daily goals: 8 blocks built, 3 beacons.",
           "**Explorers:** others within 128 blocks appear with name and a blocky outfit (six colour sets; an equipped Aura shows as a halo). Positions are kept in memory for 15 seconds and fast jumps are corrected.",
-          "**Storage:** SQLite tables for plots, changed blocks, edit receipts and beacon activations. Edits carry a request id, so a retry never applies twice. Virtual movement never counts as GPS.",
+          "**Storage:** SQLite tables for plots, changed blocks, edit receipts and beacon activations. Edits carry a request id, so a retry never applies twice. When the connection or the server fails, the blocks stay and the same request is retried; only a refusal (for example outside your plot) undoes them. Leaving the layer or closing the app still sends unsaved blocks. Others see a plot's new blocks within about 5 seconds. Virtual movement never counts as GPS.",
         ],
       },
       { h: "Community layers (agreed, not active)" },
@@ -1052,7 +1060,7 @@ export const CHAPTERS: Chapter[] = [
     blocks: [
       { h: "Perks by step and level" },
       { table: { head: ["Perk", "Step", "Level"], rows: gateRows } },
-      { p: "A yield-vault deposit makes you a Staker at once. Content opens by step and level so beginners are never blocked. Tier 2 and Tier 3 places on the map are open to everyone until launch." },
+      { p: "A yield-vault deposit makes you a Staker at once. Content opens by step and level so beginners are never blocked. Tier 2 places on the map are open to everyone until launch; Tier 3 places stay locked until the vault shows Tier 3." },
       { h: "Patron rank" },
       { viz: "patron-rank" },
       {
@@ -1294,7 +1302,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "daily-jobs",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/RUNTIME-RELIABILITY.md", "docs/PERFORMANCE-BUDGET.md", "docs/STATE-RECOVERY.md", "docs/OWNER-RUNBOOK.md", "docs/TEST-SEED.md", ".github/workflows/check.yml", "scripts/check-bundle-budget.mjs", "server/cli/tester-account.mjs"],
+    sources: ["docs/RUNTIME-RELIABILITY.md", "docs/PERFORMANCE-BUDGET.md", "docs/STATE-RECOVERY.md", "docs/OWNER-RUNBOOK.md", "docs/TEST-SEED.md", "docs/NEAR-RPC-CACHE.md", ".github/workflows/check.yml", "scripts/check-bundle-budget.mjs", "server/cli/tester-account.mjs"],
     blocks: [
       { p: "A React + MapLibre client talks to one Node 24 service (systemd, Caddy). SQLite in WAL mode is the durable store with strict schema modules. Server-sent events push coins and quests to nearby players." },
       {
@@ -1321,6 +1329,7 @@ export const CHAPTERS: Chapter[] = [
           "The testnet runs a removable test seed (bots, quests, community tasks, free Secrets); every seeded row has a `seed-` id. Starter kits for real explorers are off unless `TEST_SEED_KIT=1`.",
           "A tester-account command line sets the owner test explorer's password, removes the old practice-GOLD credit from explorers created before 10 November and retires duplicate test explorers (GOLD 0, sessions revoked).",
           "A deploy reinstalls the separate signing-vault origin whenever its code or contract list changed.",
+          "Chain reads go through free public NEAR RPC endpoints (three on testnet). The server merges equal reads, reuses a result for 3 s, paces reads to about 8 per second, backs off after a rate limit and drops cached reads whenever a transaction goes out.",
         ],
       },
       { viz: "ci-gates" },

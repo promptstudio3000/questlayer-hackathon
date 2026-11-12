@@ -1,18 +1,25 @@
 #!/usr/bin/env node
 // Builds server/data/demo-zones/plzen-compact.json: the Plzeň demo layout
-// (docs/DEMO-ZONES.md). Six round zones on the ring of parks around náměstí
+// (docs/DEMO-ZONES.md). Six zones on the ring of parks around náměstí
 // Republiky, every one within ~400 m of the demo start, so a judge reaches
-// all of them in a short walk. Targets are points on the CityPack's mapped
-// public paths inside each circle, the same source normal zones use.
+// all of them in a short walk. Each zone is the real OpenStreetMap outline of
+// its park or square, cut to a walkable size around the anchor, so zones have
+// irregular shapes instead of circles (Lubos, 11 Nov 2026). Targets are points
+// on the CityPack's mapped public paths inside each shape, the same source
+// normal zones use.
 //
 //   node scripts/build-demo-zones.mjs          # rewrite the file
 //   node scripts/build-demo-zones.mjs --check  # exit 1 if it is stale
 import { readFileSync, writeFileSync } from "node:fs";
-import { booleanPointInPolygon, circle, point } from "@turf/turf";
+import { organicPolygon } from "../server/spatial/organic-shape.mjs";
+import { area, booleanPointInPolygon, booleanValid, circle, feature, featureCollection, intersect, point, simplify } from "@turf/turf";
 
 const PACK = new URL("../server/data/plzen-v1.json", import.meta.url);
 const OUT = new URL("../server/data/demo-zones/plzen-compact.json", import.meta.url);
+const OUTLINES = new URL("../server/data/demo-zones/plzen-compact-outlines.json", import.meta.url);
 export const RADIUS_M = 55;
+// The outline is cut to this many times the anchor's radius.
+const CUT = 1.45;
 // Centroids of the OpenStreetMap features (or a point on them) (leisure=park, place=square).
 // The sector only gives each place its own daily slot. The square's centre
 // is the cathedral, so its circle is wider and reaches the paved square.
@@ -20,7 +27,7 @@ const ANCHORS = [
   { sector: "central", osm: "relation/337496", name: "náměstí Republiky", lng: 13.377587, lat: 49.747253, radiusM: 85 },
   { sector: "north", osm: "relation/17051896", name: "sady Pětatřicátníků North", lng: 13.374744, lat: 49.749122 },
   // The west promenade of the same ring park (pedestrian way 45329185).
-  { sector: "west", osm: "way/45329185", name: "sady Pětatřicátníků West", lng: 13.373925, lat: 49.747224 },
+  { sector: "west", osm: "way/45329185", outline: "relation/17051896", name: "sady Pětatřicátníků West", lng: 13.373925, lat: 49.747224 },
   { sector: "southwest", osm: "way/61512610", name: "Smetanovy sady", lng: 13.374875, lat: 49.744972 },
   { sector: "southeast", osm: "way/61512765", name: "Šafaříkovy sady", lng: 13.379658, lat: 49.745239 },
   { sector: "east", osm: "way/51450605", name: "sady 5. května", lng: 13.381875, lat: 49.74799, radiusM: 75 },
@@ -33,10 +40,40 @@ const EXTRA_PATHS = [
 ];
 const round = (n) => Math.round(n * 1e7) / 1e7;
 
-export function buildDemoZones(pack) {
+/** The OpenStreetMap outline of an anchor: the CityPack's park polygon or the outlines file. */
+function outlineOf(a, pack, outlines) {
+  const key = a.outline || a.osm;
+  const fromPack = pack.candidates.find((c) => c.id === `osm-${key.replace("/", "-")}`)?.geometry;
+  return fromPack || outlines[key] || null;
+}
+
+/**
+ * The outline cut to the anchor's walkable size (the largest piece), or, when
+ * OpenStreetMap has no usable area there (a promenade, tiny park pieces), an
+ * irregular blob of the anchor's radius seeded by its name.
+ */
+export function zoneShape(a, outline) {
+  const r = (a.radiusM || RADIUS_M) / 1000;
+  let f = outline && intersect(featureCollection([feature(outline), circle([a.lng, a.lat], r * CUT, { steps: 48 })]));
+  if (f?.geometry.type === "MultiPolygon")
+    f = feature({
+      type: "Polygon",
+      coordinates: f.geometry.coordinates
+        .map((c) => ({ c, m: area(feature({ type: "Polygon", coordinates: c })) }))
+        .sort((x, y) => y.m - x.m)[0].c,
+    });
+  if (f) f = simplify(f, { tolerance: 0.00001, highQuality: true });
+  if (!f || f.geometry.type !== "Polygon" || !booleanValid(f) || area(f) < 6000)
+    return organicPolygon(a, a.radiusM || RADIUS_M, `demo-zone:${a.sector}`);
+  return {
+    type: "Polygon",
+    coordinates: f.geometry.coordinates.map((ring) => ring.map(([x, y]) => [round(x), round(y)])),
+  };
+}
+
+export function buildDemoZones(pack, outlines = JSON.parse(readFileSync(OUTLINES, "utf8")).outlines) {
   const candidates = ANCHORS.map((a) => {
-    const shape = circle([a.lng, a.lat], (a.radiusM || RADIUS_M) / 1000, { steps: 24 }).geometry;
-    shape.coordinates = shape.coordinates.map((ring) => ring.map(([x, y]) => [round(x), round(y)]));
+    const shape = zoneShape(a, outlineOf(a, pack, outlines));
     const seen = new Set(),
       targets = [];
     for (const path of [...pack.paths, ...EXTRA_PATHS])
@@ -67,7 +104,7 @@ export function buildDemoZones(pack) {
     version: 1,
     cityId: pack.id,
     layout: "plzen-compact-v1",
-    about: "Demo layout: six always-open zones within ~400 m of náměstí Republiky. Generated by scripts/build-demo-zones.mjs. See docs/DEMO-ZONES.md.",
+    about: "Demo layout: six always-open zones within ~400 m of náměstí Republiky, shaped by their OpenStreetMap outlines. Generated by scripts/build-demo-zones.mjs. See docs/DEMO-ZONES.md.",
     center: { lat: 49.74745, lng: 13.3774 },
     radiusM: RADIUS_M,
     zoneGapM: 80,

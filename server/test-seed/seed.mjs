@@ -201,8 +201,8 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
           const id = `seed-note-${n.slug}-${arena ? "a" : "g"}`;
           db.prepare(
             "INSERT OR IGNORE INTO messages(id,player_id,text,lat,lng,image,author_fix,created_at) VALUES(?,?,?,?,?,NULL,NULL,?)",
-          ).run(id, n.author, n.text, n.at.lat, n.at.lng, now);
-          db.prepare("INSERT OR IGNORE INTO social_note_meta VALUES(?,?,'published',?)").run(id, arena, now);
+          ).run(id, n.author, n.text, n.at.lat, n.at.lng, now - (n.ago || 0) * 60_000);
+          db.prepare("INSERT OR IGNORE INTO social_note_meta VALUES(?,?,'published',?)").run(id, arena, now - (n.ago || 0) * 60_000);
         }
     });
   }

@@ -144,6 +144,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { monitorEventLoopDelay, performance } from "node:perf_hooks";
 import { ensureMapReadIndexes } from "./map-read-indexes.mjs";
 import { ensureHotPathIndexes } from "./hot-path-indexes.mjs";
+import { ensureCoinSpots, spotWorlds } from "./coin-spots.mjs";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -268,6 +269,7 @@ const layerRoutes = layerEnabled
   : null;
 ensureMapReadIndexes(db);
 ensureHotPathIndexes(db);
+ensureCoinSpots(db);
 // Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
 const testSeedMode = readTestSeedMode(process.env, NETWORK);
 // Compact always-open demo zones (docs/DEMO-ZONES.md); throws on mainnet.
@@ -3059,7 +3061,12 @@ async function api(req, res, url) {
     limit("coin", player, 240, "Please slow down collecting coins.");
     const input = await body(req),
       result = game.claimCoin(db, player, input.coinId, input.fix);
-    if (!result.alreadyClaimed) emit("coin", { id: input.coinId }, coinWorld(input.coinId));
+    if (!result.alreadyClaimed) {
+      // Copies of this coin in other worlds (same spot, same day) go too.
+      const claimed = db.prepare("SELECT lat,lng FROM coins WHERE id=?").get(String(input.coinId));
+      for (const world of [coinWorld(input.coinId), ...spotWorlds(db, input.coinId)])
+        emit("coin", { id: input.coinId, ...(claimed ? { lat: claimed.lat, lng: claimed.lng } : {}) }, world);
+    }
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/checkpoint" && method === "POST") {
@@ -3170,6 +3177,7 @@ async function api(req, res, url) {
         lat: Number(url.searchParams.get("lat") ?? HOME.lat),
         lng: Number(url.searchParams.get("lng") ?? HOME.lng),
         arena: url.searchParams.get("arena") !== "0",
+        radiusKm: url.searchParams.has("radiusKm") ? Number(url.searchParams.get("radiusKm")) : null,
       }),
     );
   if (path === "/api/messages" && method === "POST") {

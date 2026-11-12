@@ -516,3 +516,417 @@ button.community-row-open:focus-visible {
 .local-chat .community-head-actions {
   flex-wrap: nowrap;
 }
+
+/* ---- Local chat as a place chat (Lubos, 11 Nov 2026) ---- */
+/* Distance filter: one row of chips above everything. */
+.local-chat-range {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px;
+  margin: 0 0 12px;
+  border-radius: 14px;
+  background: #f1eaf9;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.local-chat-range > svg {
+  flex: none;
+  color: #672eeb;
+  margin-inline: 6px 2px;
+}
+.local-chat-range button {
+  flex: 1 0 auto;
+  min-height: 40px;
+  padding: 4px 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #441c6c;
+  font: inherit;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.local-chat-range button[aria-checked="true"] {
+  background: #fff;
+  color: #1a0335;
+  font-weight: 600;
+  box-shadow: 0 1px 4px #1a033524;
+}
+.local-chat-range button:focus-visible {
+  outline: 3px solid #672eeb;
+  outline-offset: 1px;
+}
+.local-chat :is(.community-head, .map-notes-heading) h3 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 18px;
+}
+
+/* Active shouts and topics: a swipeable strip of cards. */
+.place-strip {
+  margin-bottom: 14px;
+}
+.place-strip .community-head-actions button {
+  min-height: 40px;
+  padding: 6px 12px;
+  font-size: 14px;
+}
+ul.place-strip-cards {
+  list-style: none;
+  display: flex;
+  gap: 10px;
+  margin: 10px -16px 0;
+  padding: 2px 16px 6px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: 16px;
+  scrollbar-width: none;
+}
+.place-card {
+  flex: 0 0 min(240px, 72vw);
+  scroll-snap-align: start;
+}
+.place-card > button {
+  width: 100%;
+  height: 100%;
+  min-height: 128px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid #e3d8f0;
+  border-radius: 16px;
+  background: linear-gradient(160deg, #fff 40%, #f4edff);
+  color: var(--ink, #1a0335);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+.place-card.place-kind-shout > button {
+  background: linear-gradient(160deg, #fff 40%, #fff1dc);
+  border-color: #f2dcb8;
+}
+.place-card.is-own > button {
+  border-color: #672eeb;
+}
+.place-card > button:focus-visible {
+  outline: 3px solid #672eeb;
+  outline-offset: 2px;
+}
+.place-card-kind {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: #672eeb;
+}
+.place-kind-shout .place-card-kind {
+  color: #a0661b;
+}
+.place-card-count {
+  margin-inline-start: auto;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #672eeb;
+  color: #fff;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 500;
+}
+.place-card > button > b {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+}
+.place-card-meta {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--ink-secondary, #665577);
+  white-space: nowrap;
+  overflow: hidden;
+}
+.place-card-meta > span:not(.chat-avatar) {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+button.place-strip-all {
+  min-height: 40px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: #672eeb;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.place-strip-empty,
+.place-strip-loading {
+  margin: 10px 0 0;
+  padding: 14px;
+  border: 1px dashed #dcd1eb;
+  border-radius: 14px;
+  color: var(--ink-secondary, #665577);
+  font-size: 14px;
+}
+
+/* Avatars */
+.chat-avatar {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 50%;
+  background: hsl(var(--hue, 268) 70% 88%);
+  color: hsl(var(--hue, 268) 60% 28%);
+  font-weight: 600;
+  line-height: 1;
+}
+.chat-avatar.is-own {
+  background: #672eeb;
+  color: #fff;
+}
+
+/* The chat: bubbles, newest at the bottom, a composer bar under them. */
+.map-notes.is-chat {
+  border-top: 1px solid #e1d7eb;
+  padding-top: 12px;
+}
+.map-notes.is-chat .map-notes-heading {
+  margin-bottom: 4px;
+}
+.map-notes.is-chat ul.map-notes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.map-notes.is-chat li.map-note {
+  grid-template-columns: 36px minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 0;
+  border: 0;
+}
+.map-notes.is-chat li.map-note .map-note-body {
+  padding: 8px 12px;
+  border-radius: 4px 16px 16px 16px;
+  background: #f4effa;
+}
+.map-notes.is-chat li.map-note.is-own {
+  grid-template-columns: minmax(0, 1fr) auto;
+  background: none;
+  padding: 0;
+  margin-inline-start: 36px;
+}
+.map-notes.is-chat li.map-note.is-own > .chat-avatar {
+  display: none;
+}
+.map-notes.is-chat li.map-note.is-own .map-note-body {
+  border-radius: 16px 4px 16px 16px;
+  background: #ece2ff;
+}
+.map-notes.is-chat .map-note-meta b {
+  font-weight: 600;
+}
+.map-notes.is-chat li.map-note .map-note-menu > summary {
+  width: 36px;
+  height: 36px;
+}
+.map-notes.is-chat li.map-note.is-focused {
+  outline: none;
+}
+.map-notes.is-chat li.map-note.is-focused .map-note-body {
+  outline: 2px solid var(--accent, #7b3fe4);
+  outline-offset: 2px;
+}
+button.chat-composer-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 52px;
+  margin: 14px 0 6px;
+  padding: 6px 14px 6px 8px;
+  border: 1px solid #dcd1eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #672eeb;
+  font: inherit;
+  cursor: pointer;
+  box-shadow: 0 2px 8px #1a033514;
+}
+button.chat-composer-bar:disabled {
+  opacity: 0.56;
+}
+.chat-composer-field {
+  flex: 1;
+  min-width: 0;
+  color: var(--ink-secondary, #665577);
+  font-size: 16px;
+  text-align: start;
+}
+button.chat-composer-bar:focus-visible {
+  outline: 3px solid #672eeb;
+  outline-offset: 2px;
+}
+
+/* ---- Places, more graphic (Lubos, 11 Nov 2026) ---- */
+.community-places {
+  --kind-a: #8b5cf6;
+  --kind-b: #672eeb;
+}
+.community-places [data-kind="view"] { --kind-a: #6aa8ff; --kind-b: #2f6fd6; --kind-soft: #e6f0ff; --kind-ink: #1f56ad; }
+.community-places [data-kind="nature"] { --kind-a: #5fd18f; --kind-b: #1f8a52; --kind-soft: #e3f6ea; --kind-ink: #17693e; }
+.community-places [data-kind="history"] { --kind-a: #f0b45c; --kind-b: #a8620f; --kind-soft: #fbefdc; --kind-ink: #8a4f0c; }
+.community-places [data-kind="art"] { --kind-a: #f57ab8; --kind-b: #b02d73; --kind-soft: #fde6f2; --kind-ink: #95245f; }
+.community-places [data-kind="food"] { --kind-a: #ffc65c; --kind-b: #c27813; --kind-soft: #fff2d6; --kind-ink: #8c5610; }
+.community-places [data-kind="hidden"] { --kind-a: #a98bff; --kind-b: #672eeb; --kind-soft: #efe7fb; --kind-ink: #5222c4; }
+.community-places [data-kind="play"] { --kind-a: #4fd6cc; --kind-b: #127a74; --kind-soft: #e0f7f6; --kind-ink: #0f625d; }
+.place-kind-chips {
+  display: flex;
+  gap: 6px;
+  margin: 12px -16px 0;
+  padding: 0 16px 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.place-kind-chips button {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 40px;
+  padding: 4px 12px;
+  border: 1px solid #dcd1eb;
+  border-radius: 999px;
+  background: #fff;
+  color: #441c6c;
+  font: inherit;
+  font-size: 14px;
+  cursor: pointer;
+}
+.place-kind-chips button svg {
+  color: var(--kind-b);
+}
+.place-kind-chips button[aria-checked="true"] {
+  background: var(--kind-b);
+  border-color: var(--kind-b);
+  color: #fff;
+}
+.place-kind-chips button[aria-checked="true"] svg {
+  color: #fff;
+}
+.community-places .community-filter {
+  justify-content: space-between;
+}
+.community-filter-count {
+  font-size: 14px;
+  color: var(--ink-secondary, #665577);
+}
+ul.place-cards {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+.community-places li.place-row {
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 10px;
+  border: 1px solid #ebe3f4;
+  border-radius: 18px;
+  background: linear-gradient(120deg, var(--kind-soft, #f4effa) 0, #fff 55%);
+  box-shadow: 0 2px 10px #1a03350d;
+}
+.place-tile {
+  position: relative;
+  width: 84px;
+  height: 84px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(circle at 30% 25%, #ffffff66 0 18%, transparent 19%),
+    linear-gradient(145deg, var(--kind-a), var(--kind-b));
+  color: #fff;
+  box-shadow: inset 0 -4px 0 #00000022, 0 4px 10px color-mix(in srgb, var(--kind-b) 35%, transparent);
+}
+.place-tile svg {
+  filter: drop-shadow(0 2px 0 #00000030);
+}
+.place-tile-distance {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: #fff;
+  color: var(--kind-ink, #441c6c);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px #1a033529;
+}
+.place-row-kind {
+  display: inline-block;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--kind-ink, #672eeb);
+}
+.community-places .place-row .community-row-body b {
+  font-size: 17px;
+  font-weight: 600;
+}
+.community-places .place-row .community-row-body p {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.place-row-author {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+}
+.place-row-gps {
+  grid-column: 1 / -1;
+  margin-top: -2px;
+  padding-top: 4px;
+  border-top: 1px dashed #e3d8f0;
+}
+.place-strip button.place-strip-all {
+  display: block;
+  margin-top: 2px;
+}
+.place-strip ul.place-strip-cards {
+  padding-bottom: 2px;
+}
+.place-replies li.place-reply-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+.place-thread header small {
+  display: block;
+}
+.place-strip button.place-strip-all {
+  margin-inline: 0;
+  text-align: start;
+  width: auto;
+}

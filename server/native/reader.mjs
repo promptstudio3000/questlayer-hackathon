@@ -31,8 +31,12 @@ export class NativeContractReader {
       );
       const value = JSON.parse(Buffer.from(r.result).toString());
       if (this.pending.get(key) === pending) {
-        if (this.cache.size > 128) this.cache.clear();
+        // Oldest entry out first; clearing everything at once made every
+        // player's next read go back to the RPC (docs/NEAR-RPC-CACHE.md).
+        this.cache.delete(key);
         this.cache.set(key, { until: Date.now() + 15000, value });
+        while (this.cache.size > 512)
+          this.cache.delete(this.cache.keys().next().value);
       }
       return value;
     })();

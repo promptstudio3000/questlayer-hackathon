@@ -1,5 +1,6 @@
 import { grantWearableFind } from "./gotchi-wearables.mjs";
 import { coinMeta } from "./map-rewards/service.mjs";
+import { spotTakenBy } from "./coin-spots.mjs";
 import { earnGlobalQuest } from './global-rewards.mjs';
 import { randomBytes } from "node:crypto";
 import {
@@ -118,6 +119,17 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
     );
     assert(
       !coin.claimant,
+      "Another explorer got this coin first. Pick another one nearby.",
+      409,
+      "ALREADY_CLAIMED",
+    );
+    // The same street coin can sit in several worlds (GPS city, demo arena):
+    // whoever picks it up first, in any of them, takes it (coin-spots.mjs).
+    const sibling = spotTakenBy(db, coin);
+    if (sibling?.claimant === player)
+      return { alreadyClaimed: true, value: coin.value_u };
+    assert(
+      !sibling,
       "Another explorer got this coin first. Pick another one nearby.",
       409,
       "ALREADY_CLAIMED",
