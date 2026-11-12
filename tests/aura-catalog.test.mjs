@@ -127,10 +127,13 @@ test("wardrobe filters by slot, rarity and set; catalog progress counts editions
   assert.equal(progress.entries.find((e) => e.edition.id === "gold").owned, 2);
   assert.equal(catalogEditionFor({ name: "Golden Dust" }).id, "gold");
 });
-test("native token ids accept every catalog edition within the 256 cap", () => {
+test("native token ids accept every catalog edition with any serial (uncapped editions)", () => {
   assert.deepEqual(server.nativeAuraToken("aura:nova:256"), { edition: "nova", serial: 256 });
+  assert.deepEqual(server.nativeAuraToken("aura:nova:257"), { edition: "nova", serial: 257 });
+  assert.deepEqual(server.nativeAuraToken("aura:nova:1000000"), { edition: "nova", serial: 1000000 });
+  assert.equal(server.AURA_CHAIN_CAPPED, false);
   assert.deepEqual(server.nativeAuraToken("aura:polar:1"), { edition: "polar", serial: 1 });
-  for (const bad of ["aura:nova:0", "aura:nova:257", "aura:festival:1", "aura:polar:01", "avatar:x", null])
+  for (const bad of ["aura:nova:0", "aura:nova:12345678901", "aura:festival:1", "aura:polar:01", "avatar:x", null])
     assert.equal(server.nativeAuraToken(bad), null, String(bad));
   assert.equal(server.nativeEditionForName("Golden Dust"), "gold");
   assert.equal(server.nativeEditionForName("Ember Wisp"), "ember");

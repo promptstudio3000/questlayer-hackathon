@@ -254,6 +254,10 @@ reproduced `52edcff…` byte for byte): `questlayer_collectibles.wasm` 398,375 b
 and `contracts/wasm-sha256.json`. Until the testnet upgrade runs, the claims and editions manifests describe the
 deployed `52edcff…` build and are listed under `testnetDeploymentsNotFromThisBuild`.
 
+Deployed on testnet 12 Nov 2026 from the VPS runner (hash rebuilt and verified there before signing): last tx
+`2J4ezP9LAmLegLDkKAFnXkG6R6zx85M1FvW1Yz6QL7CW`, 63 tokens and 14 equipment slots preserved. The manifests now name
+`d82f4dee…` and the exceptions are gone.
+
 ## Reproducible builds in CI
 
 The `reproducible-contracts` CI job builds every contract with `scripts/build-contracts-docker.sh` (Docker `rust:1.97.0`, `linux/amd64`), uploads the WASM files and `SHA256SUMS` as the `contract-wasm-linux-amd64` artifact, and runs `scripts/check-wasm-hashes.mjs`. It fails when any WASM differs from `contracts/wasm-sha256.json`, when the collectibles WASM differs from `contracts/collectibles/WASM_SHA256` or the last reviewed hash above, or when a `wasmSha256` in `public/native-*-testnet.json` is neither a current build nor listed with its exact hash under `testnetDeploymentsNotFromThisBuild` (older testnet deployments built before path remapping). A `codeHash` next to it must be the base58 of the same sha256. On macOS run `npm run contracts:docker`; after an intended contract change, `npm run contracts:docker -- --write` (or copy the hashes from the CI job summary). Deploy only the Docker or CI artifact.
