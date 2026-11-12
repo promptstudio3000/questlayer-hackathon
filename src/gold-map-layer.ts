@@ -44,10 +44,7 @@ export function attachGoldLayer(map: maplibregl.Map, onPlace: (id: string) => vo
           const text = document.createElement("span"); text.textContent = p.text;
           node.append(img, text);
           node.setAttribute("aria-label", p.kind === "shout" ? tr("Shout: {0}", { 0: p.text }) : tr("Topic: {0}", { 0: p.text }));
-          node.addEventListener("click", (e) => {
-            e.stopPropagation();
-            onPlace(p.id);
-          });
+          foldable(node, () => onPlace(p.id));
           return new maplibregl.Marker({ element: node, anchor: "bottom-left" }).setLngLat([p.lng, p.lat]);
         },
       });
@@ -67,6 +64,29 @@ export function attachGoldLayer(map: maplibregl.Map, onPlace: (id: string) => vo
     markers.clear();
   }
   return { update, remove };
+}
+
+/** Messages on the map stay closed as small icons. The first tap opens the
+ *  text, a tap on the open text goes to the thread, and the X (or Escape, or
+ *  opening another one) folds it back to the icon. */
+function foldable(node: HTMLButtonElement, onOpen: () => void) {
+  const close = document.createElement("i");
+  close.className = "pin-close";
+  close.setAttribute("aria-hidden", "true");
+  close.textContent = "×";
+  node.append(close);
+  node.setAttribute("aria-expanded", "false");
+  const fold = () => { delete node.dataset.open; node.setAttribute("aria-expanded", "false"); };
+  node.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (!node.dataset.open) {
+      document.querySelectorAll<HTMLElement>(".gold-place-pin[data-open]").forEach((other) => { delete other.dataset.open; other.setAttribute("aria-expanded", "false"); });
+      node.dataset.open = "true";
+      node.setAttribute("aria-expanded", "true");
+    } else if (e.target === close) fold();
+    else onOpen();
+  });
+  node.addEventListener("keydown", (e) => { if (e.key === "Escape" && node.dataset.open) { e.stopPropagation(); fold(); } });
 }
 
 /** Free map notes (Local chat · Notes) as small paper pins; tap opens the note. */
@@ -91,10 +111,7 @@ export function attachNoteLayer(map: maplibregl.Map, onNote: (id: string) => voi
       const text = document.createElement("span"); text.textContent = n.text;
       node.append(img, text);
       node.setAttribute("aria-label", n.own ? tr("Your note: {0}", { 0: n.text }) : tr("Note: {0}", { 0: n.text }));
-      node.addEventListener("click", (e) => {
-        e.stopPropagation();
-        onNote(n.id);
-      });
+      foldable(node, () => onNote(n.id));
       const marker = new maplibregl.Marker({ element: node, anchor: "bottom-left" }).setLngLat([n.lng, n.lat]).addTo(map);
       markers.set(n.id, { marker, key: `${n.text}|${n.lat}|${n.lng}|${n.own}` });
     }

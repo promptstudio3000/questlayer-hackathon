@@ -19,8 +19,8 @@
         "npc",
         "monster"
       ],
-      "coachQuest": "Visit Brněnský orloj",
-      "coachQuestKind": "visit"
+      "coachQuest": "Chest at Moravské náměstí",
+      "coachQuestKind": "chest"
     },
     {
       "device": "phone-390",

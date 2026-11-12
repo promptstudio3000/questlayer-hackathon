@@ -192,7 +192,6 @@ export function LanguageSetting() {
       <Translate size={22} aria-hidden="true" />
       <span>
         {tr("Language")}
-        <small>{tr("Saved on this device")}</small>
       </span>
       <select
         className="language-select"

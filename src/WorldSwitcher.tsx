@@ -1,7 +1,6 @@
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 import { createPortal } from "react-dom";
-import { CaretDown, GlobeHemisphereWest, Cube, Flask, X } from "@phosphor-icons/react";
-import { Dialog } from "./Dialog";
+import { BookOpen, CaretDown, GlobeHemisphereWest, Cube, Flask, Question, Vault } from "@phosphor-icons/react";
 import { BrandLogo } from "./Ghost";
 import { tr } from "./i18n";
 import { REALMS } from "./realms";
@@ -38,19 +37,59 @@ export function WorldSwitcher({
       ? { url: gameLayer.worldUrl, name: REALMS.questlayer.name, text: tr("The real game.") }
       : null
     : gameLayer?.testLayerUrl
-      ? { url: gameLayer.testLayerUrl, name: tr("Test Layer"), text: tr("Every feature with test coins. Nothing here is real money.") }
+      ? { url: gameLayer.testLayerUrl, name: tr("Test Layer"), text: tr("Test coins, not real money.") }
       : null;
   const [open, setOpen] = useState(false);
+  const button = useRef<HTMLButtonElement>(null);
+  const menu = useRef<HTMLDivElement>(null);
+  const [at, setAt] = useState<{ left: number; top: number } | null>(null);
+  // Desktop: a dropdown hanging from the button. Phone: a bottom sheet (CSS).
+  useLayoutEffect(() => {
+    if (!open) return;
+    const place = () => {
+      const r = button.current?.getBoundingClientRect();
+      setAt(r && window.innerWidth > 760 ? { left: Math.max(8, r.left), top: r.bottom + 8 } : null);
+    };
+    place();
+    window.addEventListener("resize", place);
+    return () => window.removeEventListener("resize", place);
+  }, [open]);
+  useEffect(() => {
+    if (!open) return;
+    menu.current?.querySelector<HTMLElement>('[aria-pressed="true"], a, button')?.focus({ preventScroll: true });
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      e.preventDefault();
+      close();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open]);
+  const close = () => {
+    setOpen(false);
+    button.current?.focus({ preventScroll: true });
+  };
+  const choice = (pressed: boolean | undefined, icon: ReactNode, name: string, text: string, act: (() => void) | string, disabled = false) =>
+    typeof act === "string" ? (
+      <a className="world-choice" href={act}>
+        {icon}
+        <span><strong>{name}</strong><small>{text}</small></span>
+      </a>
+    ) : (
+      <button className="world-choice" aria-pressed={pressed} disabled={disabled} onClick={() => { setOpen(false); act(); }}>
+        {icon}
+        <span><strong>{name}</strong><small>{text}</small></span>
+      </button>
+    );
   return (
     <>
       <button
+        ref={button}
         className="world-switcher"
         aria-label={tr("Choose your world")}
         aria-haspopup="dialog"
-        onClick={(event) => {
-          event.currentTarget.focus({ preventScroll: true });
-          setOpen(true);
-        }}
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
       >
         <BrandLogo />
         <span className="world-switcher-name">
@@ -63,71 +102,46 @@ export function WorldSwitcher({
       </button>
       {open &&
         createPortal(
-          <Dialog
-            label={tr("Choose your world")}
-            onClose={() => setOpen(false)}
-          >
-            <section className="world-picker">
-              <div className="panel-heading">
-                <h2>{tr("One explorer. Two worlds.")}</h2>
-                <button
-                  className="icon-button"
-                  onClick={() => setOpen(false)}
-                  aria-label={tr("Close")}
-                >
-                  <X size={24} />
-                </button>
-              </div>
-              <button
-                className="world-choice"
-                aria-pressed={!virtual}
-                onClick={() => {
-                  setOpen(false);
-                  onChoose(false);
-                }}
-              >
-                {test ? <Flask size={32} aria-hidden="true" /> : <GlobeHemisphereWest size={32} aria-hidden="true" />}
-                <span>
-                  <strong>{outdoorName}</strong>
-                  <small>
-                    {test
-                      ? tr("Every feature with test coins. Nothing here is real money.")
-                      : tr("Outdoor quests, real places and discoveries.")}
-                  </small>
-                </span>
-              </button>
-              <button
-                className="world-choice"
-                aria-pressed={virtual}
-                disabled={!enabled}
-                onClick={() => {
-                  setOpen(false);
-                  onChoose(true);
-                }}
-              >
-                <Cube size={32} aria-hidden="true" />
-                <span>
-                  <strong>{layerName}</strong>
-                  <small>
-                    {enabled
-                      ? tr(
-                          "A shared voxel world in space: build your plot, explore, meet explorers.",
-                        )
-                      : tr("Create your explorer to enter.")}
-                  </small>
-                </span>
-              </button>
-              {other && (
-                <a className="world-choice" href={other.url}>
-                  {test ? <GlobeHemisphereWest size={32} aria-hidden="true" /> : <Flask size={32} aria-hidden="true" />}
-                  <span>
-                    <strong>{other.name}</strong>
-                    <small>{other.text}</small>
-                  </span>
-                </a>
+          <div className="world-menu-layer" onClick={close}>
+            <div
+              ref={menu}
+              className="world-picker"
+              role="dialog"
+              aria-label={tr("Choose your world")}
+              style={at ? { left: at.left, top: at.top } : undefined}
+              data-sheet={at ? undefined : ""}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <nav className="world-links" aria-label={tr("About the game")}>
+                <a href="/how-it-works"><Question size={18} aria-hidden="true" />{tr("How it works")}</a>
+                <a href="/wiki"><BookOpen size={18} aria-hidden="true" />{tr("Wiki")}</a>
+                <a href="/treasury"><Vault size={18} aria-hidden="true" />{tr("Treasury")}</a>
+              </nav>
+              {choice(
+                !virtual,
+                test ? <Flask size={28} aria-hidden="true" /> : <GlobeHemisphereWest size={28} aria-hidden="true" />,
+                outdoorName,
+                test ? tr("Test coins, not real money.") : tr("Real places outdoors."),
+                () => onChoose(false),
               )}
-            </section>
-          </Dialog>,
+              {choice(
+                virtual,
+                <Cube size={28} aria-hidden="true" />,
+                layerName,
+                enabled ? tr("Shared voxel world.") : tr("Create your explorer to enter."),
+                () => onChoose(true),
+                !enabled,
+              )}
+              {other &&
+                choice(
+                  undefined,
+                  test ? <GlobeHemisphereWest size={28} aria-hidden="true" /> : <Flask size={28} aria-hidden="true" />,
+                  other.name,
+                  other.text,
+                  other.url,
+                )}
+            </div>
+          </div>,
           document.body,
         )}
     </>
