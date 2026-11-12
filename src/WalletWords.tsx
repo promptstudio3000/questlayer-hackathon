@@ -8,17 +8,12 @@ import { Dialog } from "./Dialog";
 import { NEAR_NETWORK, NETWORK_LABEL } from "./near-network";
 import "./funds-help.css";
 
-// Wallets that take a 12-word phrase on the network this build runs on.
-export const IMPORT_WALLETS =
-  NEAR_NETWORK === "testnet"
-    ? [
-        { name: "Meteor Wallet", href: "https://wallet.meteorwallet.app/" },
-        { name: "MyNearWallet", href: "https://testnet.mynearwallet.com/" },
-      ]
-    : [
-        { name: "Meteor Wallet", href: "https://wallet.meteorwallet.app/" },
-        { name: "MyNearWallet", href: "https://app.mynearwallet.com/" },
-      ];
+// Wallets that import a 12-word phrase. MyNearWallet is not listed: it went
+// into limited mode in November 2026 and sends its own users to Meteor.
+export const IMPORT_WALLETS = [
+  { name: "Meteor Wallet", href: "https://wallet.meteorwallet.app/" },
+  { name: "Intear Wallet", href: "https://wallet.intear.tech/" },
+];
 
 export function WalletWords({
   accountId,

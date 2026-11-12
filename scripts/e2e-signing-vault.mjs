@@ -782,7 +782,7 @@ async function runDevice(name, servers) {
           const done = page.getByRole("dialog", { name: "Your words work now" });
           await done.getByText(state.account.accountId).waitFor();
           assert.equal(await done.getByRole("link", { name: /Meteor Wallet/ }).getAttribute("href"), "https://wallet.meteorwallet.app/");
-          assert.equal(await done.getByRole("link", { name: /MyNearWallet/ }).getAttribute("href"), "https://testnet.mynearwallet.com/");
+          assert.equal(await done.getByRole("link", { name: /Intear Wallet/ }).getAttribute("href"), "https://wallet.intear.tech/");
           await capture(page, "wallet-done", done);
           await done.getByRole("button", { name: "Done", exact: true }).click();
           await devicesPanel.locator(".device-list li", { hasText: "Wallet words" }).getByRole("button", { name: "Revoke Wallet words" }).waitFor();
