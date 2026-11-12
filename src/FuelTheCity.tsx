@@ -19,6 +19,7 @@ import { NativeStaking, type VaultSnapshot } from "./NativeStaking";
 import { StakeToday } from "./StakeToday";
 import { StakeStory, TierLadder, type StakerStep } from "./StakeEarn";
 import { STAKER_SUGGEST_NEAR, takeStakePrefill } from "./LockedChip";
+import { qgoldOfNear } from "./qgold-display";
 import { parseTestNear, type VaultRequest } from "./native-vault-quote";
 import type { Player } from "./types";
 import "./fuel-the-city.css";
@@ -301,10 +302,10 @@ export function FuelTheCity({
       }
       if (setUp) {
         // The stake is its own tap, so its confirmation window may open.
-        setOutcome({ kind: "done", text: tr("Your vault is ready. Tap Stake {0} NEAR once more to stake.", { 0: amount }) });
+        setOutcome({ kind: "done", text: tr("Vault ready. Tap Stake {0} QGOLD again.", { 0: qgoldOfNear(amount) }) });
         return;
       }
-      setOutcome({ kind: "pending", text: tr("Staking {0} NEAR…", { 0: amount }) });
+      setOutcome({ kind: "pending", text: tr("Staking {0} QGOLD…", { 0: qgoldOfNear(amount) }) });
       const vaultId = now.position.account_id;
       const ok = await sign({ action: "deposit", vaultId, amount: deposit });
       if (!ok) {
@@ -365,7 +366,7 @@ export function FuelTheCity({
     ladderStep === "none"
       ? summary.myStakeNear > 0
         ? tr("Your stake counts after about two epochs (1–2 days). Then you are a Staker.")
-        : tr("Stake {0} NEAR to become a Staker.", { 0: stakerMin })
+        : tr("Stake {0} QGOLD to become a Staker.", { 0: qgoldOfNear(stakerMin) })
       : summary.next
         ? tr("{0} GOLD more fuel opens Tier {1} places.", { 0: fmt(summary.next.missingGold), 1: summary.next.tier })
         : tr("Every place on the map is open to you.");
@@ -388,7 +389,7 @@ export function FuelTheCity({
         next={ladderNext}
         loading={loading || !gates}
         numbers={[
-          [tr("Staked"), `${fmt(summary.myStakeNear, 3)} NEAR`],
+          [tr("Staked"), `${qgoldOfNear(summary.myStakeNear)} QGOLD`],
           [tr("Your share"), summary.share === null ? "–" : `${fmt(summary.share * 100, 1)} %`],
           [tr("Explorers"), summary.stakers ?? "–"],
         ]}
@@ -416,9 +417,6 @@ export function FuelTheCity({
               ))}
             </div>
           )}
-          <small>
-            {tr("The rest of the yield is yours. More to the prize pool climbs the tiers faster.")}
-          </small>
         </div>
       </TierLadder>
 
@@ -433,7 +431,7 @@ export function FuelTheCity({
               disabled={busy || loading || (!!vaults?.config && vaults.config.created >= vaults.config.capacity && phase.kind === "none")}
               onClick={() => void stake()}
             >
-              {busy && outcome.kind === "pending" ? outcome.text : tr("Stake {0} NEAR", { 0: amount })}
+              {busy && outcome.kind === "pending" ? outcome.text : tr("Stake {0} QGOLD", { 0: qgoldOfNear(amount) })}
               {eur && !busy ? <small>{eur}</small> : null}
               <Flame size={20} aria-hidden="true" />
             </button>
@@ -455,19 +453,14 @@ export function FuelTheCity({
                 <WarningCircle size={18} aria-hidden="true" />
                 {!account
                   ? tr("Your account isn't ready to stake yet. What can I do?")
-                  : tr("Not enough test NEAR yet. What can I do?")}
+                  : tr("Not enough to stake yet. What can I do?")}
               </button>
             )}
             <p className="fuel-paid">
-              {tr("One stake. It stays yours: you can only withdraw it, which takes about 1–7 days.")}{" "}
+              {tr("Withdraw anytime (1–7 days).")}{" "}
               {phase.kind === "none" && setupNear !== null
-                ? tr("First time only: {0} test NEAR sets up your personal vault (step 1) and is not returned; then you stake (step 2).", { 0: fmt(setupNear, 2) })
-                : null}{" "}
-              {!account
-                ? tr("Your explorer account is prepared first.")
-                : managed
-                  ? tr("Paid from your balance. You confirm with Yes in a small QuestLayer window.")
-                  : tr("Your NEAR wallet asks you to approve.")}
+                ? tr("First time: {0} QGOLD vault setup, not returned.", { 0: qgoldOfNear(setupNear) })
+                : null}
             </p>
           </>
         ) : (
@@ -475,7 +468,7 @@ export function FuelTheCity({
             <div className="fuel-mine">
               <div>
                 <span>{phase.kind === "ready" ? tr("Back and ready") : tr("Your stake")}</span>
-                <b>{fmt(phase.kind === "ready" ? credit : principal, 3)} NEAR</b>
+                <b>{`${qgoldOfNear(phase.kind === "ready" ? credit : principal)} QGOLD`}</b>
               </div>
               {status && (
                 <span className={`fuel-chip fuel-${status.tone}`}>
@@ -507,11 +500,11 @@ export function FuelTheCity({
                         void run(
                           { action: "exit", vaultId: phase.position.account_id },
                           tr("Requesting your withdrawal…"),
-                          tr("Withdrawal requested. Your NEAR is unstaking; it shows here when it's back."),
+                          tr("Withdrawal requested. It shows here when it's back."),
                         )
                       }
                     >
-                      {busy && outcome.kind === "pending" ? outcome.text : tr("Withdraw {0} NEAR", { 0: fmt(principal, 3) })}
+                      {busy && outcome.kind === "pending" ? outcome.text : tr("Withdraw {0} QGOLD", { 0: qgoldOfNear(principal) })}
                     </button>
                   </div>
                 </div>
@@ -544,7 +537,7 @@ export function FuelTheCity({
                 }
               >
                 <ArrowDown size={20} aria-hidden="true" />
-                {busy && outcome.kind === "pending" ? outcome.text : tr("Withdraw {0} NEAR to my balance", { 0: fmt(credit, 3) })}
+                {busy && outcome.kind === "pending" ? outcome.text : tr("Withdraw {0} QGOLD to my balance", { 0: qgoldOfNear(credit) })}
               </button>
             )}
             {(phase.kind === "returning" || phase.kind === "busy") && (

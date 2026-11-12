@@ -7,6 +7,7 @@ import { LockKey, X } from "@phosphor-icons/react";
 import { Dialog } from "./Dialog";
 import { openStakeScreen } from "./LockedChip";
 import { tierStakeNear } from "./tier-stake";
+import { qgoldOfNear } from "./qgold-display";
 import { tr } from "./i18n";
 import "./locked-zone.css";
 import type { Zone } from "./types";
@@ -17,7 +18,7 @@ export function LockedZoneCard({ zone, onStake }: { zone: Zone; onStake?: () => 
     <div className="locked-panel locked-zone-card">
       <LockKey size={25} aria-hidden="true" />
       <h3>{tr("Tier {0} zone", { 0: zone.tier })}</h3>
-      <p>{tr("Stake {0} NEAR in one go to enter.", { 0: near })}</p>
+      <p>{tr("Stake {0} QGOLD in one go to enter.", { 0: qgoldOfNear(near) })}</p>
       <div className="locked-zone-actions">
         <button
           type="button"
@@ -27,7 +28,7 @@ export function LockedZoneCard({ zone, onStake }: { zone: Zone; onStake?: () => 
             openStakeScreen(String(near));
           }}
         >
-          {tr("Stake {0} NEAR", { 0: near })}
+          {tr("Stake {0} QGOLD", { 0: qgoldOfNear(near) })}
         </button>
         <a className="locked-zone-how" href="/how-it-works#staking">
           {tr("How it works")}
