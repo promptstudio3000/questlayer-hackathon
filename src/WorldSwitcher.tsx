@@ -10,6 +10,7 @@ import "./world-switcher.css";
 export type GameLayerConfig = {
   id: "world" | "test";
   test: boolean;
+  tour?: boolean;
   testLayerUrl: string | null;
   worldUrl: string | null;
 };

@@ -9,7 +9,7 @@ SET="${1:-testnet}" # testlayer for the Test Layer's vault (docs/TEST-LAYER.md)
 if command -v sha256sum >/dev/null; then sum() { sha256sum "$@"; }; else sum() { shasum -a 256 "$@"; }; fi
 {
   find src/signing-vault -type f
-  printf '%s\n' server/signing-vault.mjs scripts/install-signing-vault-vps.sh \
+  printf '%s\n' server/signing-vault.mjs scripts/install-signing-vault-vps.sh scripts/vps-install-signing-vault-release.sh \
     "public/native-qgold-vault-$SET.json" "public/native-qgold-escrow-$SET.json" \
     "public/native-claims-$SET.json" "public/native-npc-games-$SET.json" \
     "public/native-intents-$SET.json"
