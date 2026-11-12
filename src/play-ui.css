@@ -787,3 +787,8 @@
   align-items: center;
   gap: 6px;
 }
+
+/* Settings → Account and devices: the player's NEAR account and wallet words. */
+.wallet-account code { display: block; font-size: 16px; line-height: 1.4; overflow-wrap: anywhere; color: var(--ink); }
+.wallet-account-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.wallet-account-actions .secondary-button { flex: 1 1 140px; }
