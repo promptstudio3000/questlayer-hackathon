@@ -3397,5 +3397,7 @@
   "You have {0} QGOLD, worth about {1} NEAR. Swap part of it for NEAR at the QGOLD vault, then come back and buy.": "{0} QGOLD（約 {1} NEAR）を持っています。QGOLD ボールトで一部を NEAR に交換してから戻って購入してください。",
   "You have {0} QGOLD, worth about {1} NEAR. That is not enough to cover the missing {2} NEAR yet; collect more on the map or add NEAR.": "{0} QGOLD（約 {1} NEAR）を持っています。不足している {2} NEAR にはまだ足りません。マップでもっと集めるか NEAR を追加してください。",
   "{0} has {1} NEAR.": "{0} の残高は {1} NEAR です。",
-  "Every feature with test coins. Nothing here is real money.": "すべての機能をテスト用コインで。ここに本物のお金はありません。"
+  "Every feature with test coins. Nothing here is real money.": "すべての機能をテスト用コインで。ここに本物のお金はありません。",
+  "Price in QGOLD": "QGOLDでの価格",
+  "Choose a price between 1,000 and 1,000M QGOLD.": "1,000〜1,000M QGOLDの価格を選んでください。"
 }

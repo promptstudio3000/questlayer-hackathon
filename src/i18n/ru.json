@@ -3397,5 +3397,7 @@
   "You have {0} QGOLD, worth about {1} NEAR. Swap part of it for NEAR at the QGOLD vault, then come back and buy.": "У вас {0} QGOLD, примерно {1} NEAR. Обменяйте часть на NEAR в хранилище QGOLD и вернитесь за покупкой.",
   "You have {0} QGOLD, worth about {1} NEAR. That is not enough to cover the missing {2} NEAR yet; collect more on the map or add NEAR.": "У вас {0} QGOLD, примерно {1} NEAR. Этого пока мало для недостающих {2} NEAR; соберите больше на карте или добавьте NEAR.",
   "{0} has {1} NEAR.": "У {0} {1} NEAR.",
-  "Every feature with test coins. Nothing here is real money.": "Все функции с тестовыми монетами. Здесь нет настоящих денег."
+  "Every feature with test coins. Nothing here is real money.": "Все функции с тестовыми монетами. Здесь нет настоящих денег.",
+  "Price in QGOLD": "Цена в QGOLD",
+  "Choose a price between 1,000 and 1,000M QGOLD.": "Выбери цену от 1 000 до 1 000M QGOLD."
 }

@@ -3397,5 +3397,7 @@
   "You have {0} QGOLD, worth about {1} NEAR. Swap part of it for NEAR at the QGOLD vault, then come back and buy.": "你有 {0} QGOLD，约值 {1} NEAR。在 QGOLD 金库把一部分兑换成 NEAR，再回来购买。",
   "You have {0} QGOLD, worth about {1} NEAR. That is not enough to cover the missing {2} NEAR yet; collect more on the map or add NEAR.": "你有 {0} QGOLD，约值 {1} NEAR。还不够补上缺少的 {2} NEAR；去地图上多收集一些或添加 NEAR。",
   "{0} has {1} NEAR.": "{0} 有 {1} NEAR。",
-  "Every feature with test coins. Nothing here is real money.": "用测试币体验所有功能。这里没有真钱。"
+  "Every feature with test coins. Nothing here is real money.": "用测试币体验所有功能。这里没有真钱。",
+  "Price in QGOLD": "QGOLD 价格",
+  "Choose a price between 1,000 and 1,000M QGOLD.": "请选择 1,000 到 1,000M QGOLD 之间的价格。"
 }

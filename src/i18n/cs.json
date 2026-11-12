@@ -3397,5 +3397,7 @@
   "You have {0} QGOLD, worth about {1} NEAR. Swap part of it for NEAR at the QGOLD vault, then come back and buy.": "Máš {0} QGOLD v hodnotě asi {1} NEAR. Směň část za NEAR v trezoru QGOLD, pak se vrať a kup.",
   "You have {0} QGOLD, worth about {1} NEAR. That is not enough to cover the missing {2} NEAR yet; collect more on the map or add NEAR.": "Máš {0} QGOLD v hodnotě asi {1} NEAR. To zatím nestačí na chybějících {2} NEAR; nasbírej víc na mapě nebo přidej NEAR.",
   "{0} has {1} NEAR.": "{0} má {1} NEAR.",
-  "Every feature with test coins. Nothing here is real money.": "Všechny funkce s testovacími mincemi. Nic tu nejsou skutečné peníze."
+  "Every feature with test coins. Nothing here is real money.": "Všechny funkce s testovacími mincemi. Nic tu nejsou skutečné peníze.",
+  "Price in QGOLD": "Cena v QGOLD",
+  "Choose a price between 1,000 and 1,000M QGOLD.": "Zvol cenu mezi 1 000 a 1 000M QGOLD."
 }

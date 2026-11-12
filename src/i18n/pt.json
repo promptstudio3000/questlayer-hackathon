@@ -3397,5 +3397,7 @@
   "You have {0} QGOLD, worth about {1} NEAR. Swap part of it for NEAR at the QGOLD vault, then come back and buy.": "Você tem {0} QGOLD, cerca de {1} NEAR. Troque uma parte por NEAR no cofre de QGOLD e volte para comprar.",
   "You have {0} QGOLD, worth about {1} NEAR. That is not enough to cover the missing {2} NEAR yet; collect more on the map or add NEAR.": "Você tem {0} QGOLD, cerca de {1} NEAR. Ainda não cobre os {2} NEAR que faltam; colete mais no mapa ou adicione NEAR.",
   "{0} has {1} NEAR.": "{0} tem {1} NEAR.",
-  "Every feature with test coins. Nothing here is real money.": "Todos os recursos com moedas de teste. Nada aqui é dinheiro real."
+  "Every feature with test coins. Nothing here is real money.": "Todos os recursos com moedas de teste. Nada aqui é dinheiro real.",
+  "Price in QGOLD": "Preço em QGOLD",
+  "Choose a price between 1,000 and 1,000M QGOLD.": "Escolha um preço entre 1.000 e 1.000M QGOLD."
 }

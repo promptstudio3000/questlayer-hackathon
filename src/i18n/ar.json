@@ -3397,5 +3397,7 @@
   "You have {0} QGOLD, worth about {1} NEAR. Swap part of it for NEAR at the QGOLD vault, then come back and buy.": "لديك {0} QGOLD بقيمة نحو {1} NEAR. بادل جزءًا منه بـ NEAR في خزنة QGOLD ثم عد واشترِ.",
   "You have {0} QGOLD, worth about {1} NEAR. That is not enough to cover the missing {2} NEAR yet; collect more on the map or add NEAR.": "لديك {0} QGOLD بقيمة نحو {1} NEAR. هذا لا يكفي بعد لتغطية {2} NEAR الناقصة؛ اجمع المزيد على الخريطة أو أضف NEAR.",
   "{0} has {1} NEAR.": "لدى {0} {1} NEAR.",
-  "Every feature with test coins. Nothing here is real money.": "كل الميزات بعملات اختبار. لا شيء هنا مال حقيقي."
+  "Every feature with test coins. Nothing here is real money.": "كل الميزات بعملات اختبار. لا شيء هنا مال حقيقي.",
+  "Price in QGOLD": "السعر بـ QGOLD",
+  "Choose a price between 1,000 and 1,000M QGOLD.": "اختر سعراً بين 1,000 و 1,000M QGOLD."
 }

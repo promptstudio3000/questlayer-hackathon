@@ -3397,5 +3397,7 @@
   "You have {0} QGOLD, worth about {1} NEAR. Swap part of it for NEAR at the QGOLD vault, then come back and buy.": "आपके पास {0} QGOLD है, लगभग {1} NEAR के बराबर। QGOLD वॉल्ट में इसका कुछ हिस्सा NEAR से बदलें, फिर लौटकर खरीदें।",
   "You have {0} QGOLD, worth about {1} NEAR. That is not enough to cover the missing {2} NEAR yet; collect more on the map or add NEAR.": "आपके पास {0} QGOLD है, लगभग {1} NEAR के बराबर। यह कमी वाले {2} NEAR के लिए अभी काफ़ी नहीं है; नक्शे पर और इकट्ठा करें या NEAR जोड़ें।",
   "{0} has {1} NEAR.": "{0} के पास {1} NEAR है।",
-  "Every feature with test coins. Nothing here is real money.": "टेस्ट सिक्कों के साथ हर सुविधा। यहाँ कुछ भी असली पैसा नहीं है।"
+  "Every feature with test coins. Nothing here is real money.": "टेस्ट सिक्कों के साथ हर सुविधा। यहाँ कुछ भी असली पैसा नहीं है।",
+  "Price in QGOLD": "QGOLD में कीमत",
+  "Choose a price between 1,000 and 1,000M QGOLD.": "1,000 से 1,000M QGOLD के बीच कीमत चुनें।"
 }
