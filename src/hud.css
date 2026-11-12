@@ -123,15 +123,6 @@
   .topbar .profile-pill > span.hud-xp {
     display: inline-flex;
   }
-  .topbar .wordmark > span {
-    font-size: 18px;
-  }
-}
-/* Phones: the game HUD (daily board, GOLD, level) wins over the wordmark. */
-@media (max-width: 430px) {
-  .topbar .wordmark {
-    display: none;
-  }
 }
 @media (max-width: 359px) {
   .topbar .profile-pill > .hud-xp > .hud-xp-text {

@@ -1,7 +1,7 @@
 {
   "version": 3,
-  "note": "Cosmetic Aura catalog shared by client and server. Editions marked native are mintable by the collectibles contract (AURA_EDITIONS in contracts/collectibles/src/lib.rs); a deployment that predates that table mints only polar, moon and gold. `source` says where an edition comes from: chest editions drop from zone chests by entitlement; npc, monster, level and season editions never drop from chests and the contract only mints them for award claims whose id starts with earned:npc:, earned:monster:, earned:level: or earned:season: (CLAIM_ONLY_EDITIONS). Set bonuses are visual only and never change GOLD, XP, rewards or odds.",
-  "supplyPerEdition": 256,
+  "note": "Cosmetic Aura catalog shared by client and server. Editions marked native are mintable by the collectibles contract (AURA_EDITIONS in contracts/collectibles/src/lib.rs); a deployment that predates that table mints only polar, moon and gold. `source` says where an edition comes from: chest editions drop from zone chests by entitlement; npc, monster, level and season editions never drop from chests and the contract only mints them for award claims whose id starts with earned:npc:, earned:monster:, earned:level: or earned:season: (CLAIM_ONLY_EDITIONS). Set bonuses are visual only and never change GOLD, XP, rewards or odds. Editions have no capped supply in the game (owner, 11 Nov 2026): Auras keep appearing as quest, chest and map rewards; supplyPerEdition null means uncapped.",
+  "supplyPerEdition": null,
   "rarities": [
     "common",
     "rare",

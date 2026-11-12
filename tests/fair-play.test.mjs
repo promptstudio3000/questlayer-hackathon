@@ -27,13 +27,14 @@ function setup() {
 }
 
 test("limits default sensibly and ignore invalid overrides", () => {
-  assert.equal(limits.maxSpeedMps, 15);
+  assert.equal(limits.maxSpeedMps, 15 / 3.6);
   assert.equal(limits.travelCooldownMaxMs, 7_200_000);
   assert.equal(fairPlayLimits({ FAIR_PLAY_DAILY_XP: "900" }).dailyXp, 900);
   assert.equal(fairPlayLimits({ FAIR_PLAY_DAILY_XP: "-1" }).dailyXp, 3000);
-  assert.equal(fairPlayLimits({ FAIR_PLAY_MAX_SPEED_MPS: "fast" }).maxSpeedMps, 15);
+  assert.equal(fairPlayLimits({ FAIR_PLAY_MAX_SPEED_KMH: "fast" }).maxSpeedMps, 15 / 3.6);
+  assert.equal(fairPlayLimits({ FAIR_PLAY_MAX_SPEED_KMH: "36" }).maxSpeedMps, 10);
   assert.equal(travelWaitMs(0, limits), 0);
-  assert.equal(travelWaitMs(1500, limits), 100_000);
+  assert.equal(travelWaitMs(1500, limits), 360_000);
   assert.equal(travelWaitMs(5_000_000, limits), 7_200_000);
 });
 

@@ -60,7 +60,7 @@ function gameDb(t, regions = [CELL]) {
   return { db, player };
 }
 
-const CONFIG = (over = {}) => ({ ...flavourConfiguration({ FLAVOUR_AI_PROVIDER: "ollama" }), ...over });
+const CONFIG = (over = {}) => ({ ...flavourConfiguration({ FLAVOUR_AI_PROVIDER: "near-ai" }), ...over });
 
 // Fake provider: answers every requested key with valid text unless told otherwise.
 function fakeProvider(write = (item) => item) {
@@ -205,11 +205,11 @@ test("skips cleanly without a provider, without a POI file and with the provider
 test("the nightly worker runs once per UTC date after the configured hour", async (t) => {
   const { db } = gameDb(t);
   assert.equal(startFlavourWorker(db, { env: { FLAVOUR_AI_PROVIDER: "template" } }), null);
-  assert.equal(startFlavourWorker(db, { env: { FLAVOUR_AI_PROVIDER: "ollama", FLAVOUR_BATCH: "off" } }), null);
+  assert.equal(startFlavourWorker(db, { env: { FLAVOUR_AI_PROVIDER: "near-ai", FLAVOUR_BATCH: "off" } }), null);
   let now = Date.parse("2026-11-02T00:30:00Z");
   const runs = [];
   const worker = startFlavourWorker(db, {
-    env: { FLAVOUR_AI_PROVIDER: "ollama", OLLAMA_API_KEY: "k" },
+    env: { FLAVOUR_AI_PROVIDER: "near-ai", NEAR_AI_ENABLED: "1", NEAR_AI_API_KEY: "k" },
     clock: () => now,
     log: () => {},
     run: async (_db, o) => (runs.push(o.trigger), { id: "f", outcome: "completed" }),
@@ -226,8 +226,10 @@ test("the nightly worker runs once per UTC date after the configured hour", asyn
 
 test("configuration follows QUEST_AI_PROVIDER and rejects unknown values", () => {
   assert.equal(flavourConfiguration({}).provider, "template");
-  assert.equal(flavourConfiguration({ QUEST_AI_PROVIDER: "ollama" }).provider, "ollama");
-  assert.equal(flavourConfiguration({ QUEST_AI_PROVIDER: "ollama", FLAVOUR_AI_PROVIDER: "off" }).provider, "off");
+  assert.equal(flavourConfiguration({ QUEST_AI_PROVIDER: "near-ai" }).provider, "near-ai");
+  // Ollama was removed: an old setting runs on NEAR AI.
+  assert.equal(flavourConfiguration({ QUEST_AI_PROVIDER: "ollama" }).provider, "near-ai");
+  assert.equal(flavourConfiguration({ QUEST_AI_PROVIDER: "near-ai", FLAVOUR_AI_PROVIDER: "off" }).provider, "off");
   assert.throws(() => flavourConfiguration({ FLAVOUR_AI_PROVIDER: "gpt" }), /FLAVOUR_AI_PROVIDER/);
   assert.throws(() => flavourConfiguration({ FLAVOUR_TOKEN_BUDGET: "-1" }), /FLAVOUR_TOKEN_BUDGET/);
 });
@@ -240,7 +242,7 @@ test("the CLI dry run lists the work without calling a model and never prints a 
   db.prepare("INSERT INTO worlds VALUES (?,?,?,?,?,?)").run(`demo:${CELL}:d:v2`, "d", CELL, "Europe/Prague", "{}", Date.now());
   db.close();
   const out = execFileSync(process.execPath, ["server/cli/ai-flavour.mjs", "--since", "7d", "--dry-run"], {
-    env: { ...process.env, DATABASE_PATH: dbPath, POI_DB_PATH: poiFile(t), FLAVOUR_AI_PROVIDER: "ollama", OLLAMA_API_KEY: "sk-test-secret-value", OLLAMA_BASE_URL: "http://127.0.0.1:9" },
+    env: { ...process.env, DATABASE_PATH: dbPath, POI_DB_PATH: poiFile(t), FLAVOUR_AI_PROVIDER: "near-ai", NEAR_AI_ENABLED: "1", NEAR_AI_API_KEY: "sk-test-secret-value", NEAR_AI_BASE_URL: "http://127.0.0.1:9" },
     encoding: "utf8",
   });
   assert.doesNotMatch(out, /sk-test-secret-value/);
@@ -273,7 +275,7 @@ test("the CLI opens a database that already has lazily created module tables", a
   db.prepare("INSERT INTO worlds VALUES (?,?,?,?,?,?)").run(`demo:${CELL}:d:v2`, "d", CELL, "Europe/Prague", "{}", Date.now());
   db.close();
   const out = execFileSync(process.execPath, ["server/cli/ai-flavour.mjs", "--since", "7d", "--dry-run"], {
-    env: { ...process.env, DATABASE_PATH: dbPath, POI_DB_PATH: poiFile(t), FLAVOUR_AI_PROVIDER: "ollama", OLLAMA_API_KEY: "sk-test", OLLAMA_BASE_URL: "http://127.0.0.1:9" },
+    env: { ...process.env, DATABASE_PATH: dbPath, POI_DB_PATH: poiFile(t), FLAVOUR_AI_PROVIDER: "near-ai", NEAR_AI_ENABLED: "1", NEAR_AI_API_KEY: "sk-test", NEAR_AI_BASE_URL: "http://127.0.0.1:9" },
     encoding: "utf8",
   });
   assert.equal(JSON.parse(out).reason, "dry-run");
@@ -356,7 +358,7 @@ test("a restart marks a killed nightly batch interrupted and frees today's run",
   flavourStatus(db);
   const now = Date.parse("2026-11-03T01:10:00Z");
   const row = (id, trigger, started) =>
-    db.prepare("INSERT INTO ai_flavour_batches(id,trigger,provider,prompt_version,layer_id,since_ms,generated,rejected,token_budget,outcome,started_at) VALUES (?,?,'ollama','flavour-v1','aavegotchi',0,213,779,120000,'running',?)").run(id, trigger, started);
+    db.prepare("INSERT INTO ai_flavour_batches(id,trigger,provider,prompt_version,layer_id,since_ms,generated,rejected,token_budget,outcome,started_at) VALUES (?,?,'near-ai','flavour-v1','aavegotchi',0,213,779,120000,'running',?)").run(id, trigger, started);
   row("killed", "nightly", Date.parse("2026-11-03T01:00:30Z"));
   row("old", "nightly", Date.parse("2026-11-01T01:00:30Z"));
   row("cli", "manual", Date.parse("2026-11-03T01:05:00Z"));
@@ -364,7 +366,7 @@ test("a restart marks a killed nightly batch interrupted and frees today's run",
   db.prepare("INSERT INTO daily_jobs(job_key,created_at) VALUES (?,?)").run("flavour:2026-11-01", now - 2 * 86_400_000);
   const runs = [];
   const worker = startFlavourWorker(db, {
-    env: { FLAVOUR_AI_PROVIDER: "ollama", OLLAMA_API_KEY: "k" },
+    env: { FLAVOUR_AI_PROVIDER: "near-ai", NEAR_AI_ENABLED: "1", NEAR_AI_API_KEY: "k" },
     clock: () => now,
     log: () => {},
     run: async () => (runs.push(1), { id: "f", outcome: "completed" }),

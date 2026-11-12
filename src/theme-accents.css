@@ -48,7 +48,6 @@
   }
 }
 /* No eyebrow-style labels: form labels read as sentences. */
-.welcome-card label,
 .inventory-kicker,
 .section-label span {
   letter-spacing: 0;

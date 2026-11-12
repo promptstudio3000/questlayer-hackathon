@@ -133,13 +133,17 @@ import {
   featureEnabled,
   DEFAULT_RPC,
   manifestName,
+  MANIFEST_SET,
+  LAYER,
+  TEST_LAYER,
+  SESSION_TTL_MS,
   SOCIAL_CONTRACT_ID,
 } from "./native/network.mjs";
 const BUILD_ID = resolveBuildId();
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // The relayer is built before the market; it reads the same escrow manifest.
 function escrowManifestForRelay() {
-  return loadEscrowManifest(APP_ROOT, NETWORK);
+  return loadEscrowManifest(APP_ROOT, MANIFEST_SET);
 }
 import { createHash, randomBytes } from "node:crypto";
 import { monitorEventLoopDelay, performance } from "node:perf_hooks";
@@ -302,11 +306,28 @@ const browserRpc = publicRpcUrl(process.env.PUBLIC_NEAR_RPC_URL, DEFAULT_RPC);
 const provider = createNearProvider(rpc);
 const identitySessions = new IdentitySessions(db, { origin, provider });
 initializeTesterLogin(db);
+// Test Layer vs QuestLayer World (docs/TEST-LAYER.md): each runs as its own
+// server with its own database and contract set; the world picker links them.
+const linkOrigin = (value) => {
+  try {
+    const u = new URL(String(value || ""));
+    return u.protocol === "https:" || u.hostname === "127.0.0.1" || u.hostname === "localhost" ? u.origin : null;
+  } catch {
+    return null;
+  }
+};
+const gameLayerConfig = Object.freeze({
+  id: LAYER,
+  test: TEST_LAYER,
+  // The other world, for the picker: World links to the Test Layer only on testnet.
+  testLayerUrl: TEST_LAYER || NETWORK !== "testnet" ? null : linkOrigin(process.env.TEST_LAYER_ORIGIN),
+  worldUrl: TEST_LAYER ? linkOrigin(process.env.WORLD_ORIGIN) : null,
+});
 const deploymentManifestPath = existsSync(
-  resolve(APP_ROOT, `public/${NETWORK}-deployment.json`),
+  resolve(APP_ROOT, `public/${MANIFEST_SET}-deployment.json`),
 )
-  ? resolve(APP_ROOT, `public/${NETWORK}-deployment.json`)
-  : resolve(APP_ROOT, `dist/${NETWORK}-deployment.json`);
+  ? resolve(APP_ROOT, `public/${MANIFEST_SET}-deployment.json`)
+  : resolve(APP_ROOT, `dist/${MANIFEST_SET}-deployment.json`);
 const deploymentManifest = JSON.parse(
   readFileSync(deploymentManifestPath, "utf8"),
 );
@@ -436,6 +457,7 @@ const managedAccounts = relayConfig.factoryAccount
       factoryId: relayConfig.factoryAccount,
       fundYocto: relayConfig.fundYocto,
       topupCapYocto: relayConfig.topupCapYocto,
+      refuel: relayConfig.refuel,
       subsidyBudget: new SubsidyBudget(db, { dailyYocto: relayConfig.subsidyDailyYocto, dailyOperations: relayConfig.subsidyDailyOperations, gasReserveYocto: relayConfig.subsidyGasReserveYocto }),
     })
   : null;
@@ -460,7 +482,7 @@ const treasuryDaoManifest = (() => {
 const treasuryDao = treasuryDaoManifest ? createTreasuryDaoView({ provider, manifest: treasuryDaoManifest }) : null;
 // The QGOLD token the relayer may sponsor burns on (and escrow funding).
 const qgoldTokenForRelay = (() => {
-  const path = resolve(APP_ROOT, `public/native-qgold-vault-${NETWORK}.json`);
+  const path = resolve(APP_ROOT, `public/${manifestName("native-qgold-vault")}`);
   const settings = qgoldVaultSettings(
     process.env,
     existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null,
@@ -623,8 +645,8 @@ function warmActorPlan(world) {
     } catch {}
   });
 }
-// NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
-// Ollama setup; the key stays in the runtime environment only.
+// NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset uses NEAR AI Cloud
+// when it is on; the key stays in the runtime environment only.
 // NEAR → EUR reference for "Stake 2 NEAR (~5 €)" labels (server/near-price.mjs).
 const nearPrice = createNearPrice({ env: process.env });
 const npcRoutes = createNpcRoutes(
@@ -797,7 +819,7 @@ const liquidStake =
     : null;
 // Yield vault (docs/YIELD-VAULT.md): locked deposits count toward Staker at once.
 // Contract from YIELD_VAULT_ACCOUNT or public/native-yield-vault-<network>.json.
-const yieldVaultManifestPath = resolve(APP_ROOT, `public/native-yield-vault-${NETWORK}.json`);
+const yieldVaultManifestPath = resolve(APP_ROOT, `public/${manifestName("native-yield-vault")}`);
 const yieldVaultConfig = yieldVaultSettings(
   process.env,
   existsSync(yieldVaultManifestPath) ? JSON.parse(readFileSync(yieldVaultManifestPath, "utf8")) : null,
@@ -807,7 +829,7 @@ const yieldVaultReader = yieldVaultConfig.enabled
   : null;
 // QGOLD vault (docs/QGOLD-VAULT.md): backing, R, exits and the invariant monitor.
 // Contract from QGOLD_VAULT_ACCOUNT or public/native-qgold-vault-<network>.json.
-const qgoldManifestPath = resolve(APP_ROOT, `public/native-qgold-vault-${NETWORK}.json`);
+const qgoldManifestPath = resolve(APP_ROOT, `public/${manifestName("native-qgold-vault")}`);
 const qgoldConfig = qgoldVaultSettings(
   process.env,
   existsSync(qgoldManifestPath) ? JSON.parse(readFileSync(qgoldManifestPath, "utf8")) : null,
@@ -910,7 +932,7 @@ const marketModerators = new Set(
 // function-call key for the escrow) lives at <state dir>/escrow-publisher.json
 // or QGOLD_ESCROW_PUBLISHER_KEY_PATH; without it fundings are still
 // confirmed but payouts wait in the queue.
-const escrowManifest = loadEscrowManifest(APP_ROOT, NETWORK);
+const escrowManifest = loadEscrowManifest(APP_ROOT, MANIFEST_SET);
 setEscrowConfig(escrowManifest);
 const marketEscrowView = escrowManifest ? escrowView(provider, escrowManifest.contractId) : null;
 if (escrowManifest && process.env.QGOLD_ESCROW_WORKER !== "0") {
@@ -1287,8 +1309,9 @@ function emit(type, data, worldId = null) {
 const coinWorld = (coinId) => String(coinId).split(":coin:")[0] || null;
 const questWorld = (questId) =>
   db.prepare("SELECT world_id FROM quests WHERE id=?").get(String(questId))?.world_id ?? null;
+const SESSION_MAX_AGE = Math.floor(SESSION_TTL_MS / 1000);
 function cookie(token) {
-  return `questlayer-hackathon=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${origin.startsWith("https:") ? "; Secure" : ""}`;
+  return `questlayer-hackathon=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_MAX_AGE}${origin.startsWith("https:") ? "; Secure" : ""}`;
 }
 function sessionTokens(req) {
   const header = req.headers.cookie || "";
@@ -1308,7 +1331,7 @@ function newSession(player, kind = "guest", accountId = null) {
   db.prepare("INSERT INTO sessions VALUES (?,?,?)").run(
     hash(token),
     player,
-    Date.now() + 30 * DAY,
+    Date.now() + SESSION_TTL_MS,
   );
   identitySessions.record(token, kind, accountId);
   return token;
@@ -1522,6 +1545,8 @@ async function api(req, res, url) {
       app: "QuestLayer",
       version: "0.1.0",
       network: NETWORK,
+      gameLayer: LAYER,
+      manifestSet: MANIFEST_SET,
       features: ENABLED_FEATURES,
       ...schemaStatus(db, { buildId: BUILD_ID }),
       mode: "demo",
@@ -1646,6 +1671,7 @@ async function api(req, res, url) {
     return respond(res, {
       mode: "demo",
       network: NETWORK,
+      gameLayer: gameLayerConfig,
       signingVaultOrigin: secureSigningOrigin,
       features: ENABLED_FEATURES,
       layer: layerEnabled ? { layers: LAYER_REGISTRY.map(publicLayer) } : null,
@@ -1718,7 +1744,7 @@ async function api(req, res, url) {
     db.prepare("DELETE FROM presence WHERE player_id=?").run(player);
     return respond(res, { ok: true }, 200, {
       "Set-Cookie": [
-        cookie("").replace("Max-Age=2592000", "Max-Age=0"),
+        cookie("").replace(`Max-Age=${SESSION_MAX_AGE}`, "Max-Age=0"),
         "questlayer-management=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0",
         "auratrail=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
       ],

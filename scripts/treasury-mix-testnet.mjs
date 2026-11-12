@@ -44,7 +44,7 @@ const asset = (id) => settings.assets.find((a) => a.id === id);
 
 // Treasury DAO (docs/TREASURY-DAO.md): once the DAO exists, the target is the
 // mix the DAO adopted and a run happens only on a day whose run the DAO approved.
-const daoManifestPath = "public/native-treasury-dao-testnet.json";
+const daoManifestPath = process.env.TREASURY_DAO_MANIFEST || "public/native-treasury-dao-testnet.json";
 const dao = existsSync(daoManifestPath) ? await readDao(provider, JSON.parse(readFileSync(daoManifestPath)).contractId) : null;
 if (dao?.exists) {
   const adopted = adoptedMix(dao.proposals);
@@ -170,6 +170,13 @@ if (command === "status") {
   console.log(JSON.stringify({ dryRun, ...summary(live) }, null, 2));
   if (live.plan.action !== "rebalance" || dryRun) process.exit(0);
   if (!daoAllowsRun()) process.exit(0);
+  // One run a day: the VPS retries `rebalance` during the day in case the DAO
+  // approves later, and a second run must not move another 25 %.
+  const today = utcDate(Date.now());
+  if (state.runs.some((r) => r.at?.slice(0, 10) === today)) {
+    console.log(JSON.stringify({ skipped: "rebalance", reason: `already ran on ${today}` }));
+    process.exit(0);
+  }
   await rebalance(live);
 } else if (command === "keep") {
   await keep();

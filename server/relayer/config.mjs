@@ -36,6 +36,9 @@ export function relayerConfiguration(env = process.env) {
       "20000000000000000000000",
       "PLAYER_FACTORY_FUND_YOCTO",
     ),
+    // Daily refuel of starting NEAR: off unless PLAYER_REFUEL=1 (starting
+    // NEAR comes once, at account creation).
+    refuel: env.PLAYER_REFUEL === "1",
     topupCapYocto: yocto(
       env.RELAY_TOPUP_CAP_YOCTO,
       "50000000000000000000000",

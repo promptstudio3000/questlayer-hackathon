@@ -109,7 +109,7 @@ export function zoneCountdown(
       ? { phase, text: tr("Open now"), window }
       : { phase, text: tr("Closes in {0}", { 0: clock(zone.closesAt - now) }), window };
   if (phase === "done") return { phase, text: tr("Cleared"), window };
-  if (phase === "closed") return { phase, text: tr("Closed"), window };
+  if (phase === "closed") return { phase, text: tr("Closed · new zones tomorrow"), window };
   return { phase, text: "", window };
 }
 
@@ -215,8 +215,11 @@ export function zoneWallFeatures(zones: readonly Zone[], quests: readonly Quest[
   const out: Feature[] = [];
   for (const z of zones) {
     const phase = zonePhase(z, quests, now);
-    if (phase === "closed" || phase === "done" || phase === "unknown") continue;
-    const height = (WALL_HEIGHT[z.tier] || WALL_HEIGHT[1]) * (phase === "open" ? 1 : .82);
+    // Every zone stays visible all day (owner, 11 Nov 2026): closed and
+    // cleared zones keep a low, dimmed wall instead of disappearing.
+    if (phase === "unknown") continue;
+    const spent = phase === "closed" || phase === "done";
+    const height = (WALL_HEIGHT[z.tier] || WALL_HEIGHT[1]) * (phase === "open" ? 1 : spent ? .5 : .82);
     for (const poly of zonePolygons(z)) for (const ring of poly) {
       if (ring.length < 4) continue;
       out.push({type:"Feature",properties:{id:z.id,color:zoneAuraColor(z.tier),height,halo:height*WALL_HALO,dim:phase!=="open",rarity:zoneRarity(z.tier)},geometry:{type:"LineString",coordinates:ring}});

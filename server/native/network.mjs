@@ -20,8 +20,23 @@ export const EXPLORER_BASE =
   NETWORK === "mainnet"
     ? "https://nearblocks.io"
     : "https://testnet.nearblocks.io";
-/** Manifest file name for this network, e.g. `native-market-testnet.json`. */
-export const manifestName = (name) => `${name}-${NETWORK}.json`;
+// Which world this process serves (docs/TEST-LAYER.md). "world" is the real
+// game (QuestLayer World). "test" is the Test Layer: the same game on its own
+// testnet contract set with Test QGOLD, temporary accounts, bots and the guided
+// tour. The Test Layer exists only on testnet; mainnet refuses to start with it.
+const layerRequested = process.env.QL_LAYER || "world";
+if (!["world", "test"].includes(layerRequested))
+  throw new Error(`QL_LAYER must be "world" or "test", got "${layerRequested}".`);
+if (layerRequested === "test" && NETWORK === "mainnet")
+  throw new Error("QL_LAYER=test is testnet only; mainnet serves the real game only.");
+export const LAYER = layerRequested;
+export const TEST_LAYER = LAYER === "test";
+/** Explorer sessions: 30 days in World; temporary 4-hour explorers in the Test Layer. */
+export const SESSION_TTL_MS = (TEST_LAYER ? 4 : 30 * 24) * 60 * 60 * 1000;
+/** Manifest family: the network's own, or the Test Layer's contract set. */
+export const MANIFEST_SET = TEST_LAYER ? "testlayer" : NETWORK;
+/** Manifest file name, e.g. `native-market-testnet.json` (`-testlayer` in the Test Layer). */
+export const manifestName = (name) => `${name}-${MANIFEST_SET}.json`;
 /** True when the account id belongs to the configured network. */
 export const onNetwork = (accountId) =>
   typeof accountId === "string" && accountId.endsWith(ACCOUNT_SUFFIX);

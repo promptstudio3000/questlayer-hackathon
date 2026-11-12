@@ -1,3 +1,4 @@
+import { goldExactFromYocto } from "./gold-units.ts";
 import { NEAR_NETWORK } from "./near-network.ts";
 export const NATIVE_TASK_CONTRACT = "questlayer-tasks-20261031.testnet";
 export const TASK_POLICY = "sponsored-tasks-testnet-v1";
@@ -66,9 +67,7 @@ export function exactTaskNear(yocto: string): string {
 }
 export function exactTaskGold(yocto: string): string {
   if (!/^(0|[1-9]\d{0,38})$/.test(yocto)) throw Error("Invalid native amount.");
-  const n = BigInt(yocto),
-    f = (n % 10n ** 21n).toString().padStart(21, "0").replace(/0+$/, "");
-  return `${n / 10n ** 21n}${f ? "." + f : ""}`;
+  return goldExactFromYocto(yocto);
 }
 function equalArgs(
   actual: Record<string, unknown>,
