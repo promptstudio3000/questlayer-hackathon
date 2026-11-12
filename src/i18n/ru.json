@@ -3247,7 +3247,6 @@
  "Starting over…": "Начинаю заново…",
  "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "Только в тестовой сети. Твой исследователь, XP, находки и предметы сохранятся. На этом устройстве создаётся новый аккаунт NEAR; QGOLD и токены на старом аккаунте останутся там, и игра перестанет его использовать.",
  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Это устройство ещё не привязано к твоему аккаунту исследователя, поэтому не может отправлять и читать сообщения. Добавь его резервным passkey или начни здесь с новым аккаунтом.",
- "Ask {0} first. They decide whether you may write. If you both wave at each other, you can write right away.": "Сначала спроси {0}. Он решит, можно ли тебе писать. Если вы помашете друг другу, писать можно сразу.",
  "Test Layer": "Test Layer",
  "The real game.": "Настоящая игра.",
  "Every feature with test coins. Nothing here is real money.": "Все функции с тестовыми монетами. Здесь нет настоящих денег.",

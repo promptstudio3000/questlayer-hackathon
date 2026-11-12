@@ -3247,7 +3247,6 @@
  "Starting over…": "やり直しています…",
  "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "テストネットのみ。探検者、XP、発見、アイテムはそのままです。このデバイスに新しいNEARアカウントが作られます。古いアカウントのQGOLDとトークンはそこに残り、ゲームでは使われなくなります。",
  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "このデバイスはまだ探検者アカウントと連携していないため、メッセージを送受信できません。復旧用パスキーで追加するか、ここで新しいアカウントを始めてください。",
- "Ask {0} first. They decide whether you may write. If you both wave at each other, you can write right away.": "まず{0}に申請してください。書けるかどうかは相手が決めます。お互いに手を振れば、すぐに書けます。",
  "Test Layer": "テストレイヤー",
  "The real game.": "本番のゲーム。",
  "Every feature with test coins. Nothing here is real money.": "すべての機能をテスト用コインで。ここに本物のお金はありません。",

@@ -3247,7 +3247,6 @@
  "Starting over…": "正在重新开始…",
  "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "仅限测试网。你的探索者、XP、发现和物品都会保留。此设备上会创建一个新的 NEAR 账户；旧账户中的 QGOLD 和代币留在那里，游戏不再使用它。",
  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "此设备尚未关联你的探索者账户，因此无法收发消息。请用恢复通行密钥添加它，或在这里用新账户开始。",
- "Ask {0} first. They decide whether you may write. If you both wave at each other, you can write right away.": "请先询问{0}。由对方决定你是否可以发消息。如果你们互相挥手，就可以马上发消息。",
  "Test Layer": "测试层",
  "The real game.": "正式游戏。",
  "Every feature with test coins. Nothing here is real money.": "用测试币体验所有功能。这里没有真钱。",

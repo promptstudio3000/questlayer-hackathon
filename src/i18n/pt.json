@@ -3247,7 +3247,6 @@
  "Starting over…": "A recomeçar…",
  "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "Só na rede de testes. O teu explorador, XP, descobertas e itens ficam. É criada uma nova conta NEAR neste dispositivo; o QGOLD e os tokens da conta antiga ficam lá e o jogo deixa de a usar.",
  "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Este dispositivo ainda não está ligado à tua conta de explorador, por isso não pode enviar nem ler mensagens. Adiciona-o com a tua passkey de recuperação ou começa aqui com uma conta nova.",
- "Ask {0} first. They decide whether you may write. If you both wave at each other, you can write right away.": "Pergunte primeiro a {0}. A pessoa decide se você pode escrever. Se vocês acenarem um para o outro, pode escrever na hora.",
  "Test Layer": "Test Layer",
  "The real game.": "O jogo real.",
  "Every feature with test coins. Nothing here is real money.": "Todos os recursos com moedas de teste. Nada aqui é dinheiro real.",
