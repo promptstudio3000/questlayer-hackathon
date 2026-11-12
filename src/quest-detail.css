@@ -149,5 +149,5 @@
 /* Editor: header photo */
 .qe-photo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
 .qe-photo img { width: 100%; max-height: 180px; border-radius: 14px; object-fit: cover; }
-.qe-photo label.secondary-button { display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; cursor: pointer; }
+.qe-photo label.secondary-button { display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; font-size: 16px; font-weight: 600; cursor: pointer; }
 .qe-photo label.is-disabled { opacity: 0.5; cursor: default; }
