@@ -1200,7 +1200,7 @@ export const CHAPTERS: Chapter[] = [
       { h: "Open in a wallet (wallet words)" },
       {
         list: [
-          "**Open in a wallet** makes 12 new words (a standard NEAR seed phrase) and adds their key to the account as one more full-access key, sponsored like any key change. The same account then opens in Meteor, MyNearWallet or any wallet that imports a seed phrase. The device key itself is never shown or exported.",
+          "**Open in a wallet** makes 12 new words (a standard NEAR seed phrase) and adds their key to the account as one more full-access key, sponsored like any key change. The same account then opens in Meteor, Intear or any wallet that imports a seed phrase (MyNearWallet is in limited mode and is not linked). The device key itself is never shown or exported.",
           "The steps run in the separate secure window: a warning, a press and hold (or the recovery passkey, when the account has one), the 12 numbered words shown only while the player keeps them open, a check of two of the words, then the key is added. The game then lists the wallet links and the three import steps.",
           "The words exist only in that window's memory. They are never stored, logged, copied to the clipboard or sent to the game or its server, they hide when the window loses focus and after 2 minutes, and nobody can show them again. There is no copy button on purpose.",
           "The key appears in Devices as **Wallet words** and can be revoked there; lost words are replaced by revoking and making new ones. A wallet holding the words has full control of the account and is not asked the game's Yes / No questions.",
