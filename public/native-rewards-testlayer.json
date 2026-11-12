@@ -1,6 +1,6 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-11-12T15:48:49.710Z",
+  "verifiedAt": "2026-11-12T16:16:25.029Z",
   "contractId": "questlayer-rewards-tl1112.testnet",
   "codeHash": "5Ci3cxE7KL9QnNRomx1ddrajeDKGdbwQygX5DadH1q1h",
   "wasmSha256": "3e6e8be931b0887a39b9ad038efd11ef015c879b896e37a2ddb97bd2f7a2faa8",
@@ -37,7 +37,7 @@
     "operation": "",
     "exit_requested": false,
     "unlock_epoch": "0",
-    "epoch": "5439",
+    "epoch": "5440",
     "observed_epoch": "5439",
     "principal": "100000000000000000000000",
     "high_water_basis": "100000000000000000000000",
@@ -67,7 +67,7 @@
   "poolPosition": {
     "account_id": "questlayer-vault-tl1112.testnet",
     "unstaked_balance": "3",
-    "staked_balance": "99999999999999999999997",
+    "staked_balance": "100007071028170180819046",
     "can_withdraw": true
   },
   "transactions": [
@@ -134,6 +134,10 @@
     {
       "label": "Allow only the isolated native vault as yield source",
       "transaction": "F73hevo88HAAiwQgfxDkvQ9WpGAmAf7YnLSoA1qUmtm"
+    },
+    {
+      "label": "Allow only the isolated native vault as yield source",
+      "transaction": "5MF6LyTUuM6fPD64wkg7vus2rvC4uPNht3B6V7PMgofy"
     }
   ],
   "workerMethods": [
