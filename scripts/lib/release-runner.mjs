@@ -35,11 +35,15 @@ function assertTestnet(args, env) {
 // deploy/release-ops-allowlist.json as installed on the VPS (from main).
 export function validateOp(op, allowlist, fileId) {
   if (!op || typeof op !== "object" || Array.isArray(op)) refuse("Operation must be a JSON object.");
-  const known = new Set(["id", "script", "args", "env", "ref", "sha", "wasm", "outputs", "installKeys", "runtimeEnv", "note"]);
+  const known = new Set(["id", "script", "args", "env", "ref", "sha", "wasm", "outputs", "installKeys", "runtimeEnv", "deployTarget", "note"]);
   for (const k of Object.keys(op)) if (!known.has(k)) refuse(`Unknown field "${k}".`);
   if (!OP_ID.test(op.id || "")) refuse("id must be 3-64 characters of a-z, 0-9 and -.");
   if (fileId !== undefined && fileId !== op.id) refuse(`File name ${fileId}.json does not match id ${op.id}.`);
-  const rule = allowlist.scripts?.[op.script];
+  if (op.deployTarget !== undefined) {
+    if (!allowlist.deployTargets?.[op.deployTarget] || /mainnet/i.test(op.deployTarget)) refuse(`Deploy target ${op.deployTarget} is not allowlisted.`);
+    if (op.script !== undefined || op.args !== undefined || op.env !== undefined || op.wasm !== undefined) refuse("A deploy job runs no script.");
+  }
+  const rule = op.deployTarget !== undefined ? { execute: null } : allowlist.scripts?.[op.script];
   if (!rule) refuse(`Script ${op.script} is not in the runner allowlist.`);
   const args = op.args ?? [];
   if (!Array.isArray(args) || args.length > 20 || !args.every((a) => typeof a === "string" && ARG.test(a)))
@@ -79,6 +83,7 @@ export function validateOp(op, allowlist, fileId) {
     installKeys,
     runtimeEnv,
     execute: rule.execute === null ? null : rule.execute || "--execute",
+    deployTarget: op.deployTarget ?? null,
     note: typeof op.note === "string" ? op.note.slice(0, 300) : "",
   };
 }

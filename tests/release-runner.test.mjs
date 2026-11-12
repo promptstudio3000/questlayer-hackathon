@@ -51,13 +51,13 @@ test("refuses scripts off the allowlist, mainnet, unpinned branches and loose up
 test("key installs only go to allowlisted service directories, never mainnet", () => {
   assert.deepEqual(keyInstallTarget({ service: "questlayer-testlayer", file: "relayer-testlayer.json" }, allowlist), {
     from: ".data/relayer-testlayer.json",
-    dir: "/var/lib/questlayer-testlayer",
+    dir: "/var/lib/private/questlayer-testlayer",
     file: "relayer-testlayer.json",
     service: "questlayer-testlayer",
   });
   assert.deepEqual(keyInstallTarget({ service: "questlayer-testlayer", file: "testlayer/work/.data/relayer-testnet.json", to: "relayer.json" }, allowlist), {
     from: ".data/testlayer/work/.data/relayer-testnet.json",
-    dir: "/var/lib/questlayer-testlayer",
+    dir: "/var/lib/private/questlayer-testlayer",
     file: "relayer.json",
     service: "questlayer-testlayer",
   });
@@ -123,4 +123,14 @@ test("runtime.env changes are limited to allowlisted, non-secret keys", () => {
   assert.throws(() => runtimeEnvPlan({ service: "questlayer-testlayer", set: { PLAYER_FACTORY_ACCOUNT: { fromKey: "x.json", field: "secretKey" } } }, allowlist), /accountId or publicKey/);
   assert.equal(applyRuntimeEnv("A=1\nRELAYER_KEY_PATH=/old\n", { RELAYER_KEY_PATH: "/new", B: "2" }), "A=1\nRELAYER_KEY_PATH=/new\nB=2\n");
   assert.throws(() => applyRuntimeEnv("", { X: "a\nB=1" }), /refused/);
+});
+
+test("a deploy job targets an allowlisted service and runs no script", () => {
+  const op = validateOp({ id: "testlayer-deploy-1", deployTarget: "testlayer", ref: "claude/x", sha: "a".repeat(40),
+    installKeys: [{ service: "questlayer-testlayer", file: "testlayer/work/.data/relayer-testnet.json", to: "relayer.json" }] }, allowlist);
+  assert.equal(op.deployTarget, "testlayer");
+  assert.equal(keyInstallTarget(op.installKeys[0], allowlist).dir, "/var/lib/private/questlayer-testlayer");
+  assert.throws(() => validateOp({ id: "deploy-x", deployTarget: "mainnet" }, allowlist), /not allowlisted/);
+  assert.throws(() => validateOp({ id: "deploy-x", deployTarget: "world-root" }, allowlist), /not allowlisted/);
+  assert.throws(() => validateOp({ id: "deploy-x", deployTarget: "testlayer", script: "scripts/deploy-testlayer.mjs" }, allowlist), /no script/);
 });
