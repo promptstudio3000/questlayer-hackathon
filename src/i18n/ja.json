@@ -3262,5 +3262,8 @@
   "Visible · {0}": "表示中 · {0}",
   "Waiting for your wallet…": "ウォレットを待っています…",
   "Your position could not be shared. Check your connection and try again.": "位置を共有できませんでした。接続を確認して再試行してください。",
-  "Virtual world": "仮想世界"
+  "Virtual world": "仮想世界",
+  "Test Layer": "テストレイヤー",
+  "The real game.": "本番のゲーム。",
+  "Every feature with test coins. Nothing here is real money.": "すべての機能をテスト用コインで。ここに本物のお金はありません。"
 }

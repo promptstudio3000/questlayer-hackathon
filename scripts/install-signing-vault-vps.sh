@@ -15,17 +15,28 @@
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
 HOST_TARGET="${DEPLOY_HOST:-root@72.61.188.39}"
-APP_ORIGIN="https://questlayer.promptstudio3000.com"
-VAULT_HOST="${SIGNING_VAULT_HOST:-questlayer-signer.promptstudio3000.com}"
+# SIGNING_VAULT_LAYER=test installs the Test Layer's own vault (docs/TEST-LAYER.md):
+# its own origin, port, service and the -testlayer contract manifests.
+if [[ "${SIGNING_VAULT_LAYER:-world}" == test ]]; then
+  SET=testlayer; SERVICE=questlayer-test-signer
+  APP_ORIGIN="https://questlayer-test.promptstudio3000.com"
+  VAULT_HOST="${SIGNING_VAULT_HOST:-questlayer-test-signer.promptstudio3000.com}"
+  PORT=7094; export VITE_QL_LAYER=test
+else
+  SET=testnet; SERVICE=questlayer-signer
+  APP_ORIGIN="https://questlayer.promptstudio3000.com"
+  VAULT_HOST="${SIGNING_VAULT_HOST:-questlayer-signer.promptstudio3000.com}"
+  PORT=7092
+fi
 VAULT_ORIGIN="https://$VAULT_HOST"
-PORT=7092
-ROOT=/opt/ps3000/apps/questlayer-signer
+ROOT=/opt/ps3000/apps/$SERVICE
 
 # The public config: origins, RPC and the contract allowlist from the manifests.
 CONFIG="$(node --input-type=module -e '
 import { readFileSync, existsSync } from "node:fs";
-const m = (n) => JSON.parse(readFileSync(`public/${n}-testnet.json`, "utf8"));
-const optional = (n) => (existsSync(`public/${n}-testnet.json`) ? m(n) : null);
+const set = process.argv[3];
+const m = (n) => JSON.parse(readFileSync(`public/${n}-${set}.json`, "utf8"));
+const optional = (n) => (existsSync(`public/${n}-${set}.json`) ? m(n) : null);
 const config = {
   appOrigin: process.argv[1], vaultOrigin: process.argv[2], network: "testnet",
   rpcUrl: "https://test.rpc.fastnear.com",
@@ -44,7 +55,7 @@ const { validateVaultOrigins } = await import("./src/signing-vault/policy.ts");
 validateVaultOrigins(config);
 for (const id of Object.values(config.contracts)) if (!id?.endsWith(".testnet")) throw Error("testnet contracts only");
 console.log(JSON.stringify(config));
-' "$APP_ORIGIN" "$VAULT_ORIGIN")"
+' "$APP_ORIGIN" "$VAULT_ORIGIN" "$SET")"
 echo "$CONFIG"
 
 npx vite build --mode signing-vault >/dev/null
@@ -56,17 +67,17 @@ cp -R dist/signing-vault/assets "$STAGE/dist/signing-vault/"
 cp server/signing-vault.mjs "$STAGE/server/"
 cp src/signing-vault/policy.ts "$STAGE/src/signing-vault/"
 printf 'SIGNING_VAULT_PUBLIC_CONFIG=%s\nPORT=%s\n' "$CONFIG" "$PORT" > "$STAGE/signer.env"
-bash scripts/signing-vault-fingerprint.sh > "$STAGE/inputs.sha256"
+bash scripts/signing-vault-fingerprint.sh "$SET" > "$STAGE/inputs.sha256"
 
 RELEASE="$(date -u +%Y%m%dT%H%M%SZ)"
 ssh -o BatchMode=yes "$HOST_TARGET" "install -d -m 755 $ROOT/releases/$RELEASE"
 tar -C "$STAGE" -czf - . | ssh -o BatchMode=yes "$HOST_TARGET" "tar -C $ROOT/releases/$RELEASE -xzf -"
-ssh -o BatchMode=yes "$HOST_TARGET" bash -s -- "$ROOT" "$RELEASE" "$VAULT_HOST" "$PORT" <<'REMOTE'
+ssh -o BatchMode=yes "$HOST_TARGET" bash -s -- "$ROOT" "$RELEASE" "$VAULT_HOST" "$PORT" "$SERVICE" <<'REMOTE'
 set -Eeuo pipefail
-ROOT="$1"; RELEASE="$2"; VAULT_HOST="$3"; PORT="$4"
+ROOT="$1"; RELEASE="$2"; VAULT_HOST="$3"; PORT="$4"; SERVICE="$5"
 chmod -R a+rX "$ROOT/releases/$RELEASE"
 ln -sfn "$ROOT/releases/$RELEASE" "$ROOT/current"
-cat > /etc/systemd/system/questlayer-signer.service <<UNIT
+cat > /etc/systemd/system/$SERVICE.service <<UNIT
 [Unit]
 Description=QuestLayer independent signing vault (static, testnet)
 After=network-online.target
@@ -92,9 +103,9 @@ CPUQuota=25%
 WantedBy=multi-user.target
 UNIT
 systemctl daemon-reload
-systemctl enable --now questlayer-signer.service
-systemctl restart questlayer-signer.service
-CADDY=/opt/ps3000/config/caddy/questlayer-signer.caddy
+systemctl enable --now "$SERVICE.service"
+systemctl restart "$SERVICE.service"
+CADDY=/opt/ps3000/config/caddy/$SERVICE.caddy
 if [[ ! -f "$CADDY" ]]; then
   cat > "$CADDY" <<SITE
 $VAULT_HOST {
@@ -115,7 +126,7 @@ for _ in $(seq 30); do
   curl -fsS -H "Host: $VAULT_HOST" "http://127.0.0.1:$PORT/vault-config.json" >/dev/null 2>&1 && break
   sleep 1
 done
-systemctl is-active questlayer-signer.service
+systemctl is-active "$SERVICE.service"
 curl -fsS -H "Host: $VAULT_HOST" "http://127.0.0.1:$PORT/vault-config.json" >/dev/null
 # Keep the three newest vault releases.
 ls -1dt "$ROOT"/releases/* | tail -n +4 | xargs -r rm -rf

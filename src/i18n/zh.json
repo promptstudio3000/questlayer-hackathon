@@ -3262,5 +3262,8 @@
   "Visible · {0}": "可见 · {0}",
   "Waiting for your wallet…": "正在等待你的钱包…",
   "Your position could not be shared. Check your connection and try again.": "无法共享你的位置。请检查网络连接后重试。",
-  "Virtual world": "虚拟世界"
+  "Virtual world": "虚拟世界",
+  "Test Layer": "测试层",
+  "The real game.": "正式游戏。",
+  "Every feature with test coins. Nothing here is real money.": "用测试币体验所有功能。这里没有真钱。"
 }

@@ -3262,5 +3262,8 @@
   "Visible · {0}": "Виден · {0}",
   "Waiting for your wallet…": "Ждём кошелёк…",
   "Your position could not be shared. Check your connection and try again.": "Не удалось показать твою позицию. Проверь подключение и попробуй ещё раз.",
-  "Virtual world": "Виртуальный мир"
+  "Virtual world": "Виртуальный мир",
+  "Test Layer": "Test Layer",
+  "The real game.": "Настоящая игра.",
+  "Every feature with test coins. Nothing here is real money.": "Все функции с тестовыми монетами. Здесь нет настоящих денег."
 }

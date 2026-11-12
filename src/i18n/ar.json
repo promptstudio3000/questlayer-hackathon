@@ -3262,5 +3262,8 @@
   "Visible · {0}": "مرئي · {0}",
   "Waiting for your wallet…": "بانتظار محفظتك…",
   "Your position could not be shared. Check your connection and try again.": "تعذّرت مشاركة موقعك. تحقق من اتصالك وحاول مجددًا.",
-  "Virtual world": "عالم افتراضي"
+  "Virtual world": "عالم افتراضي",
+  "Test Layer": "طبقة الاختبار",
+  "The real game.": "اللعبة الحقيقية.",
+  "Every feature with test coins. Nothing here is real money.": "كل الميزات بعملات اختبار. لا شيء هنا مال حقيقي."
 }

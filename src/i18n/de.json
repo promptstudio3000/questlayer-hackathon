@@ -3262,5 +3262,8 @@
   "Visible · {0}": "Sichtbar · {0}",
   "Waiting for your wallet…": "Warte auf deine Wallet …",
   "Your position could not be shared. Check your connection and try again.": "Deine Position konnte nicht geteilt werden. Prüfe deine Verbindung und versuch es erneut.",
-  "Virtual world": "Virtuelle Welt"
+  "Virtual world": "Virtuelle Welt",
+  "Test Layer": "Test Layer",
+  "The real game.": "Das echte Spiel.",
+  "Every feature with test coins. Nothing here is real money.": "Alle Funktionen mit Testmünzen. Nichts hier ist echtes Geld."
 }
