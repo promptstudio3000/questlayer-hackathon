@@ -219,14 +219,24 @@ for (const s of STEPS) {
   execFileSync(process.execPath, ["--import", patience, resolve(work, "scripts", s.script), ...(s.args || [])], { cwd: work, env, stdio: "inherit" });
 }
 
-// 4. Records into this repository under the Test Layer's names.
+// 4. Records into this repository under the Test Layer's names: the
+// per-contract scripts write into work/public, the collectibles slice keeps its
+// testnet records in work/output/mainnet-slice-testnet (it never replaces the
+// live testnet ones). Runs on every execute, also when every step was reused.
 const written = [];
-for (const f of readdirSync(resolve(work, "public"))) {
-  const m = f.match(/^(.+)-testnet\.json$/);
-  if ((!m && f !== "testnet-deployment.json") || KEEP.includes(f)) continue;
-  const to = f === "testnet-deployment.json" ? "testlayer-deployment.json" : `${m[1]}-testlayer.json`;
-  copyFileSync(resolve(work, "public", f), resolve(repo, "public", to));
-  written.push(to);
+const sources = [
+  { dir: resolve(work, "public"), skip: KEEP },
+  { dir: resolve(work, "output/mainnet-slice-testnet"), skip: [] },
+];
+for (const { dir, skip } of sources) {
+  if (!existsSync(dir)) continue;
+  for (const f of readdirSync(dir)) {
+    const m = f.match(/^(.+)-testnet\.json$/);
+    if ((!m && f !== "testnet-deployment.json") || skip.includes(f)) continue;
+    const to = f === "testnet-deployment.json" ? "testlayer-deployment.json" : `${m[1]}-testlayer.json`;
+    copyFileSync(resolve(dir, f), resolve(repo, "public", to));
+    written.push(to);
+  }
 }
 for (const name of SHARED) {
   const from = resolve(repo, `public/${name}-testnet.json`);
@@ -235,4 +245,6 @@ for (const name of SHARED) {
     written.push(`${name}-testlayer.json (shared)`);
   }
 }
-log({ status: "done", written, keys: resolve(work, ".data"), next: "bash scripts/install-testlayer-keys-vps.sh, then commit public/*-testlayer.json" });
+// Key file names only (never contents), for the key install.
+const keyFiles = readdirSync(resolve(work, ".data")).filter((f) => /\.(json|pem)$/.test(f) && !/journal|deploy|funds/.test(f)).sort();
+log({ status: "done", written, keys: resolve(work, ".data"), keyFiles, next: "install the keys (scripts/install-testlayer-keys-vps.sh or the runner), then commit public/*-testlayer.json" });

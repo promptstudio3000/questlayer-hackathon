@@ -1,0 +1,81 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-12T15:49:06.090Z",
+  "vaultContract": "questlayer-qgold-vault-tl1112.testnet",
+  "tokenContract": "questlayer-qgold-vault-tl1112.testnet",
+  "symbol": "QGOLD",
+  "decimals": 6,
+  "codeHash": "4iWCUy9qvQ9B57zVdqncQAycVP21JuDNYjVreBYiFAgG",
+  "wasmSha256": "3734e361148e880ff1717edde0f774e541b8761fd8837bec690bde93ec49bf49",
+  "initialRate": "1000000000000000000000",
+  "rewardsContract": "questlayer-rewards-tl1112.testnet",
+  "council": [
+    "questlayer-dev-20261101.testnet"
+  ],
+  "threshold": 1,
+  "guardian": "questlayer-dev-20261101.testnet",
+  "treasury": "questlayer-dev-20261101.testnet",
+  "accessKeys": 0,
+  "methods": {
+    "state": "get_state",
+    "audit": "audit",
+    "deposit": "deposit",
+    "redeem": "redeem",
+    "claim": "claim_exit",
+    "exits": "get_account_exits",
+    "quoteDeposit": "quote_deposit",
+    "quoteRedeem": "quote_redeem",
+    "burn": "ft_burn"
+  },
+  "exitPaths": [
+    "near_instant",
+    "near_queue"
+  ],
+  "smoke": {
+    "rate": "1031226529552038442241",
+    "supply": "95212499",
+    "backing": "98185654913746930629924"
+  },
+  "transactions": [
+    {
+      "label": "Deploy and initialize the QGOLD vault",
+      "transaction": "HG5Sn8DVac6NjFWghQ5p9PXZJUqzcXCPHPK5DqJTZRjz"
+    },
+    {
+      "label": "Delete vault access key ed25519:6ZXCmMJRRM8RLiaXSyZ1LFXUkPKtgphLdkD8m5QXckge",
+      "transaction": "5R6nh2PaWjX8Y6ueyAnMgaXcaymByXftXrNHa9fHZ1LT"
+    },
+    {
+      "label": "Set the rewards QGOLD vault (once)",
+      "transaction": "A7qBiiNWmx5p3dwj5KrYLYJMuEBqnjiwhrk7kXX4C9Rw"
+    },
+    {
+      "label": "Let the reward worker key publish, claim and close map and payout days",
+      "transaction": "8FXszmaEi1g1BVVwPvmY5zMqWkM1B4CEbFYaHuExcdGD"
+    },
+    {
+      "label": "Smoke: deposit 0.05 NEAR for QGOLD",
+      "transaction": "74iivoWx8AvSaqWgxxgPcRp9anmFhcJypDyyCEFRTSny"
+    },
+    {
+      "label": "Smoke: burn 1 QGOLD (in-game spend)",
+      "transaction": "GGQScB22jzAMz7wrpEQuYa371x1sz7dhXudQjUZSj1Wa"
+    },
+    {
+      "label": "Smoke: redeem 1 QGOLD instantly",
+      "transaction": "Aw91DFpV4R7454F77rhfJE1A496rgeUksJ8MhjPnrgw9"
+    },
+    {
+      "label": "Smoke: deposit 0.05 NEAR for QGOLD",
+      "transaction": "E7CHWwbxehqhWbwxJ3ygJYznQxoc4xnJwtozDb7Z9vHu"
+    },
+    {
+      "label": "Smoke: burn 1 QGOLD (in-game spend)",
+      "transaction": "EL5px2McNnVnxTc6F6XW2g2mCw4YmATG28kM5tUFbuzN"
+    },
+    {
+      "label": "Smoke: redeem 1 QGOLD instantly",
+      "transaction": "8tzE5WbteEWueEjwgU9LZ4KXbxDPkZRd4otuyQhWVcEs"
+    }
+  ]
+}
