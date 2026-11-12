@@ -257,3 +257,17 @@
 .zone-facts svg { flex: none; color: var(--action); }
 .zone-facts li[data-tone="open"] svg { color: inherit; }
 .zone-facts .coin-icon, .zone-facts img { width: 16px; height: 16px; }
+/* Chest Auras still in this zone today; the ring colour is the rarity. */
+.zone-facts li.zone-facts-auras { gap: 3px; padding: 0 4px; }
+.zone-facts li.zone-facts-auras img {
+  width: 24px;
+  height: 24px;
+  padding: 1px;
+  object-fit: contain;
+  border: 2px solid #7f9a86;
+  border-radius: 50%;
+  background: #fcfaff;
+}
+.zone-facts-auras img.rarity-rare { border-color: #3f8cff; }
+.zone-facts-auras img.rarity-epic { border-color: #9b4dff; }
+.zone-facts-auras img.rarity-legendary { border-color: #f3bd54; }

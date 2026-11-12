@@ -5,7 +5,6 @@ import {
   Check,
   Clock,
   Flag,
-  Gift,
   Sparkle,
 } from "@phosphor-icons/react";
 import type { Point, Quest, Zone } from "./types";
@@ -57,7 +56,12 @@ export function ZoneSchedule({ zone, quests, now, timezone }: { zone: Zone; ques
       {fact(tr("Done today: {0} of {1} activities", { 0: s.done, 1: s.total }), <Flag size={16} aria-hidden="true" />, `${s.done}/${s.total}`)}
       {s.xp > 0 && fact(tr("Still to win today:") + " " + tr("{0} XP", { 0: s.xp }), <Sparkle size={16} aria-hidden="true" />, tr("{0} XP", { 0: s.xp }))}
       {s.gold_u > 0 && fact(tr("Still to win today:") + " " + tr("{0} GOLD", { 0: gold(s.gold_u) }), <CoinIcon />, gold(s.gold_u))}
-      {s.loot.length > 0 && fact(tr("Still to win today:") + " " + tr("chest Auras: {0}", { 0: s.loot.map((l) => l.name).join(", ") }), <Gift size={16} aria-hidden="true" />, String(s.loot.length))}
+      {s.loot.length > 0 && (
+        <li className="zone-facts-auras" title={tr("Still to win today:") + " " + tr("chest Auras: {0}", { 0: s.loot.map((l) => l.name).join(", ") })}>
+          {s.loot.map((l) => l.src && <img key={l.id} src={l.src} alt="" className={`rarity-${l.rarity || "common"}`} loading="lazy" />)}
+          <span className="sr-only">{tr("Still to win today:") + " " + tr("chest Auras: {0}", { 0: s.loot.map((l) => l.name).join(", ") })}</span>
+        </li>
+      )}
     </ul>
   );
 }

@@ -312,7 +312,7 @@ export const CHAPTERS: Chapter[] = [
     blocks: [
       { h: "City zones" },
       {
-        p: "A reviewed city gets six citywide zone slots a day: varied, non-overlapping polygons that need real walking between them. A zone shows a tall 3D totem of its type, a translucent wall, an aura on the ground and the loot it holds. Rarer zones open for a shorter window, with a countdown everyone sees.",
+        p: "A reviewed city gets six citywide zone slots a day: varied, non-overlapping polygons that need real walking between them. A zone shows a tall 3D totem of its type, a translucent wall and an aura on the ground. Rarer zones open for a shorter window, with a countdown everyone sees.",
       },
       {
         table: {
@@ -326,8 +326,8 @@ export const CHAPTERS: Chapter[] = [
       },
       {
         list: [
-          "**Tap the altar** in the middle of a zone (or its pin) to open the zone detail: whether it is open now or when it opens, how many of today's activities you have done, the XP, GOLD and chest Auras still to win, and when the zone gets new activities and rewards (the next local midnight, when the daily world swaps).",
-          "**The round icons floating inside a zone** are the chest Auras its chest can hold today (ring colour = rarity) and a gold coin when an activity there pays GOLD. Tap one to see what it is and jump to the zone's activities. They disappear once the zone is closed or cleared; the zone itself stays on the map all day with a low, dimmed wall and the chip “Closed · new zones tomorrow”.",
+          "**Tap the altar** in the middle of a zone (or its pin) to open the zone detail: whether it is open now or when it opens, how many of today's activities you have done, the XP, GOLD and chest Auras still to win (each Aura as a small icon, ring colour = rarity), and when the zone gets new activities and rewards (the next local midnight, when the daily world swaps).",
+          "When a zone is closed or cleared it stays on the map all day with a low, dimmed wall and the chip “Closed · new zones tomorrow”.",
         ],
       },
       {
