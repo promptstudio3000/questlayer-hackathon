@@ -5,7 +5,8 @@
 import { useEffect, useState } from "react";
 import { ArrowDown, ArrowSquareOut, Lightning, Hourglass } from "@phosphor-icons/react";
 import { shortHash, shortNear } from "./format";
-import { buyQuote, parseUnits, sellQuote, type ExitPath } from "./qgold-quote";
+import { buyQuote, parseQgoldUnits, parseUnits, sellQuote, type ExitPath } from "./qgold-quote";
+import { qgoldCount, QGOLD_B_TOKENS } from "./treasury-model";
 import "./exchange.css";
 
 export type ExchangeData = {
@@ -22,13 +23,8 @@ export type ExchangeData = {
   pool?: { swapUrl?: string | null };
 };
 
-const QG = 10n ** 6n;
-function qgoldText(units: bigint | null, digits = 4) {
-  if (units == null) return "—";
-  const whole = units / QG,
-    frac = (units % QG).toString().padStart(6, "0").slice(0, digits).replace(/0+$/, "");
-  return `${whole.toLocaleString("en-US")}${frac ? "." + frac : ""}`;
-}
+// QGOLD in the game's one unit (1 NEAR ≈ 1B QGOLD): the token's smallest unit.
+const qgoldText = (units: bigint | null) => (units == null ? "—" : qgoldCount(units.toString()));
 const pctText = (bps: number) => `${(bps / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })} %`;
 
 export default function QgoldExchange({ data, compact = false }: { data: ExchangeData; compact?: boolean }) {
@@ -65,7 +61,7 @@ export default function QgoldExchange({ data, compact = false }: { data: Exchang
   if (!v) return null;
   const rate = BigInt(v.rate);
   const buying = mode === "buy";
-  const parsed = parseUnits(amount, buying ? 24 : 6);
+  const parsed = buying ? parseUnits(amount, 24) : parseQgoldUnits(amount);
   const out = parsed == null ? null : buying ? buyQuote(parsed, rate, data.rules.buyFeeBps) : sellQuote(parsed, rate, data.rules.sellFeeBps);
   const tooMuch = !buying && parsed != null && balance != null && parsed > balance;
   const paths = (data.exitPaths ?? []).filter((p) => p.available && p.id !== "lst");
@@ -75,7 +71,7 @@ export default function QgoldExchange({ data, compact = false }: { data: Exchang
   function pick(next: "buy" | "sell") {
     setMode(next);
     setResult(null);
-    setAmount(next === "buy" ? "1" : balance ? qgoldText(balance, 6).replace(/,/g, "") : "100");
+    setAmount(next === "buy" ? "1" : balance ? balance.toString() : "100M");
   }
   async function go() {
     if (parsed == null || out == null || out <= 0n || tooMuch) return;
@@ -98,7 +94,7 @@ export default function QgoldExchange({ data, compact = false }: { data: Exchang
     <section className={compact ? "qx qx-compact" : "qx"} aria-labelledby="qx-title">
       <header className="qx-head">
         <h2 id="qx-title">Swap QGOLD and NEAR</h2>
-        <span className="qx-rate">1 QGOLD = {shortNear(v.rate, 6)} NEAR</span>
+        <span className="qx-rate">1B QGOLD = {shortNear((rate * BigInt(QGOLD_B_TOKENS)).toString(), 4)} NEAR</span>
       </header>
       <div className="qx-seg" role="radiogroup" aria-label="Buy or sell QGOLD">
         {(["buy", "sell"] as const).map((m) => (
@@ -111,13 +107,13 @@ export default function QgoldExchange({ data, compact = false }: { data: Exchang
         <span className="qx-box-top">
           <span>You pay</span>
           {!buying && balance != null ? (
-            <button type="button" className="qx-max" onClick={() => setAmount(qgoldText(balance, 6).replace(/,/g, ""))}>
-              Balance {qgoldText(balance, 2)} · Max
+            <button type="button" className="qx-max" onClick={() => setAmount(balance.toString())}>
+              Balance {qgoldText(balance)} · Max
             </button>
           ) : null}
         </span>
         <span className="qx-box-row">
-          <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} aria-label={`Amount of ${payToken} to pay`} />
+          <input inputMode={buying ? "decimal" : "text"} value={amount} onChange={(e) => setAmount(e.target.value)} aria-label={`Amount of ${payToken} to pay`} />
           <b className={`qx-token qx-${payToken.toLowerCase()}`}>{payToken}</b>
         </span>
       </label>

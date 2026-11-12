@@ -948,17 +948,18 @@ export const CHAPTERS: Chapter[] = [
     title: "QGOLD token and vault",
     tldr: "QGOLD is the gold you earn, always fully backed by NEAR in one vault contract. **R = backing ÷ supply**: mints keep R flat, burns and fees raise it, and there is **no admin withdraw**. New QGOLD's NEAR comes from treasury yield; stablecoins steady the treasury, not the vault.",
     keyFacts: [
-      ["0.001 NEAR", "starting rate R per QGOLD"],
+      ["1 NEAR", "starting backing per 1B QGOLD"],
       ["±1 %", "to buy from or sell to the vault"],
       ["5 % / 24 h", "of the backing as instant exits"],
       ["0", "access keys on the vault account"],
     ],
     hero: "qgold-sim",
     status: "live",
-    updated: "2026-11-11",
+    updated: "2026-11-13",
     sources: ["docs/QGOLD-VAULT.md", "docs/QGOLD-MARKET.md", "contracts/qgold/src/lib.rs", "server/qgold/keeper.mjs", "server/qgold/token-page.mjs"],
     blocks: [
       { p: "**One coin, many names.** The game shows one name, QGOLD, everywhere, and every layer may give it its own name (Space Layer plans MINECOIN). Whatever the label, it is the same QGOLD token with the same backing and the same rate R." },
+      { p: "**One unit on screen (13 Nov).** Every screen counts QGOLD in its smallest unit, so **1 NEAR ≈ 1B QGOLD**: Stake, the map, [Treasury](/treasury) and [Economy](/economy) all show the same numbers. The vault's rate R is per whole token (1,000,000 units), so the pages show it per 1B QGOLD (about 1.02 NEAR today); the swap card reads \"1B QGOLD = … NEAR\" and takes amounts like 967.5M. Profile → Stake → On the map today and Treasury → Today on the map → Coins are the same number (the coins placed on today's map). Display only: the token, R and the economy are unchanged." },
       { h: "Actions" },
       {
         table: {
