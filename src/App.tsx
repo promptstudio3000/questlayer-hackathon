@@ -555,6 +555,36 @@ export default function App() {
   useEffect(() => {
     if (tab !== "inventory") setInventoryStart("all");
   }, [tab]);
+  // Player card: messages need this device's explorer account key
+  // (docs/PLAYER-INBOX.md). Says why it is missing and where to fix it.
+  function openAccountDevices() {
+    setCardPlayer(null);
+    chooseProfileTab("settings");
+    setTimeout(() => {
+      const el = document.getElementById("account-devices") as HTMLDetailsElement | null;
+      if (!el) return;
+      el.open = true;
+      el.scrollIntoView({ block: "start", behavior: "smooth" });
+    }, 300);
+  }
+  function messageOffReason(): { text: string; action?: { label: string; run: () => void } } {
+    const status = invisible.status;
+    if (status === "needs-recovery")
+      return {
+        text: invisible.canStartOver
+          ? tr("This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.")
+          : tr("This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey."),
+        action: { label: tr("Link this device"), run: openAccountDevices },
+      };
+    if (status === "play-first")
+      return { text: tr("Messages open with your explorer account, which you get with your first find or quest.") };
+    if (status === "error" || status === "unavailable")
+      return {
+        text: tr("Your explorer account is not available on this device, so messages are off here."),
+        action: { label: tr("Account and devices"), run: openAccountDevices },
+      };
+    return { text: tr("Your explorer account is being set up. Messages open in a moment.") };
+  }
   function openWardrobe() {
     setInventoryStart("wearables");
     setTab("inventory");
@@ -2889,6 +2919,15 @@ export default function App() {
     });
     return ok === true;
   }
+  async function startOverHere() {
+    const ok = await action("start-over", async () => {
+      await invisible.startOver();
+      setPlayer((await api<{ player: Player }>("/me")).player);
+      notify(tr("A new explorer account is being made on this device."));
+      return true;
+    });
+    return ok === true;
+  }
   async function revokeGameSessions(expectedAccount: string) {
     const ok = await action("session-recovery", async () => {
       const { wallet, accountId } = await chooseNearAccount();
@@ -4849,7 +4888,7 @@ export default function App() {
                   </button>
                 )}
               </section>
-              <details className="settings-group screen-details">
+              <details id="account-devices" className="settings-group screen-details">
                 <summary><UserCircle size={20} aria-hidden="true" />{tr("Account and devices")}</summary>
                 <ChainSettings accountId={invisible.accountId} />
                 <div className="settings-pad">
@@ -4870,6 +4909,7 @@ export default function App() {
                     onSetupRecovery={setupRecoveryPasskey}
                     onRevoke={revokeDevice}
                     onRestore={restoreThisDevice}
+                    onStartOver={invisible.canStartOver ? startOverHere : undefined}
                     error={invisible.error}
                     onRetry={() => void invisible.ensure()}
                   />
@@ -5249,6 +5289,8 @@ export default function App() {
           onBlocked={() =>
             setOthers((list) => list.filter((p) => p.id !== cardPlayer))
           }
+          // Why Message is off on this device, and the way to fix it.
+          messageOff={invisible.signer?.kind === "managed" ? null : messageOffReason()}
           // The encrypted inbox (src/inbox/Inbox.tsx) opens the conversation.
           onMessage={
             invisible.signer?.kind === "managed"
