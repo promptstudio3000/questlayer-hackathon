@@ -55,11 +55,6 @@
       "sha256": "52edcff46ee1a6d55bb5833838637ae4bcb986b5c0ee2620086665a9f4f96a16",
       "note": "Live testnet code before uncapped editions (256 serials per edition). scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
     },
-    "public/native-qgold-vault-testnet.json:wasmSha256": {
-      "contract": "questlayer_qgold",
-      "sha256": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
-      "note": "Public testnet still runs the prior QGOLD build. Exact NEAR game carry and durable conversion receipts require the existing council upgrade process and its 48-hour timelock. No deployment is implied."
-    },
     "public/native-qgold-escrow-testnet.json:wasmSha256": {
       "contract": "questlayer_qgold_escrow",
       "sha256": "7dc6933af802454b1434d3a39ed2a3b85d32468e27f7d7f109e3bc14f24966da"
@@ -83,6 +78,11 @@
       "contract": "questlayer_rewards",
       "sha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
       "note": "Replaced on testnet; kept as history (2026-11-10T01:00:19.807Z)."
+    },
+    "public/native-qgold-vault-testnet.json:previousDeployments.0.wasmSha256": {
+      "contract": "questlayer_qgold",
+      "sha256": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
+      "note": "Public testnet still runs the prior QGOLD build. Exact NEAR game carry and durable conversion receipts require the existing council upgrade process and its 48-hour timelock. No deployment is implied."
     }
   }
 }

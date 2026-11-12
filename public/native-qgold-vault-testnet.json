@@ -1,12 +1,12 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-11-05T13:34:14.144Z",
+  "verifiedAt": "2026-11-12T00:14:44.087Z",
   "vaultContract": "questlayer-qgold-vault-20261104.testnet",
   "tokenContract": "questlayer-qgold-vault-20261104.testnet",
   "symbol": "QGOLD",
   "decimals": 6,
-  "codeHash": "6D81v7i3YJKVviJUqDADFpK8oBG9oZbzasyqfazS2hnu",
-  "wasmSha256": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
+  "codeHash": "4iWCUy9qvQ9B57zVdqncQAycVP21JuDNYjVreBYiFAgG",
+  "wasmSha256": "3734e361148e880ff1717edde0f774e541b8761fd8837bec690bde93ec49bf49",
   "initialRate": "1000000000000000000000",
   "rewardsContract": "questlayer-rewards-20261101b.testnet",
   "council": [
@@ -120,6 +120,10 @@
     {
       "label": "Smoke: redeem 1 QGOLD instantly",
       "transaction": "BG33ZUX5qMW15mDXhCSbpDdE46MsKPUEFu66xgzpPYpk"
+    },
+    {
+      "label": "Apply QGOLD proposal 4 (reviewed 3734e361; migrate sets the testnet timelock to 10 min)",
+      "transaction": "E8m1dkjvUC8Nv4H6QiDAGDWT9WtjtGczXnKoSJmhLLYd"
     }
   ],
   "pendingWorldUpgrade": {
@@ -128,7 +132,7 @@
     "executableAt": "1794441121203",
     "proposer": "questlayer-dev-20261101.testnet",
     "transaction": "GJbiz7wRxrPvdHEcNYfajYzJ1LakA9WxxoDoNj2eBU81",
-    "state": "timelocked",
+    "state": "applied",
     "sourceCommit": "59a5b26a",
     "supersedes": [
       {
@@ -139,7 +143,10 @@
         "proposalId": 3,
         "cancelTransaction": "jLp2q54CjHvGSZqxad6AAz28reV31KWMik5TGbhHuf4"
       }
-    ]
+    ],
+    "appliedTransaction": "E8m1dkjvUC8Nv4H6QiDAGDWT9WtjtGczXnKoSJmhLLYd",
+    "appliedAt": "2026-11-12T00:14:44.087Z",
+    "timelockMsAfter": 600000
   },
   "supersededWorldUpgrade": {
     "proposalId": 1,
@@ -149,5 +156,13 @@
     "transaction": "JsRFAYdTj8NAfr2WD4pQZZ1meRgJ92uZXdCLb6AUr3o",
     "state": "cancelled",
     "cancelTransaction": "3FUjjXLfY7VZDS8s1ggau1TBTFixnPBMEcfvReVQ3yhJ"
-  }
+  },
+  "previousDeployments": [
+    {
+      "codeHash": "6D81v7i3YJKVviJUqDADFpK8oBG9oZbzasyqfazS2hnu",
+      "wasmSha256": "4d65564d6f575fc62858b656fd72f2973ad9a564c508cb20cdf1a2bd397f069e",
+      "replacedAt": "2026-11-12T00:14:44.083Z",
+      "replacedBy": "E8m1dkjvUC8Nv4H6QiDAGDWT9WtjtGczXnKoSJmhLLYd"
+    }
+  ]
 }
