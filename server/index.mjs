@@ -123,6 +123,7 @@ import { NativeCollectibles } from "./native/collectibles.mjs";
 import { chainFeed, chainItems } from "./native/chain-feed.mjs";
 import { clientAddress, RateWindows, pruneRateWindows, publicRpcUrl } from "./http-security.mjs";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
+import { tourState, tourAction } from "./tour/tour.mjs";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -314,9 +315,11 @@ const linkOrigin = (value) => {
     return null;
   }
 };
+const tourEnabled = NETWORK === "testnet" && (TEST_LAYER || process.env.TOUR_ENABLED === "1");
 const gameLayerConfig = Object.freeze({
   id: LAYER,
   test: TEST_LAYER,
+  tour: tourEnabled,
   // The other world, for the picker: World links to the Test Layer only on testnet.
   testLayerUrl: TEST_LAYER || NETWORK !== "testnet" ? null : linkOrigin(process.env.TEST_LAYER_ORIGIN),
   worldUrl: TEST_LAYER ? linkOrigin(process.env.WORLD_ORIGIN) : null,
@@ -3773,6 +3776,14 @@ async function api(req, res, url) {
       "Cache-Control": "private,no-cache",
     });
     return res.end(svg);
+  }
+  // Guided tour with helper Pip (docs/GUIDED-TOUR.md): Test Layer, or TOUR_ENABLED=1.
+  if (path === "/api/tour" && method === "GET")
+    return respond(res, tourState(db, player, { enabled: tourEnabled }), 200, { "Cache-Control": "private,no-store" });
+  if (path === "/api/tour" && method === "POST") {
+    assert(tourEnabled, "The tour runs in the Test Layer.", 404, "TOUR_OFF");
+    tourAction(db, player, await body(req));
+    return respond(res, tourState(db, player, { enabled: true }));
   }
   if (path === "/api/guide/hint" && method === "POST") {
     // First-session coach: one grounded sentence for the player's current
