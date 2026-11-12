@@ -549,10 +549,10 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
           s.label = q.pois[n].name ? `${q.pois[n].name}` : `${label(q.category)} ${n + 1}`;
         });
       if (clue)
-        activity.rewardConstraint = `Personal XP once: ${CLUE_XP.correct} for the right answer, ${CLUE_XP.miss} for the visit. One answer. No GOLD or NEAR prize.`;
+        activity.rewardConstraint = `Personal XP once: ${CLUE_XP.correct} for the right answer, ${CLUE_XP.miss} for the visit. One answer. No QGOLD or NEAR prize.`;
       if (q.chest)
         activity.rewardConstraint =
-          "Personal XP once and a cosmetic Aura. No GOLD or NEAR prize.";
+          "Personal XP once and a cosmetic Aura. No QGOLD or NEAR prize.";
       db.prepare(
         "INSERT INTO quests(id,world_id,title,description,lat,lng,tier,gold_u,xp,kind,opens_at,closes_at,zone_id,metadata) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       ).run(

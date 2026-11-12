@@ -132,7 +132,7 @@ export function FundPanel() {
         <div>
           <small>{tr("TOTAL PRACTICE FUND")}</small>
           <h2>
-            {gold(total)} <span>GOLD</span>
+            {gold(total)} <span>QGOLD</span>
           </h2>
           <p>
             {tr("The opening fund is a sponsor contribution for the demo. The 5% rate is simulated.")}</p>
@@ -144,7 +144,7 @@ export function FundPanel() {
             <span>{b.bucket === "coins" ? <Coins /> : <Flag />}</span>
             <h3>{b.bucket === "coins" ? tr("Street coins") : tr("Daily zones")}</h3>
             <strong>
-              {gold(b.available_u)} <small>{tr("GOLD available")}</small>
+              {gold(b.available_u)} <small>{tr("QGOLD available")}</small>
             </strong>
             <dl>
               <div>
@@ -166,7 +166,7 @@ export function FundPanel() {
         </div>
         <div>
           <small>{tr("Practice stake")}</small>
-          <b>{gold(data.staked)} GOLD</b>
+          <b>{gold(data.staked)} QGOLD</b>
         </div>
       </div>
       <div className="section-label">
@@ -187,7 +187,7 @@ export function FundPanel() {
               {gold(
                 Math.floor(((data.contributing * 0.05) / 365) * Number(days)),
               )}{" "}
-              GOLD
+              QGOLD
             </b>
           </div>
         ))}
@@ -206,7 +206,7 @@ export function FundPanel() {
             <Badge tone="green">{tr("TEST NETWORK")}</Badge>
           </div>
           <p>
-            {tr("Earned Auras can be secured to your NEAR account, traded in Market and shown on a public profile. Staking and GOLD rewards stay practice-only.")}</p>
+            {tr("Earned Auras can be secured to your NEAR account, traded in Market and shown on a public profile. Staking and QGOLD rewards stay practice-only.")}</p>
           <a
             href={`${EXPLORER_BASE}/address/${proof.collectiblesContract}`}
             target="_blank"
@@ -328,7 +328,7 @@ export function Bounties({
             />
           </label>
           <label>
-            {tr("Reward in practice GOLD")}<input
+            {tr("Reward in practice QGOLD")}<input
               value={reward}
               onChange={(e) => setReward(e.target.value)}
               inputMode="decimal"
@@ -354,7 +354,7 @@ export function Bounties({
               </Badge>
               <b>
                 <CoinIcon />
-                {gold(b.amount_u)} GOLD
+                {gold(b.amount_u)} QGOLD
               </b>
             </div>
             <h3>{b.title}</h3>

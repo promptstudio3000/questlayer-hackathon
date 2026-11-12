@@ -160,7 +160,7 @@ function PayoutRound() {
 function WearableRarity() {
   return (
     <Bars
-      title="Share of wearable finds by rarity. A wearable find is a free in-game clone of an official Aavegotchi wearable: cosmetic, not an NFT, no GOLD value."
+      title="Share of wearable finds by rarity. A wearable find is a free in-game clone of an official Aavegotchi wearable: cosmetic, not an NFT, no QGOLD value."
       bars={[
         { label: "Common", value: 40, tone: "muted" },
         { label: "Uncommon", value: 26, tone: "world" },
@@ -835,7 +835,7 @@ function ChainSplit() {
         { label: "Funded city & map days", value: 100, tone: "money" },
         { label: "QGOLD mint / burn / exit", value: 100, tone: "money" },
         { label: "Map coins & zone prizes", value: 100, tone: "money", note: "payout rounds" },
-        { label: "GOLD spending", value: 100, tone: "money", note: "ft_burn" },
+        { label: "QGOLD spending", value: 100, tone: "money", note: "ft_burn" },
         { label: "Task market & Secrets", value: 100, tone: "money", note: "QGOLD escrow" },
         { label: "XP", value: 30, tone: "core", note: "QXP ledger" },
       ]}

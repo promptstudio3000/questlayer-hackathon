@@ -34,6 +34,7 @@ import {
 import "./native-tasks.css";
 import { NEAR_NETWORK } from "./near-network.ts";
 import { tr } from "./i18n";
+import { qgoldOfNear } from "./qgold-display";
 
 export type NativeTask = {
   task_id: number;
@@ -171,7 +172,7 @@ function TaskReward({ value }: { value: string }) {
     <span className="task-reward">
       <RewardCoin />
       <span>
-        <strong>{exactTaskGold(value)} GOLD</strong>
+        <strong>{exactTaskGold(value)} QGOLD</strong>
         <small>{exactTaskNear(value)} {" "}{tr("test NEAR")}</small>
       </span>
     </span>
@@ -798,7 +799,7 @@ export function NativeTasks({
                   aria-describedby="task-reward-help"
                 />
                 <small id="task-reward-help">
-                  {tr("0.001–1 test NEAR · 1 NEAR = 1,000 GOLD")}</small>
+                  {tr("0.001–1 test NEAR · 1 NEAR = {0} QGOLD", { 0: qgoldOfNear(1) })}</small>
               </label>
               <label>
                 {tr("Submit evidence by")}<input

@@ -91,7 +91,7 @@ function promoteCellZones(db, world, cell, count, zonesU, seed) {
     if (!q || prize <= 0) continue;
     const meta = JSON.parse(q.metadata || "{}");
     if (meta.activity)
-      meta.activity.rewardConstraint = `Personal XP for everyone who finishes; the first explorer also takes ${prize.toLocaleString("en-US")} GOLD from this area's daily budget.`;
+      meta.activity.rewardConstraint = `Personal XP for everyone who finishes; the first explorer also takes ${prize.toLocaleString("en-US")} QGOLD from this area's daily budget.`;
     meta.cellZone = { policy: MAP_REWARDS_POLICY, cell, prizeU: prize };
     db.prepare("UPDATE quests SET gold_u=?,metadata=? WHERE id=?").run(
       prize,

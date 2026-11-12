@@ -46,7 +46,7 @@ export function guideFacts({ world = null, native = null, location = null, now =
   if (world) {
     add(
       "mode",
-      `This is ${world.cityName || world.cityId || "the city"} in demo mode; GOLD here is practice GOLD, not money.`,
+      `This is ${world.cityName || world.cityId || "the city"} in demo mode; QGOLD here is practice QGOLD, not money.`,
     );
     if (world.operatorPause)
       add("paused", "The operator has paused today's discoveries and coins in this city; check back later.");

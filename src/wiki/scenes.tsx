@@ -217,7 +217,7 @@ function PhoneHud() {
     <figure className="wk-fig wk-hud">
       <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-labelledby="wk-hud-desc" className={`wk-hud-phone${motion ? " moving" : ""}`}>
         <desc id="wk-hud-desc">
-          A phone showing the map screen: logo and daily board top left, avatar with the GOLD balance and the map settings gear top right, the explorer on a street with coins,
+          A phone showing the map screen: logo and daily board top left, avatar with the QGOLD balance and the map settings gear top right, the explorer on a street with coins,
           a dashed direction guide to a quest marker, the joystick bottom left, the Actions button bottom right and the Explore, Inventory and Community tab bar at the bottom.
         </desc>
         <rect x={6} y={6} width={W - 12} height={H - 12} rx={38} className="wk-hud-body" />
@@ -319,10 +319,10 @@ function PhoneHud() {
           <b>Logo and today's board.</b> Three small goals a day; finishing all three pays +50 XP once.
         </li>
         <li>
-          <b>Avatar + GOLD bubble</b> opens Profile. The gear opens Map settings: city demo or GPS, My location, Turn the map with me, Full map, City overview, Globe.
+          <b>Avatar + QGOLD bubble</b> opens Profile. The gear opens Map settings: city demo or GPS, My location, Turn the map with me, Full map, City overview, Globe.
         </li>
         <li>
-          <b>Coins collect themselves</b> when you pass them. A confirmed coin flies to the GOLD counter.
+          <b>Coins collect themselves</b> when you pass them. A confirmed coin flies to the QGOLD counter.
         </li>
         <li>
           <b>Direction guide</b> to the next target. A straight line with an X to hide it, never a walking route.
@@ -363,7 +363,7 @@ const SCREENS: Screen[] = [
     from: "tab bar",
     tabs: [
       { name: "Wardrobe", sub: "All · Auras · Wearables · Worn" },
-      { name: "Shop", sub: "Items (GOLD) · Market (Auras)" },
+      { name: "Shop", sub: "Items (QGOLD) · Market (Auras)" },
     ],
   },
   {

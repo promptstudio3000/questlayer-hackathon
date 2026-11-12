@@ -43,7 +43,7 @@ export function usedKeys() {
 // attributes (aria-label, title, placeholder, alt, label) given as a plain
 // string. Brand names, units and codes that stay the same in every language
 // are allowed.
-const SAME_IN_EVERY_LANGUAGE = /^(GOLD|XP|NEAR|testNEAR|QuestLayer|QUEST|LAYER|HP|GPS|Čeština|cq_…|ipfs:\/\/bafy…)$/;
+const SAME_IN_EVERY_LANGUAGE = /^(GOLD|QGOLD|XP|NEAR|testNEAR|QuestLayer|QUEST|LAYER|HP|GPS|Čeština|cq_…|ipfs:\/\/bafy…)$/;
 const LABEL_ATTRIBUTES = new Set(["aria-label", "title", "placeholder", "alt", "label"]);
 export function untranslatedJsx() {
   const found = [];

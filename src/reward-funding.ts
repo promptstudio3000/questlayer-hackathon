@@ -270,7 +270,7 @@ export function potView(
 
 // Plain names for the six checks in server/native/distribution.mjs.
 export const CHECK_NAMES: Record<string, string> = {
-  get "ledger-conservation"() { return tr("Every funded GOLD is accounted for"); },
+  get "ledger-conservation"() { return tr("Every funded QGOLD is accounted for"); },
   get "coin-reservations-explained"() { return tr("Coins set aside match the open days"); },
   get "zone-reservations-explained"() { return tr("Prizes set aside match the open days"); },
   get "open-days-match-manifests"() { return tr("Open days match their published plan"); },

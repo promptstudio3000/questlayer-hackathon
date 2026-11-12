@@ -368,7 +368,7 @@ export function FuelTheCity({
         ? tr("Your stake counts after about two epochs (1–2 days). Then you are a Staker.")
         : tr("Stake {0} QGOLD to become a Staker.", { 0: qgoldOfNear(stakerMin) })
       : summary.next
-        ? tr("{0} GOLD more fuel opens Tier {1} places.", { 0: fmt(summary.next.missingGold), 1: summary.next.tier })
+        ? tr("{0} QGOLD more fuel opens Tier {1} places.", { 0: qgoldOfNear(summary.next.missingGold / 1000), 1: summary.next.tier })
         : tr("Every place on the map is open to you.");
 
   const principal = "position" in phase ? nearOf(phase.position.position?.principal) : 0;

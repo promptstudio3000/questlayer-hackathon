@@ -99,7 +99,7 @@ function PotLines({ view, practice }: { view: PotView; practice: boolean }) {
         <span className="pot-line">{tr("No funded day is open yet today.")}</span>
       ) : view.treasury ? (
         <span className="pot-line">
-          <b>{goldCompact(view.treasury.funded)} GOLD</b> {" "}{tr("funded so far")}</span>
+          <b>{goldCompact(view.treasury.funded)} QGOLD</b> {" "}{tr("funded so far")}</span>
       ) : (
         <span className="pot-line">{tr("Today's amounts could not be read.")}</span>
       )}
@@ -108,7 +108,7 @@ function PotLines({ view, practice }: { view: PotView; practice: boolean }) {
           ? tr("Last confirmed {0} · ", { 0: clock(view.treasuryObservedAt) })
           : ""}
         {sourceText(view.source)}
-        {practice ? tr(" · your practice GOLD is separate") : ""}
+        {practice ? tr(" · your practice QGOLD is separate") : ""}
       </small>
     </>
   );
@@ -131,7 +131,7 @@ function LeftOf({
       <span className="pot-label">{label}</span>
       <span>
         <b>{goldCompact(left)}</b>
-        {funded ? ` of ${goldCompact(funded)}` : ""} {" "}{tr("GOLD left")}</span>
+        {funded ? ` of ${goldCompact(funded)}` : ""} {" "}{tr("QGOLD left")}</span>
     </span>
   );
 }
@@ -200,7 +200,7 @@ function Amount({ value }: { value: string | null | undefined }) {
   return value == null ? (
     <span className="pot-unavailable">{tr("Not available")}</span>
   ) : (
-    <b className="pot-amount">{goldExact(value)} GOLD</b>
+    <b className="pot-amount">{goldExact(value)} QGOLD</b>
   );
 }
 
@@ -236,7 +236,7 @@ export function RewardFundingPage({
         {tr("Rewards are paid only from money the game has actually received: sponsor funding and realized staking yield. Explorers' own deposits never pay for rewards.")}</p>
       {practice && view.kind !== "practice" && (
         <p className="pot-callout">
-          {tr("You're playing with practice GOLD. It is play money with no value and is kept separate from the funded pot below.")}</p>
+          {tr("You're playing with practice QGOLD. It is play money with no value and is kept separate from the funded pot below.")}</p>
       )}
 
       <section aria-labelledby="funding-today">
@@ -244,7 +244,7 @@ export function RewardFundingPage({
         {view.kind === "loading" && <p role="status">{tr("Checking today's pot…")}</p>}
         {view.kind === "practice" && (
           <p className="pot-callout">
-            {tr("The funded pot isn't open here yet, so today's rewards are practice GOLD: play money with no value. No funded amounts are shown because none could be read.")}</p>
+            {tr("The funded pot isn't open here yet, so today's rewards are practice QGOLD: play money with no value. No funded amounts are shown because none could be read.")}</p>
         )}
         {view.kind === "failed" && (
           <>
@@ -310,8 +310,8 @@ export function RewardFundingPage({
                       <li key={d.id}>
                         <span>{d.date ? dayLabel(d.date) : tr("Open day")}</span>
                         <span>
-                          {goldExact(d.coinsLeft)} {" "}{tr("GOLD coins ·")}{" "}
-                          {goldExact(d.prizesLeft)} {" "}{tr("GOLD prizes set aside")}</span>
+                          {goldExact(d.coinsLeft)} {" "}{tr("QGOLD coins ·")}{" "}
+                          {goldExact(d.prizesLeft)} {" "}{tr("QGOLD prizes set aside")}</span>
                       </li>
                     ))}
                 </ul>
@@ -480,7 +480,7 @@ export function RewardFundingPage({
       </section>
 
       <p className="pot-meta">
-        {tr("GOLD is how the game shows amounts; it is not a separate coin. Practice GOLD is play money with no value.")}</p>
+        {tr("Practice QGOLD is play money with no value.")}</p>
       <div className="pot-actions">
         <button
           type="button"

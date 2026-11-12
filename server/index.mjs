@@ -3908,7 +3908,7 @@ async function api(req, res, url) {
     const b = id("bounty");
     atomic(db, () => {
       const p = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
-      assert(p.gold_u >= i.amount, "Not enough GOLD.");
+      assert(p.gold_u >= i.amount, "Not enough QGOLD.");
       db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=?").run(
         i.amount,
         player,

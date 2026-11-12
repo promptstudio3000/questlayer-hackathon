@@ -55,7 +55,7 @@ type Season = {
   pot?: Pot;
 };
 
-const gold = (v: string) => `${goldCompact(v)} GOLD`;
+const gold = (v: string) => `${goldCompact(v)} QGOLD`;
 
 export function SeasonCard({ signedIn, refreshKey, onClaimed }: { signedIn: boolean; refreshKey?: string | number; onClaimed?: () => void }) {
   const [season, setSeason] = useState<Season | null>(null);
@@ -128,7 +128,7 @@ export function SeasonCard({ signedIn, refreshKey, onClaimed }: { signedIn: bool
           <section className="season-sheet">
             <h2>{tr("Season")}</h2>
             <p className="season-lead">
-              {tr("Until")}{" "}{new Date(season.endsAt).toUTCString().replace(":59 GMT", " UTC").replace(/:\d\d UTC$/, " UTC")}{tr(". Points for hunts (")}{p.hunt}{tr("), zone visits (")}{p.visit}{tr(") and NPC lines (")}{p.line}{tr("). Never GOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.")}</p>
+              {tr("Until")}{" "}{new Date(season.endsAt).toUTCString().replace(":59 GMT", " UTC").replace(/:\d\d UTC$/, " UTC")}{tr(". Points for hunts (")}{p.hunt}{tr("), zone visits (")}{p.visit}{tr(") and NPC lines (")}{p.line}{tr("). Never QGOLD, NEAR or stake. Ranks are cosmetic titles; they change no reward, odds or damage.")}</p>
             {me && (
               <div className="season-me">
                 <div className="season-me-head">

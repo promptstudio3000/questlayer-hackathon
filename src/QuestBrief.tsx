@@ -57,7 +57,7 @@ export function QuestBrief({ quest: q, zone, position, now, tier, arena, fix, on
     <div className="quest-brief-rewards" aria-label={tr("Rewards")}>
       <span><Sparkle aria-hidden="true" />{q.xp} XP</span>
       {q.kind === "chest" && <span><GameObjectArt kind="chest" size={24} />{q.completed ? tr("Completed") : q.itemAvailable === true ? tr("Aura chest") : q.itemAvailable === false ? tr("XP only") : tr("Aura not confirmed yet")}</span>}
-      {q.gold_u > 0 && <span title={tr("The GOLD prize goes to the first explorer to finish. Your XP is always yours.")}>{q.claimant ? tr("GOLD already collected") : `${gold(q.gold_u)} GOLD`}</span>}
+      {q.gold_u > 0 && <span title={tr("The QGOLD prize goes to the first explorer to finish. Your XP is always yours.")}>{q.claimant ? tr("QGOLD already collected") : `${gold(q.gold_u)} QGOLD`}</span>}
       {q.nearPrize?.available && <span title={tr("First confirmed completion: {0} NEAR, converted to QGOLD at settlement.", {0:q.nearPrize.amountNear})}>{tr("QGOLD for the first finisher")}</span>}
       {q.activity?.safety.instruction && !q.completed && open && <span title={q.activity.safety.instruction}><ShieldCheck aria-hidden="true" />{tr("Public paths only")}</span>}
     </div>

@@ -195,7 +195,7 @@ export function NearbyList({
     for (const s of marketData?.secrets || [])
       items.push({
         id: s.id, type: "secret", title: s.title, inside: s.inside, revealed: s.revealed,
-        detail: s.kind === "sponsored" ? tr("Free · {0} GOLD for finding it", { 0: gold(s.visitReward) }) : s.price > 0 ? `${gold(s.price)} GOLD` : tr("Free"),
+        detail: s.kind === "sponsored" ? tr("Free · {0} QGOLD for finding it", { 0: gold(s.visitReward) }) : s.price > 0 ? `${gold(s.price)} QGOLD` : tr("Free"),
         distanceM: s.inside ? 0 : s.distanceM ?? distanceTo(position, s.fog),
         reward: s.kind === "sponsored" ? s.visitReward : 0,
       });

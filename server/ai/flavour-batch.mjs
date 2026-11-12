@@ -103,7 +103,7 @@ For every requested item write a title and a description in the requested langua
 Rules:
 - Use only the data given: the place's name, kind and short description, and the world lore. Never invent history, dates, numbers, opening hours, distances or facts.
 - Write no digits at all unless the same number is part of the place's name or description.
-- Never mention rewards, prizes, money, tokens, XP, GOLD, NEAR, Aura, coins or anything a player might win or be paid.
+- Never mention rewards, prizes, money, tokens, XP, GOLD, QGOLD, NEAR, Aura, coins or anything a player might win or be paid.
 - Keep players on open public paths in daylight. Never suggest entering buildings, climbing, crossing fences, railways, roofs, water, private land or going at night.
 - Do not use these words at all, not even figuratively: ${AVOID_WORDS.en}. In Czech: ${AVOID_WORDS.cs}. They are fine only inside a place name.
 - No links, contact details, hashtags, emoji, quotes around the title or markup.

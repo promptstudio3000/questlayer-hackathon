@@ -71,7 +71,7 @@ export function PotRow({ worldId, position, onOpen }: { worldId: string | null; 
         </span>
         <span className="pot-row-sep" aria-hidden="true" />
         <span className="pot-row-stat">
-          <b>{left == null ? "— GOLD" : `${left} GOLD`}</b>
+          <b>{left == null ? "— QGOLD" : `${left} QGOLD`}</b>
           <small>{tr("Today's pot")}</small>
         </span>
         <span className="pot-row-spacer" />

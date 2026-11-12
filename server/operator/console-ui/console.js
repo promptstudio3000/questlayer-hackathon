@@ -202,7 +202,7 @@
         "div",
         { class: "card" },
         el("h2", {}, "Treasury"),
-        el("h3", {}, "Demo GOLD (micro units)"),
+        el("h3", {}, "Demo QGOLD (micro units)"),
         table(
           ["Bucket", "Available", "Reserved", "Paid"],
           t.demo.buckets.map((b) => [b.bucket, b.availableU, b.reservedU, b.paidU]),

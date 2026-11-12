@@ -1410,7 +1410,7 @@ function QuestDetail({
             ? tr("Paid unlock {0} NEAR, supports the creator", { 0: nearText(quest.price) })
             : tr("Free quest")}
           {" · "}{tr("Revision")}{" "}{revision}
-          {". "}{tr("A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or GOLD reward is set, and nobody checks GPS or a physical visit.")}
+          {". "}{tr("A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.")}
         </InfoTip>
       </div>
       <div className="qd-meta">

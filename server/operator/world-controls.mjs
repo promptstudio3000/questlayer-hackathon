@@ -635,7 +635,7 @@ function demoTreasury(db, warnings) {
         `Demo treasury ${b.bucket}: under 5% of funding remains available.`,
       );
   }
-  return { currency: "demo GOLD (micro units)", buckets, funding: funded };
+  return { currency: "demo QGOLD (micro units)", buckets, funding: funded };
 }
 
 /**

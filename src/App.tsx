@@ -1665,7 +1665,7 @@ export default function App() {
             );
             if (!result.alreadyClaimed && !latest.current.nativePlay) {
               cue("coin");
-              const paid = `+${result.xp ?? 0} XP · +${gold(result.value, 2)} GOLD`;
+              const paid = `+${result.xp ?? 0} XP · +${gold(result.value, 2)} QGOLD`;
               if (result.wearable && !result.wearable.duplicate) {
                 const scope = demoPickupScope(state.player.id, state.world.id, state.arena);
                 const found = { scope, id: result.wearable.id, name: result.wearable.name, detail: paid, chain: result.chain };
@@ -4131,7 +4131,7 @@ export default function App() {
                         : "—"
                       : gold(player.gold_u)}
                   </b>
-                  <span>GOLD</span>
+                  <span>QGOLD</span>
                 </button>
               </div>
               <MapSettings

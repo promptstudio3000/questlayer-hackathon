@@ -192,7 +192,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "One dismissible objective holds the next action. Confirmed results, recovery notices and the first equipment step come before nearby suggestions.",
           "One tap on a quest (in Nearby, in a zone, from an NPC or from Today's board) goes straight to the map: the target is marked, a direction line points to it, other map content dims, and the X on the target chip clears it. No reward is reserved or claimed by choosing. At the place the same tap opens one confirm button. A plain map point (a tour stop, for example) can be the target too: it gets a pulsing ring and the same chip with distance and X, and clears itself within 15 m.",
-          "A zone dialog is the title, one row of icon facts (tier, open window, done today, XP, GOLD and Auras left) and a list of one-tap quests.",
+          "A zone dialog is the title, one row of icon facts (tier, open window, done today, XP, QGOLD and Auras left) and a list of one-tap quests.",
           "Notes, shouts and topics sit on the map as closed icons; a tap opens the text, a second tap opens the thread and the X folds it again.",
           "Only game elements sit on the map. Community quests, player tasks and Secrets have no map markers; they are reached from Community and Nearby.",
           "Each step shows its requirement (location, footprint, question) before confirmation. A minimum distance between stops is never described as a walking route; an unknown duration stays unknown.",
@@ -207,7 +207,7 @@ export const CHAPTERS: Chapter[] = [
           "A new explorer without a deep link sees one skippable, illustrated guide before the map. Restored sessions and deep links never open it.",
           "First-time tips teach one action each, independent of any AI reply. They belong to this browser and player and never mark progress or grant rewards.",
           "Profile → Settings → Help reopens the guide, toggles first-time tips and shows the first steps again; the links to How it works, Wiki, Economy and Treasury sit at the bottom of Settings.",
-          "A picked-up coin flies to the GOLD counter (a fade under reduced motion). A new wearable opens a short, closable item moment once.",
+          "A picked-up coin flies to the QGOLD counter (a fade under reduced motion). A new wearable opens a short, closable item moment once.",
           "On desktop, Inventory, Community and Profile open as a centred card over the dimmed map; on phones they are full screen.",
           "The logo button at the top left opens the world menu: a dropdown under the button on desktop, a bottom sheet on phones. Its first row links to **How it works**, **Wiki** and **Treasury**; below are the worlds to switch between.",
         ],
@@ -219,7 +219,7 @@ export const CHAPTERS: Chapter[] = [
           head: ["Unit", "What it is", "Where it lives", "Transferable"],
           rows: [
             ["XP / QXP", "Experience from play. Drives levels and gates.", "Game DB; QXP mirror contract on NEAR", "Never (soulbound)"],
-            ["QGOLD (shown as GOLD)", "Token fully backed by NEAR, 6 decimals. In the game 1 GOLD is its smallest unit (1 QGOLD = 1,000,000 GOLD), so every amount is a whole number. Coins and zone prizes earn it, payout rounds mint it, every purchase burns it. Its rate R only rises.", "`questlayer-qgold-vault-20261104.testnet`; unpaid amounts wait in the game DB", "Yes (NEP-141)"],
+            ["QGOLD", "Token fully backed by NEAR, 6 decimals. The game counts it in its smallest unit, so every amount on screen is a whole number: 1,000,000 QGOLD in the game is 1 QGOLD token in a NEAR wallet, and 1 NEAR reads as 1B QGOLD (stake, prices and rewards all use this one scale). Coins and zone prizes earn it, payout rounds mint it, every purchase burns it. Its rate R only rises.", "`questlayer-qgold-vault-20261104.testnet`; unpaid amounts wait in the game DB", "Yes (NEP-141)"],
             ["NEAR / test NEAR", "Prize pool money, stake, fees, Aura prices.", "Rewards, vault, market and Intents contracts", "Yes"],
           ],
         },
@@ -287,7 +287,7 @@ export const CHAPTERS: Chapter[] = [
       { h: "Reward ledgers and other explorers" },
       {
         list: [
-          "**Map coins (default):** every coin and zone prize is backed QGOLD. It shows as on its way at the top of Profile → Stake and the next payout round mints it to your NEAR account, created automatically. This stays the ledger after any wallet sign-in.",
+          "**Map coins (default):** every coin and zone prize is backed QGOLD. It shows as on its way in Profile → Stake → Earnings and the next payout round mints it to your NEAR account, created automatically. This stays the ledger after any wallet sign-in.",
           "**Test network ledger:** projects the funded Plzeň NEAR day onto the map and collects with fresh GPS, one request at a time. It runs only when you pick it in Settings → Developer or open Expeditions.",
           "Other explorers within about 1.5 km appear live on the map (name, look, position) while their game is open on screen; Settings → Show me to nearby explorers turns it off. GPS and demo players see only their own kind. Profiles never show a position; wallets, balances and inventory are never shown.",
         ],
@@ -326,8 +326,8 @@ export const CHAPTERS: Chapter[] = [
       },
       {
         list: [
-          "**Tap the altar** in the middle of a zone (or its pin) to open the zone detail: whether it is open now or when it opens, how many of today's activities you have done, the XP, GOLD and chest Auras still to win, and when the zone gets new activities and rewards (the next local midnight, when the daily world swaps).",
-          "**The round icons floating inside a zone** are the chest Auras its chest can hold today (ring colour = rarity) and a gold coin when an activity there pays GOLD. Tap one to see what it is and jump to the zone's activities. They disappear once the zone is closed or cleared; the zone itself stays on the map all day with a low, dimmed wall and the chip “Closed · new zones tomorrow”.",
+          "**Tap the altar** in the middle of a zone (or its pin) to open the zone detail: whether it is open now or when it opens, how many of today's activities you have done, the XP, QGOLD and chest Auras still to win, and when the zone gets new activities and rewards (the next local midnight, when the daily world swaps).",
+          "**The round icons floating inside a zone** are the chest Auras its chest can hold today (ring colour = rarity) and a gold coin when an activity there pays QGOLD. Tap one to see what it is and jump to the zone's activities. They disappear once the zone is closed or cleared; the zone itself stays on the map all day with a low, dimmed wall and the chip “Closed · new zones tomorrow”.",
         ],
       },
       {
@@ -378,7 +378,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "Two weeks, cosmetic leaderboard. Points: monster hunt 1, zone visit 2, NPC line 3. Goal 30.",
           "Ranks: Explorer, Season finisher (goal), Trailblazer (2×), Season legend (3×). A rank changes how the row looks and nothing else.",
-          "Finishers claim a season mark and the season Aura once. Only play counts: never GOLD, NEAR, stake or purchases.",
+          "Finishers claim a season mark and the season Aura once. Only play counts: never QGOLD, NEAR, stake or purchases.",
         ],
       },
       { h: "Badges" },
@@ -479,10 +479,10 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**Wardrobe** shows the character with its two Aura slots, then one grid of everything owned: game Auras, Auras secured on NEAR (wallet badge) and Aavegotchi wearables (Clone tag or gold check). Worn items first; filters All, Auras, Wearables, Worn.",
-          "Tap an item for Try it on / Take it off and Sell. Sell asks for a price in QGOLD (1,000 to 1,000M; 1 QGOLD = 1 microNEAR, the trade settles in NEAR) and lists the Aura in Shop → Market (a game Aura is secured first). A worn secured Aura must be taken off first.",
+          "Tap an item for Try it on / Take it off and Sell. Sell asks for a price in QGOLD (1M to 1,000B, the same QGOLD as rewards; 1 NEAR reads as 1B QGOLD and the trade settles in NEAR) and lists the Aura in Shop → Market (a game Aura is secured first). A worn secured Aura must be taken off first.",
           "Unowned editions sit in a separate catalog; catalog art never implies ownership or current availability.",
           "**Shop → Items:** everything QGOLD buys as illustrated cards, priced in QGOLD (emotes, marker frames, lures, trader gear); every purchase burns QGOLD.",
-          "**Shop → Market:** every Aura for sale as a card, from the NEAR Intents book (NPC traders included) and the market contract. Filters All, Above, Below, Mine; sort by newest, name, rarity or price. Buying signs with the explorer account; card prices are rounded up to 4 decimals. Before a buy the game checks the paying account: with no explorer account yet or too little NEAR (price plus a little gas; wNEAR already in Intents counts), **Buy** opens a **Why you can't buy this yet** dialog instead of an error. It is one line (what the payment needs and what you have, in QGOLD at 1 QGOLD = 1 microNEAR, paid in NEAR) and one main button: **Use my QGOLD** when your QGOLD covers it, otherwise **Get test NEAR** or **Connect a NEAR wallet**; Copy address and Check again sit below, and **More ways** folds the wallets to install (Meteor, HOT, MyNearWallet) and NEAR Intents (opens at mainnet). Market prices read in QGOLD too. The same dialog backs the Intents **Buy** under More trading tools and the Stake page.",
+          "**Shop → Market:** every Aura for sale as a card, from the NEAR Intents book (NPC traders included) and the market contract. Filters All, Above, Below, Mine; sort by newest, name, rarity or price. Buying signs with the explorer account; card prices are rounded up to 4 decimals. Before a buy the game checks the paying account: with no explorer account yet or too little NEAR (price plus a little gas; wNEAR already in Intents counts), **Buy** opens a **Why you can't buy this yet** dialog instead of an error. It is one line (what the payment needs and what you have, in QGOLD, paid in NEAR) and one main button: **Use my QGOLD** when your QGOLD covers it, otherwise **Get test NEAR** or **Connect a NEAR wallet**; Copy address and Check again sit below, and **More ways** folds the wallets to install (Meteor, HOT, MyNearWallet) and NEAR Intents (opens at mainnet). Market prices read in QGOLD too. The same dialog backs the Intents **Buy** under More trading tools and the Stake page.",
         ],
       },
       { h: "Where Auras come from" },
@@ -537,7 +537,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "The catalogue is read from the Aavegotchi contract on Base and the artwork is served from the contract, never copied. A find shows that pixel art inside the rarity ring of its map marker; unreadable art falls back to a sparkle.",
-          "Picking one up is a normal street claim (GPS check, travel guard, XP caps). The clone is a database row, never an NFT: not tradable, no GOLD value. It lands in Inventory → Wardrobe.",
+          "Picking one up is a normal street claim (GPS check, travel guard, XP caps). The clone is a database row, never an NFT: not tradable, no QGOLD value. It lands in Inventory → Wardrobe.",
           "One item per slot (head, face, eyes, body, hand, pet), drawn at its official canvas place.",
           "**Verified originals:** link a Base wallet with a signed message and every clone whose original is in that wallet gets a gold check for 24 hours after the last read. Others see only verified, never the address.",
         ],
@@ -575,8 +575,8 @@ export const CHAPTERS: Chapter[] = [
         table: {
           head: ["Tab", "What it holds"],
           rows: [
-            ["Character", "Avatar, level and XP, your totals (finds, quests, tasks, monsters, wearables, badges, GOLD earned), Badges, a Messages tile for the inbox, and **Your story**: what happened, newest first (`GET /api/me/journey`)"],
-            ["Stake", "One screen (Earnings was merged in on 12 Nov). On top, three small numbers: **your QGOLD** (with what the next payout adds), **GOLD on the map today** and, once you have staked, **from your stake** (the yield kept for you). The page shows at once and fills its numbers as the chain answers: the tier ladder with the **yield share to the prize pool** (25 / 50 / 100 %) right under it, then one **Stake 2 NEAR** button. The first tap sets up your personal vault (a one-time setup fee that is not returned), the next tap stakes; each money step asks for one Yes in a small QuestLayer confirmation window; when staking is not possible yet (no explorer account, too little test NEAR), the button opens a **Why you can't stake yet** dialog instead of an error: the same one-line dialog as in the Market, with one main button (use your QGOLD, get test NEAR or connect a NEAR wallet, which then pays the stake). There is **one stake per explorer**: afterwards the only action is **Withdraw** (about 1–7 days, 4 epochs; the game moves the unlocked NEAR back and you withdraw it to your balance). Once you have staked, a collapsed **Your vault** shows the vault address, owner, validator, staked NEAR and your yield share. Payment receipts live in **Settings → Receipts**. Stake amounts, tier requirements and locked-zone prices read in QGOLD at 1 QGOLD = 1 microNEAR (2 NEAR shows as 2M QGOLD); the payment itself still leaves in NEAR and the signing window shows that."],
+            ["Character", "Avatar, level and XP, your totals (finds, quests, tasks, monsters, wearables, badges, QGOLD earned), Badges, a Messages tile for the inbox, and **Your story**: what happened, newest first (`GET /api/me/journey`)"],
+            ["Stake", "One screen (Earnings was merged in on 12 Nov). On top, three small numbers: **your QGOLD** (with what the next payout adds), **QGOLD on the map today** and, once you have staked, **from your stake** (the yield kept for you). The page shows at once and fills its numbers as the chain answers: the tier ladder with the **yield share to the prize pool** (25 / 50 / 100 %) right under it, then one **Stake 2 NEAR** button. The first tap sets up your personal vault (a one-time setup fee that is not returned), the next tap stakes; each money step asks for one Yes in a small QuestLayer confirmation window; when staking is not possible yet (no explorer account, too little test NEAR), the button opens a **Why you can't stake yet** dialog instead of an error: the same one-line dialog as in the Market, with one main button (use your QGOLD, get test NEAR or connect a NEAR wallet, which then pays the stake). There is **one stake per explorer**: afterwards the only action is **Withdraw** (about 1–7 days, 4 epochs; the game moves the unlocked NEAR back and you withdraw it to your balance). Once you have staked, a collapsed **Your vault** shows the vault address, owner, validator, staked NEAR and your yield share. Payment receipts live in **Settings → Receipts**. Stake amounts, tier requirements and locked-zone prices read in the same QGOLD as rewards (2 NEAR shows as 2B QGOLD); the payment itself still leaves in NEAR and the signing window shows that."],
             ["Settings", "Game, Help (How to play, the guide, Game economy, first-time tips), Account and devices, Sign out, then the reference links; the reward ledger switch sits in a small Developer section"],
           ],
         },
@@ -595,8 +595,8 @@ export const CHAPTERS: Chapter[] = [
       ["6 authors", "make a topic free for good"],
     ],
     status: "live",
-    updated: "2026-11-12",
-    sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/LocalChat.tsx", "src/MapNotes.tsx", "src/gold-map-layer.ts", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx", "src/CreatorCommunity.tsx", "src/QuestFeedback.tsx", "server/creators/feedback.mjs"],
+    updated: "2026-11-11",
+    sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/LocalChat.tsx", "src/MapNotes.tsx", "src/gold-map-layer.ts", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx"],
     blocks: [
       { h: "Create from the map" },
       {
@@ -612,17 +612,14 @@ export const CHAPTERS: Chapter[] = [
           "Every message near you (about 3 km) also stands **on the map** as a small paper pin with its text (your own with a coloured edge), refreshed every 30 seconds and right after you leave, edit or remove one. Tapping a pin opens Local chat with that message highlighted.",
           "Every message shows author, how long ago, time left, the text and a **GPS line** with the pin and its distance. Tapping it shows the spot on a plain map with only the pin and your position.",
           "**Shouts** are short paid bubbles for up to 7 days; a **topic** becomes free for good once 6 different players wrote in it (see Fees and spending).",
-          "**Community places** are free recommendations: nearest first within 10 km, each as a card with a large coloured picture of its kind (view, nature, history, art, food & drink, hidden gem, walk & play) and its distance, kind chips to filter and sorting. Three reports from different players hide a place until a moderator looks. No links, contacts or private addresses; no GOLD or XP moves.",
+          "**Community places** are free recommendations: nearest first within 10 km, each as a card with a large coloured picture of its kind (view, nature, history, art, food & drink, hidden gem, walk & play) and its distance, kind chips to filter and sorting. Three reports from different players hide a place until a moderator looks. No links, contacts or private addresses; no QGOLD or XP moves.",
           "Demo maps and the real GPS map keep separate messages and places. The test world seeds chat messages around náměstí Republiky and in towns 15–85 km away (Rokycany, Klatovy, Domažlice, Prague), so the distance filter has something to show.",
         ],
       },
       { h: "Quests, tasks and creators" },
       {
         list: [
-          "**Quests** is one compact list with filter chips: All, Near me (5 km), Following and Started. Each row shows the quest's pixel icon (visit, trail, chest or story) or the creator's photo, the creator's own avatar and name, the star rating with the number of ratings, the distance and type on one line, and the price or Free.",
-          "A **quest detail** is one screen with one goal: the creator's header photo (or the type picture), title, creator, stars, distance, the one question to answer, and a single **Go** button. Go starts the quest and switches to the map with a pin, a direction line and a chip that leads back to the quest. The description folds to two lines; the review rules sit under the (i) button. Once started, the same screen shows the state (In progress, Waiting for review, Done), a Show on map button and a field to write the answer right there.",
-          "**Rating and discussion** sit under every quest. An explorer who started a quest gives 1 to 5 stars, once, and may change it; the creator cannot rate their own quest. Anyone who can see the quest can write a comment (500 characters, 20 a day); the writer or the quest's creator can remove one. A block in either direction hides the quest together with its discussion. Ratings refer to the quest id, the same id the creators contract registers on chain. When an explorer has a game account, the stars are also written as a public NEAR Social record under that account (`<account>/questlayer/ratings/<quest id>`: quest id, the creators contract, 1 to 5 stars, time), paid by the game's relayer; only the number is public, never a comment, and a changed rating overwrites the record.",
-          "Creators may add one **header photo** to a quest in the editor. It is shrunk on the phone, re-encoded on the server without its location data, and becomes public only with the reviewed revision that carries it.",
+          "**Quests** is one compact list with filter chips: All, Near me (5 km), Following and Started. Each row shows the quest's pixel icon (visit, trail, chest or story), the creator's own avatar and name, the distance and type on one line, and the price or Free.",
           "**Tasks** lists the QGOLD tasks explorers post for each other in the same rows, with a type badge, who posted it, the reward and places left.",
           "**Creators** shows each creator's avatar (their map character), short bio, quests and followers, and a Follow button. Tapping a creator opens their profile as a dialog: level, quests, followers, finished runs and creator XP, a large Follow button, an (i) button with the safety notes and Block, and their quests in the same rows as the Quests list.",
           "The test world adds demo-bot creators, quests and example tasks labelled demo-bot; example tasks hold no QGOLD and cannot be taken.",
@@ -790,7 +787,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "At the first request of a local day the server builds the plan once from the **real daily budget**: the map's share of the rewards contract's per-date cap, priced in micro-QGOLD at the vault's rate R.",
-          "**One coin = coin budget ÷ all shares.** At a 0.05 NEAR map budget and R = 0.001 NEAR that is 50 QGOLD over 6.5–13 million shares, a few GOLD per coin (1 GOLD = 1 micro-QGOLD, the smallest unit). The value grows with the treasury; shares a cell cannot hold stay in the treasury.",
+          "**One coin = coin budget ÷ all shares.** At a 0.05 NEAR map budget and R = 0.001 NEAR that is 50 QGOLD tokens (50,000,000 in game units) over 6.5–13 million shares, a few QGOLD per coin on screen. The value grows with the treasury; shares a cell cannot hold stay in the treasury.",
           "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area; what a capped cell cannot take goes to the others.",
           "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest.",
           "The city demo pays the same backed coins. Outside Czechia a street cell gets up to 400 coins of the same value, drawn from the day's unplaced coin budget until it is spent, and paid through the payout rounds (`MAP_WORLD_COINS=off` stops it). Funded cell zones and pioneer bonuses stay in Czechia.",
@@ -840,7 +837,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "**No paid chance.** Randomness is free or earned (wisp rolls, chests), never bought or wagered.",
           "**No streaks, energy or loot purchases.** Spending only burns your own QGOLD (`ft_burn`) for cosmetics and conveniences; the backing stays in the vault, so every burn raises R for all holders.",
-          "**No practice money and no welcome credit.** A new explorer starts at 0 GOLD; every coin and zone prize is backed by the day's budget and paid as QGOLD within minutes.",
+          "**No practice money and no welcome credit.** A new explorer starts at 0 QGOLD; every coin and zone prize is backed by the day's budget and paid as QGOLD within minutes.",
           "**Players never fund the prizes.** Stake principal stays yours; only the yield share you choose goes to the game.",
           "Unclaimed budget stays for later days. Money follows players, not cities.",
           "Everything is published: [Economy](/economy) lists treasury, audits and payouts with transaction links; [Treasury](/treasury) shows the dashboard.",
@@ -962,7 +959,7 @@ export const CHAPTERS: Chapter[] = [
     updated: "2026-11-11",
     sources: ["docs/QGOLD-VAULT.md", "docs/QGOLD-MARKET.md", "contracts/qgold/src/lib.rs", "server/qgold/keeper.mjs", "server/qgold/token-page.mjs"],
     blocks: [
-      { p: "**One coin, many names.** The game shows QGOLD as GOLD, and every layer may give it its own name (Space Layer plans MINECOIN). Whatever the label, it is the same QGOLD token with the same backing and the same rate R." },
+      { p: "**One coin, many names.** The game shows one name, QGOLD, everywhere, and every layer may give it its own name (Space Layer plans MINECOIN). Whatever the label, it is the same QGOLD token with the same backing and the same rate R." },
       { h: "Actions" },
       {
         table: {
@@ -1004,7 +1001,7 @@ export const CHAPTERS: Chapter[] = [
     id: "fees-and-spending",
     group: "economy",
     title: "Fees, spending and the task market",
-    tldr: "Every fee goes to the treasury and comes back through the daily budget. GOLD buys cosmetics and conveniences, and **every purchase burns QGOLD on chain**. Tasks, Secrets and conditional sends settle in a QGOLD escrow.",
+    tldr: "Every fee goes to the treasury and comes back through the daily budget. QGOLD buys cosmetics and conveniences, and **every purchase burns QGOLD on chain**. Tasks, Secrets and conditional sends settle in a QGOLD escrow.",
     keyFacts: [
       ["10 %", "on top of a paid task's reward"],
       ["2 %", "on Aura trades"],
@@ -1016,12 +1013,12 @@ export const CHAPTERS: Chapter[] = [
     updated: "2026-11-11",
     sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "server/data/creator-xp.json", "server/creators/creator-xp.mjs", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json", "src/signing-vault/policy.ts", "src/GameMap.tsx"],
     blocks: [
-      { h: "What GOLD buys (every spend is a burn)" },
+      { h: "What QGOLD buys (every spend is a burn)" },
       { viz: "gold-prices" },
       {
         list: [
           `Emotes: ${GOLD.emotes.free.length} free; premium ones are shown to others for ${GOLD.emotes.showSeconds} s (${premiumEmotes}).`,
-          `NPC gear: one chest-edition Aura a day from a trader (rare ${GOLD.gear.price.rare.toLocaleString("en-US")}, epic ${GOLD.gear.price.epic.toLocaleString("en-US")} GOLD).`,
+          `NPC gear: one chest-edition Aura a day from a trader (rare ${GOLD.gear.price.rare.toLocaleString("en-US")}, epic ${GOLD.gear.price.epic.toLocaleString("en-US")} QGOLD).`,
           `Lures: ${GOLD.lures.minutes} minutes, GPS only, ${GOLD.lures.hours.join("–")}, at least ${GOLD.lures.spacingM} m apart, snapped to a safe place within ${GOLD.lures.poiSnapM} m. They attract actors and never change odds.`,
           "Place messages: paid shouts live up to 7 days; a topic with posts from 6 distinct authors becomes free and is archived after 90 days without activity.",
           "Every spend calls `ft_burn` from your own account (sponsored, no pop-up), the server verifies it on chain, and only then the purchase happens. One saved reference follows each purchase from quote to delivery; retries return the saved result.",
@@ -1039,7 +1036,7 @@ export const CHAPTERS: Chapter[] = [
           "One escrow task pays at most 50 completions, each account once. A proof waiting for review holds its slot, so a poster cannot cancel it away.",
           "Failed transfers keep the credit and retry after verification; only payments with an unknown outcome pause the queue.",
           "The funder holds a small NEAR storage deposit on the escrow (about 0.01 NEAR per agreement record); the relayer can top it up in 0.05 NEAR steps, at most 0.5 NEAR.",
-          "**Community · Tasks** is one list of these player tasks: open nearby, the ones you are taking, the ones you posted, and a type filter. Every row shows who posted it with their avatar. The older practice-GOLD tasks and the separate sponsored NEAR task contract are no longer in the app.",
+          "**Community · Tasks** is one list of these player tasks: open nearby, the ones you are taking, the ones you posted, and a type filter. Every row shows who posted it with their avatar. The older practice-QGOLD tasks and the separate sponsored NEAR task contract are no longer in the app.",
         ],
       },
       { h: "Creators" },
@@ -1162,8 +1159,7 @@ export const CHAPTERS: Chapter[] = [
           "Every `PAYOUT_ROUND_MINUTES` (5 on testnet; 0 = once after local midnight) it collects every backed coin and cell-zone prize not paid yet and at least a minute old, prices it at the rate its day was planned with, sums it per account and publishes `payout-<date>-v<n>`. A round with nothing to pay publishes nothing.",
           "Submission is not payment: finalized per-leaf chain status confirms each receipt. Restart recovery reconciles pending leaves first; an exclusive fenced lease prevents overlapping workers.",
           "A player without a NEAR account yet keeps their coins waiting and joins the first payout after the account exists. `GET /api/qgold/pending` shows what is on its way.",
-          "Profile → Stake shows the QGOLD balance and what the next payout brings. While payouts run, map days no longer send `claim_map`, so a coin is never paid twice.",
-          "Profile → Stake shows the whole loop as one numbered, animated picture: 1 you stake into your vault and the stake stays yours, 2 validators pay yield and your chosen share fills the prize pool (the rest is yours), 3 the pool becomes coins and prizes on the map each day, 4 explorers collect QGOLD on the map, never from the vault, 5 what nobody collects returns to the pool.",
+          "Profile → Stake → Earnings shows the QGOLD balance and what the next payout brings. While payouts run, map days no longer send `claim_map`, so a coin is never paid twice.",
         ],
       },
       { note: "The prepared Atlas adapter separately reserves a UTC day before opening and needs two reviewed testnet contract upgrades, including QGOLD's governance timelock. Until confirmed activation, Atlas quests award personal XP only." },
@@ -1183,27 +1179,17 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "account-seq",
     status: "live",
-    updated: "2026-11-12",
-    sources: ["docs/RELAYER.md", "docs/IDENTITY-RECOVERY.md", "docs/NATIVE-TRANSACTION-CONFIRMATION.md", "docs/DURABLE-NATIVE-RECOVERY.md", "docs/ETH-WALLETS.md", "docs/NATIVE-PROFILES.md", "server/relayer/policy.mjs", "server/relayer/accounts.mjs", "src/FuelCard.tsx", "src/signing-vault/wallet-export.ts", "src/WalletWords.tsx"],
+    updated: "2026-11-11",
+    sources: ["docs/RELAYER.md", "docs/IDENTITY-RECOVERY.md", "docs/NATIVE-TRANSACTION-CONFIRMATION.md", "docs/DURABLE-NATIVE-RECOVERY.md", "docs/ETH-WALLETS.md", "docs/NATIVE-PROFILES.md", "server/relayer/policy.mjs", "server/relayer/accounts.mjs", "src/FuelCard.tsx"],
     blocks: [
       { h: "Your explorer account" },
       {
         list: [
           "A new explorer gets `<name>.play-…testnet`, funded with a small NEAR deposit once, when the account is created, after they earned their first XP on the map; the first steps play solo without it. New accounts per network address are capped per day.",
-          "Gas is always sponsored. The small balance only covers the account's storage and the player's own payments (Aura buys, deposits), which the relayer never sponsors. Starting NEAR comes **once**, when the account is created; there is no daily refuel (`PLAYER_REFUEL=1` turns it back on for tests). When the balance runs low, a short **Convert QGOLD to gas** dialog opens by itself (once a day): convert QGOLD at the vault, or top up gas by sending NEAR to the game address.",
+          "Gas is always sponsored. The small balance only covers the account's storage and the player's own payments (Aura buys, deposits), which the relayer never sponsors. Starting NEAR comes **once**, when the account is created; there is no daily refuel (`PLAYER_REFUEL=1` turns it back on for tests). Profile → Stake → Earnings offers **Convert QGOLD to NEAR** at the vault or **Add your own NEAR** from any wallet.",
           "Every in-game action (tasks, Secrets, Aura listings and equipment, staking, level rewards, badges, profile and note records) signs with this account, without a wallet pop-up. Before it exists, **Activate my account** prepares it.",
           "The device key lives in a separate signing origin, deployed with the game. If a browser blocks its storage, no account is created, Profile → Settings → Account and devices says so, and free play continues. Keys made before that origin are not rotated yet.",
-          "Profile → Settings → Account and devices shows the account name under **NEAR wallet**, with Copy name and **Open in a wallet**.",
           "Purchases, equipment, earned mini-games and getting ready to trade sign silently. Anything that can pay someone else (a sale or purchase, a task, Secret or send, a withdrawal, an asset transfer) and account recovery ask one plain Yes / No question in a small separate window, which a compromised game page cannot answer.",
-        ],
-      },
-      { h: "Open in a wallet (wallet words)" },
-      {
-        list: [
-          "**Open in a wallet** makes 12 new words (a standard NEAR seed phrase) and adds their key to the account as one more full-access key, sponsored like any key change. The same account then opens in Meteor, Intear or any wallet that imports a seed phrase (MyNearWallet is in limited mode and is not linked). The device key itself is never shown or exported.",
-          "The steps run in the separate secure window: a warning, a press and hold (or the recovery passkey, when the account has one), the 12 numbered words shown only while the player keeps them open, a check of two of the words, then the key is added. The game then lists the wallet links and the three import steps.",
-          "The words exist only in that window's memory. They are never stored, logged, copied to the clipboard or sent to the game or its server, they hide when the window loses focus and after 2 minutes, and nobody can show them again. There is no copy button on purpose.",
-          "The key appears in Devices as **Wallet words** and can be revoked there; lost words are replaced by revoking and making new ones. A wallet holding the words has full control of the account and is not asked the game's Yes / No questions.",
         ],
       },
       { h: "Sign-in methods" },
@@ -1250,7 +1236,7 @@ export const CHAPTERS: Chapter[] = [
           "The solver's gas counts against the shared daily sponsorship budget. When it is used up, fills and withdrawals wait for the next day; signed orders stay in the book.",
           "Every settled trade and withdrawal is a History row for both explorers with the settlement transaction (Settings → Account and devices → On chain); Shop → Market → More trading tools lists your own trades.",
           "Aavegotchi wearables are never traded: originals stay in the wallet, map clones are not NFTs.",
-          "Signed market-v2 orders (NEP-413) remain as a fallback. The old practice GOLD market is closed (`410 MARKET_ON_CHAIN`). Mainnet `intents.near` is planned and needs the owner's go.",
+          "Signed market-v2 orders (NEP-413) remain as a fallback. The old practice QGOLD market is closed (`410 MARKET_ON_CHAIN`). Mainnet `intents.near` is planned and needs the owner's go.",
         ],
       },
     ],
@@ -1351,7 +1337,7 @@ export const CHAPTERS: Chapter[] = [
           "The testnet runs a removable test seed (bots, quests, community tasks, free Secrets); every seeded row has a `seed-` id. Starter kits for real explorers are off unless `TEST_SEED_KIT=1`.",
           "A guided tour (helper Pip, top-right card) walks a new explorer through every quest type, encounter, trade and community action in Plzeň; each step ticks only from the game's own records (ledger actions, sponsored transactions, burns), and the end lists every transaction with its explorer link.",
           "Two worlds, one code: QuestLayer World is the real game, and the **Test Layer** (testnet only, its own service, database, signing vault and contract set, Test QGOLD shown with a TEST tag, 4-hour explorers) holds the bots, the seed content, the compact Plzeň zones and every feature under test. Mainnet refuses the Test Layer.",
-          "A tester-account command line sets the owner test explorer's password, removes the old practice-GOLD credit from explorers created before 10 November and retires duplicate test explorers (GOLD 0, sessions revoked).",
+          "A tester-account command line sets the owner test explorer's password, removes the old practice-QGOLD credit from explorers created before 10 November and retires duplicate test explorers (QGOLD 0, sessions revoked).",
           "A deploy reinstalls the separate signing-vault origin whenever its code or contract list changed.",
           "Releases and testnet operator jobs run on the VPS itself. A release runner follows the deploy branch every minute (build, tests, database backup, switch, automatic rollback) and runs queued operator jobs from an allowlist, one at a time, after a read-only plan; contract upgrades only with a WASM hash that matches the reviewed build. It refuses mainnet. Its public status is at `/api/release/status`.",
           "Chain reads go through free public NEAR RPC endpoints (three on testnet). The server merges equal reads, reuses a result for 3 s, paces reads to about 8 per second, backs off after a rate limit and drops cached reads whenever a transaction goes out.",

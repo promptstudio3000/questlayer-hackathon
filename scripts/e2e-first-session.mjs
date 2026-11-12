@@ -618,7 +618,7 @@ async function runDevice(name, server) {
     // CI server has no chain, so the journey checks the form and backs out.
     await itemActions.getByRole("button", { name: "Sell" }).click();
     await page.getByText("Price in QGOLD").waitFor();
-    await page.locator("#inventory-list-price").fill("50000");
+    await page.locator("#inventory-list-price").fill("50M");
     await scan(page, "market-listing-form");
     await page.locator(".inventory-sale-form").getByRole("button", { name: "Back" }).click();
     await quietToast(page);

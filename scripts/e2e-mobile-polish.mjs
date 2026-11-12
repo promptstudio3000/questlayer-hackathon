@@ -187,14 +187,14 @@ try {
     if (width === 390) {
       await item.click();
       await page.getByRole("button", { name: "Sell", exact: true }).click();
-      await page.locator("#inventory-list-price").fill("50000");
+      await page.locator("#inventory-list-price").fill("50M");
       await page.setViewportSize({ width, height: 420 });
       await page.locator("#inventory-list-price").focus();
       await check("item-keyboard-viewport");
       await page.setViewportSize({ width, height });
       await page.locator(".inv-detail *").evaluateAll(els => els.filter(el => el.matches("input,textarea,select") || [...el.childNodes].some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim())).forEach(el => el.style.setProperty("font-size", `${parseFloat(getComputedStyle(el).fontSize) * 2}px`, "important")));
       await check("item-enlarged-text");
-      assert.equal(await page.locator("#inventory-list-price").inputValue(), "50000");
+      assert.equal(await page.locator("#inventory-list-price").inputValue(), "50M");
     }
     assert.deepEqual(faults, [], "No browser errors");
     report.viewports.push({ name, width, height, mapReady, scans, faults });
