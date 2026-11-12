@@ -35,7 +35,7 @@ function assertTestnet(args, env) {
 // deploy/release-ops-allowlist.json as installed on the VPS (from main).
 export function validateOp(op, allowlist, fileId) {
   if (!op || typeof op !== "object" || Array.isArray(op)) refuse("Operation must be a JSON object.");
-  const known = new Set(["id", "script", "args", "env", "ref", "sha", "wasm", "outputs", "installKeys", "note"]);
+  const known = new Set(["id", "script", "args", "env", "ref", "sha", "wasm", "outputs", "installKeys", "runtimeEnv", "note"]);
   for (const k of Object.keys(op)) if (!known.has(k)) refuse(`Unknown field "${k}".`);
   if (!OP_ID.test(op.id || "")) refuse("id must be 3-64 characters of a-z, 0-9 and -.");
   if (fileId !== undefined && fileId !== op.id) refuse(`File name ${fileId}.json does not match id ${op.id}.`);
@@ -64,8 +64,9 @@ export function validateOp(op, allowlist, fileId) {
   if (!Array.isArray(outputs) || outputs.length > 30 || !outputs.every((p) => typeof p === "string" && REPO_PATH.test(p)))
     refuse("outputs must be up to 30 repository paths outside .data/.");
   const installKeys = op.installKeys ?? [];
-  if (!Array.isArray(installKeys) || installKeys.length > 10) refuse("installKeys must be a list.");
+  if (!Array.isArray(installKeys) || installKeys.length > 16) refuse("installKeys must be a list of up to 16.");
   for (const item of installKeys) keyInstallTarget(item, allowlist);
+  const runtimeEnv = op.runtimeEnv === undefined ? null : runtimeEnvPlan(op.runtimeEnv, allowlist);
   return {
     id: op.id,
     script: op.script,
@@ -76,6 +77,7 @@ export function validateOp(op, allowlist, fileId) {
     wasm: op.wasm ?? null,
     outputs,
     installKeys,
+    runtimeEnv,
     execute: rule.execute === null ? null : rule.execute || "--execute",
     note: typeof op.note === "string" ? op.note.slice(0, 300) : "",
   };
@@ -93,15 +95,56 @@ export function opCommands(op) {
       ];
 }
 
-// A key file the op wrote under .data/ goes to one of the allowlisted service
-// state directories, owned by that service. Returns { from, dir, file }.
+// A key file the op wrote under .data/ (a relative path, e.g.
+// testlayer/work/.data/relayer-testnet.json) goes to one of the allowlisted
+// service state directories as `to` (default: its own name).
 export function keyInstallTarget(item, allowlist) {
   if (!item || typeof item !== "object") refuse("installKeys entries must be objects.");
-  if (!KEY_FILE.test(item.file || "")) refuse("installKeys.file must be a plain file name.");
+  const parts = String(item.file || "").split("/");
+  if (parts.length > 6 || !parts.every((x) => KEY_FILE.test(x) && x !== "." && x !== ".."))
+    refuse("installKeys.file must be a relative path under .data/.");
+  const to = item.to ?? parts[parts.length - 1];
+  if (!KEY_FILE.test(to) || !/\.(json|pem)$/.test(to)) refuse("installKeys.to must be a plain .json or .pem file name.");
   const dir = allowlist.keyDirs?.[item.service];
   if (!dir) refuse(`Service ${item.service} has no allowlisted key directory.`);
-  if (/mainnet/i.test(item.file) || /mainnet/i.test(item.service)) refuse("Mainnet keys are never installed by the runner.");
-  return { from: `.data/${item.file}`, dir, file: item.file, service: item.service };
+  if (/mainnet/i.test(item.file) || /mainnet/i.test(to) || /mainnet/i.test(item.service)) refuse("Mainnet keys are never installed by the runner.");
+  return { from: `.data/${parts.join("/")}`, dir, file: to, service: item.service };
+}
+
+// runtimeEnv: { service, set: { KEY: "value" | { fromKey: "<.data path>", field: "accountId" } } }.
+// Only keys allowlisted for that service, non-secret values (paths, account ids).
+export function runtimeEnvPlan(spec, allowlist) {
+  if (!spec || typeof spec !== "object") refuse("runtimeEnv must be an object.");
+  const rule = allowlist.runtimeEnv?.[spec.service];
+  if (!rule) refuse(`Service ${spec.service} has no allowlisted runtime.env.`);
+  const set = spec.set;
+  if (!set || typeof set !== "object" || Array.isArray(set)) refuse("runtimeEnv.set must be an object.");
+  const entries = [];
+  for (const [k, v] of Object.entries(set)) {
+    if (!rule.keys.includes(k)) refuse(`runtime.env ${k} is not allowlisted for ${spec.service}.`);
+    if (typeof v === "string") {
+      if (!ARG.test(v) || /mainnet|\.near$/i.test(v)) refuse(`runtime.env ${k} must be a plain testnet value.`);
+      entries.push({ key: k, value: v });
+    } else {
+      const parts = String(v?.fromKey || "").split("/");
+      if (!parts.every((x) => KEY_FILE.test(x) && x !== "." && x !== "..")) refuse(`runtime.env ${k}.fromKey must be a path under .data/.`);
+      if (!["accountId", "publicKey"].includes(v.field)) refuse(`runtime.env ${k}.field must be accountId or publicKey.`);
+      entries.push({ key: k, fromKey: `.data/${parts.join("/")}`, field: v.field });
+    }
+  }
+  return { service: spec.service, file: rule.file, entries };
+}
+
+// Rewrites only the given keys in a runtime.env text; other lines stay.
+export function applyRuntimeEnv(text, values) {
+  const lines = String(text || "").split("\n").filter((l, i, a) => !(i === a.length - 1 && l === ""));
+  for (const [k, v] of Object.entries(values)) {
+    if (/[\n\r]/.test(v) || /mainnet|\.near$/i.test(v)) refuse(`runtime.env ${k} value refused.`);
+    const at = lines.findIndex((l) => l.startsWith(`${k}=`));
+    if (at >= 0) lines[at] = `${k}=${v}`;
+    else lines.push(`${k}=${v}`);
+  }
+  return lines.join("\n") + "\n";
 }
 
 // Private keys never leave the VPS, also not through a log line.

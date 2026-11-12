@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { readFileSync, mkdtempSync, writeFileSync, mkdirSync } from "node:fs";
 import { join } from "node:path";
 import { tmpdir } from "node:os";
-import { validateOp, opCommands, keyInstallTarget, scrub, parsePin, RELEASE_FILES } from "../scripts/lib/release-runner.mjs";
+import { validateOp, opCommands, keyInstallTarget, runtimeEnvPlan, applyRuntimeEnv, scrub, parsePin, RELEASE_FILES } from "../scripts/lib/release-runner.mjs";
 import { readReleaseStatus, releaseStatusFile } from "../server/release-status.mjs";
 
 const allowlist = JSON.parse(readFileSync(new URL("../deploy/release-ops-allowlist.json", import.meta.url), "utf8"));
@@ -55,8 +55,18 @@ test("key installs only go to allowlisted service directories, never mainnet", (
     file: "relayer-testlayer.json",
     service: "questlayer-testlayer",
   });
+  assert.deepEqual(keyInstallTarget({ service: "questlayer-testlayer", file: "testlayer/work/.data/relayer-testnet.json", to: "relayer.json" }, allowlist), {
+    from: ".data/testlayer/work/.data/relayer-testnet.json",
+    dir: "/var/lib/questlayer-testlayer",
+    file: "relayer.json",
+    service: "questlayer-testlayer",
+  });
+  assert.equal(keyInstallTarget({ service: "questlayer-testlayer", file: "award-attestor.pem" }, allowlist).file, "award-attestor.pem");
   assert.throws(() => keyInstallTarget({ service: "root", file: "x.json" }, allowlist), /no allowlisted/);
-  assert.throws(() => keyInstallTarget({ service: "questlayer-hackathon", file: "../x" }, allowlist), /plain file/);
+  assert.throws(() => keyInstallTarget({ service: "questlayer-hackathon", file: "../x" }, allowlist), /relative path/);
+  assert.throws(() => keyInstallTarget({ service: "questlayer-hackathon", file: "a/../../x.json" }, allowlist), /relative path/);
+  assert.throws(() => keyInstallTarget({ service: "questlayer-hackathon", file: "x.json", to: "../x.json" }, allowlist), /plain/);
+  assert.throws(() => keyInstallTarget({ service: "questlayer-hackathon", file: "x.json", to: "runtime.env" }, allowlist), /plain/);
   assert.throws(() => keyInstallTarget({ service: "questlayer-hackathon", file: "relayer-mainnet.json" }, allowlist), /Mainnet/);
 });
 
@@ -97,4 +107,19 @@ test("release status is served read-only, by op id, and never on mainnet", () =>
   assert.equal(readReleaseStatus("/api/release/status", { network: "mainnet", dir }).status, 404);
   assert.equal(releaseStatusFile("/api/release/ops/..%2Fstate", dir), null);
   assert.equal(releaseStatusFile("/api/release/ops/../state", dir), null);
+});
+
+test("runtime.env changes are limited to allowlisted, non-secret keys", () => {
+  const plan = runtimeEnvPlan({ service: "questlayer-testlayer", set: {
+    RELAYER_KEY_PATH: "/var/lib/questlayer-testlayer/relayer.json",
+    PLAYER_FACTORY_ACCOUNT: { fromKey: "testlayer/work/.data/player-factory-testnet.json", field: "accountId" },
+  } }, allowlist);
+  assert.equal(plan.file, "/opt/ps3000/apps/questlayer-testlayer/runtime.env");
+  assert.equal(plan.entries[1].fromKey, ".data/testlayer/work/.data/player-factory-testnet.json");
+  assert.throws(() => runtimeEnvPlan({ service: "questlayer-testlayer", set: { NEAR_AI_KEY: "x" } }, allowlist), /not allowlisted/);
+  assert.throws(() => runtimeEnvPlan({ service: "questlayer-hackathon", set: {} }, allowlist), /no allowlisted/);
+  assert.throws(() => runtimeEnvPlan({ service: "questlayer-testlayer", set: { RELAYER_KEY_PATH: "a b" } }, allowlist), /plain testnet/);
+  assert.throws(() => runtimeEnvPlan({ service: "questlayer-testlayer", set: { PLAYER_FACTORY_ACCOUNT: { fromKey: "x.json", field: "secretKey" } } }, allowlist), /accountId or publicKey/);
+  assert.equal(applyRuntimeEnv("A=1\nRELAYER_KEY_PATH=/old\n", { RELAYER_KEY_PATH: "/new", B: "2" }), "A=1\nRELAYER_KEY_PATH=/new\nB=2\n");
+  assert.throws(() => applyRuntimeEnv("", { X: "a\nB=1" }), /refused/);
 });

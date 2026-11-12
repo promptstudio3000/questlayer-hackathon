@@ -53,9 +53,14 @@ Status is public and secret-free: `GET /api/release/status` and `GET /api/releas
   700), so scripts find `.data/near-operator.json` as on the Mac and write backups there.
 - `outputs`: repository files the script rewrote come back in `/api/release/ops/<id>` so a thread can
   commit them (the deploy key is read-only).
-- `installKeys`: `[{"service": "questlayer-testlayer", "file": "relayer-testlayer.json"}]` copies a key
-  the job wrote under `.data/` into that service's state directory (allowlisted in `keyDirs`), never
-  replacing a different file. Restart or redeploy the service afterwards.
+- `installKeys`: `[{"service": "questlayer-testlayer", "file": "testlayer/work/.data/relayer-testnet.json", "to": "relayer.json"}]`
+  copies a `.json` or `.pem` key the job wrote under `.data/` into that service's state directory
+  (allowlisted in `keyDirs`), as `to` (default: the same name), never replacing a different file.
+- `runtimeEnv`: `{"service": "questlayer-testlayer", "set": {"RELAYER_KEY_PATH": "/var/lib/questlayer-testlayer/relayer.json",
+  "PLAYER_FACTORY_ACCOUNT": {"fromKey": "testlayer/work/.data/player-factory-testnet.json", "field": "accountId"}}}`
+  sets only the keys allowlisted for that service in `runtimeEnv` (paths, account ids, public keys;
+  never secrets), keeps every other line and a timestamped copy of the previous file.
+  Restart or redeploy the service afterwards.
 
 Operations already in the tree when the runner first starts are recorded as `baseline` and never run.
 

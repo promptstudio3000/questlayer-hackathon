@@ -31,6 +31,7 @@ import {
   validateOp,
   opCommands,
   keyInstallTarget,
+  applyRuntimeEnv,
   scrub,
   tail,
   parsePin,
@@ -313,6 +314,7 @@ function runOp(id, deploySha) {
       result.outputs[p] = scrub(readFileSync(file, "utf8"));
     }
     result.installedKeys = op.installKeys.map((item) => installKey(keyInstallTarget(item, allowlist())));
+    if (op.runtimeEnv) result.runtimeEnv = writeRuntimeEnv(op.runtimeEnv);
     result.status = "done";
   } catch (e) {
     result.status = "failed";
@@ -340,6 +342,26 @@ function installKey({ from, dir, file, service }) {
   chmodSync(target, 0o600);
   chownSync(target, owner.uid, owner.gid);
   return { service, file, installed: true, restartNeeded: service };
+}
+
+// Root: set allowlisted, non-secret runtime.env keys (paths, account ids read
+// from a key file's public fields). Restart or redeploy the service afterwards.
+function writeRuntimeEnv({ service, file, entries }) {
+  const values = {};
+  for (const e of entries) {
+    if (e.value !== undefined) values[e.key] = e.value;
+    else {
+      const key = JSON.parse(readFileSync(join(KEYS, e.fromKey.slice(".data/".length)), "utf8"));
+      if (typeof key[e.field] !== "string") throw new Error(`${e.fromKey} has no ${e.field}.`);
+      values[e.key] = key[e.field];
+    }
+  }
+  const before = existsSync(file) ? readFileSync(file, "utf8") : "";
+  mkdirSync(dirname(file), { recursive: true });
+  if (before) copyFileSync(file, `${file}.before-${tag()}`);
+  writeFileSync(`${file}.tmp`, applyRuntimeEnv(before, values), { mode: 0o600 });
+  renameSync(`${file}.tmp`, file);
+  return { service, file, keys: Object.keys(values), restartNeeded: service };
 }
 
 // --- tick ---------------------------------------------------------------------

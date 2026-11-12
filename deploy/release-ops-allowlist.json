@@ -1,5 +1,5 @@
 {
-  "_doc": "VPS release runner allowlist (docs/VPS-RELEASE-RUNNER.md). Installed from main only. execute: the flag the runner adds after a read-only plan run, or null for scripts that act directly. wasm: an upgrade must name its reviewed wasm and sha256. contracts: build contracts/target reproducibly first. env: the only variables an operation may set.",
+  "_doc": "VPS release runner allowlist (docs/VPS-RELEASE-RUNNER.md). Installed from main only. execute: the flag the runner adds after a read-only plan run, or null for scripts that act directly. wasm: an upgrade must name its reviewed wasm and sha256. contracts: build contracts/target reproducibly first. env: the only variables an operation may set. keyDirs: where installKeys may copy key files. runtimeEnv: the only runtime.env keys an operation may set, per service (non-secret values).",
   "scripts": {
     "scripts/upgrade-collectibles-editions-testnet.mjs": {
       "execute": "--execute",
@@ -245,5 +245,18 @@
     "questlayer-hackathon": "/var/lib/questlayer-hackathon",
     "questlayer-testlayer": "/var/lib/questlayer-testlayer",
     "questlayer-treasury": "/var/lib/questlayer-treasury/.data"
+  },
+  "runtimeEnv": {
+    "questlayer-testlayer": {
+      "file": "/opt/ps3000/apps/questlayer-testlayer/runtime.env",
+      "keys": [
+        "PLAYER_FACTORY_ACCOUNT",
+        "PLAYER_FACTORY_KEY_PATH",
+        "RELAYER_KEY_PATH",
+        "REWARD_ATTESTOR_PATH",
+        "REWARD_WORKER_KEY_PATH",
+        "CREATORS_PUBLISHER_KEY_PATH"
+      ]
+    }
   }
 }
