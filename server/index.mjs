@@ -10,6 +10,7 @@ import {
 import { publicLevelTable } from "./levels.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
+import { QuestPhotos } from "./creators/feedback.mjs";
 import { createMarketRoutes } from "./market/routes.mjs";
 import {
   escrowHealth,
@@ -279,6 +280,7 @@ const adventureResults = createAdventureResults(db);
 const socialContent = new SocialContent(db);
 const communityPlaces = createCommunityPlaces(db);
 const noteMedia = new NoteMedia();
+const questPhotos = new QuestPhotos();
 // Private sponsored-task photos and the shared report intake. Operator
 // decisions are made only through server/cli/moderate.mjs.
 const taskEvidence = new TaskEvidence(db);
@@ -2137,6 +2139,26 @@ async function api(req, res, url) {
         )
         .all(),
     });
+  // Header photos creators attach to their quests (server/creators/feedback.mjs).
+  if (path === "/api/creator-photos" && method === "POST") {
+    const uploader = auth(req);
+    assert(creatorRuntime.config.enabled, "Not found", 404);
+    const input = await body(req);
+    assert(auth(req) === uploader, "Please sign in again.", 401);
+    return respond(res, { photo: await questPhotos.store(uploader, input.image) }, 201);
+  }
+  if (path.startsWith("/api/creator-photos/") && method === "GET") {
+    auth(req);
+    const file = questPhotos.file(path);
+    assert(file && existsSync(file), "Image not found.", 404);
+    res.writeHead(200, {
+      "Content-Type": "image/jpeg",
+      "Cache-Control": "private,max-age=86400,immutable",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer",
+    });
+    return createReadStream(file).pipe(res);
+  }
   if (path.startsWith("/api/media/") && method === "GET") {
     const viewer = auth(req);
     const file = noteMedia.file(path);
