@@ -129,7 +129,6 @@ export const GOLD = goldSpend;
 type Edition = { id: string; rarity: string; source?: string };
 export const EDITIONS = (auraCatalog.editions as Edition[]).map((e) => ({ id: e.id, rarity: e.rarity, source: e.source ?? "chest" }));
 /** Copies per edition the deployed collectibles contract can number on NEAR (the game itself is uncapped). */
-export const CHAIN_COPIES_PER_EDITION = 256;
 
 const levelRows = LEVELS.map((l) => [`L${l.level}`, l.xp.toLocaleString("en-US"), l.unlock, l.item ?? "–"]);
 const gateRows = STAKER_GATES.map((g) => [
@@ -501,7 +500,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "Claim-only editions mint only for their claim prefix; chests never drop them.",
-          `Auras have no capped supply: they keep appearing as quest and map rewards. The reviewed collectibles contract numbers serials without a limit; until its testnet upgrade runs, the deployed build still stops at ${CHAIN_COPIES_PER_EDITION} per edition.`,
+          `Auras have no capped supply: they keep appearing as quest and map rewards. The collectibles contract numbers serials without a limit too (upgraded on testnet 12 Nov 2026).`,
           "Earned editions are awarded **once per player ever** (`earned_editions` ledger). Set bonuses are cosmetic.",
           "Confirmed results show the set, serial and edition limit; that limit is never labelled as remaining stock.",
         ],

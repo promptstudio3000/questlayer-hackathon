@@ -45,16 +45,6 @@
       "sha256": "1098ca2fecdfdb4dbc21e9fdfc513351816d85ed75f88144abb0c78a64ac1d60",
       "note": "External code, not ours: near/intents defuse v0.4.5 (commit 16d04f6), built by scripts/intents-verifier-testnet.mjs --build in its own pinned image sourcescan/cargo-near:0.22.0-rust-1.97.1. Experimental testnet verifier only."
     },
-    "public/native-claims-testnet.json:wasmSha256": {
-      "contract": "questlayer_collectibles",
-      "sha256": "52edcff46ee1a6d55bb5833838637ae4bcb986b5c0ee2620086665a9f4f96a16",
-      "note": "Live testnet code before uncapped editions (256 serials per edition). scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
-    },
-    "public/native-editions-testnet.json:wasmSha256": {
-      "contract": "questlayer_collectibles",
-      "sha256": "52edcff46ee1a6d55bb5833838637ae4bcb986b5c0ee2620086665a9f4f96a16",
-      "note": "Live testnet code before uncapped editions (256 serials per edition). scripts/upgrade-collectibles-editions-testnet.mjs --execute deploys this build and removes this entry."
-    },
     "public/native-qgold-escrow-testnet.json:wasmSha256": {
       "contract": "questlayer_qgold_escrow",
       "sha256": "7dc6933af802454b1434d3a39ed2a3b85d32468e27f7d7f109e3bc14f24966da"

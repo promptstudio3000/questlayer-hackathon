@@ -88,7 +88,8 @@ test("native holdings retain equipped items beyond the first page and coalesce R
 });
 test("native asset normalization rejects foreign kinds and out-of-range editions", () => {
   assert.equal(nativeItem(token("spam:1")), null);
-  assert.equal(nativeItem(token("aura:gold:257")), null);
+  assert.equal(nativeItem(token("aura:gold:0")), null);
+  assert.ok(nativeItem(token("aura:gold:257")), "editions are uncapped");
   assert.equal(nativeItem(token("aura:polar:1")).color, "#9edfc5");
   assert.equal(
     nativeItem({
