@@ -1223,7 +1223,6 @@
   "Open to try again.": "افتح لتحاول مجددًا.",
   "Open today's map first.": "افتح خريطة اليوم أولًا.",
   "Open until {0}": "مفتوحة حتى {0}",
-  "Open vault": "فتح الخزنة",
   "Open your first chest": "افتح صندوقك الأول",
   "Open {0}": "افتح {0}",
   "Opening photo…": "جارٍ فتح الصورة…",
@@ -3243,5 +3242,9 @@
   "Start the tour": "ابدأ الجولة",
   "Tour done: {0} transactions on NEAR.": "انتهت الجولة: {0} معاملة على NEAR.",
   "Tour": "الجولة",
-  "confirming": "قيد التأكيد"
+  "confirming": "قيد التأكيد",
+  "Riddles": "ألغاز",
+  "Rhythm": "إيقاع",
+  "Rune path": "مسار الرون",
+  "Rune song": "أغنية الرون"
 }

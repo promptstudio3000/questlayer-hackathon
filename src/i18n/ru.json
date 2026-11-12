@@ -1223,7 +1223,6 @@
   "Open to try again.": "Открой, чтобы попробовать снова.",
   "Open today's map first.": "Сначала открой сегодняшнюю карту.",
   "Open until {0}": "Открыто до {0}",
-  "Open vault": "Открыть хранилище",
   "Open your first chest": "Открой свой первый сундук",
   "Open {0}": "Открыть {0}",
   "Opening photo…": "Открываем фото…",
@@ -3243,5 +3242,9 @@
   "Start the tour": "Начать экскурсию",
   "Tour done: {0} transactions on NEAR.": "Экскурсия окончена: {0} транзакций в NEAR.",
   "Tour": "Экскурсия",
-  "confirming": "подтверждается"
+  "confirming": "подтверждается",
+  "Riddles": "Загадки",
+  "Rhythm": "Ритм",
+  "Rune path": "Путь рун",
+  "Rune song": "Песнь рун"
 }

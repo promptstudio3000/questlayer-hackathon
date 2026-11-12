@@ -1223,7 +1223,6 @@
   "Open to try again.": "फिर से कोशिश करने के लिए खोलो।",
   "Open today's map first.": "पहले आज का मानचित्र खोलें।",
   "Open until {0}": "{0} तक खुला",
-  "Open vault": "तिजोरी खोलो",
   "Open your first chest": "अपना पहला संदूक खोलो",
   "Open {0}": "{0} खोलें",
   "Opening photo…": "फ़ोटो खुल रही है…",
@@ -3243,5 +3242,9 @@
   "Start the tour": "टूर शुरू करें",
   "Tour done: {0} transactions on NEAR.": "टूर पूरा: NEAR पर {0} लेन-देन।",
   "Tour": "टूर",
-  "confirming": "पुष्टि हो रही है"
+  "confirming": "पुष्टि हो रही है",
+  "Riddles": "पहेलियाँ",
+  "Rhythm": "ताल",
+  "Rune path": "रून पथ",
+  "Rune song": "रून गीत"
 }

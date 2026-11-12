@@ -2,8 +2,8 @@
 // server for an encounter (distance, GPS and speed are checked there), shows
 // the animated 3D model and the offer menu, and hands off to the NPC talk
 // sheet or the monster challenge when those slices are present.
-import { lazy, Suspense, useEffect, useRef, useState, type ComponentType } from "react";
-import { MapPin } from "@phosphor-icons/react";
+import { lazy, Suspense, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { Brain, MapPin, MusicNotes, Path, Question, Sword } from "@phosphor-icons/react";
 import { Dialog } from "./Dialog";
 import { api, ApiError } from "./api";
 import type { ActorEncounter, ActorView } from "./actor-types";
@@ -46,6 +46,14 @@ const PROBLEM: Record<string, string> = {
   get ENCOUNTER_LIMIT() { return tr("Take a short break before meeting more characters."); },
   get WORLD_PAUSED() { return tr("Operators paused today's world for a moment. Your progress is safe."); },
   get ACTORS_DISABLED() { return tr("Characters are not available on this server."); },
+};
+
+const FORMAT_ICON: Record<ChallengeFormat, ReactNode> = {
+  quiz: <Question size={22} weight="bold" aria-hidden="true" />,
+  rhythm: <MusicNotes size={22} weight="bold" aria-hidden="true" />,
+  trace: <Path size={22} weight="bold" aria-hidden="true" />,
+  memory: <Brain size={22} weight="bold" aria-hidden="true" />,
+  duel: <Sword size={22} weight="bold" aria-hidden="true" />,
 };
 
 export function ActorSheet({
@@ -201,15 +209,16 @@ export function ActorSheet({
                       <button
                         className="primary-button"
                         disabled={!canChallenge}
+                        title={picked ? FORMAT_COPY[picked].hint : undefined}
+                        aria-label={picked ? `${FORMAT_COPY[picked].label}. ${FORMAT_COPY[picked].hint}` : undefined}
                         onClick={() => {
                           if (!canChallenge) return;
                           setFormat(picked);
                           setHandoff(isBoss ? "boss" : "challenge");
                         }}
                       >
-                        {offer.label}
+                        {picked ? <>{FORMAT_ICON[picked]}<span>{FORMAT_COPY[picked].short}</span></> : offer.label}
                       </button>
-                      {picked && <small className="actor-offer-hint">{FORMAT_COPY[picked].hint}</small>}
                       {!canChallenge && <small>{tr("Opens in an upcoming update.")}</small>}
                     </li>
                   );

@@ -1223,7 +1223,6 @@
   "Open to try again.": "Otevři a zkus to znovu.",
   "Open today's map first.": "Nejdřív otevři dnešní mapu.",
   "Open until {0}": "Otevřeno do {0}",
-  "Open vault": "Otevřít trezor",
   "Open your first chest": "Otevři svou první truhlu",
   "Open {0}": "Otevřít {0}",
   "Opening photo…": "Otevírám fotku…",
@@ -3243,5 +3242,9 @@
   "Start the tour": "Začít prohlídku",
   "Tour done: {0} transactions on NEAR.": "Prohlídka hotová: {0} transakcí na NEAR.",
   "Tour": "Prohlídka",
-  "confirming": "potvrzuje se"
+  "confirming": "potvrzuje se",
+  "Riddles": "Hádanky",
+  "Rhythm": "Rytmus",
+  "Rune path": "Runová stezka",
+  "Rune song": "Runová píseň"
 }

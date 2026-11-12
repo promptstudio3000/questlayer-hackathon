@@ -224,6 +224,10 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
   const shownAbove = new Set(reply && (flow === "greeting" || flow === "choices") ? questOffers.slice(0, 2).map((offer) => offer.id) : []);
   const moreOffers = (reply?.menu || []).filter((offer) => !shownAbove.has(offer.id));
   const openServices = (next: Tab) => { setTab(next); setDetailsOpen(true); };
+  // Nothing to choose in the greeting (traders, keepers): their counter is
+  // open right away, without a Continue step.
+  const direct = !!reply && !questOffers.length && !active.length;
+  useEffect(() => { if (direct) openServices(vault ? "vault" : "talk"); }, [direct]);
   const offerSteps = selectedOffer && Array.isArray(selectedOffer.terms.steps)
     ? selectedOffer.terms.steps.filter((step): step is { title: string } => !!step && typeof step === "object" && typeof step.title === "string")
     : [];
@@ -253,7 +257,6 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
         </p>
 
         {reply && flow === "greeting" && (ready.length > 0 || active.length > 0) && <button className="primary-button npc-continue" disabled={busy} onClick={() => openServices("tasks")}>{tr("Your tasks")}<ArrowRight aria-hidden="true" /></button>}
-        {reply && flow === "greeting" && !questOffers.length && !active.length && <button className="primary-button npc-continue" disabled={busy} onClick={() => openServices(vault ? "vault" : "talk")}>{vault ? tr("Open vault") : tr("Continue")}<ArrowRight aria-hidden="true" /></button>}
         {reply && (flow === "greeting" || flow === "choices") && questOffers.length > 0 && <section className="npc-story-step" aria-label={tr("Choose a quest")}>
           {questOffers.slice(0, 2).map((offer) => <button key={offer.id} className="npc-choice" disabled={busy} onClick={() => accept(offer)}>
             <span>{offer.label}</span><small>{offerMeta(offer)}</small><ArrowRight aria-hidden="true" />

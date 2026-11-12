@@ -1223,7 +1223,6 @@
   "Open to try again.": "打开以重试。",
   "Open today's map first.": "请先打开今天的地图。",
   "Open until {0}": "开放至 {0}",
-  "Open vault": "打开金库",
   "Open your first chest": "打开你的第一个宝箱",
   "Open {0}": "打开{0}",
   "Opening photo…": "正在打开照片…",
@@ -3243,5 +3242,9 @@
   "Start the tour": "开始导览",
   "Tour done: {0} transactions on NEAR.": "导览完成：NEAR 上 {0} 笔交易。",
   "Tour": "导览",
-  "confirming": "确认中"
+  "confirming": "确认中",
+  "Riddles": "谜题",
+  "Rhythm": "节奏",
+  "Rune path": "符文之路",
+  "Rune song": "符文之歌"
 }

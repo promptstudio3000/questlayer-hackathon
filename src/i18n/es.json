@@ -1223,7 +1223,6 @@
   "Open to try again.": "Abre para intentarlo de nuevo.",
   "Open today's map first.": "Abre primero el mapa de hoy.",
   "Open until {0}": "Abierta hasta {0}",
-  "Open vault": "Abrir la bóveda",
   "Open your first chest": "Abre tu primer cofre",
   "Open {0}": "Abrir {0}",
   "Opening photo…": "Abriendo foto…",
@@ -3243,5 +3242,9 @@
   "Start the tour": "Empezar el recorrido",
   "Tour done: {0} transactions on NEAR.": "Recorrido terminado: {0} transacciones en NEAR.",
   "Tour": "Recorrido",
-  "confirming": "confirmando"
+  "confirming": "confirmando",
+  "Riddles": "Acertijos",
+  "Rhythm": "Ritmo",
+  "Rune path": "Senda rúnica",
+  "Rune song": "Canto rúnico"
 }

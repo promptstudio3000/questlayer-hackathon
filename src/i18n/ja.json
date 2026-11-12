@@ -1223,7 +1223,6 @@
   "Open to try again.": "開いてもう一度試す。",
   "Open today's map first.": "まず今日のマップを開いてください。",
   "Open until {0}": "{0}まで募集",
-  "Open vault": "金庫を開く",
   "Open your first chest": "最初の宝箱を開けよう",
   "Open {0}": "{0}を開く",
   "Opening photo…": "写真を開いています…",
@@ -3243,5 +3242,9 @@
   "Start the tour": "ツアーを始める",
   "Tour done: {0} transactions on NEAR.": "ツアー完了：NEAR で {0} 件の取引。",
   "Tour": "ツアー",
-  "confirming": "確認中"
+  "confirming": "確認中",
+  "Riddles": "なぞなぞ",
+  "Rhythm": "リズム",
+  "Rune path": "ルーンの道",
+  "Rune song": "ルーンの歌"
 }

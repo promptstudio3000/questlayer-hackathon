@@ -1223,7 +1223,6 @@
   "Open to try again.": "Öffnen, um es erneut zu versuchen.",
   "Open today's map first.": "Öffne zuerst die heutige Karte.",
   "Open until {0}": "Offen bis {0}",
-  "Open vault": "Tresor öffnen",
   "Open your first chest": "Öffne deine erste Truhe",
   "Open {0}": "{0} öffnen",
   "Opening photo…": "Foto wird geöffnet…",
@@ -3243,5 +3242,9 @@
   "Start the tour": "Tour starten",
   "Tour done: {0} transactions on NEAR.": "Tour fertig: {0} Transaktionen auf NEAR.",
   "Tour": "Tour",
-  "confirming": "wird bestätigt"
+  "confirming": "wird bestätigt",
+  "Riddles": "Rätsel",
+  "Rhythm": "Rhythmus",
+  "Rune path": "Runenpfad",
+  "Rune song": "Runenlied"
 }
