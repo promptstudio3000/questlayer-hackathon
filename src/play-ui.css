@@ -1,34 +1,4 @@
 /* Player-first surfaces share the semantic palette specified in DESIGN.md. */
-.adventure-return {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  min-height: 56px;
-  padding: 8px 0;
-  margin-bottom: 12px;
-  background: var(--surface);
-  color: var(--action);
-  text-align: left;
-  font-size: 16px;
-  line-height: 1.5;
-}
-.adventure-return > svg {
-  flex-shrink: 0;
-}
-.adventure-return span {
-  min-width: 0;
-  overflow-wrap: anywhere;
-}
-.adventure-return strong,
-.adventure-return small {
-  display: block;
-}
-.adventure-return small {
-  color: var(--ink-secondary);
-  font-size: 14px;
-  line-height: 1.45;
-}
 .adventure-notice {
   display: flex;
   width: 100%;
@@ -90,9 +60,7 @@
   line-height: 1.45;
 }
 .play-native button,
-.play-menu button,
 .play-economy button,
-.play-switch button,
 .play-entry {
   min-height: 48px;
   font-size: 16px;
@@ -152,30 +120,6 @@
   line-height: 1.45;
   color: var(--ink-secondary);
   margin: 8px 0 16px;
-}
-.play-switch {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  padding: 4px;
-  background: var(--surface-soft);
-  border-radius: 14px;
-  gap: 4px;
-  margin-bottom: 16px;
-}
-.play-switch button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  padding: 8px 4px;
-  background: transparent;
-  color: var(--ink-secondary);
-  border-radius: 10px;
-}
-.play-switch button[aria-pressed="true"] {
-  background: var(--action);
-  color: #fff;
 }
 .play-entry {
   display: flex;
@@ -467,8 +411,7 @@
   overflow-wrap: anywhere;
 }
 .play-native :focus-visible,
-.play-details :focus-visible,
-.play-switch :focus-visible {
+.play-details :focus-visible {
   outline: 3px solid var(--action);
   outline-offset: 3px;
 }
@@ -486,16 +429,6 @@
 .main-panel .zone-card {
   min-height: 112px;
 }
-.main-panel .zone-info h3 {
-  font-size: 18px;
-  line-height: 1.25;
-}
-.main-panel .zone-info small,
-.main-panel .zone-rewards,
-.main-panel .zone-info .badge {
-  font-size: 14px;
-  line-height: 1.4;
-}
 .main-panel .coverage-note {
   font-size: 14px;
   line-height: 1.5;
@@ -507,17 +440,6 @@
   align-items: center;
 }
 .coverage-note p {
-  font-size: 14px;
-}
-.main-panel .zone-hero {
-  height: 100px;
-  margin-bottom: 16px;
-}
-.main-panel .zone-hero .ghost-art {
-  height: 88px;
-}
-.main-panel .back-link {
-  min-height: 48px;
   font-size: 14px;
 }
 .app-shell .icon-button {
@@ -546,12 +468,6 @@
   }
 }
 @media (max-width: 380px) {
-  .play-switch button {
-    font-size: 14px;
-  }
-  .play-switch button svg {
-    width: 18px;
-  }
   .economy-grid {
     gap: 8px;
   }
@@ -593,9 +509,6 @@
 }
 .play-native > .play-toolbar {
   margin-top: 4px;
-}
-.main-panel .play-native .back-link {
-  margin-bottom: 0;
 }
 .main-panel .quest-detail {
   margin-top: 0;
@@ -764,16 +677,6 @@
 }
 
 /* Shared map/list object captions retain the operational text scale. */
-.main-panel .zone-rewards {
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.main-panel .zone-rewards,
-.main-panel .zone-rewards > span {
-  font-size: 14px;
-  line-height: 1.45;
-  color: var(--ink-secondary, #665577);
-}
 .map-legend {
   font-size: 12px;
   color: var(--ink-secondary, #665577);
@@ -787,3 +690,8 @@
   align-items: center;
   gap: 6px;
 }
+
+/* Settings → Account and devices: the player's NEAR account and wallet words. */
+.wallet-account code { display: block; font-size: 16px; line-height: 1.4; overflow-wrap: anywhere; color: var(--ink); }
+.wallet-account-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.wallet-account-actions .secondary-button { flex: 1 1 140px; }

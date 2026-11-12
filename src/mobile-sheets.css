@@ -33,12 +33,6 @@
   }
 
   /* The map chips sit just under the shorter header. */
-  .map-top-chip {
-    top: calc(66px + env(safe-area-inset-top));
-  }
-  .map-controls.map-toolbar {
-    top: calc(66px + env(safe-area-inset-top));
-  }
 
   /* ---- Dialogs: one frame and one padding, not two ------------------ */
   .game-dialog {

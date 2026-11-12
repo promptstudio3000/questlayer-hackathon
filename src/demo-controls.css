@@ -9,14 +9,12 @@
   border: 1px solid var(--control-border); color: var(--ink);
   box-shadow: 0 3px 10px #1a03352b;
 }
-.demo-pad-grid { display: flex; gap: 4px; }
-.demo-pad-grid button, .demo-pad-min, .demo-pad-open {
+.demo-pad-min, .demo-pad-open {
   display: grid; place-items: center; flex: 0 0 48px;
   width: 48px; height: 48px; padding: 0; border-radius: 12px;
   border: 1px solid var(--control-border); background: var(--surface); color: var(--ink);
   touch-action: none; -webkit-tap-highlight-color: transparent;
 }
-.demo-pad-grid button[aria-pressed="true"] { background: var(--action); color: var(--on-action); }
 .demo-pad-min { border: 0; color: var(--ink-secondary); }
 .demo-pad-min:hover { background: var(--surface-soft); }
 .demo-pad-open { border-radius: 50%; color: var(--action); }

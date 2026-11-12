@@ -103,6 +103,14 @@ const PLACE = {
   created_at: "1",
   mutation_id: `record_${UUID}`,
 };
+const RATING = {
+  schema: "questlayer.rating/1",
+  quest_id: "river-walk",
+  registry: "creators.testnet",
+  stars: "4",
+  updated_at: "1",
+  mutation_id: `rating_${UUID}`,
+};
 const socialSet = (section, value, sender = SENDER) => ({
   data: { [sender]: { questlayer: { [section]: value } } },
 });
@@ -195,6 +203,11 @@ test("allowlisted calls normalize to a sponsored call with string amounts", asyn
     [
       CONTRACTS.social,
       call("set", socialSet("places", { [PLACE_ID]: PLACE }), 1n),
+      true,
+    ],
+    [
+      CONTRACTS.social,
+      call("set", socialSet("ratings", { "river-walk": RATING }), 1n),
       true,
     ],
   ];
@@ -778,6 +791,9 @@ test("SocialDB writes are sponsored only for the game's own records and size", a
     socialSet("notes", { [NOTE_ID]: { ...NOTE, text: { nested: "x".repeat(100) } } }),
     socialSet("places", { [PLACE_ID]: { ...PLACE, schema: "other/1" } }),
     socialSet("places", { [PLACE_ID]: { ...PLACE, mutation_id: 1 } }),
+    socialSet("ratings", { "river-walk": { ...RATING, stars: "6" } }),
+    socialSet("ratings", { "other-quest": RATING }),
+    socialSet("ratings", { "river-walk": { ...RATING, comment: "text" } }),
   ])
     await rejects(social(args), "RELAY_SOCIAL_SHAPE");
   // A record of the right shape, padded past the game's largest real record.

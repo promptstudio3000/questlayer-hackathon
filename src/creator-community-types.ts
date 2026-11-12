@@ -142,6 +142,10 @@ export type PublicCreatorQuest = {
   place?: CreatorPlace;
   /** Paid access price in yoctoNEAR; absent means free. */
   price?: string;
+  /** Header photo the creator attached (reviewed with the revision). */
+  photo?: string;
+  /** Average stars from explorers who started it; absent on older hosts. */
+  rating?: QuestRatingSummary;
   id: string;
   revision: number;
   title: string;
@@ -175,6 +179,7 @@ export type OwnedCreatorQuest = {
     requirement?: CreatorObservationRequirement;
     place?: CreatorPlace;
     price?: string;
+    photo?: string;
   };
   lockedXp: number;
   openParticipations: number;
@@ -191,9 +196,33 @@ export type CreatorParticipation = {
     description: string;
     requirement?: CreatorObservationRequirement;
     place?: CreatorPlace;
+    photo?: string;
   };
   rewardStatus: "not-configured";
   creator?: { id: string; displayName: string | null };
+};
+export type QuestRatingSummary = {
+  average: number | null;
+  count: number;
+  comments: number;
+};
+export type QuestFeedback = {
+  domain: "demo";
+  questId: string;
+  rating: QuestRatingSummary & { mine: number | null; canRate: boolean };
+  comments: Array<{
+    id: string;
+    body: string;
+    at: number;
+    author: { id: string; displayName: string; look?: PublicLook; creator: boolean };
+    canRemove: boolean;
+  }>;
+};
+/** Where "Go" takes the explorer on the map. */
+export type QuestMapTarget = {
+  questId: string;
+  title: string;
+  points: Array<{ lat: number; lng: number }>;
 };
 export type CreatorPlaceTemplate = "visit" | "trail" | "chest";
 export type CreatorPlace = {

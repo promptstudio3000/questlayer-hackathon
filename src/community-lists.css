@@ -189,7 +189,6 @@
 }
 .cl-avatar > * { position: absolute; }
 .cl-avatar .starter-player,
-.cl-avatar .wearable-starter,
 .cl-avatar > img,
 .cl-avatar > svg {
   position: relative;
@@ -208,7 +207,6 @@
   font-weight: 700;
 }
 .cl-empty { margin: 16px 0; color: var(--ink-secondary, #5b4d78); font-size: 14px; }
-.cl-section-title { margin: 14px 0 8px; font-size: 14px; color: var(--ink-secondary, #5b4d78); text-transform: uppercase; letter-spacing: 0.04em; }
 
 /* Creators */
 .cl-creator {
@@ -221,14 +219,6 @@
   border-radius: var(--radius-item, 16px);
   background: var(--surface-raised, #fff);
 }
-.cl-creator-open {
-  display: contents;
-  color: inherit;
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-}
-.cl-creator-open > button { all: unset; }
 .cl-creator-main { display: grid; gap: 2px; min-width: 0; padding: 0; border: 0; background: none; color: inherit; text-align: start; font: inherit; cursor: pointer; }
 .cl-creator-main strong { display: flex; align-items: center; gap: 6px; font-size: 16px; }
 .cl-creator-main strong span:first-child { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -305,6 +295,4 @@
 .cl-earn strong { font-size: 15px; }
 .cl-earn ul { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
 .cl-earn li { display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px; background: var(--surface-raised, #fff); font-size: 13px; }
-
-.market-poster { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .market-poster-line { display: flex; align-items: center; gap: 6px; margin: 8px 0 2px; font-weight: 600; }

@@ -363,7 +363,12 @@ const OPERATION_LABELS: Record<string, string> = {
   "Restore this account with a passkey": "Recover account",
   revokeKey: "Remove device key",
   revokeSessions: "Sign out other game sessions",
+  exportWallet: "Create wallet words",
 };
+// How long one approval may stay open. Writing twelve words down takes longer
+// than answering Yes or No, so only that flow gets more time.
+export const approvalTtl = (method: unknown) =>
+  method === "exportWallet" ? 900000 : 180000;
 function escrowLines(
   msgText: unknown,
   amount: unknown,

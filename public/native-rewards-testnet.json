@@ -178,7 +178,7 @@
     "close_world_day"
   ],
   "globalRewards": {
-    "enabled": false,
+    "enabled": true,
     "rewardsCodeHash": "5Ci3cxE7KL9QnNRomx1ddrajeDKGdbwQygX5DadH1q1h",
     "qgoldContractId": "questlayer-qgold-vault-20261104.testnet",
     "qgoldCodeHash": "4iWCUy9qvQ9B57zVdqncQAycVP21JuDNYjVreBYiFAgG",

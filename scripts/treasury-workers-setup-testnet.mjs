@@ -29,7 +29,7 @@ import { readFileSync, writeFileSync, existsSync, statSync, mkdirSync, renameSyn
 import { homedir } from "node:os";
 import assert from "node:assert/strict";
 import { Account, KeyPair, KeyPairSigner, actions } from "near-api-js";
-import { createNearProvider } from "../server/near-provider.mjs";
+import { createNearProvider, rpcErrorText } from "../server/near-provider.mjs";
 import { DAO_FACTORY, DAO_NAME } from "../server/native/treasury-dao.mjs";
 
 const args = process.argv.slice(2);
@@ -77,7 +77,8 @@ async function balance(accountId) {
   try {
     return BigInt((await provider.viewAccount({ accountId })).amount);
   } catch (e) {
-    if (/does not exist|unknown_account/i.test(String(e?.message || e) + JSON.stringify(e?.data || ""))) return null;
+    // The failover provider wraps the per-RPC errors in an AggregateError.
+    if (/does not exist|unknown_account/i.test(rpcErrorText(e) + JSON.stringify(e?.data || ""))) return null;
     throw e;
   }
 }

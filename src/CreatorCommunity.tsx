@@ -10,6 +10,7 @@ import {
 import {
   ArrowClockwise,
   BookmarkSimple,
+  Camera,
   Check,
   Eye,
   EyeSlash,
@@ -18,8 +19,12 @@ import {
   UserPlus,
   UsersThree,
   Flag,
+  Globe,
   Info,
+  MapPin,
+  Path,
   ShieldSlash,
+  Target,
   X,
 } from "@phosphor-icons/react";
 import { ArrowRight, ArrowLeft } from "./dir-icons";
@@ -29,10 +34,13 @@ import {
   CreatorSupport,
   type CreatorMoneyBridge,
 } from "./CreatorMoney";
-import { meters } from "./api";
+import { api, ApiError, meters } from "./api";
 import { parseAccessPrice, nearText } from "./creator-money-quote";
 import { formatNativeNear } from "./native-amounts";
 import { Dialog } from "./Dialog";
+import { InfoTip } from "./InfoTip";
+import { mapKitUrl } from "./map-kit";
+import { QuestFeedback, questPhotoData } from "./QuestFeedback";
 import { useFormDraft } from "./useFormDraft";
 import { AiQuestDraft } from "./AiQuestDraft";
 import {
@@ -61,6 +69,7 @@ import {
   type CreatorXpTable,
   type OwnedCreatorQuest,
   type PublicCreatorQuest,
+  type QuestMapTarget,
 } from "./creator-community-types";
 import type { Player } from "./types";
 import {
@@ -68,10 +77,12 @@ import {
   CommunityRow,
   ExplorerAvatar,
   FilterChips,
+  Stars,
   XpReward,
   type ArtKind,
 } from "./CommunityCards";
 import "./creator-community.css";
+import "./quest-detail.css";
 import { tr } from "./i18n";
 
 export type { CreatorCommunityView } from "./creator-community-types";
@@ -86,6 +97,10 @@ type Props = {
   /** Where the explorer stands now, for "Near you". Never sent to the server. */
   position?: { lat: number; lng: number };
   money?: CreatorMoneyBridge;
+  /** "Go" on a quest with a place: show it on the map and point the way. */
+  onGo?: (target: QuestMapTarget) => void;
+  /** Keeps a saved rating on chain as well; runs in the background. */
+  onRate?: (questId: string, stars: number) => void;
   /**
    * Community screen tab hosting this component. "quests" shows quest browsing
    * and started quests; "creators" shows creators and your own creations.
@@ -328,6 +343,8 @@ function CreatorCommunitySession({
   client: injected,
   position,
   money,
+  onGo,
+  onRate,
   section: screenSection,
 }: Props) {
   const client = useMemo(
@@ -581,7 +598,7 @@ function CreatorCommunitySession({
     >
       <h2 className="sr-only" data-creator-heading tabIndex={-1}>
         {tr("Stories from explorers")}</h2>
-      <FilterChips
+      {view.page !== "quest" && <FilterChips
         label={tr("Creator community section")}
         options={chips}
         value={chipValue}
@@ -602,7 +619,7 @@ function CreatorCommunitySession({
         >
           <ArrowClockwise size={20} />
         </button>
-      </FilterChips>
+      </FilterChips>}
       {message && (
         <p className="creator-message" role="status">
           {message}
@@ -780,6 +797,9 @@ function CreatorCommunitySession({
                 onSafety={setSafety}
                 money={money}
                 position={position}
+                client={client}
+                onGo={onGo}
+                onRate={onRate}
               />
             )}
             {view.page === "mine" && (
@@ -1028,6 +1048,8 @@ function QuestCards({
               author={quest.creator.displayName}
               look={quest.creator.look}
               meta={kindLabel(art)}
+              rating={quest.rating}
+              photo={quest.photo}
               where={
                 distance !== null
                   ? tr("{0} away", { 0: distanceText(distance) })
@@ -1289,6 +1311,40 @@ function Progression({ me }: { me: CreatorMe }) {
     </details>
   );
 }
+/** The quest type art as a big tile, or the creator's own photo. */
+function QuestHero({
+  photo,
+  art,
+  onBack,
+  backLabel,
+}: {
+  photo?: string;
+  art: ArtKind;
+  onBack: () => void;
+  backLabel: string;
+}) {
+  const [broken, setBroken] = useState(false);
+  const file = art === "story" ? "community" : art;
+  return (
+    <div className={`qd-hero${photo && !broken ? " has-photo" : ""}`}>
+      {photo && !broken ? (
+        <img className="qd-hero-photo" src={photo} alt="" onError={() => setBroken(true)} />
+      ) : (
+        <img className="qd-hero-art" src={mapKitUrl(`quests/${file}.png`)} width={96} height={96} alt="" draggable={false} />
+      )}
+      <button type="button" className="qd-back" aria-label={backLabel} title={backLabel} onClick={onBack}>
+        <ArrowLeft size={22} aria-hidden="true" />
+      </button>
+      <span className="qd-kind">{kindLabel(art)}</span>
+    </div>
+  );
+}
+
+/**
+ * One quest, one goal, one button (Lubos, 12 Nov 2026): photo, title, who made
+ * it, what to do, and "Go". The description folds; the rules live under (i).
+ * Once started the same screen is the progress: go there, answer, done.
+ */
 function QuestDetail({
   playerId,
   data,
@@ -1298,6 +1354,9 @@ function QuestDetail({
   onSafety,
   money,
   position,
+  client,
+  onGo,
+  onRate,
 }: {
   playerId: string;
   data: Loaded;
@@ -1307,124 +1366,143 @@ function QuestDetail({
   onSafety: (action: SafetyAction) => void;
   money?: CreatorMoneyBridge;
   position?: Point;
+  client: CreatorClient;
+  onGo?: (target: QuestMapTarget) => void;
+  /** Keeps a saved rating on chain as well; runs in the background. */
+  onRate?: (questId: string, stars: number) => void;
 }) {
   const quest = data.quest,
     part = data.participation;
-  const place = part?.content.place || quest?.place;
-  const title = part?.content.title || quest?.title || tr("Your quest");
+  const content = part?.content;
+  const questId = part?.questId || quest?.id || "";
+  const place = content?.place || quest?.place;
+  const title = content?.title || quest?.title || tr("Your quest");
+  const description = content?.description || quest?.description || "";
+  const requirement = content?.requirement || quest?.requirement;
+  const photo = content?.photo || quest?.photo;
   const reportTarget = creatorReportTarget(quest, part);
   const creator = part?.creator || quest?.creator;
+  const own = quest?.creator.id === playerId;
+  const art: ArtKind = place?.template ?? "story";
+  const distance = placeDistance(place, position);
+  const target: QuestMapTarget | null = place?.points.length
+    ? { questId, title, points: place.points }
+    : null;
   // A paid quest starts only after the unlock below; the server enforces it too.
   const [unlocked, setUnlocked] = useState<boolean | null>(null);
-  const needsUnlock = !!quest?.price && !!money && unlocked !== true;
+  const needsUnlock = !!quest?.price && !!money && unlocked !== true && !part;
+  const [rating, setRating] = useState(quest?.rating ?? null);
+  const [more, setMore] = useState(false);
+  const long = description.length > 140 || description.includes("\n");
+  const revision = part?.revision ?? quest?.revision;
   return (
-    <>
-      <Back
-        onClick={() =>
-          navigate({ page: part ? "participations" : "community" })
-        }
-      >
-        {part ? tr("Your started quests") : tr("Creator quests")}
-      </Back>
-      <h3>{title}</h3>
-      {quest && (
-        <button
-          className="text-button"
-          onClick={() =>
-            navigate({ page: "creator", creatorId: quest.creator.id })
-          }
-        >
-          {tr("By")}{" "}{quest.creator.displayName}
-          <ArrowRight size={20} />
-        </button>
+    <article className="qd">
+      <QuestHero
+        photo={photo}
+        art={art}
+        backLabel={part && !quest ? tr("Your started quests") : tr("Creator quests")}
+        onBack={() => navigate({ page: part && !quest ? "participations" : "community" })}
+      />
+      <div className="qd-head">
+        <h3>{title}</h3>
+        <InfoTip label={title}>
+          {quest?.price
+            ? tr("Paid unlock {0} NEAR, supports the creator", { 0: nearText(quest.price) })
+            : tr("Free quest")}
+          {" · "}{tr("Revision")}{" "}{revision}
+          {". "}{tr("A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.")}
+        </InfoTip>
+      </div>
+      <div className="qd-meta">
+        {creator && (
+          <button
+            type="button"
+            className="qd-by"
+            disabled={!quest}
+            onClick={() => quest && navigate({ page: "creator", creatorId: quest.creator.id })}
+          >
+            <ExplorerAvatar look={quest?.creator.look} size={24} />
+            <span>{creator.displayName || tr("Creator")}</span>
+          </button>
+        )}
+        <Stars rating={rating} />
+      </div>
+      <ul className="qd-facts">
+        {distance !== null && (
+          <li><MapPin size={16} weight="fill" aria-hidden="true" />{distanceText(distance)}</li>
+        )}
+        {place?.template === "trail" && (
+          <li><Path size={16} weight="bold" aria-hidden="true" />{tr("{0} stops · {1} walk", { 0: place.points.length, 1: distanceText(trailLength(place.points)) })}</li>
+        )}
+        {!place && <li><Globe size={16} weight="bold" aria-hidden="true" />{tr("Anywhere")}</li>}
+        <li className={quest?.price ? "" : "qd-free"}>
+          {quest?.price ? `${nearText(quest.price)} NEAR` : tr("Free")}
+        </li>
+      </ul>
+      {requirement && (
+        <p className="qd-goal">
+          <Target size={22} weight="fill" aria-hidden="true" />
+          <span>{requirement.prompt}</span>
+        </p>
       )}
-      {place && <PlaceSummary place={place} from={position} />}
-      {part ? (
-        <article className="creator-accepted">
-          <span className="creator-state">{statusName(part.state)}</span>
-          <h4>{tr("Your accepted instructions")}</h4>
-          <p className="creator-instructions">{part.content.description}</p>
-          <p className="creator-hint">
-            {tr("Revision")}{" "}{part.revision} · {statusName(part.questState)}
-            {quest && quest.revision !== part.revision
-              ? tr(" · Current public revision is {0}; your accepted version stays unchanged.", { 0: quest.revision })
-              : ""}
-          </p>
-          {data.completion && (
-            <CreatorCompletionSection
-              state={data.completion}
-              playerId={playerId}
-              busy={busy}
-              act={act}
-            />
+      {description && (
+        <div className={`qd-desc${long && !more ? " is-folded" : ""}`}>
+          <p id="qd-desc-text">{description}</p>
+          {long && (
+            <button type="button" className="text-button" aria-expanded={more} aria-controls="qd-desc-text" onClick={() => setMore((v) => !v)}>
+              {more ? tr("Less") : tr("More")}
+            </button>
           )}
-          <p>
-            {part.state === "resolved"
-              ? tr("Independent completion review is recorded. No XP, item or QGOLD reward is configured for this quest.")
-              : tr("Your start is saved. Completion needs independent review; the author cannot confirm it for you. No XP, item or QGOLD reward is configured.")}
-          </p>
-        </article>
+        </div>
+      )}
+      {part ? (
+        <QuestProgress
+          part={part}
+          state={data.completion}
+          playerId={playerId}
+          busy={busy}
+          act={act}
+          onMap={target && onGo ? () => onGo(target) : undefined}
+        />
+      ) : own ? (
+        <button className="secondary-button qd-cta" onClick={() => navigate({ page: "edit", questId })}>
+          <PencilSimple size={20} />{tr("Manage your quest")}
+        </button>
       ) : (
         quest && (
           <>
-            <p className="creator-instructions">{quest.description}</p>
-            <p className="creator-hint">
-              {quest.price
-                ? tr("Paid unlock {0} NEAR, supports the creator", { 0: nearText(quest.price) })
-                : tr("Free quest")}{" "}
-              {tr("· reviewed revision")}{" "}{quest.revision}{tr(". No XP, item or QGOLD reward is configured. Starting saves these instructions; it does not prove a physical visit.")}</p>
-            {quest.requirement && (
-              <div className="creator-quote">
-                <h4>{tr("Declared observation requirement")}</h4>
-                <p>{quest.requirement.prompt}</p>
-                <p className="creator-hint">
-                  {tr("Policy")}{" "}{quest.requirement.policyVersion}{tr(": submit private text for independent review, with up to 3 attempts. A third rejection resolves participation as not completed. No GPS or physical visit is verified. No reward is configured. Accepted requirements and evidence stay available after closure or blocking.")}</p>
-              </div>
-            )}
-            {quest.creator.id === playerId ? (
-              <button
-                className="secondary-button"
-                onClick={() => navigate({ page: "edit", questId: quest.id })}
-              >
-                {tr("Manage your quest")}{" "}<PencilSimple size={20} />
-              </button>
-            ) : (
-              <button
-                className="primary-button"
-                disabled={busy || needsUnlock}
-                onClick={() =>
-                  void act(
-                    `/quests/${idPath(quest.id)}/participation`,
-                    "POST",
-                    {},
-                    tr("Your start is confirmed. The accepted instructions are saved."),
-                  )
-                }
-              >
-                {quest.price ? tr("Start quest") : tr("Start free quest")}{" "}
-                <ArrowRight size={20} />
-              </button>
-            )}
-            {quest.creator.id !== playerId && needsUnlock && (
+            <button
+              className="primary-button qd-cta"
+              disabled={busy || needsUnlock}
+              onClick={() =>
+                void act(
+                  `/quests/${idPath(quest.id)}/participation`,
+                  "POST",
+                  {},
+                  tr("Quest started."),
+                  () => target && onGo?.(target),
+                )
+              }
+            >
+              {tr("Go")}<ArrowRight size={22} />
+            </button>
+            {needsUnlock && (
               <p className="creator-hint" role="status">
-                {unlocked === null
-                  ? tr("Checking your unlock…")
-                  : tr("Unlock this quest below to start it.")}
+                {unlocked === null ? tr("Checking your unlock…") : tr("Unlock this quest below to start it.")}
               </p>
             )}
           </>
         )
       )}
       {money && quest && (
-        <CreatorSupport
-          questId={quest.id}
-          ownQuest={quest.creator.id === playerId}
-          money={money}
-          onAccess={setUnlocked}
-        />
+        <details className="qd-fold" open={needsUnlock || undefined}>
+          <summary>{tr("Support the creator")}</summary>
+          <CreatorSupport questId={quest.id} ownQuest={!!own} money={money} onAccess={setUnlocked} />
+        </details>
       )}
+      {questId && <QuestFeedback client={client} questId={questId} onRated={setRating} onStars={onRate && ((stars) => onRate(questId, stars))} />}
       {reportTarget && (
-        <details className="creator-safety-tools">
+        <details className="qd-fold creator-safety-tools">
           <summary>{tr("Quest safety")}</summary>
           <p className="creator-hint">
             {tr("If a place feels unsafe, stop. Reporting requests private review; blocking hides public content. Neither action completes or cancels an existing quest.")}</p>
@@ -1460,36 +1538,112 @@ function QuestDetail({
           </button>
         </details>
       )}
-    </>
+    </article>
   );
 }
 
-function PlaceSummary({ place, from }: { place: CreatorPlace; from?: Point }) {
-  const template = PLACE_TEMPLATES[place.template];
-  const first = place.points[0];
-  const distance = placeDistance(place, from);
+/**
+ * A started quest as three plain steps: go there, answer, reviewed. The answer
+ * is written right here; sending it is the consent to a private review.
+ */
+function QuestProgress({
+  part,
+  state,
+  playerId,
+  busy,
+  act,
+  onMap,
+}: {
+  part: CreatorParticipation;
+  state?: CreatorCompletionState;
+  playerId: string;
+  busy: boolean;
+  act: Action;
+  onMap?: () => void;
+}) {
+  const draft = useFormDraft({
+    playerId,
+    form: "creator-observation",
+    realm: `demo:creator-observation:${part.questId}:${part.revision}`,
+    fields: { evidence: 1000 },
+    initial: { evidence: "" },
+  });
+  const [error, setError] = useState("");
+  const done = !!state?.receipt || state?.state === "completed";
+  const failed = state?.state === "rejected-final";
+  const pending = state?.state === "pending";
+  const last = state?.attempts.at(-1);
+  const tries = state?.policy?.maxAttempts ?? 3;
+  const mapButton = onMap && (
+    <button type="button" className={`${state?.canSubmit || done || failed || pending ? "secondary-button" : "primary-button"} qd-cta`} onClick={onMap}>
+      <MapPin size={20} weight="fill" aria-hidden="true" />{tr("Show on map")}
+    </button>
+  );
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (busy || !state || !draft.values.evidence.trim()) return;
+    const revision = draft.revision;
+    setError("");
+    void act(
+      `/quests/${idPath(part.questId)}/completion`,
+      "POST",
+      { revision: state.revision, evidence: draft.values.evidence, privateConsent: true },
+      tr("Answer sent. A reviewer will check it."),
+      () => draft.discard(revision),
+      (e) => setError(e.message),
+    );
+  }
   return (
-    <div className="creator-place">
-      <strong>{template.name}</strong>
-      <span>
-        {place.template === "trail"
-          ? tr("{0} stops · {1} walk", { 0: place.points.length, 1: distanceText(trailLength(place.points)) })
-          : tr("One pinned spot")}
-        {distance !== null ? tr(" · start {0} away", { 0: distanceText(distance) }) : ""}
+    <section className="qd-progress" aria-label={tr("Your progress")}>
+      <span className={`qd-state${done ? " is-done" : failed ? " is-failed" : ""}`}>
+        {done ? <Check size={18} weight="bold" aria-hidden="true" /> : null}
+        {done
+          ? tr("Done")
+          : failed
+            ? tr("Not completed")
+            : pending
+              ? tr("Waiting for review")
+              : tr("In progress")}
       </span>
-      {first && (
-        <a
-          className="text-button"
-          href={`https://www.openstreetmap.org/?mlat=${first.lat}&mlon=${first.lng}#map=18/${first.lat}/${first.lng}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {tr("Open the start on a map")}{" "}<ArrowRight size={18} />
-        </a>
+      {!done && !failed && mapButton}
+      {state?.legacy && !done && (
+        <p className="creator-hint">{tr("This quest has no question to answer. Ask the host to close it for you.")}</p>
       )}
-    </div>
+      {state?.state === "rejected" && last?.feedback && (
+        <p className="qd-feedback-note"><b>{tr("Not quite:")}</b>{" "}{last.feedback}</p>
+      )}
+      {failed && last?.feedback && (
+        <p className="qd-feedback-note">{last.feedback}</p>
+      )}
+      {pending && last && <p className="qd-answer">{last.evidence}</p>}
+      {done && last && <p className="qd-answer">{last.evidence}</p>}
+      {state?.canSubmit && (
+        <form className="qd-answer-form" onSubmit={submit}>
+          <textarea
+            aria-label={tr("Your answer")}
+            placeholder={tr("Your answer")}
+            required
+            rows={2}
+            maxLength={state.policy?.maxEvidenceChars ?? 1000}
+            value={draft.values.evidence}
+            readOnly={busy}
+            onChange={(e) => draft.setField("evidence", e.target.value)}
+          />
+          {error && <p role="alert">{error}</p>}
+          <button type="submit" className="primary-button qd-cta" disabled={busy || !draft.values.evidence.trim()}>
+            {busy ? tr("Sending…") : tr("Send answer")}<ArrowRight size={20} />
+          </button>
+          <small className="qd-fine">
+            {tr("Only you and the reviewer see it.")}
+            {state.attempts.length > 0 ? ` ${tr("Try {0} of {1}", { 0: state.attempts.length + 1, 1: tries })}` : ""}
+          </small>
+        </form>
+      )}
+      {state?.receipt && <small className="qd-fine">{tr("Receipt:")}{" "}{state.receipt.id}</small>}
+    </section>
   );
 }
+
 function CreatorSafetyDialog({
   action,
   playerId,
@@ -1535,242 +1689,6 @@ function CreatorSafetyDialog({
             onConfirmed={onConfirmed}
           />
         )}
-      </div>
-    </Dialog>
-  );
-}
-function CreatorCompletionSection({
-  state,
-  playerId,
-  busy,
-  act,
-}: {
-  state: CreatorCompletionState;
-  playerId: string;
-  busy: boolean;
-  act: Action;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <section
-      className="creator-completion"
-      aria-label={tr("Private completion progress")}
-    >
-      <h4>
-        {state.receipt ? tr("Observation completed") : tr("Your completion progress")}
-      </h4>
-      {state.legacy ? (
-        <p>
-          {state.state === "legacy-resolved"
-            ? tr("This legacy participation has been resolved. It has no observation completion receipt and no configured reward. Your instructions remain available.")
-            : tr("This accepted revision has no declared observation requirement. A later author edit cannot add one to your existing start. Ask the host’s completion operator to review this legacy participation; your instructions remain available.")}
-        </p>
-      ) : (
-        <>
-          <p>
-            <strong>{tr("Accepted requirement · revision")}{" "}{state.revision}</strong>
-          </p>
-          <p className="creator-instructions">{state.requirement?.prompt}</p>
-          <p className="creator-hint">
-            {tr("Policy")}{" "}{state.policy?.version}{tr(": private text up to")}{" "}
-            {state.policy?.maxEvidenceChars} {" "}{tr("characters, one pending review at a time, up to")}{" "}{state.policy?.maxAttempts} {" "}{tr("attempts. An independent third rejection resolves the obligation as NOT completed. No evidence expires automatically. Review checks text against the prompt; it does not prove GPS, a physical visit or the path walked. No XP, QGOLD or item reward is configured.")}</p>
-          {state.state === "pending" && (
-            <p role="status">
-              {tr("Your observation is awaiting independent review. Do not send another copy.")}</p>
-          )}
-          {state.state === "rejected" && (
-            <p>
-              {tr("The reviewer requested a correction. Read the private feedback before another attempt.")}</p>
-          )}
-          {state.state === "rejected-final" && (
-            <p>
-              {tr("The third review was rejected. Participation is resolved as NOT completed, with no completion receipt or reward. All submitted text and feedback remain below.")}</p>
-          )}
-          {state.receipt && (
-            <div className="creator-quote">
-              <strong>{tr("Completion confirmed · no reward configured")}</strong>
-              <p>
-                {tr("Reviewed observation completed for accepted revision")}{" "}
-                {state.receipt.revision}. {count(state.receipt.reward.xp)} {" "}{tr("XP ·")}{" "}
-                {count(state.receipt.reward.gold)} {" "}{tr("QGOLD · no item. This receipt does not establish a physical visit.")}</p>
-              <small>{tr("Receipt:")}{" "}{state.receipt.id}</small>
-            </div>
-          )}
-          {state.canSubmit && (
-            <button
-              className="primary-button"
-              disabled={busy}
-              onClick={() => setOpen(true)}
-            >
-              {tr("Write private observation")}{" "}<PencilSimple size={20} />
-            </button>
-          )}
-          {state.attempts.map((a) => (
-            <details className="creator-safety-tools" key={a.id}>
-              <summary>
-                {tr("Attempt")}{" "}{a.attempt} ·{" "}
-                {a.state === "pending"
-                  ? tr("Awaiting review")
-                  : a.state === "accepted"
-                    ? tr("Accepted")
-                    : tr("Rejected")}
-              </summary>
-              <p className="creator-instructions">{a.evidence}</p>
-              {a.feedback && (
-                <>
-                  <strong>{tr("Private review feedback")}</strong>
-                  <p className="creator-instructions">{a.feedback}</p>
-                </>
-              )}
-            </details>
-          ))}
-        </>
-      )}
-      <details className="creator-safety-tools">
-        <summary>{tr("Help with this participation")}</summary>
-        <p>
-          {tr("For a pending, legacy or disputed review, give the host's completion operator this reference. No public support or appeal channel is configured in this local slice; this reference does not send a message or settle your participation.")}</p>
-        <p className="creator-instructions">
-          {tr("Quest:")}{" "}{state.questId}
-          <br />
-          {tr("Accepted revision:")}{" "}{state.revision}
-          <br />
-          {tr("Explorer:")}{" "}{playerId}
-        </p>
-      </details>
-      {open && (
-        <CreatorEvidenceDialog
-          state={state}
-          playerId={playerId}
-          busy={busy}
-          act={act}
-          onClose={() => setOpen(false)}
-        />
-      )}
-    </section>
-  );
-}
-function CreatorEvidenceDialog({
-  state,
-  playerId,
-  busy,
-  act,
-  onClose,
-}: {
-  state: CreatorCompletionState;
-  playerId: string;
-  busy: boolean;
-  act: Action;
-  onClose: () => void;
-}) {
-  const draft = useFormDraft({
-    playerId,
-    form: "creator-observation",
-    realm: `demo:creator-observation:${state.questId}:${state.revision}`,
-    fields: { evidence: 1000 },
-    initial: { evidence: "" },
-  });
-  const [consent, setConsent] = useState(false),
-    [error, setError] = useState("");
-  const attempt = state.attempts.length + 1;
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!consent || busy) return;
-    const revision = draft.revision;
-    setError("");
-    void act(
-      `/quests/${idPath(state.questId)}/completion`,
-      "POST",
-      {
-        revision: state.revision,
-        evidence: draft.values.evidence,
-        privateConsent: true,
-      },
-      tr("Your private observation was received. Independent review is pending; no reward or completion is confirmed yet."),
-      () => {
-        draft.discard(revision);
-        onClose();
-      },
-      (e) => setError(e.message),
-    );
-  }
-  return (
-    <Dialog label={tr("Submit private observation")} onClose={onClose}>
-      <div className="creator-safety-dialog">
-        <h2>{tr("Your observation")}</h2>
-        <p>
-          {tr("Accepted revision")}{" "}{state.revision} {" "}{tr("· attempt")}{" "}{attempt}/
-          {state.policy?.maxAttempts}
-        </p>
-        <p className="creator-instructions">{state.requirement?.prompt}</p>
-        <p className="creator-hint">
-          {tr("Text is private to you and authorized reviewers. Do not include contact details, precise location or other private information. No GPS, photo or file is attached. Acceptance confirms reviewed text, not physical presence. No reward is configured.")}</p>
-        {attempt === state.policy?.maxAttempts && (
-          <p>
-            {tr("This is the final permitted attempt. A third independent rejection resolves this participation as NOT completed; it creates no completion receipt or reward. Evidence and feedback remain available.")}</p>
-        )}
-        <form className="creator-form" onSubmit={submit}>
-          <label htmlFor="creator-observation-evidence">
-            {tr("Observation text")}<textarea
-              id="creator-observation-evidence"
-              required
-              maxLength={1000}
-              rows={5}
-              value={draft.values.evidence}
-              readOnly={busy}
-              onChange={(e) => {
-                draft.setField("evidence", e.target.value);
-                setConsent(false);
-              }}
-            />
-          </label>
-          <small>{draft.values.evidence.length}{tr("/1,000 characters")}</small>
-          <p className="creator-hint">
-            {draft.storageAvailable
-              ? draft.restored
-                ? tr("Your text was restored. Submission consent was not restored.")
-                : tr("Text stays in this browser until submitted or discarded; consent is never stored.")
-              : tr("Browser storage is unavailable. Keep this dialog open to retain your text.")}
-          </p>
-          <label className="creator-check">
-            <input
-              type="checkbox"
-              checked={consent}
-              disabled={busy}
-              onChange={(e) => setConsent(e.target.checked)}
-            />
-            <span>
-              {tr("Send this text privately for independent completion review.")}</span>
-          </label>
-          {error && (
-            <p className="creator-error" role="alert">
-              {error}
-            </p>
-          )}
-          <button
-            type="submit"
-            className="primary-button"
-            disabled={busy || !consent || !draft.values.evidence.trim()}
-          >
-            {busy ? tr("Sending observation…") : tr("Submit for independent review")}
-            <ArrowRight size={20} />
-          </button>
-          {draft.hasDraft && (
-            <button
-              className="text-button"
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                draft.discard();
-                setConsent(false);
-              }}
-            >
-              {tr("Discard local observation text")}</button>
-          )}
-          <button className="secondary-button" type="button" onClick={onClose}>
-            {busy ? tr("Close · request may still finish") : tr("Cancel")}
-          </button>
-        </form>
       </div>
     </Dialog>
   );
@@ -2177,6 +2095,32 @@ function QuestEditor({
     priceProblem = (error as Error).message;
   }
   const priceChanged = priceValue !== (savedPrice || "0");
+  const [photo, setPhoto] = useState(quest?.draft.photo || "");
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  async function choosePhoto(file?: File) {
+    if (!file || photoBusy) return;
+    setPhotoBusy(true);
+    setPhotoError("");
+    try {
+      const image = await questPhotoData(file);
+      const saved = await api<{ photo: string }>("/creator-photos", { image });
+      if (mounted.current) {
+        setPhoto(saved.photo);
+        setQuote(null);
+        setAccepted(false);
+      }
+    } catch (error) {
+      if (mounted.current)
+        setPhotoError(
+          error instanceof ApiError
+            ? error.message
+            : tr("That photo could not be opened. Choose it again."),
+        );
+    } finally {
+      if (mounted.current) setPhotoBusy(false);
+    }
+  }
   const placeChanged =
     JSON.stringify(template ? { template, points } : null) !==
     JSON.stringify(savedPlace ?? null);
@@ -2205,6 +2149,7 @@ function QuestEditor({
     requirementDraft.hasDraft ||
     placeChanged ||
     priceChanged ||
+    photo !== (quest?.draft.photo || "") ||
     observation !== !!quest?.draft.requirement;
   const newIdentity = useMemo(
     () => (quest ? null : creatorDraftIdentity(playerId)),
@@ -2286,6 +2231,7 @@ function QuestEditor({
         : {}),
       ...(template ? { place: { template, points } } : {}),
       ...(priceValue !== "0" ? { price: priceValue } : {}),
+      ...(photo ? { photo } : {}),
     };
     const saved = await act(
       quest ? `/quests/${idPath(quest.id)}/revisions` : "/quests",
@@ -2365,6 +2311,30 @@ function QuestEditor({
             }}
           />
         )}
+        <div className={`qe-photo${photo ? " has-photo" : ""}`}>
+          {photo && <img src={photo} alt="" />}
+          <label className={`secondary-button${!editable || busy || photoBusy ? " is-disabled" : ""}`}>
+            <Camera size={20} aria-hidden="true" />
+            {photoBusy ? tr("Opening photo…") : photo ? tr("Change photo") : tr("Add photo")}
+            <input
+              className="sr-only"
+              aria-label={tr("Choose a photo")}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={!editable || busy || photoBusy}
+              onChange={(e) => {
+                void choosePhoto(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {photo && editable && (
+            <button type="button" className="text-button" disabled={busy} onClick={() => { setPhoto(""); setQuote(null); setAccepted(false); }}>
+              {tr("Remove photo")}
+            </button>
+          )}
+          {photoError && <p role="alert">{photoError}</p>}
+        </div>
         <fieldset className="creator-templates" disabled={!editable || busy}>
           <legend>{tr("Template")}</legend>
           {(Object.keys(PLACE_TEMPLATES) as CreatorPlaceTemplate[]).map(

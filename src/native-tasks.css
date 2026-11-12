@@ -24,8 +24,7 @@
   margin: 12px 0;
 }
 .native-tasks small,
-.native-tasks .task-secondary,
-.native-tasks .task-intro {
+.native-tasks .task-secondary {
   font-size: 14px;
   color: var(--ink-secondary, #665577);
 }
@@ -89,11 +88,6 @@
 }
 .native-tasks .task-heading > div {
   min-width: 0;
-}
-.native-tasks .task-eyebrow {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--action, #672eeb);
 }
 .native-tasks .task-icon {
   flex: 0 0 48px;

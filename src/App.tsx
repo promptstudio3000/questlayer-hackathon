@@ -100,6 +100,8 @@ import { demoPickupScope } from "./pickup-feedback";
 import { canContinueDemoCollection } from "./demo-collection";
 import { PickupAnnouncement } from "./PickupSummary";
 import { distanceLabel, units, CoinIcon, Badge } from "./app-bits";
+import { mapKitUrl } from "./map-kit";
+import type { QuestMapTarget } from "./creator-community-types";
 import {
   GameObjectArt,
   questObjectPresentation,
@@ -1971,6 +1973,49 @@ export default function App() {
     setDemoTarget({ lat: p.lat, lng: p.lng, label, ...ref });
   }
   const [guideRequest, setGuideRequest] = useState<{ questId: string; revision: number; worldId: string; playerId: string } | null>(null);
+  // "Go" on a Community quest: the map shows its start with the direction
+  // guide and a chip that leads back to the quest (answer, rate, discuss).
+  const [communityGoal, setCommunityGoal] = useState<QuestMapTarget | null>(null);
+  // A saved rating also becomes a record under the explorer's own account
+  // (src/quest-rating-record.ts). Only the invisible account does it, so no
+  // wallet ever pops up; a failure leaves the rating in the game untouched.
+  const ratingRecords = useRef<Promise<unknown>>(Promise.resolve());
+  function keepQuestRating(questId: string, stars: number) {
+    const account = recordAccount?.managed ? recordAccount.accountId : "";
+    const playerId = player?.id;
+    if (!account || !playerId) return;
+    ratingRecords.current = ratingRecords.current.then(async () => {
+      // Other background writes of the same account (inbox key, profile) can
+      // take the same nonce, so a lost try is repeated a little later.
+      for (const wait of [0, 4000, 12000]) {
+        try {
+          if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
+          const { signer, accountId } = await signerForAccount(account);
+          const { publishRatingRecord } = await import("./quest-rating-record");
+          if (await publishRatingRecord({ call: api, signer, accountId, playerId, questId, stars })) return;
+        } catch {
+          // The stars stay saved in the game either way.
+        }
+      }
+    });
+  }
+  function goToCreatorQuest(target: QuestMapTarget) {
+    const start = target.points[0];
+    if (!start) return;
+    setCommunityGoal(target);
+    setTab("explore");
+    setSheetExpanded(false);
+    setGlobe(false);
+    setOverview(false);
+    setFollow(false);
+    if (arena && !nativePlay) faceToward(start, target.title);
+  }
+  function openCommunityGoal() {
+    if (!communityGoal) return;
+    setTab("community");
+    setCreatorView({ page: "quest", questId: communityGoal.questId });
+    setSheetExpanded(true);
+  }
   function guideToQuest(q: Quest) {
     const zone = world?.zones.find(z => z.id === q.zone_id);
     if (!world || !player || !zone) return;
@@ -2942,6 +2987,18 @@ export default function App() {
     });
     return ok === true;
   }
+  async function exportWalletWords() {
+    const ok = await action("wallet-words", async () => {
+      const deviceKey = invisible.deviceKey;
+      if (!deviceKey || !invisible.accountId)
+        throw Error("Your explorer account is still being prepared.");
+      const { exportToWallet, hasRecoveryPasskey } = await import("./account-recovery");
+      await exportToWallet({ deviceKey, passkey: hasRecoveryPasskey(invisible.keys) });
+      await invisible.refresh();
+      return true;
+    });
+    return ok === true;
+  }
   async function revokeDevice(publicKey: string, signOutOthers: boolean) {
     const ok = await action("device-revoke", async () => {
       const deviceKey = invisible.deviceKey,
@@ -3871,6 +3928,9 @@ export default function App() {
           insideZoneId={zonePresence?.state === "ready" && zonePresence.count > 0 ? zonePresence.zone.id : null}
           nativeTarget={
             nativeTarget ||
+            (communityGoal?.points[0]
+              ? { ...communityGoal.points[0], label: communityGoal.title }
+              : null) ||
             (findTarget
               ? {
                   lat: findTarget.lat,
@@ -4917,6 +4977,7 @@ export default function App() {
                     onSetupRecovery={setupRecoveryPasskey}
                     onRevoke={revokeDevice}
                     onRestore={restoreThisDevice}
+                    onExportWallet={exportWalletWords}
                     onStartOver={invisible.canStartOver ? startOverHere : undefined}
                     error={invisible.error}
                     onRetry={() => void invisible.ensure()}
@@ -5017,6 +5078,8 @@ export default function App() {
                 notify={notify}
                 view={creatorView}
                 onViewChange={setCreatorView}
+                onGo={goToCreatorQuest}
+                onRate={keepQuestRating}
                 onPlayerChange={me}
                 position={position}
                 money={{
@@ -5207,6 +5270,31 @@ export default function App() {
             >
               <ArrowsIn size={22} weight="bold" />
             </button>
+          )}
+          {tab === "explore" && !globe && communityGoal?.points[0] && (
+            <div className="community-goal" role="group" aria-label={tr("Creator quests")}>
+              <button type="button" className="community-goal-open" onClick={openCommunityGoal}>
+                <img src={mapKitUrl("quests/visit.png")} width={32} height={32} alt="" aria-hidden="true" />
+                <span>
+                  <strong>{communityGoal.title}</strong>
+                  <small>
+                    {metersBetween(position, communityGoal.points[0]) <= 30
+                      ? tr("You are here. Tap to answer.")
+                      : distanceLabel(metersBetween(position, communityGoal.points[0]))}
+                  </small>
+                </span>
+                <ArrowRight size={20} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="community-goal-close"
+                aria-label={tr("Stop guiding")}
+                title={tr("Stop guiding")}
+                onClick={() => { setCommunityGoal(null); setDemoTarget(null); }}
+              >
+                <X size={18} weight="bold" aria-hidden="true" />
+              </button>
+            </div>
           )}
           {tab === "explore" && !globe && gameLayer?.tour && player && (
             <TourHelper

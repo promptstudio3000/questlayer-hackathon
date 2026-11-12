@@ -272,7 +272,6 @@
 .earn-sources dt { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-secondary); }
 .earn-sources dd { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
 .earn-sources dd small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-secondary); }
-.earn-note { margin: 4px 0 16px; font-size: 12px; color: var(--ink-secondary); }
 .earn-link { justify-self: start; margin-top: 8px; }
 /* Fuel: the explorer's own NEAR for storage and own payments */
 /* Wide screens: the picture keeps its phone size instead of filling the card. */

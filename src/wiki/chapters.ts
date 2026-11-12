@@ -287,7 +287,7 @@ export const CHAPTERS: Chapter[] = [
       { h: "Reward ledgers and other explorers" },
       {
         list: [
-          "**Map coins (default):** every coin and zone prize is backed QGOLD. It shows as on its way at the top of Profile → Stake and the next payout round mints it to your NEAR account, created automatically. This stays the ledger after any wallet sign-in.",
+          "**Map coins (default):** every coin and zone prize is backed QGOLD. It shows as on its way in Profile → Stake → Earnings and the next payout round mints it to your NEAR account, created automatically. This stays the ledger after any wallet sign-in.",
           "**Test network ledger:** projects the funded Plzeň NEAR day onto the map and collects with fresh GPS, one request at a time. It runs only when you pick it in Settings → Developer or open Expeditions.",
           "Other explorers within about 1.5 km appear live on the map (name, look, position) while their game is open on screen; Settings → Show me to nearby explorers turns it off. GPS and demo players see only their own kind. Profiles never show a position; wallets, balances and inventory are never shown.",
         ],
@@ -327,7 +327,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**Tap the altar** in the middle of a zone (or its pin) to open the zone detail: whether it is open now or when it opens, how many of today's activities you have done, the XP, QGOLD and chest Auras still to win, and when the zone gets new activities and rewards (the next local midnight, when the daily world swaps).",
-          "**The round icons floating inside a zone** are the chest Auras its chest can hold today (ring colour = rarity) and a gold coin when an activity there pays GOLD. Tap one to see what it is and jump to the zone's activities. They disappear once the zone is closed or cleared; the zone itself stays on the map all day with a low, dimmed wall and the chip “Closed · new zones tomorrow”.",
+          "**The round icons floating inside a zone** are the chest Auras its chest can hold today (ring colour = rarity) and a gold coin when an activity there pays QGOLD. Tap one to see what it is and jump to the zone's activities. They disappear once the zone is closed or cleared; the zone itself stays on the map all day with a low, dimmed wall and the chip “Closed · new zones tomorrow”.",
         ],
       },
       {
@@ -1036,7 +1036,7 @@ export const CHAPTERS: Chapter[] = [
           "One escrow task pays at most 50 completions, each account once. A proof waiting for review holds its slot, so a poster cannot cancel it away.",
           "Failed transfers keep the credit and retry after verification; only payments with an unknown outcome pause the queue.",
           "The funder holds a small NEAR storage deposit on the escrow (about 0.01 NEAR per agreement record); the relayer can top it up in 0.05 NEAR steps, at most 0.5 NEAR.",
-          "**Community · Tasks** is one list of these player tasks: open nearby, the ones you are taking, the ones you posted, and a type filter. Every row shows who posted it with their avatar. The older practice-GOLD tasks and the separate sponsored NEAR task contract are no longer in the app.",
+          "**Community · Tasks** is one list of these player tasks: open nearby, the ones you are taking, the ones you posted, and a type filter. Every row shows who posted it with their avatar. The older practice-QGOLD tasks and the separate sponsored NEAR task contract are no longer in the app.",
         ],
       },
       { h: "Creators" },
@@ -1159,8 +1159,7 @@ export const CHAPTERS: Chapter[] = [
           "Every `PAYOUT_ROUND_MINUTES` (5 on testnet; 0 = once after local midnight) it collects every backed coin and cell-zone prize not paid yet and at least a minute old, prices it at the rate its day was planned with, sums it per account and publishes `payout-<date>-v<n>`. A round with nothing to pay publishes nothing.",
           "Submission is not payment: finalized per-leaf chain status confirms each receipt. Restart recovery reconciles pending leaves first; an exclusive fenced lease prevents overlapping workers.",
           "A player without a NEAR account yet keeps their coins waiting and joins the first payout after the account exists. `GET /api/qgold/pending` shows what is on its way.",
-          "Profile → Stake shows the QGOLD balance and what the next payout brings. While payouts run, map days no longer send `claim_map`, so a coin is never paid twice.",
-          "Profile → Stake shows the whole loop as one numbered, animated picture: 1 you stake into your vault and the stake stays yours, 2 validators pay yield and your chosen share fills the prize pool (the rest is yours), 3 the pool becomes coins and prizes on the map each day, 4 explorers collect QGOLD on the map, never from the vault, 5 what nobody collects returns to the pool.",
+          "Profile → Stake → Earnings shows the QGOLD balance and what the next payout brings. While payouts run, map days no longer send `claim_map`, so a coin is never paid twice.",
         ],
       },
       { note: "The prepared Atlas adapter separately reserves a UTC day before opening and needs two reviewed testnet contract upgrades, including QGOLD's governance timelock. Until confirmed activation, Atlas quests award personal XP only." },
@@ -1187,7 +1186,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "A new explorer gets `<name>.play-…testnet`, funded with a small NEAR deposit once, when the account is created, after they earned their first XP on the map; the first steps play solo without it. New accounts per network address are capped per day.",
-          "Gas is always sponsored. The small balance only covers the account's storage and the player's own payments (Aura buys, deposits), which the relayer never sponsors. Starting NEAR comes **once**, when the account is created; there is no daily refuel (`PLAYER_REFUEL=1` turns it back on for tests). When the balance runs low, a short **Convert QGOLD to gas** dialog opens by itself (once a day): convert QGOLD at the vault, or top up gas by sending NEAR to the game address.",
+          "Gas is always sponsored. The small balance only covers the account's storage and the player's own payments (Aura buys, deposits), which the relayer never sponsors. Starting NEAR comes **once**, when the account is created; there is no daily refuel (`PLAYER_REFUEL=1` turns it back on for tests). Profile → Stake → Earnings offers **Convert QGOLD to NEAR** at the vault or **Add your own NEAR** from any wallet.",
           "Every in-game action (tasks, Secrets, Aura listings and equipment, staking, level rewards, badges, profile and note records) signs with this account, without a wallet pop-up. Before it exists, **Activate my account** prepares it.",
           "The device key lives in a separate signing origin, deployed with the game. If a browser blocks its storage, no account is created, Profile → Settings → Account and devices says so, and free play continues. Keys made before that origin are not rotated yet.",
           "Purchases, equipment, earned mini-games and getting ready to trade sign silently. Anything that can pay someone else (a sale or purchase, a task, Secret or send, a withdrawal, an asset transfer) and account recovery ask one plain Yes / No question in a small separate window, which a compromised game page cannot answer.",
@@ -1338,7 +1337,7 @@ export const CHAPTERS: Chapter[] = [
           "The testnet runs a removable test seed (bots, quests, community tasks, free Secrets); every seeded row has a `seed-` id. Starter kits for real explorers are off unless `TEST_SEED_KIT=1`.",
           "A guided tour (helper Pip, top-right card) walks a new explorer through every quest type, encounter, trade and community action in Plzeň; each step ticks only from the game's own records (ledger actions, sponsored transactions, burns), and the end lists every transaction with its explorer link.",
           "Two worlds, one code: QuestLayer World is the real game, and the **Test Layer** (testnet only, its own service, database, signing vault and contract set, Test QGOLD shown with a TEST tag, 4-hour explorers) holds the bots, the seed content, the compact Plzeň zones and every feature under test. Mainnet refuses the Test Layer.",
-          "A tester-account command line sets the owner test explorer's password, removes the old practice-GOLD credit from explorers created before 10 November and retires duplicate test explorers (QGOLD 0, sessions revoked).",
+          "A tester-account command line sets the owner test explorer's password, removes the old practice-QGOLD credit from explorers created before 10 November and retires duplicate test explorers (QGOLD 0, sessions revoked).",
           "A deploy reinstalls the separate signing-vault origin whenever its code or contract list changed.",
           "Releases and testnet operator jobs run on the VPS itself. A release runner follows the deploy branch every minute (build, tests, database backup, switch, automatic rollback) and runs queued operator jobs from an allowlist, one at a time, after a read-only plan; contract upgrades only with a WASM hash that matches the reviewed build. It refuses mainnet. Its public status is at `/api/release/status`.",
           "Chain reads go through free public NEAR RPC endpoints (three on testnet). The server merges equal reads, reuses a result for 3 s, paces reads to about 8 per second, backs off after a rate limit and drops cached reads whenever a transaction goes out.",
