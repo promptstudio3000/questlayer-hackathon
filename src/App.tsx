@@ -1985,12 +1985,17 @@ export default function App() {
     const playerId = player?.id;
     if (!account || !playerId) return;
     ratingRecords.current = ratingRecords.current.then(async () => {
-      try {
-        const { signer, accountId } = await signerForAccount(account);
-        const { publishRatingRecord } = await import("./quest-rating-record");
-        await publishRatingRecord({ call: api, signer, accountId, playerId, questId, stars });
-      } catch {
-        // The stars stay saved in the game; the next change tries again.
+      // Other background writes of the same account (inbox key, profile) can
+      // take the same nonce, so a lost try is repeated a little later.
+      for (const wait of [0, 4000, 12000]) {
+        try {
+          if (wait) await new Promise((resolve) => setTimeout(resolve, wait));
+          const { signer, accountId } = await signerForAccount(account);
+          const { publishRatingRecord } = await import("./quest-rating-record");
+          if (await publishRatingRecord({ call: api, signer, accountId, playerId, questId, stars })) return;
+        } catch {
+          // The stars stay saved in the game either way.
+        }
       }
     });
   }
