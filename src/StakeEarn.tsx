@@ -1,106 +1,170 @@
-// Profile → Stake (owner request, 10 Nov 2026): one screen with a two-way
-// switch. "Stake" explains the idea with a small animated picture, shows the
-// tier ladder and holds the stake form (src/FuelTheCity.tsx). "Earnings" shows
-// what the explorer earned: QGOLD from the map and what their stake kept.
-import { useEffect, useState, type ReactNode } from "react";
-import { Flame, MapTrifold, Vault, Wallet } from "@phosphor-icons/react";
+// Profile → Stake (owner request, 10–12 Nov 2026): one screen. The small
+// wallet line on top, the tier ladder, the stake form (src/FuelTheCity.tsx)
+// and the loop as one numbered, animated picture.
+import { useEffect, useId, useState, type CSSProperties, type ReactNode } from "react";
+import { Flame, MapTrifold, Vault } from "@phosphor-icons/react";
 import { api, gold as fmtGold } from "./api";
 import { CoinIcon } from "./app-bits";
 import { GameObjectArt } from "./game-object-art";
 import { Ghost } from "./Ghost";
 import { prefersReducedMotion } from "./feedback";
 import { tr } from "./i18n";
-import type { Journey } from "./CharacterJourney";
 import type { StakeCard } from "./StakeToday";
-import { FuelCard } from "./FuelCard";
+import { goldCompact, potView, refreshRewardFunding, useRewardFunding } from "./reward-funding";
 import "./profile-journey.css";
+import "./stake-story.css";
 
-export type StakeView = "stake" | "earnings";
+const QGOLD = "QGOLD";
+const VB_W = 340;
+const VB_H = 290;
+const YOU = { x: 60, y: 70 };
+const VAULT = { x: 280, y: 70 };
+const POOL = { x: 280, y: 222 };
+const MAP = { x: 60, y: 222 };
+const C = { stake: "#c4a3ff", pool: "#ffd76a", mine: "#7ef0b5", coin: "#ffb347", back: "#b9c4ff" };
 
-export function StakeEarnSwitch({
-  value,
-  onChange,
-}: {
-  value: StakeView;
-  onChange: (v: StakeView) => void;
-}) {
+type FlowProps = {
+  step: number;
+  path: string;
+  color: string;
+  delays: number[];
+  still: boolean;
+  marker: string;
+  badge?: [number, number];
+};
+
+/** One arrowed lane with dots moving along it; nothing moves when motion is reduced. */
+function Flow({ step, path, color, delays, still, marker, badge }: FlowProps) {
   return (
-    <div className="stake-earn-switch" role="group" aria-label={tr("Stake")}>
-      <button type="button" aria-pressed={value === "stake"} onClick={() => onChange("stake")}>
-        <Flame size={20} weight="duotone" aria-hidden="true" />
-        {tr("Stake")}
-      </button>
-      <button type="button" aria-pressed={value === "earnings"} onClick={() => onChange("earnings")}>
-        <Wallet size={20} weight="duotone" aria-hidden="true" />
-        {tr("Earnings")}
-      </button>
-    </div>
-  );
-}
-
-/** Moving dots along one path; nothing moves when motion is reduced. */
-function Flow({ path, color, delays, still }: { path: string; color: string; delays: number[]; still: boolean }) {
-  return (
-    <>
-      <path d={path} fill="none" stroke={color} strokeOpacity="0.35" strokeWidth="3" strokeDasharray="2 6" strokeLinecap="round" />
-      {delays.map((d) =>
-        still ? null : (
-          <circle key={d} r="4.5" fill={color} opacity="0">
-            <animateMotion dur="2.4s" begin={`${d}s`} repeatCount="indefinite" path={path} />
-            <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="2.4s" begin={`${d}s`} repeatCount="indefinite" />
-          </circle>
-        ),
+    <g className="ss-flow" style={{ "--i": step - 1 } as CSSProperties}>
+      <path className="ss-lane" d={path} fill="none" stroke={color} strokeWidth="3" strokeDasharray="1 7" strokeLinecap="round" markerEnd={`url(#${marker})`} />
+      {still
+        ? null
+        : delays.map((d) => (
+            <circle key={d} r="4.5" fill={color} opacity="0">
+              <animateMotion dur="2.4s" begin={`${d}s`} repeatCount="indefinite" path={path} />
+              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.8;1" dur="2.4s" begin={`${d}s`} repeatCount="indefinite" />
+            </circle>
+          ))}
+      {badge && (
+        <g className="ss-badge">
+          <circle cx={badge[0]} cy={badge[1]} r="9.5" fill="#2a0f5c" stroke={color} strokeWidth="2" />
+          <text x={badge[0]} y={badge[1] + 3.8} textAnchor="middle" fill={color} fontSize="11" fontWeight="800">{step}</text>
+        </g>
       )}
-    </>
+    </g>
   );
 }
+
+const at = (p: { x: number; y: number }) => ({ left: `${(p.x / VB_W) * 100}%`, top: `${(p.y / VB_H) * 100}%` });
 
 /**
- * The idea in one picture: your NEAR goes into the vault and stays yours;
- * validators pay yield; part comes back to you, part fuels the prize pool
- * that becomes coins on the map for everyone.
+ * The whole loop in one picture (owner request, 12 Nov 2026):
+ * 1 you stake into your vault and the stake stays yours; 2 validators pay
+ * yield, the chosen part fills the prize pool and the rest is yours; 3 the
+ * pool becomes coins and prizes on the map; 4 explorers collect them on the
+ * map (never from the vault); 5 what nobody collects returns to the pool.
+ * The picture and the list share numbers, and a slow spotlight walks 1 → 5.
  */
 export function StakeStory({ sharePct }: { sharePct: number }) {
   const still = prefersReducedMotion();
+  const id = useId().replace(/:/g, "");
+  const rest = Math.max(0, 100 - sharePct);
+  const heads: [string, string][] = Object.entries(C);
+  const steps: [string, string, string][] = [
+    [C.stake, tr("Stake"), tr("Your stake sits in your vault and stays yours.")],
+    [
+      C.pool,
+      tr("Yield"),
+      rest > 0
+        ? tr("Validators pay yield: {0} % fills the prize pool, {1} % is yours.", { 0: sharePct, 1: rest })
+        : tr("Validators pay yield. All of it fills the prize pool."),
+    ],
+    [C.pool, tr("Rewards"), tr("Every day the pool becomes coins and prizes on the map.")],
+    [C.coin, tr("Collect"), tr("You collect QGOLD on the map, not from the vault.")],
+    [C.back, tr("Left over"), tr("What nobody collects returns to the pool.")],
+  ];
   return (
-    <section className="stake-story" aria-labelledby="stake-story-title">
-      <h2 id="stake-story-title">{tr("Your NEAR works while you explore")}</h2>
-      <div className="stake-story-art" style={{ position: "relative" }}>
-        <svg viewBox="0 0 320 120" role="img" aria-label={tr("Your stake goes into the vault, its yield goes back to you and into the prize pool")}>
-          <Flow path="M66 44 L134 44" color="#b892ff" delays={[0, 0.8, 1.6]} still={still} />
-          <Flow path="M184 36 Q222 0 256 36" color="#ffd76a" delays={[0.4, 1.6]} still={still} />
-          <Flow path="M134 58 Q100 112 66 58" color="#7ef0b5" delays={[1, 2.2]} still={still} />
-          <circle cx="160" cy="44" r="28" fill="#ffd76a" className="stake-vault-glow" opacity="0.4" />
-          <text x="252" y="12" textAnchor="middle" fill="#ffd76a" fontSize="11" fontWeight="700">{sharePct} %</text>
-          <text x="100" y="98" textAnchor="middle" fill="#7ef0b5" fontSize="11" fontWeight="700">{100 - sharePct} %</text>
-        </svg>
-        <span className="stake-story-node" style={{ left: "12.5%" }}>
-          <Ghost color="#ffffff" />
-          <small>{tr("You")}</small>
-        </span>
-        <span className="stake-story-node" style={{ left: "50%" }}>
-          <Vault size={40} weight="duotone" aria-hidden="true" />
-          <small>{tr("Vault")}</small>
-        </span>
-        <span className="stake-story-node" style={{ left: "87.5%" }}>
-          <GameObjectArt kind="chest" size={40} />
-          <small>{tr("Prize pool")}</small>
-        </span>
+    <section className={`stake-story${still ? " is-still" : ""}`} aria-labelledby="stake-story-title">
+      <h2 id="stake-story-title">{tr("Your stake works while you explore")}</h2>
+      <div className="stake-story-body">
+        <div className="stake-story-art">
+          <svg
+            viewBox={`0 0 ${VB_W} ${VB_H}`}
+            role="img"
+            aria-label={tr("You stake into your vault. Its yield fills the prize pool. The pool puts rewards on the map. You collect them there. Uncollected rewards return to the pool.")}
+          >
+            <defs>
+              {heads.map(([k, color]) => (
+                <marker key={k} id={`${id}-${k}`} viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.6" markerHeight="3.6" orient="auto-start-reverse">
+                  <path d="M1 1 L9 5 L1 9 Z" fill={color} />
+                </marker>
+              ))}
+            </defs>
+
+            <circle cx={VAULT.x} cy={VAULT.y} r="34" fill={C.pool} className="stake-vault-glow" opacity="0.35" />
+            {[YOU, VAULT, POOL, MAP].map((n, i) => (
+              <circle key={i} cx={n.x} cy={n.y} r="30" className="ss-disc" />
+            ))}
+            {still
+              ? null
+              : [0, 1, 2].map((i) => (
+                  <text key={i} x={VAULT.x + 22 + i * 8} y={VAULT.y - 22} fill={C.mine} fontSize="13" fontWeight="800" opacity="0">
+                    +
+                    <animate attributeName="opacity" values="0;1;0" dur="2.4s" begin={`${i * 0.8}s`} repeatCount="indefinite" />
+                    <animate attributeName="y" values={`${VAULT.y - 16};${VAULT.y - 36}`} dur="2.4s" begin={`${i * 0.8}s`} repeatCount="indefinite" />
+                  </text>
+                ))}
+
+            <Flow step={1} path="M95 60 L242 60" color={C.stake} delays={[0, 0.8, 1.6]} still={still} marker={`${id}-stake`} badge={[170, 60]} />
+            {rest > 0 && <Flow step={2} path="M248 86 Q170 124 96 88" color={C.mine} delays={[0.6, 1.8]} still={still} marker={`${id}-mine`} />}
+            <Flow step={2} path="M280 105 L280 184" color={C.pool} delays={[0.3, 1.5]} still={still} marker={`${id}-pool`} badge={[280, 146]} />
+            <Flow step={3} path="M245 212 L98 212" color={C.pool} delays={[0, 0.8, 1.6]} still={still} marker={`${id}-pool`} badge={[170, 212]} />
+            <Flow step={4} path="M60 187 L60 108" color={C.coin} delays={[0.3, 1.5]} still={still} marker={`${id}-coin`} badge={[60, 146]} />
+            <Flow step={5} path="M92 238 Q170 276 244 240" color={C.back} delays={[0.6, 1.8]} still={still} marker={`${id}-back`} badge={[170, 257]} />
+
+            <g className="ss-words" fontSize="11.5" fontWeight="700">
+              <text x={YOU.x} y="30" textAnchor="middle" className="ss-name">{tr("You")}</text>
+              <text x={VAULT.x} y="30" textAnchor="middle" className="ss-name">{tr("Vault")}</text>
+              <text x={MAP.x} y="268" textAnchor="middle" className="ss-name">{tr("Map")}</text>
+              <text x={POOL.x} y="268" textAnchor="middle" className="ss-name">{tr("Prize pool")}</text>
+              <text x="170" y="45" textAnchor="middle" fill={C.stake}>{tr("Stake")}</text>
+              {rest > 0 && (
+                <text x="170" y="122" textAnchor="middle" fill={C.mine}>{tr("{0} % yours", { 0: rest })}</text>
+              )}
+              <text x="264" y="143" textAnchor="end" fill={C.pool}>{tr("Yield")}</text>
+              <text x="264" y="158" textAnchor="end" fill={C.pool} fontSize="13" fontWeight="800">{sharePct} %</text>
+              <text x="170" y="197" textAnchor="middle" fill={C.pool}>{tr("Rewards")}</text>
+              <text x="76" y="143" fill={C.coin}>{tr("Collect")}</text>
+              <text x="76" y="158" fill={C.coin} fontSize="13" fontWeight="800">{QGOLD}</text>
+              <text x="170" y="281" textAnchor="middle" fill={C.back}>{tr("Left over")}</text>
+            </g>
+          </svg>
+          <span className="stake-story-node" style={at(YOU)}>
+            <Ghost color="#ffffff" />
+          </span>
+          <span className="stake-story-node" style={at(VAULT)}>
+            <Vault size={38} weight="duotone" aria-hidden="true" />
+          </span>
+          <span className="stake-story-node" style={at(POOL)}>
+            <GameObjectArt kind="chest" size={38} />
+          </span>
+          <span className="stake-story-node" style={at(MAP)}>
+            <MapTrifold size={38} weight="duotone" aria-hidden="true" />
+          </span>
+        </div>
+        <ol>
+          {steps.map(([color, title, text], i) => (
+            <li key={i} style={{ "--i": i, "--c": color } as CSSProperties}>
+              <i aria-hidden="true">{i + 1}</i>
+              <span>
+                <b>{title}</b>
+                {text}
+              </span>
+            </li>
+          ))}
+        </ol>
       </div>
-      <ol>
-        <li>
-          <b>{tr("Stake")}</b>
-          {tr("Your NEAR stays yours")}
-        </li>
-        <li>
-          <b>{tr("Earn")}</b>
-          {tr("Validators pay yield")}
-        </li>
-        <li>
-          <b>{tr("Share")}</b>
-          {tr("Part becomes map coins and opens Tier places")}
-        </li>
-      </ol>
     </section>
   );
 }
@@ -173,33 +237,37 @@ export function TierLadder({
 type PendingQgold = { accountId: string | null; units: number; awaitingAccount?: boolean };
 const nearOf = (yocto: bigint) => Number(yocto / 10n ** 21n) / 1000;
 
-/** Earnings: the QGOLD balance, what's on its way and where it came from. */
-export function EarningsPanel({
-  refreshKey,
-  onLink,
-  children,
-}: {
-  refreshKey: string;
-  /** Prepares the explorer account when QGOLD has nowhere to go yet. */
-  onLink?: () => void;
-  children?: ReactNode;
-}) {
+/**
+ * The top of Profile → Stake (owner request, 12 Nov 2026: Earnings merged in,
+ * kept minimal): my QGOLD, the GOLD that went onto the map today and, once
+ * there is a stake, the yield it kept for me. Nothing technical here.
+ */
+export function StakeWallet({ refreshKey, staked }: { refreshKey: string; staked: boolean }) {
   const [pending, setPending] = useState<PendingQgold | null>(null),
     [balance, setBalance] = useState<number | null>(null),
-    [journey, setJourney] = useState<Journey | null>(null),
     [kept, setKept] = useState<number | null>(null);
+  const pot = potView(useRewardFunding());
+  useEffect(() => {
+    void refreshRewardFunding();
+  }, []);
   useEffect(() => {
     let live = true;
     void api<PendingQgold>("/qgold/pending")
       .then(async (p) => {
         if (!live) return;
         setPending(p);
-        if (!p.accountId) return;
+        if (!p.accountId) return setBalance(0);
         const a = await api<{ balance: string | null }>(`/qgold/account?account=${encodeURIComponent(p.accountId)}`);
         if (live) setBalance(Number(a.balance || 0));
       })
       .catch(() => undefined);
-    void api<Journey>("/me/journey").then((j) => live && setJourney(j), () => undefined);
+    return () => {
+      live = false;
+    };
+  }, [refreshKey]);
+  useEffect(() => {
+    if (!staked) return;
+    let live = true;
     void api<StakeCard>("/keeper/stake").then(
       (card) => {
         if (!live) return;
@@ -215,55 +283,34 @@ export function EarningsPanel({
     return () => {
       live = false;
     };
-  }, [refreshKey]);
+  }, [refreshKey, staked]);
+  const today = pot.kind === "ready" ? pot.today : null;
+  const onMap = today?.coinsFunded ?? today?.coinsLeft ?? null;
   return (
-    <>
-      <div className="earn-hero">
-        <span>{tr("QGOLD")}</span>
-        <div>
-          <CoinIcon />
-          <strong>{balance === null ? (pending && !pending.accountId ? "0" : "…") : fmtGold(balance, 6)}</strong>
-        </div>
-        <small>
-          {pending?.accountId
-            ? tr("On your NEAR account {0}", { 0: pending.accountId })
-            : tr("Sign in with a NEAR account to receive QGOLD.")}
-        </small>
-        {!!pending?.units && (
-          <small className="earn-pending">
-            {pending.awaitingAccount
-              ? tr("{0} QGOLD collected waits for your NEAR account.", { 0: fmtGold(pending.units, 6) })
-              : tr("+{0} QGOLD arrives with the next payout, within minutes.", { 0: fmtGold(pending.units, 6) })}
-          </small>
-        )}
-        {pending && !pending.accountId && onLink && (
-          <button type="button" className="secondary-button earn-link" onClick={onLink}>
-            <Wallet size={18} aria-hidden="true" /> {tr("Activate my account")}
-          </button>
-        )}
+    <dl className="stake-wallet">
+      <div>
+        <dt>{tr("Your QGOLD")}</dt>
+        <dd>
+          <CoinIcon /> {balance === null ? "…" : fmtGold(balance, 6)}
+          {!!pending?.units && !pending.awaitingAccount && (
+            <small>{tr("+{0} with the next payout", { 0: fmtGold(pending.units, 6) })}</small>
+          )}
+        </dd>
       </div>
-      <dl className="earn-sources">
+      <div>
+        <dt>
+          <MapTrifold size={14} weight="duotone" aria-hidden="true" /> {tr("On the map today")}
+        </dt>
+        <dd>{onMap === null ? "–" : `${goldCompact(onMap)} GOLD`}</dd>
+      </div>
+      {staked && (
         <div>
           <dt>
-            <MapTrifold size={16} weight="duotone" aria-hidden="true" /> {tr("From the map")}
+            <Flame size={14} weight="duotone" aria-hidden="true" /> {tr("From your stake")}
           </dt>
-          <dd>
-            {journey ? fmtGold(journey.stats.goldEarnedU) : "…"} GOLD
-            <small>{tr("Coins, quests and tasks")}</small>
-          </dd>
+          <dd>{kept === null ? "–" : `${kept.toLocaleString("en-US", { maximumFractionDigits: 3 })} NEAR`}</dd>
         </div>
-        <div>
-          <dt>
-            <Flame size={16} weight="duotone" aria-hidden="true" /> {tr("From your stake")}
-          </dt>
-          <dd>
-            {kept === null ? "–" : kept.toLocaleString("en-US", { maximumFractionDigits: 3 })} NEAR
-            <small>{tr("Yield kept for you")}</small>
-          </dd>
-        </div>
-      </dl>
-      <FuelCard refreshKey={refreshKey} />
-      {children}
-    </>
+      )}
+    </dl>
   );
 }
