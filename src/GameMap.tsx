@@ -609,12 +609,12 @@ export function GameMap(props: GameMapProps) {
       title.textContent =
         item.kind === "aura"
           ? `${item.name} · ${tr("{0} Aura", { 0: rarityLabel(item.rarity as Parameters<typeof rarityLabel>[0]) })}`
-          : tr("GOLD in this zone");
+          : tr("QGOLD in this zone");
       const text = document.createElement("p");
       text.textContent =
         item.kind === "aura"
           ? tr("The chest in {0} can hold this Aura today. Open the chest activity there to try for it.", { 0: zone.name })
-          : tr("Activities in {0} pay GOLD today.", { 0: zone.name });
+          : tr("Activities in {0} pay QGOLD today.", { 0: zone.name });
       const open = document.createElement("button");
       open.type = "button";
       open.className = "zone-loot-open";

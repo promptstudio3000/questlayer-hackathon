@@ -161,7 +161,7 @@ export function ChainFeed({ accountId }: { accountId: string | null }) {
                     : ""}
                   {typeof item.xp === "number" && item.xp > 0 ? ` · +${item.xp} XP` : ""}
                   {typeof item.gold === "number" && item.gold > 0
-                    ? ` · +${gold(item.gold)} GOLD`
+                    ? ` · +${gold(item.gold)} QGOLD`
                     : ""}
                 </small>
               </span>

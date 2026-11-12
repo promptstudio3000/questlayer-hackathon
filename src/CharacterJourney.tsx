@@ -136,7 +136,7 @@ export function CharacterJourney({
         [tr("Monsters"), s.monsters],
         [tr("Wearables"), s.wearables],
         [tr("Badges"), s.badges],
-        ["GOLD", gold(s.goldEarnedU)],
+        ["QGOLD", gold(s.goldEarnedU)],
       ]
     : [];
   const story = data ? rows(data.timeline) : [];

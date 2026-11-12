@@ -301,7 +301,7 @@ export function StakeWallet({ refreshKey, staked }: { refreshKey: string; staked
         <dt>
           <MapTrifold size={14} weight="duotone" aria-hidden="true" /> {tr("On the map today")}
         </dt>
-        <dd>{onMap === null ? "–" : `${goldCompact(onMap)} GOLD`}</dd>
+        <dd>{onMap === null ? "–" : `${goldCompact(onMap)} QGOLD`}</dd>
       </div>
       {staked && (
         <div>

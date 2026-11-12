@@ -359,7 +359,7 @@ export function NearbyMarket({
       )}
       {form === "send" && (
         <SendForm position={position} onClose={() => setForm("")} busy={busy === "send:new"} submit={async (input) => {
-          const r = await run("send:new", () => api("/market/transfers", input), tr("GOLD is held until the condition is met."));
+          const r = await run("send:new", () => api("/market/transfers", input), tr("QGOLD is held until the condition is met."));
           if (r) setForm("");
         }} />
       )}
@@ -400,7 +400,7 @@ export function NearbyMarket({
             </button>
           }
         />
-        {data.transfers.length === 0 && <p className="nearby-empty">{tr("Nothing waiting. Send GOLD that unlocks at a time or a place.")}</p>}
+        {data.transfers.length === 0 && <p className="nearby-empty">{tr("Nothing waiting. Send QGOLD that unlocks at a time or a place.")}</p>}
         {data.transfers.map((t) => (
           <TransferCard key={t.id} t={t} busy={!!busy} act={(action) =>
             run(`send:${t.id}`, () => api("/market/transfer/act", { transferId: t.id, action, fix: fix() }))
@@ -594,7 +594,7 @@ function TaskDialog({ id, k, fix, busy, run, onClose }: { id: string; k?: string
         {task && (
           <>
             <div className="market-facts">
-              <Badge tone="gold"><CoinIcon /> {gold(task.reward)} GOLD</Badge>
+              <Badge tone="gold"><CoinIcon /> {gold(task.reward)} QGOLD</Badge>
               <Badge>{TYPE_LABEL[task.type]?.() ?? task.type}</Badge>
               {task.visibility !== "public" && <Badge tone="purple"><LockKey size={12} /> {tr("Invite only")}</Badge>}
             </div>
@@ -697,12 +697,12 @@ function PosterControls({ task, busy, act }: { task: MarketTask; busy: string; a
         <div key={c.id} className="market-claim-row">
           <p>
             <strong>{c.worker.name}</strong> · {STATE_LABEL[c.state]?.() ?? c.state}
-            {c.offer ? ` · ${tr("asks {0} GOLD", { 0: gold(c.offer) })}` : ""}
+            {c.offer ? ` · ${tr("asks {0} QGOLD", { 0: gold(c.offer) })}` : ""}
           </p>
           {c.evidence && <p className="market-meta">{c.evidence}</p>}
           {c.state === "offered" && (
             <button disabled={!!busy} onClick={() => act("accept", "/market/task/accept-offer", { claimId: c.id }, tr("Offer accepted. The extra amount plus 10 % is now held."))}>
-              {tr("Accept for {0} GOLD + fee", { 0: gold((c.offer || 0) - task.reward) })}
+              {tr("Accept for {0} QGOLD + fee", { 0: gold((c.offer || 0) - task.reward) })}
             </button>
           )}
           {c.state === "submitted" && (
@@ -716,7 +716,7 @@ function PosterControls({ task, busy, act }: { task: MarketTask; busy: string; a
         </div>
       ))}
       {task.state === "open" && (
-        <button className="secondary-button" disabled={!!busy} onClick={() => act("cancel", "/market/task/cancel", { taskId: task.id }, tr("Task closed. Unused GOLD and its fee are back."))}>
+        <button className="secondary-button" disabled={!!busy} onClick={() => act("cancel", "/market/task/cancel", { taskId: task.id }, tr("Task closed. Unused QGOLD and its fee are back."))}>
           {tr("Close task and refund the rest")}
         </button>
       )}
@@ -789,8 +789,8 @@ function SecretDialog({ id, k, position, fix, busy, run, notify, onClose }: { id
           <>
             <div className="market-facts">
               <Badge tone="purple"><LockKey size={12} /> {s.kind === "route" ? tr("Secret route") : s.kind === "sponsored" ? tr("Sponsored Secret") : s.kind === "private" ? tr("Private Secret") : tr("Secret place")}</Badge>
-              {s.price > 0 && <Badge tone="gold"><CoinIcon /> {gold(s.price)} GOLD</Badge>}
-              {s.kind === "sponsored" && <Badge tone="green">{tr("{0} GOLD for finding it · {1} left", { 0: gold(s.visitReward), 1: s.visitsLeft })}</Badge>}
+              {s.price > 0 && <Badge tone="gold"><CoinIcon /> {gold(s.price)} QGOLD</Badge>}
+              {s.kind === "sponsored" && <Badge tone="green">{tr("{0} QGOLD for finding it · {1} left", { 0: gold(s.visitReward), 1: s.visitsLeft })}</Badge>}
             </div>
             {s.teaser && <p>{s.teaser}</p>}
             <p className="market-meta">
@@ -837,7 +837,7 @@ function SecretDialog({ id, k, position, fix, busy, run, notify, onClose }: { id
                   const r = await act("reveal", "/market/secret/reveal", { secretId: s.id, k });
                   if (r) notify(tr("Revealed. Go and find it."));
                 }}>
-                  <Eye size={18} /> {s.price > 0 ? tr("Reveal for {0} GOLD", { 0: gold(s.price) }) : tr("Reveal for free")}
+                  <Eye size={18} /> {s.price > 0 ? tr("Reveal for {0} QGOLD", { 0: gold(s.price) }) : tr("Reveal for free")}
                 </button>
               )
             )}
@@ -917,7 +917,7 @@ function TaskForm({ balance, position, busy, onClose, submit }: { balance: numbe
       </>}
       {step === 1 && <>
         <div className="market-form-row">
-          <Field label={tr("Reward (GOLD)")}><input autoFocus inputMode="numeric" required value={v.reward} onChange={set("reward")} /></Field>
+          <Field label={tr("Reward (QGOLD)")}><input autoFocus inputMode="numeric" required value={v.reward} onChange={set("reward")} /></Field>
           <Field label={tr("Completions")}><input type="number" min={1} max={50} value={v.slots} onChange={set("slots")} /></Field>
           {v.type === "recurring" ? (
             <>
@@ -940,14 +940,14 @@ function TaskForm({ balance, position, busy, onClose, submit }: { balance: numbe
       {step === 2 && <>
         <dl className="market-review-list">
           <Review label={TYPE_LABEL[v.type]()}><b>{v.title}</b></Review>
-          <Review label={tr("Reward (GOLD)")}>{gold(reward)} × {slots}{rounds > 1 ? ` × ${rounds}` : ""}</Review>
+          <Review label={tr("Reward (QGOLD)")}>{gold(reward)} × {slots}{rounds > 1 ? ` × ${rounds}` : ""}</Review>
           {v.type === "recurring"
             ? <Review label={tr("Every (days)")}>{v.everyDays}</Review>
             : <Review label={tr("Open (days)")}>{v.days}</Review>}
           <Review label={tr("Who can see it")}>{VISIBILITY[v.visibility]}</Review>
         </dl>
         <p className="market-total" role="status">
-          {tr("You pay {0} GOLD: {1} in rewards + {2} fee (10 %). Unused GOLD and its fee come back.", { 0: gold(total + fee), 1: gold(total), 2: gold(fee) })}
+          {tr("You pay {0} QGOLD: {1} in rewards + {2} fee (10 %). Unused QGOLD and its fee come back.", { 0: gold(total + fee), 1: gold(total), 2: gold(fee) })}
         </p>
         <p className="market-meta">{tr("Pinned at your current position.")}</p>
         {short && <p role="alert">{tr("Not enough QGOLD in your account.")}</p>}
@@ -996,14 +996,14 @@ function SecretForm({ position, busy, onClose, submit }: { position: Point; busy
       {step === 2 && (sponsored ? (
         <>
           <div className="market-form-row">
-            <Field label={tr("GOLD per finder")}><input autoFocus inputMode="decimal" value={v.visitReward} onChange={set("visitReward")} /></Field>
+            <Field label={tr("QGOLD per finder")}><input autoFocus inputMode="decimal" value={v.visitReward} onChange={set("visitReward")} /></Field>
             <Field label={tr("Finders")}><input type="number" min={1} max={500} value={v.visits} onChange={set("visits")} /></Field>
           </div>
-          <p className="market-total">{tr("You pay {0} GOLD: {1} for finders + {2} fee (10 %).", { 0: gold(budget + feeOnTop(budget)), 1: gold(budget), 2: gold(feeOnTop(budget)) })}</p>
+          <p className="market-total">{tr("You pay {0} QGOLD: {1} for finders + {2} fee (10 %).", { 0: gold(budget + feeOnTop(budget)), 1: gold(budget), 2: gold(feeOnTop(budget)) })}</p>
         </>
       ) : (
         <>
-          <Field label={tr("Price to reveal (GOLD, 0 = free)")}><input autoFocus inputMode="decimal" value={v.price} onChange={set("price")} /></Field>
+          <Field label={tr("Price to reveal (QGOLD, 0 = free)")}><input autoFocus inputMode="decimal" value={v.price} onChange={set("price")} /></Field>
           <p className="market-total">{tr("You get 90 % of each reveal when the explorer gets there, or after 7 days without a dispute.")}</p>
         </>
       ))}
@@ -1023,7 +1023,7 @@ function SendForm({ position, busy, onClose, submit }: { position: Point; busy: 
       ...(v.condition === "gps" ? { place: { lat: position.lat, lng: position.lng } } : {}),
     })}>
       <Field label={tr("To (player id or NEAR account)")}><input required value={v.to} onChange={set("to")} /></Field>
-      <Field label={tr("Amount (GOLD)")}><input inputMode="numeric" required value={v.amount} onChange={set("amount")} /></Field>
+      <Field label={tr("Amount (QGOLD)")}><input inputMode="numeric" required value={v.amount} onChange={set("amount")} /></Field>
       <Field label={tr("Released when")}>
         <select value={v.condition} onChange={set("condition")}>
           <option value="both_confirm">{tr("You both confirm")}</option>

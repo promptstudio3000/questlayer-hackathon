@@ -302,9 +302,13 @@ export type MessageReview = {
   operation?: string;
   keyToRemove?: string;
 };
-const QGOLD_DECIMALS = 6,
-  NEAR_DECIMALS = 24,
+const NEAR_DECIMALS = 24,
   WNEAR = ["wrap.testnet", "wrap.near"];
+/** QGOLD as the game counts it: whole smallest units, "2500000" -> "2,500,000". */
+const qgoldUnits = (value: string) =>
+  /^-?[0-9]{1,40}$/.test(value)
+    ? value.replace(/^(-?)0+(?=\d)/, "$1").replace(/\B(?=(\d{3})+$)/g, ",")
+    : value;
 /** "1100000", 6 -> "1.1"; keeps a leading minus; non-numbers are returned as is. */
 export function formatUnits(value: string, decimals: number) {
   const m = /^(-?)([0-9]{1,40})$/.exec(String(value));
@@ -329,7 +333,7 @@ const plain = (v: unknown) =>
 function tokenAmount(contract: string, amount: unknown, config: VaultConfig) {
   const a = text(amount);
   if (contract && contract === config.contracts.qgold)
-    return `${formatUnits(a, QGOLD_DECIMALS)} QGOLD`;
+    return `${qgoldUnits(a)} QGOLD`;
   if (WNEAR.includes(contract))
     return `${formatUnits(a, NEAR_DECIMALS)} wNEAR`;
   return `${a} base units of ${contract}`;
@@ -601,7 +605,7 @@ const auraName = (id: string) => {
     : id;
 };
 const goldAmount = (v: unknown) =>
-  `${formatUnits(text(v), QGOLD_DECIMALS)} GOLD`;
+  `${qgoldUnits(text(v))} QGOLD`;
 function tradeQuestion(intent: Record<string, unknown>, config: VaultConfig) {
   const diff = Object.entries(plain(intent.diff) ?? {});
   const nft = diff.find(([id]) => id.startsWith("nep171:")),

@@ -239,10 +239,10 @@ export function Inventory({
 
   const priceDraft = useFormDraft({
     playerId: player.id,
-    form: "aura-listing-qgold",
+    form: "aura-listing-qgold-b",
     realm: `demo:${selectedKey || "none"}`,
     fields: PRICE_DRAFT_FIELDS,
-    initial: { price: "50000" },
+    initial: { price: "50M" },
   });
   const price = priceDraft.values.price;
   const setPrice = (value: string) => priceDraft.setField("price", value);
@@ -444,12 +444,12 @@ export function Inventory({
       return;
     if (!selected || selected.type === "wearable" || locked) return;
     if (selected.type === "aura" && selected.item.native_claim_state === "issued") return;
-    // Typed in QGOLD (1 QGOLD = 1 microNEAR); the trade itself settles in NEAR yocto.
+    // Typed in QGOLD (the game unit, src/qgold-display.ts); the trade itself settles in NEAR yocto.
     let amount: string;
     try {
       amount = parseQgoldPrice(price);
     } catch {
-      setListingError(tr("Choose a price between 1,000 and 1,000M QGOLD."));
+      setListingError(tr("Choose a price between 1M and 1,000B QGOLD."));
       return;
     }
     setListingPending(true);

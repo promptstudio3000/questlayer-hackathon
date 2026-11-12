@@ -49,10 +49,10 @@ export const burnMemo = (kind, ref) => `questlayer:burn:${kind}:${ref}`.slice(0,
  */
 export function burnGold(db, { player, kind, ref, amountU, title, now = Date.now(), meta = {} }) {
   ensureGoldSpend(db);
-  assert(BURN_KINDS.includes(kind), "Unknown GOLD spend.", 400, "BURN_KIND");
-  assert(Number.isSafeInteger(amountU) && amountU > 0, "Invalid GOLD amount.", 400, "BURN_AMOUNT");
+  assert(BURN_KINDS.includes(kind), "Unknown QGOLD spend.", 400, "BURN_KIND");
+  assert(Number.isSafeInteger(amountU) && amountU > 0, "Invalid QGOLD amount.", 400, "BURN_AMOUNT");
   const row = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
-  assert(row, "Sign in to spend GOLD.", 401, "AUTH");
+  assert(row, "Sign in to spend QGOLD.", 401, "AUTH");
   const burn = id("burn");
   let memo = burnMemo(kind, ref);
   if (realm === "qgold") {
@@ -64,13 +64,13 @@ export function burnGold(db, { player, kind, ref, amountU, title, now = Date.now
     }
     memo = credit.memo;
   } else {
-    assert(row.gold_u >= amountU, "Not enough GOLD for this.", 402, "GOLD_LOW");
+    assert(row.gold_u >= amountU, "Not enough QGOLD for this.", 402, "GOLD_LOW");
     db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=? AND gold_u>=?").run(amountU, player, amountU);
   }
   db.prepare(
     "INSERT INTO gold_burns(id,player_id,kind,ref,amount_u,memo,realm,created_at) VALUES(?,?,?,?,?,?,?,?)",
   ).run(burn, player, kind, String(ref).slice(0, 120), amountU, memo, realm, now);
-  history(db, player, "burn", title || `Spent GOLD: ${kind}`, -amountU, { burn, kind, ref, memo, realm, ...meta });
+  history(db, player, "burn", title || `Spent QGOLD: ${kind}`, -amountU, { burn, kind, ref, memo, realm, ...meta });
   return { id: burn, amountU, memo, realm, balanceU: realm === "qgold" ? null : row.gold_u - amountU };
 }
 

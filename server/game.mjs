@@ -517,7 +517,7 @@ export function stake(db, player, value, contribution, pool, now = Date.now()) {
   );
   return atomic(db, () => {
     const p = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
-    assert(p.gold_u >= value, "Not enough practice GOLD for this stake.");
+    assert(p.gold_u >= value, "Not enough practice QGOLD for this stake.");
     db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=?").run(
       value,
       player,
@@ -625,7 +625,7 @@ export function redeem(db, player, withdrawalId, now = Date.now()) {
     assert(w.state === "pending", "Withdrawal is already complete.", 409);
     assert(
       w.ready_at <= now,
-      "Your GOLD is still unlocking. Check back in a moment.",
+      "Your QGOLD is still unlocking. Check back in a moment.",
     );
     db.prepare("UPDATE withdrawals SET state='paid' WHERE id=?").run(w.id);
     db.prepare("UPDATE players SET gold_u=gold_u+? WHERE id=?").run(
@@ -753,7 +753,7 @@ export function buyItem(db, player, listingId, now = Date.now()) {
       409,
     );
     const p = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
-    assert(p.gold_u >= x.price_u, "Not enough practice GOLD for this price.");
+    assert(p.gold_u >= x.price_u, "Not enough practice QGOLD for this price.");
     db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=?").run(
       x.price_u,
       player,

@@ -91,11 +91,11 @@ export function GoldShop({
     <div className="gold-shop">
       <p className="gold-shop-balance">
         <span>
-          {shop.realm === "qgold" ? tr("Your QGOLD") : tr("Your GOLD")}: <b>{gold(shop.balanceU, shop.realm === "qgold" ? 6 : 0)}</b>
+          {tr("Your QGOLD")}: <b>{gold(shop.balanceU, shop.realm === "qgold" ? 6 : 0)}</b>
         </span>
         <InfoTip label={tr("Shop")}>
           {tr("Spending burns QGOLD: it leaves the game for good, so every QGOLD left is backed a little better.")}{" "}
-          {shop.realm === "qgold" ? tr("each purchase burns QGOLD from your NEAR account") : tr("practice GOLD until the QGOLD vault opens")}
+          {shop.realm === "qgold" ? tr("each purchase burns QGOLD from your NEAR account") : tr("practice QGOLD until the QGOLD vault opens")}
         </InfoTip>
       </p>
 

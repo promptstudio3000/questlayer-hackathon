@@ -142,8 +142,8 @@ export default function QgoldSection() {
         </>
       ) : (
         <p className="eco-note">
-          The QGOLD vault is not deployed on testnet yet. Until then the game pays practice GOLD. It starts at R = 0.001 NEAR
-          per QGOLD (1 NEAR = 1,000 GOLD).
+          The QGOLD vault is not deployed on testnet yet. Until then the game pays practice amounts. It starts at R = 0.001 NEAR
+          per QGOLD (1 NEAR = 1,000 QGOLD).
         </p>
       )}
 

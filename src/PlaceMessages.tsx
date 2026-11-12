@@ -150,7 +150,7 @@ export function PlaceMessages({
                 })
               }
             >
-              {tr("Keep it 1 more day ({0} GOLD)", { 0: open.kind === "topic" ? prices?.topicPerDay ?? 0 : prices?.shoutPerDay ?? 0 })}
+              {tr("Keep it 1 more day ({0} QGOLD)", { 0: open.kind === "topic" ? prices?.topicPerDay ?? 0 : prices?.shoutPerDay ?? 0 })}
             </button>
           )}
           {open.mine && onPublish && open.social.state !== "confirmed" && (
@@ -431,10 +431,10 @@ export function PlaceCompose({
           {kind === "shout"
             ? tr("A short bubble here for everyone nearby. No replies.")
             : tr("Anyone from level {0} can write in it for free.", { 0: prices?.postLevel ?? 2 })}{" "}
-          {tr("Public at this map spot. GOLD is burned and not returned if the message is removed.")}
+          {tr("Public at this map spot. QGOLD is burned and not returned if the message is removed.")}
         </p>
         <button type="submit" className="gold-primary" disabled={busy || !text.trim() || (kind === "topic" && !title.trim())}>
-          {tr("Post for {0} GOLD", { 0: formatGold(perDay * days) })}
+          {tr("Post for {0} QGOLD", { 0: formatGold(perDay * days) })}
         </button>
       </form>
     </Dialog>

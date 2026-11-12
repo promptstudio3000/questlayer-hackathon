@@ -113,7 +113,7 @@ if (command === "set-login") {
       for (const c of changes) {
         db.prepare("UPDATE players SET gold_u=? WHERE id=?").run(c.afterU, c.id);
         db.prepare("UPDATE history SET gold_u=0 WHERE id=?").run(c.welcome);
-        history(db, c.id, "faucet-removed", "Practice GOLD removed: every GOLD is now real QGOLD", c.afterU - c.beforeU, {
+        history(db, c.id, "faucet-removed", "Practice QGOLD removed: every QGOLD is now real QGOLD", c.afterU - c.beforeU, {
           source: "demo-faucet-cleanup",
         });
       }

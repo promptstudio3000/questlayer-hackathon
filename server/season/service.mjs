@@ -227,7 +227,7 @@ export function createSeason(db, settings, { now = () => Date.now() } = {}) {
       endsAt: settings.endsAt,
       goal: settings.goal,
       points: settings.points,
-      counts: "Hunts, zone visits and NPC lines only. Never GOLD, NEAR, stake or trades.",
+      counts: "Hunts, zone visits and NPC lines only. Never QGOLD, NEAR, stake or trades.",
       cosmetic: true,
       players: rows.length,
       finishers: db.prepare("SELECT count(*) n FROM season_finishers WHERE season_id=?").get(settings.id).n,

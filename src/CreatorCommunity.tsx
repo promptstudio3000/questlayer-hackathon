@@ -1360,8 +1360,8 @@ function QuestDetail({
           )}
           <p>
             {part.state === "resolved"
-              ? tr("Independent completion review is recorded. No XP, item or GOLD reward is configured for this quest.")
-              : tr("Your start is saved. Completion needs independent review; the author cannot confirm it for you. No XP, item or GOLD reward is configured.")}
+              ? tr("Independent completion review is recorded. No XP, item or QGOLD reward is configured for this quest.")
+              : tr("Your start is saved. Completion needs independent review; the author cannot confirm it for you. No XP, item or QGOLD reward is configured.")}
           </p>
         </article>
       ) : (
@@ -1372,7 +1372,7 @@ function QuestDetail({
               {quest.price
                 ? tr("Paid unlock {0} NEAR, supports the creator", { 0: nearText(quest.price) })
                 : tr("Free quest")}{" "}
-              {tr("· reviewed revision")}{" "}{quest.revision}{tr(". No XP, item or GOLD reward is configured. Starting saves these instructions; it does not prove a physical visit.")}</p>
+              {tr("· reviewed revision")}{" "}{quest.revision}{tr(". No XP, item or QGOLD reward is configured. Starting saves these instructions; it does not prove a physical visit.")}</p>
             {quest.requirement && (
               <div className="creator-quote">
                 <h4>{tr("Declared observation requirement")}</h4>
@@ -1573,7 +1573,7 @@ function CreatorCompletionSection({
           <p className="creator-instructions">{state.requirement?.prompt}</p>
           <p className="creator-hint">
             {tr("Policy")}{" "}{state.policy?.version}{tr(": private text up to")}{" "}
-            {state.policy?.maxEvidenceChars} {" "}{tr("characters, one pending review at a time, up to")}{" "}{state.policy?.maxAttempts} {" "}{tr("attempts. An independent third rejection resolves the obligation as NOT completed. No evidence expires automatically. Review checks text against the prompt; it does not prove GPS, a physical visit or the path walked. No XP, GOLD or item reward is configured.")}</p>
+            {state.policy?.maxEvidenceChars} {" "}{tr("characters, one pending review at a time, up to")}{" "}{state.policy?.maxAttempts} {" "}{tr("attempts. An independent third rejection resolves the obligation as NOT completed. No evidence expires automatically. Review checks text against the prompt; it does not prove GPS, a physical visit or the path walked. No XP, QGOLD or item reward is configured.")}</p>
           {state.state === "pending" && (
             <p role="status">
               {tr("Your observation is awaiting independent review. Do not send another copy.")}</p>
@@ -1592,7 +1592,7 @@ function CreatorCompletionSection({
               <p>
                 {tr("Reviewed observation completed for accepted revision")}{" "}
                 {state.receipt.revision}. {count(state.receipt.reward.xp)} {" "}{tr("XP ·")}{" "}
-                {count(state.receipt.reward.gold)} {" "}{tr("GOLD · no item. This receipt does not establish a physical visit.")}</p>
+                {count(state.receipt.reward.gold)} {" "}{tr("QGOLD · no item. This receipt does not establish a physical visit.")}</p>
               <small>{tr("Receipt:")}{" "}{state.receipt.id}</small>
             </div>
           )}

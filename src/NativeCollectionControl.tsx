@@ -46,7 +46,7 @@ export function NativeCollectionControl({
         >
           <GameObjectArt kind="coin" size={24} />
           <span>
-            <b>{rewardGold(collection.confirmed.amount)} GOLD</b> ·{" "}
+            <b>{rewardGold(collection.confirmed.amount)} QGOLD</b> ·{" "}
             {collection.confirmed.count} {" "}{tr("confirmed this session")}</span>
         </div>
       )}
