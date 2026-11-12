@@ -3262,5 +3262,15 @@
  "Nothing for you today. Come back {0} for new tasks.": "आज तुम्हारे लिए कुछ नहीं है। नए काम के लिए {0} आना।",
  "It has nothing for you today. Come back {0} to win something.": "आज इसके पास तुम्हारे लिए कुछ नहीं है। कुछ जीतने के लिए {0} आना।",
  "Come back later": "बाद में आना",
- "You can still ask me anything.": "फिर भी तुम मुझसे कुछ भी पूछ सकते हो।"
+ "You can still ask me anything.": "फिर भी तुम मुझसे कुछ भी पूछ सकते हो।",
+ "Hi, I'm Pip. Want the tour?": "नमस्ते, मैं पिप हूँ। टूर करोगे?",
+ "Again": "फिर से",
+ "Every quest, encounter and trade, step by step.": "हर क्वेस्ट, मुलाकात और सौदा, कदम दर कदम।",
+ "Fold the tour": "टूर छोटा करें",
+ "Open the tour": "टूर खोलें",
+ "Start the tour": "टूर शुरू करें",
+ "Tour done: {0} transactions on NEAR.": "टूर पूरा: NEAR पर {0} लेन-देन।",
+ "Tour": "टूर",
+ "confirming": "पुष्टि हो रही है",
+ "{0} waved back: “{1}”": "{0} ने वापस हाथ हिलाया: “{1}”"
 }

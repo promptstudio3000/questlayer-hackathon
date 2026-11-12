@@ -3262,5 +3262,15 @@
  "Nothing for you today. Come back {0} for new tasks.": "Hoy no hay nada para ti. Vuelve {0} por nuevas tareas.",
  "It has nothing for you today. Come back {0} to win something.": "Hoy no tiene nada para ti. Vuelve {0} para ganar algo.",
  "Come back later": "Vuelve más tarde",
- "You can still ask me anything.": "Aun así puedes preguntarme lo que quieras."
+ "You can still ask me anything.": "Aun así puedes preguntarme lo que quieras.",
+ "Hi, I'm Pip. Want the tour?": "Hola, soy Pip. ¿Quieres el recorrido?",
+ "Again": "Otra vez",
+ "Every quest, encounter and trade, step by step.": "Cada misión, encuentro y trato, paso a paso.",
+ "Fold the tour": "Plegar el recorrido",
+ "Open the tour": "Abrir el recorrido",
+ "Start the tour": "Empezar el recorrido",
+ "Tour done: {0} transactions on NEAR.": "Recorrido terminado: {0} transacciones en NEAR.",
+ "Tour": "Recorrido",
+ "confirming": "confirmando",
+ "{0} waved back: “{1}”": "{0} te devolvió el saludo: “{1}”"
 }
