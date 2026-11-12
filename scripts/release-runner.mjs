@@ -48,7 +48,14 @@ const USER = process.env.RELEASE_USER || "questlayer-release";
 const DEPLOY_BRANCH = process.env.RELEASE_DEPLOY_BRANCH || "claude/project-thread-0rica6";
 const MAIN_BRANCH = process.env.RELEASE_MAIN_BRANCH || "claude/upbeat-gauss-5czir7";
 const ENABLED = process.env.RELEASE_DEPLOY_ENABLED === "1";
-const APP = { name: "questlayer-hackathon", port: 7091, domain: "questlayer.promptstudio3000.com" };
+const APP = { name: "questlayer-hackathon", port: 7091, domain: "questlayer.promptstudio3000.com", activateTarget: "testnet", buildEnv: {}, vault: { set: "testnet", layer: "world", service: "questlayer-signer", host: "questlayer-signer.promptstudio3000.com", port: 7092 } };
+// Further deploy targets come from the allowlist (installed from main), e.g. the Test Layer.
+const targetOf = (name) => {
+  if (!name || name === "world") return APP;
+  const t = allowlist().deployTargets?.[name];
+  if (!t) throw new Error(`Deploy target ${name} is not allowlisted.`);
+  return { name: t.app, port: t.port, domain: t.domain, activateTarget: name, buildEnv: t.buildEnv || {}, vault: t.signingVault };
+};
 const APP_DIR = `/opt/ps3000/apps/${APP.name}`;
 const REPO = join(HOME, "repo");
 const KEYS = join(HOME, "keys");
@@ -162,17 +169,19 @@ function switchTo(release, state) {
   state.deploy = { ...state.deploy, live: release, pinned: release, switchedAt: now() };
 }
 
-function build(sha) {
-  const dir = worktree("deploy", sha);
+function build(sha, target = APP, dir = worktree("deploy", sha)) {
   try {
     const log = [];
     log.push(must(asUser(["npm", "ci", "--no-audit", "--no-fund"], { cwd: dir }), "npm ci"));
     log.push(must(asUser(["npm", "run", "check"], { cwd: dir, timeout: 45 * 60_000 }), "npm run check"));
+    // The client pins its manifests at build time (vite.config.ts): rebuild for the target.
+    if (Object.keys(target.buildEnv).length)
+      log.push(must(asUser(["npm", "run", "build"], { cwd: dir, env: target.buildEnv, timeout: 20 * 60_000 }), "target build"));
     writeFileSync(join(dir, "build-id.txt"), `${sha}\n`);
-    const files = RELEASE_FILES.filter((f) => existsSync(join(dir, f)));
+    const files = RELEASE_FILES.map((f) => (f === "deploy/questlayer-hackathon.service" ? `deploy/${target.name}.service` : f)).filter((f) => existsSync(join(dir, f)));
     const pub = readdirSync(join(dir, "public")).filter((f) => f.endsWith(".json")).map((f) => `public/${f}`);
     const release = tag();
-    const archive = `/tmp/${APP.name}-${release}.tgz`;
+    const archive = `/tmp/${target.name}-${release}.tgz`;
     asRoot(["tar", "--no-xattrs", "-czf", archive, "-C", dir, ...files, ...pub]);
     return { release, archive, dir, log: tail(log.join("\n"), 40) };
   } catch (e) {
@@ -181,22 +190,27 @@ function build(sha) {
   }
 }
 
-function signingVault(dir) {
+function activate(built, target) {
+  asRoot(["bash", join(INSTALL, "scripts/vps-activate-release.sh"), built.release, target.activateTarget, target.name, String(target.port), target.domain], { cwd: "/" });
+}
+
+function signingVault(dir, target = APP) {
+  const v = target.vault;
+  if (!v) return { status: "none" };
   // Same rule as deploy-vps.sh: reinstall when the fingerprint of its inputs changed.
-  const want = must(asUser(["bash", "scripts/signing-vault-fingerprint.sh"], { cwd: dir }), "signing vault fingerprint").trim();
-  const have = existsSync("/opt/ps3000/apps/questlayer-signer/current/inputs.sha256")
-    ? readFileSync("/opt/ps3000/apps/questlayer-signer/current/inputs.sha256", "utf8").trim()
-    : "";
+  const want = must(asUser(["bash", "scripts/signing-vault-fingerprint.sh", v.set], { cwd: dir }), "signing vault fingerprint").trim();
+  const root = `/opt/ps3000/apps/${v.service}`;
+  const have = existsSync(`${root}/current/inputs.sha256`) ? readFileSync(`${root}/current/inputs.sha256`, "utf8").trim() : "";
   if (want === have) return { status: "unchanged", fingerprint: want };
   const stage = join(HOME, "signer-stage");
   rmSync(stage, { recursive: true, force: true });
   must(asUser(["mkdir", "-p", stage]), "mkdir");
-  must(asUser(["bash", "scripts/install-signing-vault-vps.sh"], { cwd: dir, env: { SIGNING_VAULT_STAGE_DIR: stage } }), "signing vault build");
-  const root = "/opt/ps3000/apps/questlayer-signer", release = tag();
+  must(asUser(["bash", "scripts/install-signing-vault-vps.sh"], { cwd: dir, env: { SIGNING_VAULT_STAGE_DIR: stage, SIGNING_VAULT_LAYER: v.layer } }), "signing vault build");
+  const release = tag();
   asRoot(["install", "-d", "-m", "755", `${root}/releases/${release}`]);
   asRoot(["cp", "-R", `${stage}/.`, `${root}/releases/${release}/`]);
   asRoot(["chown", "-R", "root:root", `${root}/releases/${release}`]);
-  asRoot(["bash", join(INSTALL, "scripts/vps-install-signing-vault-release.sh"), root, release, "questlayer-signer.promptstudio3000.com", "7092", "questlayer-signer"]);
+  asRoot(["bash", join(INSTALL, "scripts/vps-install-signing-vault-release.sh"), root, release, v.host, String(v.port), v.service]);
   rmSync(stage, { recursive: true, force: true });
   return { status: "reinstalled", fingerprint: want, release };
 }
@@ -216,7 +230,7 @@ function deploy(state, head) {
   let built;
   try {
     built = build(head);
-    asRoot(["bash", join(INSTALL, "scripts/vps-activate-release.sh"), built.release, "testnet", APP.name, String(APP.port), APP.domain], { cwd: "/" });
+    activate(built, APP);
     const vault = signingVault(built.dir);
     state.deploy = { sha: head, release: built.release, live: built.release, pinned: null, deployedAt: now(), signingVault: vault, failedSha: null, error: null };
   } catch (e) {
@@ -289,6 +303,21 @@ function runOp(id, deploySha) {
     save();
     dir = worktree(`op-${id}`, sha);
     symlinkSync(KEYS, join(dir, ".data"));
+    if (op.deployTarget) {
+      // Install keys and runtime.env first: the activation refuses a target without its keys.
+      result.installedKeys = op.installKeys.map((item) => installKey(keyInstallTarget(item, allowlist())));
+      if (op.runtimeEnv) result.runtimeEnv = writeRuntimeEnv(op.runtimeEnv);
+      const target = targetOf(op.deployTarget);
+      const built = build(sha, target, dir);
+      try {
+        activate(built, target);
+        result.deploy = { target: op.deployTarget, release: built.release, log: built.log, signingVault: signingVault(dir, target) };
+      } finally {
+        rmSync(built.archive, { force: true });
+      }
+      result.status = "done";
+      return;
+    }
     must(asUser(["npm", "ci", "--no-audit", "--no-fund"], { cwd: dir }), "npm ci");
     if (rule.contracts || op.wasm) {
       result.steps.push({ step: "contracts", log: tail(must(asUser(["bash", "scripts/build-contracts.sh", "--no-check"], { cwd: dir, timeout: 90 * 60_000 }), "contract build"), 20) });
@@ -337,6 +366,9 @@ function installKey({ from, dir, file, service }) {
     if (!readFileSync(target).equals(readFileSync(src))) throw new Error(`${target} exists and differs; move it aside deliberately first.`);
     return { service, file, installed: false, reason: "already identical" };
   }
+  // A DynamicUser service that never started has no state directory yet;
+  // systemd hands it to the service user on first start (StateDirectory=).
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true, mode: 0o700 });
   const owner = statSync(dir);
   copyFileSync(src, target);
   chmodSync(target, 0o600);
