@@ -366,7 +366,6 @@
  "Choose a JPG, PNG or WebP photo smaller than 1 MB.": "Vyber fotku JPG, PNG nebo WebP menší než 1 MB.",
  "Choose a NEAR wallet": "Vyber peněženku NEAR",
  "Choose a photo": "Vyber fotku",
- "Choose a price between 0.001 and 1,000 test NEAR.": "Zvol cenu mezi 0,001 a 1 000 testovacích NEAR.",
  "Choose a quest": "Vyber si úkol",
  "Choose a reason": "Vyber důvod",
  "Choose a receipt backup": "Vyber zálohu potvrzenek",
@@ -1708,7 +1707,6 @@
  "Sell with a signed order": "Prodat podepsaným příkazem",
  "Seller": "Prodávající",
  "Seller:": "Prodávající:",
- "Selling secures this Aura on NEAR and lists it on the market. You get test NEAR when another explorer buys it.": "Prodej tuto Auru zabezpečí na NEARu a vystaví ji na trhu. Až ji jiný průzkumník koupí, dostaneš testovací NEAR.",
  "Sells": "Prodává",
  "Send": "Odeslat",
  "Send appeal": "Odeslat odvolání",
@@ -2924,7 +2922,6 @@
  "Your story": "Tvůj příběh",
  "Your totals": "Tvoje souhrny",
  "Aura #{0}": "Aura #{0}",
- "Every trade settles on NEAR, and History links the proof. Find your listing in Shop → Market.": "Každý obchod se vypořádá na NEAR a Historie odkazuje na důkaz. Svou nabídku najdeš v Obchod → Trh.",
  "Mine": "Moje",
  "More trading tools": "Další obchodní nástroje",
  "Name A–Z": "Název A–Z",
@@ -2937,7 +2934,6 @@
  "The Aura is yours. Find it in your Wardrobe.": "Aura je tvoje. Najdeš ji ve svém šatníku.",
  "Wearables can't be sold: clones are not NFTs and originals stay in your wallet.": "Wearables prodat nejde: klony nejsou NFT a originály zůstávají ve tvé peněžence.",
  "Worn": "Nošené",
- "Your Aura goes on the market. You get test NEAR when another explorer buys it.": "Tvoje aura půjde na trh. Až ji jiný průzkumník koupí, dostaneš testovací NEAR.",
  "Your Aura is back in your Wardrobe.": "Tvoje Aura je zpět v šatníku.",
  "Your Aura is on sale. Find it in Shop → Market.": "Tvoje Aura je na prodej. Najdeš ji v Obchod → Trh.",
  "Your listing. It stays on the market until someone buys it.": "Tvoje nabídka. Zůstane na trhu, dokud ji někdo nekoupí.",
@@ -3226,5 +3222,7 @@
  "About the game": "O hře",
  "Test coins, not real money.": "Testovací mince, ne skutečné peníze.",
  "Real places outdoors.": "Skutečná místa venku.",
- "Shared voxel world.": "Sdílený voxelový svět."
+ "Shared voxel world.": "Sdílený voxelový svět.",
+ "Price in QGOLD": "Cena v QGOLD",
+ "Choose a price between 1,000 and 1,000M QGOLD.": "Zvol cenu mezi 1 000 a 1 000M QGOLD."
 }

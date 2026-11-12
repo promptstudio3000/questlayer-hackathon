@@ -366,7 +366,6 @@
  "Choose a JPG, PNG or WebP photo smaller than 1 MB.": "1 MB未満のJPG、PNG、WebPの写真を選んでください。",
  "Choose a NEAR wallet": "NEARウォレットを選択",
  "Choose a photo": "写真を選択",
- "Choose a price between 0.001 and 1,000 test NEAR.": "0.001〜1,000テストNEARの価格を選んでね。",
  "Choose a quest": "クエストを選ぶ",
  "Choose a reason": "理由を選択",
  "Choose a receipt backup": "レシートのバックアップを選択",
@@ -1708,7 +1707,6 @@
  "Sell with a signed order": "署名付き注文で売る",
  "Seller": "出品者",
  "Seller:": "出品者：",
- "Selling secures this Aura on NEAR and lists it on the market. You get test NEAR when another explorer buys it.": "売るとこのオーラはNEARで保管され、マーケットに出品されるよ。誰かが買うとテストNEARを受け取れる。",
  "Sells": "販売",
  "Send": "送信",
  "Send appeal": "異議申し立てを送信",
@@ -2924,7 +2922,6 @@
  "Your story": "あなたの物語",
  "Your totals": "あなたの合計",
  "Aura #{0}": "オーラ #{0}",
- "Every trade settles on NEAR, and History links the proof. Find your listing in Shop → Market.": "すべての取引は NEAR で決済され、履歴に証明リンクが残ります。出品はショップ → マーケットにあります。",
  "Mine": "自分の",
  "More trading tools": "その他の取引ツール",
  "Name A–Z": "名前順",
@@ -2937,7 +2934,6 @@
  "The Aura is yours. Find it in your Wardrobe.": "オーラはあなたのものです。ワードローブで確認できます。",
  "Wearables can't be sold: clones are not NFTs and originals stay in your wallet.": "ウェアラブルは売れません。クローンは NFT ではなく、オリジナルはウォレットに残ります。",
  "Worn": "着用中",
- "Your Aura goes on the market. You get test NEAR when another explorer buys it.": "オーラがマーケットに出品されます。他の探検者が買うとテスト NEAR を受け取れます。",
  "Your Aura is back in your Wardrobe.": "オーラがワードローブに戻りました。",
  "Your Aura is on sale. Find it in Shop → Market.": "オーラを出品しました。ショップ → マーケットで確認できます。",
  "Your listing. It stays on the market until someone buys it.": "あなたの出品です。誰かが買うまでマーケットに残ります。",
@@ -3226,5 +3222,7 @@
  "About the game": "ゲームについて",
  "Test coins, not real money.": "テスト用コイン。本物のお金ではありません。",
  "Real places outdoors.": "屋外の実在の場所。",
- "Shared voxel world.": "共有ボクセルワールド。"
+ "Shared voxel world.": "共有ボクセルワールド。",
+ "Price in QGOLD": "QGOLDでの価格",
+ "Choose a price between 1,000 and 1,000M QGOLD.": "1,000〜1,000M QGOLDの価格を選んでください。"
 }

@@ -366,7 +366,6 @@
  "Choose a JPG, PNG or WebP photo smaller than 1 MB.": "Escolha uma foto JPG, PNG ou WebP menor que 1 MB.",
  "Choose a NEAR wallet": "Escolha uma carteira NEAR",
  "Choose a photo": "Escolha uma foto",
- "Choose a price between 0.001 and 1,000 test NEAR.": "Escolhe um preço entre 0,001 e 1000 NEAR de teste.",
  "Choose a quest": "Escolhe uma missão",
  "Choose a reason": "Escolha um motivo",
  "Choose a receipt backup": "Escolha um backup de recibos",
@@ -1708,7 +1707,6 @@
  "Sell with a signed order": "Vender com uma ordem assinada",
  "Seller": "Vendedor",
  "Seller:": "Vendedor:",
- "Selling secures this Aura on NEAR and lists it on the market. You get test NEAR when another explorer buys it.": "Vender protege esta Aura na NEAR e coloca-a no mercado. Recebes NEAR de teste quando outro explorador a comprar.",
  "Sells": "Vende",
  "Send": "Enviar",
  "Send appeal": "Enviar recurso",
@@ -2924,7 +2922,6 @@
  "Your story": "Sua história",
  "Your totals": "Seus totais",
  "Aura #{0}": "Aura #{0}",
- "Every trade settles on NEAR, and History links the proof. Find your listing in Shop → Market.": "Cada troca é liquidada na NEAR e o Histórico liga a prova. Encontra o teu anúncio em Loja → Mercado.",
  "Mine": "Minhas",
  "More trading tools": "Mais ferramentas de troca",
  "Name A–Z": "Nome A–Z",
@@ -2937,7 +2934,6 @@
  "The Aura is yours. Find it in your Wardrobe.": "A aura é tua. Encontra-a no teu guarda-roupa.",
  "Wearables can't be sold: clones are not NFTs and originals stay in your wallet.": "Os wearables não se podem vender: os clones não são NFT e os originais ficam na tua carteira.",
  "Worn": "Usados",
- "Your Aura goes on the market. You get test NEAR when another explorer buys it.": "A tua aura vai para o mercado. Recebes NEAR de teste quando outro explorador a comprar.",
  "Your Aura is back in your Wardrobe.": "A tua aura voltou ao guarda-roupa.",
  "Your Aura is on sale. Find it in Shop → Market.": "A tua aura está à venda. Encontra-a em Loja → Mercado.",
  "Your listing. It stays on the market until someone buys it.": "O teu anúncio. Fica no mercado até alguém o comprar.",
@@ -3226,5 +3222,7 @@
  "About the game": "Sobre o jogo",
  "Test coins, not real money.": "Moedas de teste, não dinheiro real.",
  "Real places outdoors.": "Lugares reais ao ar livre.",
- "Shared voxel world.": "Mundo voxel compartilhado."
+ "Shared voxel world.": "Mundo voxel compartilhado.",
+ "Price in QGOLD": "Preço em QGOLD",
+ "Choose a price between 1,000 and 1,000M QGOLD.": "Escolha um preço entre 1.000 e 1.000M QGOLD."
 }

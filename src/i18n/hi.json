@@ -366,7 +366,6 @@
  "Choose a JPG, PNG or WebP photo smaller than 1 MB.": "1 MB से छोटी JPG, PNG या WebP फ़ोटो चुनो।",
  "Choose a NEAR wallet": "एक NEAR वॉलेट चुनो",
  "Choose a photo": "एक फ़ोटो चुनो",
- "Choose a price between 0.001 and 1,000 test NEAR.": "0.001 से 1,000 टेस्ट NEAR के बीच कीमत चुनो।",
  "Choose a quest": "एक खोज चुनो",
  "Choose a reason": "एक कारण चुनो",
  "Choose a receipt backup": "एक रसीद बैकअप चुनो",
@@ -1708,7 +1707,6 @@
  "Sell with a signed order": "साइन किए गए ऑर्डर से बेचो",
  "Seller": "विक्रेता",
  "Seller:": "विक्रेता:",
- "Selling secures this Aura on NEAR and lists it on the market. You get test NEAR when another explorer buys it.": "बेचने पर यह ऑरा NEAR पर सुरक्षित होकर बाज़ार में लिस्ट होता है। कोई और खोजी खरीदे तो तुम्हें टेस्ट NEAR मिलते हैं।",
  "Sells": "बेचता है",
  "Send": "भेजो",
  "Send appeal": "अपील भेजो",
@@ -2924,7 +2922,6 @@
  "Your story": "आपकी कहानी",
  "Your totals": "आपके कुल आँकड़े",
  "Aura #{0}": "ऑरा #{0}",
- "Every trade settles on NEAR, and History links the proof. Find your listing in Shop → Market.": "हर सौदा NEAR पर निपटता है और इतिहास में उसका प्रमाण जुड़ा रहता है। अपनी लिस्टिंग दुकान → बाज़ार में देखें।",
  "Mine": "मेरी",
  "More trading tools": "और ट्रेडिंग टूल",
  "Name A–Z": "नाम A–Z",
@@ -2937,7 +2934,6 @@
  "The Aura is yours. Find it in your Wardrobe.": "ऑरा आपका है। इसे अपनी अलमारी में देखें।",
  "Wearables can't be sold: clones are not NFTs and originals stay in your wallet.": "वियरेबल बेचे नहीं जा सकते: क्लोन NFT नहीं हैं और मूल आपके वॉलेट में रहते हैं।",
  "Worn": "पहने हुए",
- "Your Aura goes on the market. You get test NEAR when another explorer buys it.": "आपका ऑरा बाज़ार में जाएगा। कोई और खोजी खरीदे तो आपको टेस्ट NEAR मिलेगा।",
  "Your Aura is back in your Wardrobe.": "आपका ऑरा वापस अलमारी में है।",
  "Your Aura is on sale. Find it in Shop → Market.": "आपका ऑरा बिक्री पर है। इसे दुकान → बाज़ार में देखें।",
  "Your listing. It stays on the market until someone buys it.": "आपकी लिस्टिंग। कोई खरीदे तब तक यह बाज़ार में रहेगी।",
@@ -3226,5 +3222,7 @@
  "About the game": "खेल के बारे में",
  "Test coins, not real money.": "टेस्ट सिक्के, असली पैसा नहीं।",
  "Real places outdoors.": "बाहर की असली जगहें।",
- "Shared voxel world.": "साझा वॉक्सेल दुनिया।"
+ "Shared voxel world.": "साझा वॉक्सेल दुनिया।",
+ "Price in QGOLD": "QGOLD में कीमत",
+ "Choose a price between 1,000 and 1,000M QGOLD.": "1,000 से 1,000M QGOLD के बीच कीमत चुनें।"
 }
