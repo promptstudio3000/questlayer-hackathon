@@ -1224,7 +1224,6 @@
  "Open to try again.": "फिर से कोशिश करने के लिए खोलो।",
  "Open today's map first.": "पहले आज का मानचित्र खोलें।",
  "Open until {0}": "{0} तक खुला",
- "Open vault": "तिजोरी खोलो",
  "Open your first chest": "अपना पहला संदूक खोलो",
  "Open {0}": "{0} खोलें",
  "Opening photo…": "फ़ोटो खुल रही है…",
@@ -3223,5 +3222,9 @@
  "Use my {0} QGOLD": "मेरे {0} QGOLD इस्तेमाल करें",
  "More ways": "और तरीके",
  "{0}, {1}, {2} QGOLD": "{0}, {1}, {2} QGOLD",
- "Buy for {0} QGOLD": "{0} QGOLD में खरीदें"
+ "Buy for {0} QGOLD": "{0} QGOLD में खरीदें",
+ "Riddles": "पहेलियाँ",
+ "Rhythm": "ताल",
+ "Rune path": "रून पथ",
+ "Rune song": "रून गीत"
 }

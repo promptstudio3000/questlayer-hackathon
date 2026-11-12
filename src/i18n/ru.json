@@ -1224,7 +1224,6 @@
  "Open to try again.": "Открой, чтобы попробовать снова.",
  "Open today's map first.": "Сначала открой сегодняшнюю карту.",
  "Open until {0}": "Открыто до {0}",
- "Open vault": "Открыть хранилище",
  "Open your first chest": "Открой свой первый сундук",
  "Open {0}": "Открыть {0}",
  "Opening photo…": "Открываем фото…",
@@ -3223,5 +3222,9 @@
  "Use my {0} QGOLD": "Использовать мои {0} QGOLD",
  "More ways": "Другие способы",
  "{0}, {1}, {2} QGOLD": "{0}, {1}, {2} QGOLD",
- "Buy for {0} QGOLD": "Купить за {0} QGOLD"
+ "Buy for {0} QGOLD": "Купить за {0} QGOLD",
+ "Riddles": "Загадки",
+ "Rhythm": "Ритм",
+ "Rune path": "Путь рун",
+ "Rune song": "Песнь рун"
 }

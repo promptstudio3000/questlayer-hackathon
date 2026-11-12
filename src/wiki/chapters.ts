@@ -434,7 +434,7 @@ export const CHAPTERS: Chapter[] = [
       { viz: "monster-flow" },
       {
         list: [
-          "Formats: quiz, rhythm, rune path, memory and stance duel. An encounter lists today's formats once with a one-line hint; picking one starts it. Power = level (capped at 20) + skill; Auras never change odds.",
+          "Formats: quiz, rhythm, rune path, memory and stance duel. An encounter shows today's formats as icon buttons with a short name (Riddles, Rhythm, Rune path, Rune song, Duel); picking one starts it. Traders and keepers open their counter right away, with no Continue step. Power = level (capped at 20) + skill; Auras never change odds.",
           "A new format can show a short example first (local, no request, no reward). Timed challenges never open help automatically. Touch and keyboard both work.",
           "A loss means a 1 h cooldown; one defeat per monster per day. No wagering of any kind.",
           "Rewards: XP, element shards (max 12 a day) and roll tickets from lurkers.",

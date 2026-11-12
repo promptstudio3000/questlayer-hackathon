@@ -1224,7 +1224,6 @@
  "Open to try again.": "Abra para tentar de novo.",
  "Open today's map first.": "Abra primeiro o mapa de hoje.",
  "Open until {0}": "Aberta até {0}",
- "Open vault": "Abrir o cofre",
  "Open your first chest": "Abra seu primeiro baú",
  "Open {0}": "Abrir {0}",
  "Opening photo…": "Abrindo foto…",
@@ -3223,5 +3222,9 @@
  "Use my {0} QGOLD": "Usar meus {0} QGOLD",
  "More ways": "Mais opções",
  "{0}, {1}, {2} QGOLD": "{0}, {1}, {2} QGOLD",
- "Buy for {0} QGOLD": "Comprar por {0} QGOLD"
+ "Buy for {0} QGOLD": "Comprar por {0} QGOLD",
+ "Riddles": "Enigmas",
+ "Rhythm": "Ritmo",
+ "Rune path": "Trilha rúnica",
+ "Rune song": "Canção rúnica"
 }

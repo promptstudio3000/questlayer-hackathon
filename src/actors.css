@@ -154,11 +154,16 @@
   margin: 16px 0 0;
   padding: 0;
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 10px;
 }
 .actor-offers .primary-button {
   width: 100%;
   min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 .actor-offers small {
   display: block;
