@@ -43,12 +43,12 @@ export type HuntWinRewards = {
 export type DuelRoundLog = { stance: Stance; monster: Stance; outcome: "win" | "lose" | "clash"; skill: number; dealt: number; taken: number };
 export type DuelRoundResponse = { duel: { round: number; playerHp: number; monsterHp: number; last: DuelRoundLog; ringMs?: number } } & Partial<ChallengeResult>;
 
-export const FORMAT_COPY: Record<ChallengeFormat, { label: string; hint: string }> = {
-  quiz: { get label() { return tr("Answer its riddles"); }, get hint() { return tr("3 questions about this place and the game. Get 2 right."); } },
-  rhythm: { get label() { return tr("Match its rhythm"); }, get hint() { return tr("Tap when each glowing beat reaches the ring."); } },
-  trace: { get label() { return tr("Trace its rune path"); }, get hint() { return tr("Drag through the runes in order without leaving the glow."); } },
-  memory: { get label() { return tr("Repeat its rune song"); }, get hint() { return tr("Watch the runes light up, then tap them in the same order."); } },
-  duel: { get label() { return tr("Duel it"); }, get hint() { return tr("3 rounds. Pick Strike, Guard or Trick as the ring closes."); } },
+export const FORMAT_COPY: Record<ChallengeFormat, { label: string; short: string; hint: string }> = {
+  quiz: { get short() { return tr("Riddles"); }, get label() { return tr("Answer its riddles"); }, get hint() { return tr("3 questions about this place and the game. Get 2 right."); } },
+  rhythm: { get short() { return tr("Rhythm"); }, get label() { return tr("Match its rhythm"); }, get hint() { return tr("Tap when each glowing beat reaches the ring."); } },
+  trace: { get short() { return tr("Rune path"); }, get label() { return tr("Trace its rune path"); }, get hint() { return tr("Drag through the runes in order without leaving the glow."); } },
+  memory: { get short() { return tr("Rune song"); }, get label() { return tr("Repeat its rune song"); }, get hint() { return tr("Watch the runes light up, then tap them in the same order."); } },
+  duel: { get short() { return tr("Duel"); }, get label() { return tr("Duel it"); }, get hint() { return tr("3 rounds. Pick Strike, Guard or Trick as the ring closes."); } },
 };
 
 export const STANCE_COPY: Record<Stance, { label: string; beats: Stance }> = {

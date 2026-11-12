@@ -154,11 +154,16 @@
   margin: 16px 0 0;
   padding: 0;
   display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
   gap: 10px;
 }
 .actor-offers .primary-button {
   width: 100%;
   min-height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 .actor-offers small {
   display: block;
@@ -231,6 +236,22 @@
   50% {
     translate: 0 -3px;
   }
+}
+.actor-rest {
+  margin: 14px 0 0;
+  padding: 12px 14px;
+  border-radius: var(--radius-item);
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+.actor-rest strong {
+  display: block;
+  font-size: 16px;
+}
+.actor-rest p {
+  margin: 4px 0 0;
+  font-size: 15px;
+  color: var(--ink-secondary);
 }
 
 /* Arcade pass (11 Nov 2026): compact type. */

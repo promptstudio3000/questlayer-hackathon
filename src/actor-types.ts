@@ -76,4 +76,6 @@ export interface ActorEncounter {
   actor: ActorView;
   menu: ActorOffer[];
   distanceM: number;
+  /** Only when the menu is empty: when this actor has something again. */
+  comeBack?: { reason: "beaten" | "boss_beaten" | "nothing_today"; at: number };
 }

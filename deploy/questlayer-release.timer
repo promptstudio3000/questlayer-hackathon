@@ -1,0 +1,10 @@
+[Unit]
+Description=QuestLayer release runner, every minute
+
+[Timer]
+OnBootSec=2min
+OnUnitInactiveSec=60s
+Unit=questlayer-release.service
+
+[Install]
+WantedBy=timers.target

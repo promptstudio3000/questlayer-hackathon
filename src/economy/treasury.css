@@ -734,3 +734,6 @@
 .tr .tr-tile-label { display: inline-flex; align-items: center; gap: 2px; }
 .tr .tr-stat > span { font-size: 14px; }
 .tr .tr-stat b { font-size: 16px; }
+.tr .tr-term { display: inline-flex; align-items: center; gap: 0; }
+.tr .tr-buckets b { display: inline-flex; align-items: center; }
+.tr h3 { display: flex; align-items: center; gap: 2px; }

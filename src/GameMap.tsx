@@ -134,6 +134,8 @@ export type GameMapProps = {
   actorReports?: readonly string[];
   /** "Show me": pan to the nearest matching character (any distance). */
   actorFocus?: { revision: number; match: ActorFocusMatch } | null;
+  /** A plain point the explorer chose to walk to: flagged and brought into view. */
+  pointTarget?: { lat: number; lng: number; label: string; revision: number } | null;
   /** The "show me" result as player text; `found` false is a notice, not an error. */
   onActorFocus?: (text: string, found: boolean) => void;
   /** Draw player tasks and Secrets near the explorer (GPS play); tap opens them in Nearby. */
@@ -1317,6 +1319,18 @@ export function GameMap(props: GameMapProps) {
     return () => window.clearTimeout(timer);
     // Only the revision triggers a new "show me".
   }, [props.actorFocus?.revision, ready]);
+  useEffect(() => {
+    const m = map.current, t = props.pointTarget;
+    if (!ready || !m || !t) return;
+    const node = document.createElement("div");
+    node.className = "map-point-target";
+    node.setAttribute("role", "img");
+    node.setAttribute("aria-label", t.label);
+    const marker = new maplibregl.Marker({ element: node, anchor: "center" }).setLngLat([t.lng, t.lat]).addTo(m);
+    latest.current.onPan();
+    m.easeTo({ center: [t.lng, t.lat], zoom: Math.max(m.getZoom(), 16), duration: prefersReducedMotion() ? 0 : 900 });
+    return () => { marker.remove(); };
+  }, [props.pointTarget?.revision, ready]);
   // Player tasks and Secrets around the explorer (~55 m steps, like Nearby).
   const [marketPins, setMarketPins] = useState<MarketMapPin[]>([]);
   const marketLat = Math.round(props.position.lat * 2000) / 2000,
