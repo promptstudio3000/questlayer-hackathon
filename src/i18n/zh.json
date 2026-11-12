@@ -1358,7 +1358,6 @@
  "Game outfit": "游戏装扮",
  "Practice stake": "练习质押",
  "Premium gear": "高级装备",
- "Premium gear for GOLD": "用 GOLD 买高级装备",
  "Preparing a suggestion…": "正在准备建议…",
  "Preparing the map…": "正在准备地图…",
  "Preparing your 3D look…": "正在准备你的 3D 形象…",
@@ -1796,7 +1795,6 @@
  "Spam": "垃圾信息",
  "Sparkle finds": "闪光发现",
  "Spend roll tickets at the wisp: Inventory, Secured tab.": "在精灵处使用抽取券：背包 → 已保管标签。",
- "Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.": "消费会销毁 GOLD：它永远离开游戏，因此剩下的每个 GOLD 都更有支撑。",
  "Sponsor a task": "赞助任务",
  "Sponsor review ends": "赞助方审核截止",
  "Sponsor:": "赞助方：",
@@ -2089,7 +2087,6 @@
  "Total funded:": "注资总额：",
  "Trace its rune path": "描绘它的符文路径",
  "Trader": "商人",
- "Traders on the map sell one premium Aura a day for GOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "地图上的商人每天出售一件用 GOLD 购买的高级灵光。它会进入你的衣橱，你可以像其他灵光一样在 NEAR 上保管它。",
  "Trades through Intents need the explorer's device key.": "通过 Intents 交易需要探险者的设备密钥。",
  "Trading account": "交易账户",
  "Trading is paused. You can still cancel your listings and withdraw your balance.": "交易已暂停。你仍可取消挂单并提取余额。",
@@ -2132,7 +2129,6 @@
  "Unclaimed rewards.": "未领取的奖励。",
  "Uncommon": "罕见",
  "Unfollow": "取消关注",
- "Unlock emote {0} for {1} GOLD": "用 {1} GOLD 解锁表情 {0}",
  "Unlock for": "解锁需",
  "Unlock this quest below to start it.": "在下方解锁此任务即可开始。",
  "Unlocked": "已解锁",
@@ -3244,5 +3240,10 @@
  "Receipts": "收据",
  "Send NEAR from any wallet or exchange to your game address:": "从任意钱包或交易所向你的游戏地址发送 NEAR：",
  "Top up gas": "充值 gas",
- "Your gas is low ({0} NEAR). Your own payments, like an Aura or a stake, need a little.": "你的 gas 不多了（{0} NEAR）。你自己的付款，比如 Aura 或质押，需要一点。"
+ "Your gas is low ({0} NEAR). Your own payments, like an Aura or a stake, need a little.": "你的 gas 不多了（{0} NEAR）。你自己的付款，比如 Aura 或质押，需要一点。",
+ "{0} QGOLD": "{0} QGOLD",
+ "Unlock emote {0} for {1} QGOLD": "用 {1} QGOLD 解锁表情 {0}",
+ "Spending burns QGOLD: it leaves the game for good, so every QGOLD left is backed a little better.": "消费会销毁 QGOLD：它永远离开游戏，因此剩下的每个 QGOLD 都更有支撑。",
+ "Traders on the map sell one premium Aura a day for QGOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "地图上的商人每天出售一件用 QGOLD 购买的高级灵光。它会进入你的衣橱，你可以像其他灵光一样在 NEAR 上保管它。",
+ "Premium gear for QGOLD": "用 QGOLD 买高级装备"
 }

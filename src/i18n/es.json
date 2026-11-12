@@ -1358,7 +1358,6 @@
  "Game outfit": "Atuendo del juego",
  "Practice stake": "Stake de práctica",
  "Premium gear": "Equipo premium",
- "Premium gear for GOLD": "Equipo premium por GOLD",
  "Preparing a suggestion…": "Preparando una sugerencia…",
  "Preparing the map…": "Preparando el mapa…",
  "Preparing your 3D look…": "Preparando tu aspecto 3D…",
@@ -1796,7 +1795,6 @@
  "Spam": "Spam",
  "Sparkle finds": "Hallazgos brillantes",
  "Spend roll tickets at the wisp: Inventory, Secured tab.": "Gasta tickets de tirada en el fuego fatuo: Inventario, pestaña Asegurado.",
- "Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.": "Gastar quema GOLD: sale del juego para siempre, así que cada GOLD que queda está un poco mejor respaldado.",
  "Sponsor a task": "Patrocina una tarea",
  "Sponsor review ends": "Fin de la revisión del patrocinador",
  "Sponsor:": "Patrocinador:",
@@ -2089,7 +2087,6 @@
  "Total funded:": "Total financiado:",
  "Trace its rune path": "Traza su camino de runas",
  "Trader": "Comerciante",
- "Traders on the map sell one premium Aura a day for GOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "Los comerciantes del mapa venden una Aura premium al día por GOLD. Llega a tu vestuario y puedes asegurarla en NEAR como cualquier otra Aura.",
  "Trades through Intents need the explorer's device key.": "Operar con Intents requiere la clave del dispositivo del explorador.",
  "Trading account": "Cuenta de trading",
  "Trading is paused. You can still cancel your listings and withdraw your balance.": "El trading está en pausa. Aún puedes cancelar tus anuncios y retirar tu saldo.",
@@ -2132,7 +2129,6 @@
  "Unclaimed rewards.": "Recompensas no reclamadas.",
  "Uncommon": "Poco común",
  "Unfollow": "Dejar de seguir",
- "Unlock emote {0} for {1} GOLD": "Desbloquear emote {0} por {1} GOLD",
  "Unlock for": "Desbloquear por",
  "Unlock this quest below to start it.": "Desbloquea esta misión abajo para empezarla.",
  "Unlocked": "Desbloqueado",
@@ -3244,5 +3240,10 @@
  "Receipts": "Recibos",
  "Send NEAR from any wallet or exchange to your game address:": "Envía NEAR desde cualquier billetera o exchange a tu dirección de juego:",
  "Top up gas": "Recargar gas",
- "Your gas is low ({0} NEAR). Your own payments, like an Aura or a stake, need a little.": "Te queda poco gas ({0} NEAR). Tus propios pagos, como un Aura o un stake, necesitan un poco."
+ "Your gas is low ({0} NEAR). Your own payments, like an Aura or a stake, need a little.": "Te queda poco gas ({0} NEAR). Tus propios pagos, como un Aura o un stake, necesitan un poco.",
+ "{0} QGOLD": "{0} QGOLD",
+ "Unlock emote {0} for {1} QGOLD": "Desbloquear emote {0} por {1} QGOLD",
+ "Spending burns QGOLD: it leaves the game for good, so every QGOLD left is backed a little better.": "Gastar quema QGOLD: sale del juego para siempre, así que cada QGOLD que queda está un poco mejor respaldado.",
+ "Traders on the map sell one premium Aura a day for QGOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "Los comerciantes del mapa venden una Aura premium al día por QGOLD. Llega a tu vestuario y puedes asegurarla en NEAR como cualquier otra Aura.",
+ "Premium gear for QGOLD": "Equipo premium por QGOLD"
 }

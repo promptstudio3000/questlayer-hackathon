@@ -1358,7 +1358,6 @@
  "Game outfit": "Herní outfit",
  "Practice stake": "Cvičný vklad",
  "Premium gear": "Prémiová výbava",
- "Premium gear for GOLD": "Prémiová výbava za GOLD",
  "Preparing a suggestion…": "Připravuji návrh…",
  "Preparing the map…": "Připravuji mapu…",
  "Preparing your 3D look…": "Připravuji tvůj 3D vzhled…",
@@ -1796,7 +1795,6 @@
  "Spam": "Spam",
  "Sparkle finds": "Jiskřivé nálezy",
  "Spend roll tickets at the wisp: Inventory, Secured tab.": "Losy utratíš u bludičky: Inventář, karta Zajištěné.",
- "Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.": "Útrata GOLD spálí: navždy opustí hru, takže každý zbývající GOLD je o něco lépe krytý.",
  "Sponsor a task": "Sponzorovat úkol",
  "Sponsor review ends": "Posouzení sponzorem končí",
  "Sponsor:": "Sponzor:",
@@ -2089,7 +2087,6 @@
  "Total funded:": "Celkem financováno:",
  "Trace its rune path": "Obtáhni její runovou cestu",
  "Trader": "Obchodník",
- "Traders on the map sell one premium Aura a day for GOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "Obchodníci na mapě prodávají jednu prémiovou Auru denně za GOLD. Přistane ve tvém šatníku a zajistit ji na NEAR můžeš jako kteroukoli jinou Auru.",
  "Trades through Intents need the explorer's device key.": "Obchody přes Intents potřebují klíč tohoto zařízení.",
  "Trading account": "Obchodní účet",
  "Trading is paused. You can still cancel your listings and withdraw your balance.": "Obchodování je pozastavené. Nabídky můžeš dál rušit a zůstatek vybrat.",
@@ -2132,7 +2129,6 @@
  "Unclaimed rewards.": "Nevyzvednuté odměny.",
  "Uncommon": "Neobvyklá",
  "Unfollow": "Přestat sledovat",
- "Unlock emote {0} for {1} GOLD": "Odemknout emotu {0} za {1} GOLD",
  "Unlock for": "Odemknout za",
  "Unlock this quest below to start it.": "Níže si úkol odemkni a začni.",
  "Unlocked": "Odemčeno",
@@ -3244,5 +3240,10 @@
  "Receipts": "Účtenky",
  "Send NEAR from any wallet or exchange to your game address:": "Pošli NEAR z jakékoli peněženky nebo burzy na svou herní adresu:",
  "Top up gas": "Doplnit gas",
- "Your gas is low ({0} NEAR). Your own payments, like an Aura or a stake, need a little.": "Dochází ti gas ({0} NEAR). Tvoje vlastní platby, třeba Aura nebo stake, ho trochu potřebují."
+ "Your gas is low ({0} NEAR). Your own payments, like an Aura or a stake, need a little.": "Dochází ti gas ({0} NEAR). Tvoje vlastní platby, třeba Aura nebo stake, ho trochu potřebují.",
+ "{0} QGOLD": "{0} QGOLD",
+ "Unlock emote {0} for {1} QGOLD": "Odemknout emotu {0} za {1} QGOLD",
+ "Spending burns QGOLD: it leaves the game for good, so every QGOLD left is backed a little better.": "Útrata QGOLD spálí: navždy opustí hru, takže každý zbývající QGOLD je o něco lépe krytý.",
+ "Traders on the map sell one premium Aura a day for QGOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "Obchodníci na mapě prodávají jednu prémiovou Auru denně za QGOLD. Přistane ve tvém šatníku a zajistit ji na NEAR můžeš jako kteroukoli jinou Auru.",
+ "Premium gear for QGOLD": "Prémiová výbava za QGOLD"
 }

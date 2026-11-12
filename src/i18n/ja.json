@@ -1358,7 +1358,6 @@
  "Game outfit": "ゲーム内の衣装",
  "Practice stake": "練習用ステーク",
  "Premium gear": "プレミアム装備",
- "Premium gear for GOLD": "GOLD でプレミアム装備",
  "Preparing a suggestion…": "提案を準備中…",
  "Preparing the map…": "マップを準備中…",
  "Preparing your 3D look…": "3Dの見た目を準備中…",
@@ -1796,7 +1795,6 @@
  "Spam": "スパム",
  "Sparkle finds": "きらめく発見物",
  "Spend roll tickets at the wisp: Inventory, Secured tab.": "ロールチケットはウィスプで使えます：持ち物の「保護済み」タブ。",
- "Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.": "支払うと GOLD はバーンされ、ゲームから永久に消えます。残りの GOLD はその分少しずつ裏付けが厚くなります。",
  "Sponsor a task": "タスクをスポンサー",
  "Sponsor review ends": "スポンサーレビュー終了",
  "Sponsor:": "スポンサー：",
@@ -2089,7 +2087,6 @@
  "Total funded:": "資金合計：",
  "Trace its rune path": "ルーンの道筋をなぞろう",
  "Trader": "トレーダー",
- "Traders on the map sell one premium Aura a day for GOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "マップの商人は 1 日 1 つ、GOLD でプレミアムオーラを売ります。ワードローブに入り、ほかのオーラと同じように NEAR で確保できます。",
  "Trades through Intents need the explorer's device key.": "Intents での取引には、この端末の探検者キーが必要です。",
  "Trading account": "取引アカウント",
  "Trading is paused. You can still cancel your listings and withdraw your balance.": "取引は一時停止中です。出品の取り消しと残高の引き出しは引き続き可能です。",
@@ -2132,7 +2129,6 @@
  "Unclaimed rewards.": "未受取の報酬。",
  "Uncommon": "アンコモン",
  "Unfollow": "フォロー解除",
- "Unlock emote {0} for {1} GOLD": "エモート {0} を {1} GOLD で解放",
  "Unlock for": "アンロック：",
  "Unlock this quest below to start it.": "下でこのクエストをアンロックして始めましょう。",
  "Unlocked": "アンロック済み",
@@ -3244,5 +3240,10 @@
  "Receipts": "領収書",
  "Send NEAR from any wallet or exchange to your game address:": "任意のウォレットや取引所からゲームアドレスへNEARを送ってください：",
  "Top up gas": "ガスを補充",
- "Your gas is low ({0} NEAR). Your own payments, like an Aura or a stake, need a little.": "ガスが少なくなっています（{0} NEAR）。Auraやステークなど、自分の支払いに少し必要です。"
+ "Your gas is low ({0} NEAR). Your own payments, like an Aura or a stake, need a little.": "ガスが少なくなっています（{0} NEAR）。Auraやステークなど、自分の支払いに少し必要です。",
+ "{0} QGOLD": "{0} QGOLD",
+ "Unlock emote {0} for {1} QGOLD": "エモート {0} を {1} QGOLD で解放",
+ "Spending burns QGOLD: it leaves the game for good, so every QGOLD left is backed a little better.": "支払うと QGOLD はバーンされ、ゲームから永久に消えます。残りの QGOLD はその分少しずつ裏付けが厚くなります。",
+ "Traders on the map sell one premium Aura a day for QGOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "マップの商人は 1 日 1 つ、QGOLD でプレミアムオーラを売ります。ワードローブに入り、ほかのオーラと同じように NEAR で確保できます。",
+ "Premium gear for QGOLD": "QGOLD でプレミアム装備"
 }
