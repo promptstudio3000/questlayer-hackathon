@@ -13,7 +13,8 @@
 // Run where the operator key is (NEAR_OPERATOR_PATH, default .data/near-operator.json;
 // the VPS runner since 12 Nov). Needs a git checkout with node_modules and the
 // reproducible contracts/target builds. TESTLAYER_WORK moves the work tree. Steps:
-//   0. work tree .data/testlayer/work (git worktree at HEAD) with its own .data/
+//   0. work tree .data/testlayer/work (this checkout's HEAD, refreshed on every
+//      run so a tree left by an earlier checkout never runs stale code) with its own .data/
 //      holding only a copy of the operator key; every key the scripts create
 //      (award signer, minters, recorder, publisher, factory, relayer) stays
 //      there. All public/*-testnet.json records are removed in the work tree, so
@@ -38,7 +39,9 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  lstatSync,
   symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { resolve } from "node:path";
@@ -90,18 +93,42 @@ const SHARED = ["native-intents"]; // records the Test Layer reuses as they are
 // Build facts, not contract ids: the slice checks the collectibles build's edition list.
 const KEEP = ["native-editions-testnet.json"];
 
+const isLink = (p) => {
+  try {
+    return lstatSync(p).isSymbolicLink();
+  } catch {
+    return false;
+  }
+};
 const log = (o) => console.log(JSON.stringify(o));
 log({ plan: execute ? "execute" : "plan only", tag: TAG, origin: ORIGIN, work, accounts: ACCOUNTS, steps: STEPS.map((s) => s.name), shared: SHARED });
 if (!execute) process.exit(0);
 
-// 0. Work tree.
-if (!existsSync(work)) {
-  mkdirSync(resolve(work, ".."), { recursive: true, mode: 0o700 });
-  execFileSync("git", ["worktree", "add", "--detach", work, "HEAD"], { cwd: repo, stdio: "inherit" });
-  for (const f of readdirSync(resolve(work, "public")))
-    if ((/-testnet\.json$/.test(f) || f === "testnet-deployment.json") && !KEEP.includes(f)) rmSync(resolve(work, "public", f));
-  log({ step: "work tree ready, real testnet records removed", work });
+// 0. Work tree. Its code is refreshed from this checkout's HEAD on every run
+// (git archive over the old tree), so a work tree left by an earlier run or an
+// earlier checkout (the release runner keeps .data/ across jobs) never runs
+// stale scripts or records. What the deploy wrote stays: work/.data (keys,
+// journals) and the Test Layer records the scripts wrote into work/public.
+const isRecord = (f) => (/-testnet\.json$/.test(f) || f === "testnet-deployment.json") && !KEEP.includes(f);
+const workPublic = resolve(work, "public");
+const written0 = {};
+if (existsSync(work)) {
+  for (const f of existsSync(workPublic) ? readdirSync(workPublic) : [])
+    if (isRecord(f)) written0[f] = readFileSync(resolve(workPublic, f));
+  // A git worktree from another checkout leaves a .git file pointing nowhere; nothing here needs git.
+  const dotGit = resolve(work, ".git");
+  if (existsSync(dotGit) || isLink(dotGit)) rmSync(dotGit, { force: true });
+} else mkdirSync(work, { recursive: true, mode: 0o700 });
+for (const link of ["contracts/target", "node_modules"]) if (isLink(resolve(work, link))) unlinkSync(resolve(work, link));
+execFileSync("bash", ["-c", 'git archive --format=tar HEAD | tar -x -C "$1"', "_", work], { cwd: repo, stdio: ["ignore", "inherit", "inherit"] });
+for (const f of readdirSync(workPublic)) if (isRecord(f)) rmSync(resolve(workPublic, f));
+for (const [f, bytes] of Object.entries(written0)) writeFileSync(resolve(workPublic, f), bytes);
+try {
+  execFileSync("git", ["worktree", "prune"], { cwd: repo, stdio: "ignore" });
+} catch {
+  /* not a git checkout with worktrees: nothing to prune */
 }
+log({ step: "work tree refreshed from HEAD, real testnet records removed", work, keptTestLayerRecords: Object.keys(written0) });
 mkdirSync(resolve(work, ".data"), { recursive: true, mode: 0o700 });
 const opCopy = resolve(work, ".data/near-operator.json");
 if (!existsSync(opCopy)) {
@@ -109,9 +136,11 @@ if (!existsSync(opCopy)) {
   chmodSync(opCopy, 0o600);
 }
 // The reproducible contract builds of this checkout (contracts/wasm-sha256.json pins them).
+// Links are recreated on every run, so they always point at this checkout.
 const target = resolve(work, "contracts/target");
-if (!existsSync(target)) symlinkSync(resolve(repo, "contracts/target"), target);
-if (!existsSync(resolve(work, "node_modules"))) symlinkSync(resolve(repo, "node_modules"), resolve(work, "node_modules"));
+if (existsSync(target) && !isLink(target)) rmSync(target, { recursive: true });
+symlinkSync(resolve(repo, "contracts/target"), target);
+symlinkSync(resolve(repo, "node_modules"), resolve(work, "node_modules"));
 
 // 1. Fund the operator from the faucet accounts (each keeps 0.1 NEAR).
 const provider = new JsonRpcProvider({ url: process.env.NEAR_RPC_URL || "https://test.rpc.fastnear.com" });
