@@ -37,7 +37,7 @@ const MonsterChallenge = optional(import.meta.glob("./MonsterChallenge.tsx"), "M
 const BossFight = lazy(async () => ({ default: (await import("./BossFight")).BossFight }));
 
 const PROBLEM: Record<string, string> = {
-  get OUT_OF_RANGE() { return tr("Too far away. Walk closer: you need to be within about 35 m."); },
+  get OUT_OF_RANGE() { return tr("Too far. Get within 35 m."); },
   get GPS_ACCURACY() { return tr("Your GPS is not precise enough yet. Step into the open and try again."); },
   get GPS_STALE() { return tr("Waiting for a fresh location. Try again in a moment."); },
   get IMPLAUSIBLE_MOVE() { return tr("Your location jumped too fast. Wait for a steady GPS fix."); },
@@ -173,7 +173,7 @@ export function ActorSheet({
             <p>{state.message}</p>
             {state.far && onShow ? (
               <button className="primary-button" onClick={onShow}>
-                <MapPin size={18} aria-hidden="true" /><span>{tr("Show me")}</span>
+                <MapPin size={18} aria-hidden="true" /><span>{tr("Go")}</span>
               </button>
             ) : state.retry && (
               <button className="secondary-button" onClick={() => void meet()}>
@@ -183,11 +183,9 @@ export function ActorSheet({
         )}
         {ready && (
           <>
-            <p className="actor-status" role="status">
-              {tr("You are")}{" "}{ready.distanceM} {" "}{tr("m away. This meeting lasts 5 minutes.")}</p>
             {ready.actor.boss && (
               <p className="actor-note">
-                {tr("Shared boss health:")}{" "}{ready.actor.boss.hp} / {ready.actor.boss.maxHp} · {ready.actor.boss.participants} {" "}{tr("hunters this week.")}</p>
+                {tr("HP {0}/{1} · {2} hunters", { 0: ready.actor.boss.hp, 1: ready.actor.boss.maxHp, 2: ready.actor.boss.participants })}</p>
             )}
             {ready.actor.state === "defeated" && ready.menu.length > 0 && (
               <p className="actor-note">{tr("You already beat this one today.")}</p>

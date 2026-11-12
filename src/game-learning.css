@@ -18,11 +18,6 @@
 .game-intro .game-intro-note, .game-intro .game-intro-foot { font-size: 14px; line-height: 1.45; color: var(--ink-secondary); }
 .game-intro .primary-button { width: 100%; justify-content: center; gap: 12px; }
 .game-intro .text-button { min-width: 48px; min-height: 48px; }
-.activity-help { text-align: start; font-size: 16px; }
-.activity-help > summary { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; color: var(--action); cursor: pointer; }
-.activity-help > summary::-webkit-details-marker { display: none; }
-.activity-help p { font-size: 16px; line-height: 1.45; }
-.activity-help > .text-button { display: inline-flex; align-items: center; gap: 8px; min-height: 48px; }
 .learning-hint { display: block; font-size: 14px; line-height: 1.4; color: var(--ink-secondary); }
 .learning-hint[hidden] { display: none; }
 @keyframes intro-approach { from { transform: translateX(-16px); } to { transform: translateX(0); } }
@@ -40,7 +35,6 @@
   .intro-scene-meet .ghost-art { display: none; }
   .intro-scene-walk .ghost-art { width: 28px; }
   .intro-scene-walk .game-object-art { position: absolute; opacity: .3; }
-  .game-dialog-map .quest-brief .activity-help { grid-column: 1 / -1; }
 }
 @media (prefers-reduced-motion: reduce) { .intro-scene-walk .ghost-art { animation: none; } }
 
@@ -53,5 +47,4 @@
 .example-format-label select { width: 100%; min-height: 48px; font: inherit; }
 .monster-formats > li { display: grid; grid-template-columns: minmax(0, 1fr) 48px; gap: 8px; }
 .monster-formats .format-help { display: grid; place-items: center; padding: 0; text-align: center; }
-.monster-challenge .activity-help, .npc-linear .activity-help { color: var(--ink); }
 .reward-cosmetic-note { font-size: 14px; color: var(--ink-secondary); }

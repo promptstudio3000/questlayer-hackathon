@@ -2576,7 +2576,6 @@ select {
 .game-dialog-map .main-panel .panel-heading h1 { margin: 0; font-size: 24px; line-height: 1.25; white-space: normal; overflow-wrap: anywhere; }
 .game-dialog-map .main-panel .panel-heading > div { min-width: 0; flex: 1; }
 .game-dialog-map .quest-detail { padding: 16px 0; margin: 12px 0 0; border: 0; border-top: 1px solid var(--decorative-border); border-radius: 0; box-shadow: none; background: none; }
-.game-dialog-map .quest-detail-art { display: grid; place-items: center; padding: 8px 0 16px; }
 .find-details { display: grid; gap: 12px; font-size: 16px; line-height: 1.5; }
 .find-details h2, .find-details p { margin: 0; }
 .find-details-art { display: grid; place-items: center; min-height: 160px; padding: 8px; }

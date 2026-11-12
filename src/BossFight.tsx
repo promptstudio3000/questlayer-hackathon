@@ -9,7 +9,6 @@ import { Lightning, Trophy, Timer } from "@phosphor-icons/react";
 import { api, ApiError } from "./api";
 import { withQgoldBurn } from "./qgold-burn";
 import { Dialog } from "./Dialog";
-import { ActivityHelp } from "./ActivityHelp";
 import { ChallengeExample } from "./ChallengeExample";
 import { useLearning } from "./useLearning";
 import { helpText } from "./activity-help";
@@ -207,17 +206,7 @@ export function BossFight({
               </p>
             )}
             <p className="monster-fair">
-              {tr("Everyone hits the same health bar. One hit every 10 minutes; damage comes from your level and skill only. Land")}{" "}
-              {ev?.hitsForEdition ?? 3} {" "}{tr("hits before it falls to earn the Bossbane Fangring.")}</p>
-            {learning.visible("boss") && <p className="learning-hint">{helpText("boss")}</p>}
-            <ActivityHelp topic="boss" onAcknowledge={() => learning.acknowledge("boss")}>
-              <label className="example-format-label">{tr("Choose an example")}
-                <select value={exampleFormat} onChange={event => setExampleFormat(event.target.value as ChallengeFormat)}>
-                  {(Object.keys(FORMAT_COPY) as ChallengeFormat[]).map(format => <option key={format} value={format}>{FORMAT_COPY[format].label}</option>)}
-                </select>
-              </label>
-              <ChallengeExample key={exampleFormat} format={exampleFormat} renderPlay={(c, submitExample) => <ChallengePlay challenge={c} busy={false} submit={submitExample} monster={actor} onDone={() => {}} onError={() => {}} />} />
-            </ActivityHelp>
+              {tr("1 hit every 10 min · {0} hits earn the Bossbane Fangring", { 0: ev?.hitsForEdition ?? 3 })}</p>
             {waiting ? (
               <p className="monster-tell">
                 <Timer size={18} aria-hidden="true" /> {retryLabel(nextAt ?? undefined)}

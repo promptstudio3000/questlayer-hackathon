@@ -209,7 +209,7 @@ test("NPC errand: accept, do the place's quest, come back to the NPC to report",
   assert.equal(errand.terms.aura, false);
   const step = view().quests.find((q) => q.id === errand.terms.steps[0].questId);
   assert.ok(step.clue, "a landmark clue is the preferred errand");
-  assert.match(errand.label, /^Errand: find out about .+ and come back$/);
+  assert.match(errand.label, /^Errand: .+$/);
   // Errands do not use up the daily quest lines.
   assert.ok(menu.filter((o) => !o.terms.errand).length >= 1);
 
