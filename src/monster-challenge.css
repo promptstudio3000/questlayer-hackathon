@@ -32,18 +32,6 @@
   align-items: center;
   gap: 4px;
 }
-.monster-sigil {
-  flex: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 50% 50% 40% 40%;
-  background: radial-gradient(circle at 35% 40%, #fff 0 6%, transparent 7%),
-    radial-gradient(circle at 65% 40%, #fff 0 6%, transparent 7%),
-    var(--purple, #6d18f8);
-  box-shadow: 0 0 0 3px var(--surface-soft, #f2ebff);
-}
-.monster-guardian .monster-sigil { background-color: #2f6fd6; border-radius: 12px; }
-.monster-lurker .monster-sigil { background-color: #1d8f6a; }
 .monster-fair,
 .monster-tell {
   margin: 0;
@@ -240,7 +228,6 @@
 
 .monster-rewards { color: var(--ink, #2a1f3d); font-weight: 600; margin: 8px 0; display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
 .monster-rewards.missed { font-weight: 400; color: var(--ink-secondary, #665577); }
-.monster-boss .monster-sigil { background-color: #b0283c; border-radius: 50% 50% 12px 12px; }
 .boss-pool { margin: 8px 0 12px; }
 .boss-bar { height: 14px; border-radius: 7px; background: rgba(176, 40, 60, 0.15); overflow: hidden; }
 .boss-bar span { display: block; height: 100%; background: linear-gradient(90deg, #ff6b6b, #b0283c); transition: width 0.4s ease; }

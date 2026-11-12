@@ -110,18 +110,6 @@
   word-break: break-all;
   color: var(--ink-secondary);
 }
-.fuel-short-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
-.fuel-short-buttons .secondary-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 44px;
-  padding: 0 14px;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
 .fuel-why {
   display: inline-flex;
   align-items: center;

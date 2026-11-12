@@ -215,9 +215,6 @@
 .pot-row-detail { padding: 0 8px 8px; }
 .pot-row-detail .todays-pot { margin: 0; }
 .app-shell[data-screen] .day-row { margin-bottom: 8px; }
-.places-head { display: flex; align-items: center; gap: 6px; }
-.places-head h2 { margin: 0; }
-.app-shell[data-screen] .places-head .places-count { margin-inline-start: auto; color: var(--ink-secondary); font-size: 14px; }
 
 /* ---- Nearby: create buttons sit in their own sections ------------------- */
 .nearby-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }

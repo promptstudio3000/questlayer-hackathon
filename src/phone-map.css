@@ -51,16 +51,9 @@
 .app-shell .sheet-compact .recommended-art { width: 40px; height: 40px; }
 .app-shell .sheet-compact .adventure-result-resume, .app-shell .sheet-compact .adventure-notice, .app-shell .sheet-compact .native-objective { padding-inline-end: 48px; }
 .app-shell.sheet-open .main-panel { position: fixed; inset: 0; width: auto; height: 100dvh; max-width: none; max-height: none; margin: 0; border: 0; border-radius: 0; overflow-y: auto; overscroll-behavior: contain; padding: calc(12px + env(safe-area-inset-top)) max(16px, calc((100vw - 960px) / 2)) calc(24px + env(safe-area-inset-bottom)); background: var(--surface); z-index: 30; }
-.app-shell.sheet-open .topbar, .app-shell.sheet-open .nav-rail, .app-shell.sheet-open .map-status-chip, .app-shell.sheet-open .map-toolbar, .app-shell.sheet-open .presence-chip, .app-shell.sheet-open .demo-pad, .app-shell.sheet-open .demo-pad-open { visibility: hidden; pointer-events: none; }
+.app-shell.sheet-open .topbar, .app-shell.sheet-open .nav-rail, .app-shell.sheet-open .presence-chip, .app-shell.sheet-open .demo-pad, .app-shell.sheet-open .demo-pad-open { visibility: hidden; pointer-events: none; }
 .app-shell.sheet-open .panel-heading { display: flex; }
 .app-shell .panel-heading .panel-close, .app-shell .panel-back { min-width: 48px; min-height: 48px; }
-.app-shell .map-controls.map-toolbar { position: fixed; top: calc(76px + env(safe-area-inset-top)); right: 12px; left: auto; display: flex; flex-direction: column; gap: 4px; padding: 0; border: 0; background: none; box-shadow: none; z-index: 22; }
-.app-shell .map-toolbar > button { display: grid; place-items: center; width: 48px; height: 48px; min-height: 48px; border-radius: 50%; background: var(--surface); border: 1px solid var(--control-border); }
-.app-shell .map-toolbar > .map-tools-toggle { display: grid; }
-.app-shell .map-toolbar:not(.tools-open) > button:not(.map-tools-toggle):not(.map-recenter) { display: none; }
-.app-shell .map-status-chip { top: calc(76px + env(safe-area-inset-top)); left: 12px; max-width: calc(100vw - 84px); min-height: 48px; background: var(--surface); }
-.app-shell .map-status-chip.demo .map-status-text { display: inline; font-size: 14px; }
-.app-shell .map-status-chip button { min-height: 48px; min-width: 48px; }
 .app-shell .map-sky-chip { top: calc(132px + env(safe-area-inset-top)); left: 12px; right: auto; padding: 6px 10px; max-width: calc(100vw - 84px); font-size: 14px; }
 .app-shell .map-sky-chip > span { display: none; }
 .app-shell .demo-pad, .app-shell .demo-pad-open { top: auto; left: auto; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); }
@@ -92,7 +85,6 @@
 }
 @media (max-height: 500px) and (min-width: 600px) {
   .zone-presence { top: calc(76px + env(safe-area-inset-top)); left: auto; right: 76px; max-width: min(240px, 32vw); }
-  .app-shell .map-controls.map-toolbar.tools-open { display: grid; grid-template-columns: repeat(4, 48px); }
   .app-shell .nav-rail .rail-links { flex-direction: column; }
   .app-shell .rail-links button { flex-direction: column; width: 96px; gap: 2px; padding: 4px 6px; min-height: 58px; }
   .app-shell .nav-rail { left: 12px; right: auto; bottom: calc(12px + env(safe-area-inset-bottom)); }
@@ -123,10 +115,7 @@
 .app-shell.map-full .topbar,
 .app-shell.map-full .nav-rail,
 .app-shell.map-full .main-panel,
-.app-shell.map-full .map-status-chip,
 .app-shell.map-full .map-sky-chip,
-.app-shell.map-full .map-controls.map-toolbar,
-.app-shell.map-full .player-bottom,
 .app-shell.map-full .presence-chip,
 body:has(.app-shell.map-full) .pwa-install {
   display: none !important;
@@ -134,7 +123,6 @@ body:has(.app-shell.map-full) .pwa-install {
 .app-shell.map-full .map-search-here {
   top: calc(10px + env(safe-area-inset-top));
 }
-
 
 @media (prefers-reduced-motion: reduce) { .quest-route-stop.next { animation: none; } }
 

@@ -73,7 +73,6 @@ html:is(.wk-root,.hiw-root,.eco-root), html:is(.wk-root,.hiw-root,.eco-root) bod
 .hiw .hiw-to-top { background: var(--surface-raised); color: var(--action) !important; border: 1px solid var(--control-border); box-shadow: 0 4px 14px #441c6c26; }
 .hiw .hiw-chips li { background: var(--surface-soft); border-color: var(--decorative-border); }
 .hiw .hiw-eyebrow { color: var(--ink-secondary); text-transform: none; letter-spacing: normal; font-size: 14px; }
-.hiw .hiw-phone { border: 1px solid var(--decorative-border); border-radius: 20px; }
 .hiw .hiw-card-face.back { background: var(--surface-soft); color: var(--ink); }
 .hiw .hiw-card-face.back small { color: var(--ink-secondary); }
 .hiw :is(.hiw-steps li,.hiw-principles li) { border-color: var(--decorative-border); background: var(--surface-raised); border-radius: 12px; box-shadow: none; }

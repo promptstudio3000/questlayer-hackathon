@@ -116,7 +116,6 @@
 .app-shell[data-area="community"] .map-notes h2 { font-size: 20px; font-weight: 500; }
 .app-shell[data-area="community"] .map-notes-heading > h2 { flex: 1 1 auto; min-width: 0; margin: 0; }
 .app-shell[data-area="community"] .map-notes-heading:has(.panel-back) > h2 { flex: 1; }
-.app-shell[data-area="community"] .map-notes-mode { display: inline-block; padding: 4px 10px; border-radius: 8px; background: var(--surface-soft); color: var(--ink-secondary); font-size: 14px; }
 .app-shell[data-area="community"] .map-notes .map-notes-primary { min-height: 48px; border: 0; border-radius: 10px; background: var(--action); color: var(--on-action); font-weight: 500; }
 .app-shell[data-area="community"] .map-notes-heading > .map-notes-primary { flex: none; padding-inline: 14px; }
 .app-shell[data-area="community"] .map-notes .map-notes-icon { min-width: 48px; min-height: 48px; border-color: var(--decorative-border); border-radius: 10px; color: var(--ink); }
@@ -128,10 +127,6 @@
 .app-shell[data-area="community"] .map-note > p { font-size: 16px; line-height: 1.5; }
 .app-shell[data-area="community"] .map-note-menu > summary { border: 0; border-radius: 10px; background: transparent; color: var(--ink-secondary); }
 .app-shell[data-area="community"] .map-note-menu > div { right: auto; inset-inline-end: 0; border-color: var(--decorative-border); }
-.app-shell[data-area="community"] .map-notes-compose { padding-top: 8px; gap: 16px; }
-.app-shell[data-area="community"] .map-notes-compose textarea { border-color: var(--control-border); border-radius: 10px; }
-.app-shell[data-area="community"] .map-notes-compose .map-notes-secondary { font-size: 14px; line-height: 1.5; }
-.app-shell[data-area="community"] .map-notes-anchor { border-color: var(--decorative-border); }
 .app-shell[data-area="community"] .map-notes-pending { background: var(--surface-soft); border-color: var(--decorative-border); }
 @media (max-width: 380px) {
   .app-shell[data-area] .screen-tabs-primary { gap: 2px; }

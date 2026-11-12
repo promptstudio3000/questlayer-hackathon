@@ -3,16 +3,6 @@
   display: grid;
   gap: 14px;
 }
-.nearby-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-.nearby-actions .secondary-button {
-  flex: 1 1 auto;
-  min-height: 48px;
-  font-size: 14px;
-}
 .nearby-note,
 .nearby-empty,
 .nearby-loading,
@@ -191,7 +181,4 @@
 .market-rate .icon-button {
   min-width: 48px;
   min-height: 48px;
-}
-.explore-sheet-tabs {
-  margin-bottom: 8px;
 }

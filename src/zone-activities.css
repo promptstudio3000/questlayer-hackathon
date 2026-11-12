@@ -99,17 +99,9 @@
   font-size: 16px;
   line-height: 1.4;
 }
-.zone-activity-panel .quest-detail .activity-step {
-  font-size: 14px;
-  color: var(--ink-secondary);
-}
 .zone-activity-panel .quest-prizes {
   margin: 8px 0;
   gap: 6px 12px;
-  font-size: 14px;
-}
-.zone-activity-panel .distance-note {
-  margin: 8px 0;
   font-size: 14px;
 }
 .zone-activity-panel .quest-detail .fine-print {
@@ -130,12 +122,6 @@
   .app-shell .main-panel.zone-explore-panel {
     bottom: auto;
     max-height: calc(100dvh - 230px);
-  }
-  .app-shell .player-bottom {
-    left: 111px;
-    width: 420px;
-    min-width: 0;
-    box-sizing: border-box;
   }
   .app-shell .zone-explore-panel.sheet-compact {
     bottom: auto;
@@ -212,12 +198,6 @@
 
 .app-shell .zone-explore-panel > .sheet-toggle {
   display: none;
-}
-.app-shell .zone-explore-panel .zone-map-collapse {
-  width: 48px;
-  min-width: 48px;
-  height: 48px;
-  flex: none;
 }
 
 @media (max-width: 900px) {
