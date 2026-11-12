@@ -87,13 +87,15 @@ export const ACCOUNTS = {
   NEAR_CREATORS_ACCOUNT: top("creators"),
 };
 const env = { ...process.env, ...ACCOUNTS, NEAR_NETWORK: "testnet", APP_ORIGIN: ORIGIN };
+// --reviewed: the same pinned builds (contracts/wasm-sha256.json) World runs,
+// reviewed when they went live; each script still checks the WASM hashes.
 const STEPS = [
   { name: "collectibles slice (+ factory, relayer, badges, npc-games)", script: "deploy-mainnet-slice.mjs", args: ["--execute"] },
   { name: "rewards + vault factory", script: "deploy-native-funding-testnet.mjs" },
-  { name: "QGOLD vault", script: "deploy-qgold-testnet.mjs" },
+  { name: "QGOLD vault", script: "deploy-qgold-testnet.mjs", args: ["--reviewed"] },
   { name: "ledger + soulbound QGOLD", script: "deploy-ledger-testnet.mjs" },
   { name: "market", script: "deploy-market-testnet.mjs" },
-  { name: "QGOLD escrow", script: "deploy-qgold-escrow-testnet.mjs" },
+  { name: "QGOLD escrow", script: "deploy-qgold-escrow-testnet.mjs", args: ["--reviewed"] },
   { name: "creators", script: "deploy-creators-testnet.mjs" },
 ];
 const SHARED = ["native-intents"]; // records the Test Layer reuses as they are
