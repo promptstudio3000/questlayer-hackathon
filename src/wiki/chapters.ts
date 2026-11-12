@@ -595,8 +595,8 @@ export const CHAPTERS: Chapter[] = [
       ["6 authors", "make a topic free for good"],
     ],
     status: "live",
-    updated: "2026-11-11",
-    sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/LocalChat.tsx", "src/MapNotes.tsx", "src/gold-map-layer.ts", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx"],
+    updated: "2026-11-12",
+    sources: ["docs/MAP-NOTES-UI.md", "server/social-content.mjs", "server/social-note-expiry.mjs", "server/community-places.mjs", "server/gold-spend/places.mjs", "src/LocalChat.tsx", "src/MapNotes.tsx", "src/gold-map-layer.ts", "src/PlaceMessages.tsx", "src/CommunityPlaces.tsx", "src/MapPeek.tsx", "src/PinLine.tsx", "src/CreatorCommunity.tsx", "src/QuestFeedback.tsx", "server/creators/feedback.mjs"],
     blocks: [
       { h: "Create from the map" },
       {
@@ -619,7 +619,10 @@ export const CHAPTERS: Chapter[] = [
       { h: "Quests, tasks and creators" },
       {
         list: [
-          "**Quests** is one compact list with filter chips: All, Near me (5 km), Following and Started. Each row shows the quest's pixel icon (visit, trail, chest or story), the creator's own avatar and name, the distance and type on one line, and the price or Free.",
+          "**Quests** is one compact list with filter chips: All, Near me (5 km), Following and Started. Each row shows the quest's pixel icon (visit, trail, chest or story) or the creator's photo, the creator's own avatar and name, the star rating with the number of ratings, the distance and type on one line, and the price or Free.",
+          "A **quest detail** is one screen with one goal: the creator's header photo (or the type picture), title, creator, stars, distance, the one question to answer, and a single **Go** button. Go starts the quest and switches to the map with a pin, a direction line and a chip that leads back to the quest. The description folds to two lines; the review rules sit under the (i) button. Once started, the same screen shows the state (In progress, Waiting for review, Done), a Show on map button and a field to write the answer right there.",
+          "**Rating and discussion** sit under every quest. An explorer who started a quest gives 1 to 5 stars, once, and may change it; the creator cannot rate their own quest. Anyone who can see the quest can write a comment (500 characters, 20 a day); the writer or the quest's creator can remove one. A block in either direction hides the quest together with its discussion. Ratings refer to the quest id, the same id the creators contract registers on chain.",
+          "Creators may add one **header photo** to a quest in the editor. It is shrunk on the phone, re-encoded on the server without its location data, and becomes public only with the reviewed revision that carries it.",
           "**Tasks** lists the QGOLD tasks explorers post for each other in the same rows, with a type badge, who posted it, the reward and places left.",
           "**Creators** shows each creator's avatar (their map character), short bio, quests and followers, and a Follow button. Tapping a creator opens their profile as a dialog: level, quests, followers, finished runs and creator XP, a large Follow button, an (i) button with the safety notes and Block, and their quests in the same rows as the Quests list.",
           "The test world adds demo-bot creators, quests and example tasks labelled demo-bot; example tasks hold no QGOLD and cannot be taken.",
