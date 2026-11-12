@@ -3247,5 +3247,6 @@
  "Start the tour": "开始导览",
  "Tour done: {0} transactions on NEAR.": "导览完成：NEAR 上 {0} 笔交易。",
  "Tour": "导览",
- "confirming": "确认中"
+ "confirming": "确认中",
+ "{0} waved back: “{1}”": "{0} 向你回挥手：“{1}”"
 }

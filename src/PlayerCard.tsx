@@ -214,8 +214,10 @@ export function PlayerCard({
   async function wave(phrase: string) {
     setBusy(true);
     try {
-      const r = await api<{ phrase: string }>("/players/wave", { playerId, phrase });
-      setStatus(tr("Sent: “{0}”", { 0: waveText(phrase, r.phrase) }));
+      const r = await api<{ phrase: string; reply?: { key: string; text: string } }>("/players/wave", { playerId, phrase });
+      const sent = tr("Sent: “{0}”", { 0: waveText(phrase, r.phrase) });
+      // A demo bot waves straight back, so the reply shows right here.
+      setStatus(r.reply && card ? `${sent} ${tr("{0} waved back: “{1}”", { 0: card.name, 1: waveText(r.reply.key, r.reply.text) })}` : sent);
     } catch (e) {
       setStatus((e as Error).message);
     } finally {
@@ -336,6 +338,9 @@ export function PlayerCard({
                 <button aria-expanded={botChat} onClick={() => setBotChat((v) => !v)}>
                   <ChatCircleText size={18} aria-hidden="true" /> {tr("Message")}
                 </button>
+                <button aria-expanded={waving} onClick={() => setWaving((v) => !v)}>
+                  <HandWaving size={18} aria-hidden="true" /> {tr("Wave")}
+                </button>
               </div>
             )}
             {card.demoBot && botChat && <DemoBotChat botId={card.id} name={card.name} />}
@@ -368,7 +373,7 @@ export function PlayerCard({
             {!card.self && !card.demoBot && !onMessage && (
               <p className="player-card-hint">{tr("Messages need your explorer account. Sign in with it to write.")}</p>
             )}
-            {waving && !card.self && !card.demoBot && (
+            {waving && !card.self && (
               card.canWave ? (
                 <div className="player-card-waves">
                   {card.phrases.map((p) => (

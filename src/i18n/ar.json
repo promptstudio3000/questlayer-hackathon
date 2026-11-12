@@ -3247,5 +3247,6 @@
  "Start the tour": "ابدأ الجولة",
  "Tour done: {0} transactions on NEAR.": "انتهت الجولة: {0} معاملة على NEAR.",
  "Tour": "الجولة",
- "confirming": "قيد التأكيد"
+ "confirming": "قيد التأكيد",
+ "{0} waved back: “{1}”": "لوّح {0} لك بالمقابل: «{1}»"
 }

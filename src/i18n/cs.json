@@ -3247,5 +3247,6 @@
  "Start the tour": "Začít prohlídku",
  "Tour done: {0} transactions on NEAR.": "Prohlídka hotová: {0} transakcí na NEAR.",
  "Tour": "Prohlídka",
- "confirming": "potvrzuje se"
+ "confirming": "potvrzuje se",
+ "{0} waved back: “{1}”": "{0} ti zamával zpátky: „{1}“"
 }

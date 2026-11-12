@@ -3247,5 +3247,6 @@
  "Start the tour": "टूर शुरू करें",
  "Tour done: {0} transactions on NEAR.": "टूर पूरा: NEAR पर {0} लेन-देन।",
  "Tour": "टूर",
- "confirming": "पुष्टि हो रही है"
+ "confirming": "पुष्टि हो रही है",
+ "{0} waved back: “{1}”": "{0} ने वापस हाथ हिलाया: “{1}”"
 }

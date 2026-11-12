@@ -157,7 +157,7 @@ test("starter markup layers wearables by slot at their canvas place and rejects 
   assert.ok(!characterMarkerMarkup({ wearables: [{ id: 1, slot: "head", dims: [1, 1, 1, 1] }], skinUrl: "/api/aavegotchi/skin?tokenId=5" }).includes("/art/1.svg"));
 });
 
-test("explorer card shows XP and badges; test-world bots get a demo-bot card without waves", () => {
+test("explorer card shows XP and badges; test-world bots get a demo-bot card and wave back", () => {
   const db = openDatabase(":memory:");
   const a = createPlayer(db, "Alice", now),
     b = createPlayer(db, "Bob", now);
@@ -179,9 +179,13 @@ test("explorer card shows XP and badges; test-world bots get a demo-bot card wit
   assert.equal(botCard.demoBot, true);
   assert.equal(botCard.name, "Vera");
   assert.equal(botCard.xp, 900);
-  assert.equal(botCard.canWave, false);
+  assert.equal(botCard.canWave, true);
   assert.equal(botCard.waveHint, null);
-  assert.throws(() => sendWave(db, a, bot, "hello", now), /Invalid explorer/);
+  // The guided tour's wave step: the bot waves straight back.
+  assert.deepEqual(sendWave(db, a, bot, "hello", now), { sent: true, phrase: "Hello!", reply: { key: "hello", text: "Hello!" } });
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM player_waves WHERE from_id=? AND to_id=?").get(bot, a).n, 1);
+  assert.throws(() => sendWave(db, a, bot, "thanks", now + 1000), /Give them a minute/);
+  assert.throws(() => sendWave(db, a, "seed-p-nobody", "hello", now + 2000), /not available/);
   assert.throws(() => playerCard(db, a, "seed-'; DROP", null, now), /Invalid explorer/);
 });
 

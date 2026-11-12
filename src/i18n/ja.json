@@ -3247,5 +3247,6 @@
  "Start the tour": "ツアーを始める",
  "Tour done: {0} transactions on NEAR.": "ツアー完了：NEAR で {0} 件の取引。",
  "Tour": "ツアー",
- "confirming": "確認中"
+ "confirming": "確認中",
+ "{0} waved back: “{1}”": "{0}が手を振り返した：「{1}」"
 }

@@ -123,7 +123,7 @@ import { NativeCollectibles } from "./native/collectibles.mjs";
 import { chainFeed, chainItems } from "./native/chain-feed.mjs";
 import { clientAddress, RateWindows, pruneRateWindows, publicRpcUrl } from "./http-security.mjs";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
-import { tourState, tourAction } from "./tour/tour.mjs";
+import { tourState, tourAction, tourMark } from "./tour/tour.mjs";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -3500,7 +3500,9 @@ async function api(req, res, url) {
     limit("bot-chat", player, 12, "Please wait a moment before writing again.");
     const i = await body(req);
     assert(auth(req) === player, "Please sign in again.", 401);
-    return respond(res, demoBotReply(db, player, i.playerId, i.text));
+    const reply = demoBotReply(db, player, i.playerId, i.text);
+    if (tourEnabled) tourMark(db, player, "message");
+    return respond(res, reply);
   }
   if (path === "/api/players/wave" && method === "POST") {
     limit("wave", player, 20, "Please wait before waving again.");

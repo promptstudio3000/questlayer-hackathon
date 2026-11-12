@@ -3247,5 +3247,6 @@
  "Start the tour": "Empezar el recorrido",
  "Tour done: {0} transactions on NEAR.": "Recorrido terminado: {0} transacciones en NEAR.",
  "Tour": "Recorrido",
- "confirming": "confirmando"
+ "confirming": "confirmando",
+ "{0} waved back: “{1}”": "{0} te devolvió el saludo: “{1}”"
 }
