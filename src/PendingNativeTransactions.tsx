@@ -4,6 +4,8 @@ import {
   ArrowSquareOut,
   Clock,
   DownloadSimple,
+  Info,
+  Receipt,
   UploadSimple,
   WarningCircle,
 } from "@phosphor-icons/react";
@@ -55,6 +57,19 @@ function exactNear(amount: string) {
     part = (value % 10n ** 24n).toString().padStart(24, "0").replace(/0+$/, "");
   return `${value / 10n ** 24n}${part ? "." + part : ""}`;
 }
+/** Settings → Receipts (owner request, 12 Nov 2026): lazy, so its icons stay out of the first load. */
+export function SettingsReceipts(props: Parameters<typeof PendingNativeTransactions>[0]) {
+  return (
+    <details className="settings-group screen-details settings-receipts">
+      <summary><Receipt size={20} aria-hidden="true" />{tr("Receipts")}</summary>
+      <p className="fine-print settings-pad">
+        <Info size={16} aria-hidden="true" /> {tr("Payments you signed keep a receipt here until the chain confirms them. If one was interrupted, check it here before paying again.")}
+      </p>
+      <PendingNativeTransactions {...props} />
+    </details>
+  );
+}
+
 export function PendingNativeTransactions({
   playerId,
   linkedAccounts,

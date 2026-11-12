@@ -1067,6 +1067,7 @@ test("enabled-only additive safety initialization and private backup restore pre
       "core",
       "creator-community",
       "creator-completion",
+      "creator-feedback",
       "creator-lifecycle",
       "creator-safety",
       "social-blocks",

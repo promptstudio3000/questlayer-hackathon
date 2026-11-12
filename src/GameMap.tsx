@@ -417,7 +417,7 @@ export function GameMap(props: GameMapProps) {
     let gone = false;
     const m = new maplibregl.Map({
       container: el.current,
-      // The canvas label a screen reader announces, in the player's language.
+      // MapLibre labels its canvas "Map"; say it in the player's language.
       locale: { "Map.Title": tr("Map") },
       style: "https://tiles.openfreemap.org/styles/positron",
       // The poi labels end up hidden, and tiles only keep the source-layers

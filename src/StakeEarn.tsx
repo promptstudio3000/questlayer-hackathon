@@ -1,43 +1,18 @@
-// Profile → Stake (owner request, 10 Nov 2026): one screen with a two-way
-// switch. "Stake" explains the idea with a small animated picture, shows the
-// tier ladder and holds the stake form (src/FuelTheCity.tsx). "Earnings" shows
-// what the explorer earned: QGOLD from the map and what their stake kept.
+// Profile → Stake (owner request, 10–12 Nov 2026): one screen. The small
+// wallet line on top, the tier ladder, the stake form (src/FuelTheCity.tsx)
+// and the loop as one numbered, animated picture.
 import { useEffect, useId, useState, type CSSProperties, type ReactNode } from "react";
-import { Flame, MapTrifold, Vault, Wallet } from "@phosphor-icons/react";
+import { Flame, MapTrifold, Vault } from "@phosphor-icons/react";
 import { api, gold as fmtGold } from "./api";
 import { CoinIcon } from "./app-bits";
 import { GameObjectArt } from "./game-object-art";
 import { Ghost } from "./Ghost";
 import { prefersReducedMotion } from "./feedback";
 import { tr } from "./i18n";
-import type { Journey } from "./CharacterJourney";
 import type { StakeCard } from "./StakeToday";
-import { FuelCard } from "./FuelCard";
+import { goldCompact, potView, refreshRewardFunding, useRewardFunding } from "./reward-funding";
 import "./profile-journey.css";
 import "./stake-story.css";
-
-export type StakeView = "stake" | "earnings";
-
-export function StakeEarnSwitch({
-  value,
-  onChange,
-}: {
-  value: StakeView;
-  onChange: (v: StakeView) => void;
-}) {
-  return (
-    <div className="stake-earn-switch" role="group" aria-label={tr("Stake")}>
-      <button type="button" aria-pressed={value === "stake"} onClick={() => onChange("stake")}>
-        <Flame size={20} weight="duotone" aria-hidden="true" />
-        {tr("Stake")}
-      </button>
-      <button type="button" aria-pressed={value === "earnings"} onClick={() => onChange("earnings")}>
-        <Wallet size={20} weight="duotone" aria-hidden="true" />
-        {tr("Earnings")}
-      </button>
-    </div>
-  );
-}
 
 const QGOLD = "QGOLD";
 const VB_W = 340;
@@ -262,33 +237,37 @@ export function TierLadder({
 type PendingQgold = { accountId: string | null; units: number; awaitingAccount?: boolean };
 const nearOf = (yocto: bigint) => Number(yocto / 10n ** 21n) / 1000;
 
-/** Earnings: the QGOLD balance, what's on its way and where it came from. */
-export function EarningsPanel({
-  refreshKey,
-  onLink,
-  children,
-}: {
-  refreshKey: string;
-  /** Prepares the explorer account when QGOLD has nowhere to go yet. */
-  onLink?: () => void;
-  children?: ReactNode;
-}) {
+/**
+ * The top of Profile → Stake (owner request, 12 Nov 2026: Earnings merged in,
+ * kept minimal): my QGOLD, the GOLD that went onto the map today and, once
+ * there is a stake, the yield it kept for me. Nothing technical here.
+ */
+export function StakeWallet({ refreshKey, staked }: { refreshKey: string; staked: boolean }) {
   const [pending, setPending] = useState<PendingQgold | null>(null),
     [balance, setBalance] = useState<number | null>(null),
-    [journey, setJourney] = useState<Journey | null>(null),
     [kept, setKept] = useState<number | null>(null);
+  const pot = potView(useRewardFunding());
+  useEffect(() => {
+    void refreshRewardFunding();
+  }, []);
   useEffect(() => {
     let live = true;
     void api<PendingQgold>("/qgold/pending")
       .then(async (p) => {
         if (!live) return;
         setPending(p);
-        if (!p.accountId) return;
+        if (!p.accountId) return setBalance(0);
         const a = await api<{ balance: string | null }>(`/qgold/account?account=${encodeURIComponent(p.accountId)}`);
         if (live) setBalance(Number(a.balance || 0));
       })
       .catch(() => undefined);
-    void api<Journey>("/me/journey").then((j) => live && setJourney(j), () => undefined);
+    return () => {
+      live = false;
+    };
+  }, [refreshKey]);
+  useEffect(() => {
+    if (!staked) return;
+    let live = true;
     void api<StakeCard>("/keeper/stake").then(
       (card) => {
         if (!live) return;
@@ -304,55 +283,34 @@ export function EarningsPanel({
     return () => {
       live = false;
     };
-  }, [refreshKey]);
+  }, [refreshKey, staked]);
+  const today = pot.kind === "ready" ? pot.today : null;
+  const onMap = today?.coinsFunded ?? today?.coinsLeft ?? null;
   return (
-    <>
-      <div className="earn-hero">
-        <span>{tr("QGOLD")}</span>
-        <div>
-          <CoinIcon />
-          <strong>{balance === null ? (pending && !pending.accountId ? "0" : "…") : fmtGold(balance, 6)}</strong>
-        </div>
-        <small>
-          {pending?.accountId
-            ? tr("On your NEAR account {0}", { 0: pending.accountId })
-            : tr("Sign in with a NEAR account to receive QGOLD.")}
-        </small>
-        {!!pending?.units && (
-          <small className="earn-pending">
-            {pending.awaitingAccount
-              ? tr("{0} QGOLD collected waits for your NEAR account.", { 0: fmtGold(pending.units, 6) })
-              : tr("+{0} QGOLD arrives with the next payout, within minutes.", { 0: fmtGold(pending.units, 6) })}
-          </small>
-        )}
-        {pending && !pending.accountId && onLink && (
-          <button type="button" className="secondary-button earn-link" onClick={onLink}>
-            <Wallet size={18} aria-hidden="true" /> {tr("Activate my account")}
-          </button>
-        )}
+    <dl className="stake-wallet">
+      <div>
+        <dt>{tr("Your QGOLD")}</dt>
+        <dd>
+          <CoinIcon /> {balance === null ? "…" : fmtGold(balance, 6)}
+          {!!pending?.units && !pending.awaitingAccount && (
+            <small>{tr("+{0} with the next payout", { 0: fmtGold(pending.units, 6) })}</small>
+          )}
+        </dd>
       </div>
-      <dl className="earn-sources">
+      <div>
+        <dt>
+          <MapTrifold size={14} weight="duotone" aria-hidden="true" /> {tr("On the map today")}
+        </dt>
+        <dd>{onMap === null ? "–" : `${goldCompact(onMap)} GOLD`}</dd>
+      </div>
+      {staked && (
         <div>
           <dt>
-            <MapTrifold size={16} weight="duotone" aria-hidden="true" /> {tr("From the map")}
+            <Flame size={14} weight="duotone" aria-hidden="true" /> {tr("From your stake")}
           </dt>
-          <dd>
-            {journey ? fmtGold(journey.stats.goldEarnedU) : "…"} GOLD
-            <small>{tr("Coins, quests and tasks")}</small>
-          </dd>
+          <dd>{kept === null ? "–" : `${kept.toLocaleString("en-US", { maximumFractionDigits: 3 })} NEAR`}</dd>
         </div>
-        <div>
-          <dt>
-            <Flame size={16} weight="duotone" aria-hidden="true" /> {tr("From your stake")}
-          </dt>
-          <dd>
-            {kept === null ? "–" : kept.toLocaleString("en-US", { maximumFractionDigits: 3 })} NEAR
-            <small>{tr("Yield kept for you")}</small>
-          </dd>
-        </div>
-      </dl>
-      <FuelCard refreshKey={refreshKey} />
-      {children}
-    </>
+      )}
+    </dl>
   );
 }

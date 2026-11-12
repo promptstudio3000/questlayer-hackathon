@@ -173,7 +173,8 @@ function parseArgs(bytes) {
   return args;
 }
 // SocialDB writes the game quotes itself (server/native/social-profile.mjs,
-// server/native/social-records.mjs, server/gold-spend/social.mjs). Anything
+// server/native/social-records.mjs, server/gold-spend/social.mjs,
+// server/creators/feedback.mjs). Anything
 // else under the player's namespace is not sponsored: the relayer would pay
 // the gas and the storage of arbitrary writes.
 export const SOCIAL_MAX_ARGS_BYTES = 4096;
@@ -195,6 +196,16 @@ const SOCIAL_RECORDS = {
   // and one ciphertext message, both under the sender's own namespace.
   inbox_key: { whole: validInboxKeyRecord },
   inbox: { key: MESSAGE_ID, whole: validInboxRecord },
+  // Stars an explorer gave a creator quest (server/creators/feedback.mjs).
+  ratings: {
+    key: /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/,
+    fields: ["schema", "quest_id", "registry", "stars", "updated_at", "mutation_id"],
+    valid: (r, key) =>
+      r.schema === "questlayer.rating/1" &&
+      r.quest_id === key &&
+      /^[1-5]$/.test(r.stars) &&
+      /^rating_[a-f0-9-]{36}$/.test(r.mutation_id),
+  },
   places: {
     key: /^(place|post)_[a-f0-9-]{36}$/,
     fields: ["schema", "kind", "thread", "title", "text", "cell", "place", "paid", "created_at", "mutation_id"],

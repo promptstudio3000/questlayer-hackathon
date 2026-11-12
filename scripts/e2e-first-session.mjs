@@ -614,11 +614,11 @@ async function runDevice(name, server) {
 
     console.log("9. Sell on NEAR");
     // Aura trades happen on NEAR only (docs/ONCHAIN-TRADES.md): the sale form
-    // prices in test NEAR and secures the Aura before listing it. The offline
+    // prices in QGOLD and secures the Aura before listing it. The offline
     // CI server has no chain, so the journey checks the form and backs out.
     await itemActions.getByRole("button", { name: "Sell" }).click();
-    await page.getByText("Price in test NEAR").waitFor();
-    await page.locator("#inventory-list-price").fill("0.05");
+    await page.getByText("Price in QGOLD").waitFor();
+    await page.locator("#inventory-list-price").fill("50000");
     await scan(page, "market-listing-form");
     await page.locator(".inventory-sale-form").getByRole("button", { name: "Back" }).click();
     await quietToast(page);

@@ -60,6 +60,7 @@ for (const relative of [
   "./social-note-expiry.mjs",
   "./community-places.mjs",
   "./creators/creator-xp.mjs",
+  "./creators/feedback.mjs",
   "./staker-gates.mjs",
   "./task-evidence.mjs",
   "./native/treasury-history.mjs",

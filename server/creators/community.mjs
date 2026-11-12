@@ -9,6 +9,7 @@ import {
   createCreatorOperations,
 } from "./operations.mjs";
 import { publicLook } from "../public-look.mjs";
+import { questFeedbackSummary } from "./feedback.mjs";
 import {
   CREATOR_XP,
   creatorQuestKind,
@@ -124,6 +125,8 @@ export function createCreatorCommunity(db, { clock = Date.now } = {}) {
     ...(row.requirement ? { requirement: JSON.parse(row.requirement) } : {}),
     ...(row.place ? { place: JSON.parse(row.place) } : {}),
     ...(row.price && row.price !== "0" ? { price: row.price } : {}),
+    ...(row.photo ? { photo: row.photo } : {}),
+    rating: questFeedbackSummary(db, row.id),
     creator: {
       id: row.author,
       displayName: row.display_name,
@@ -136,7 +139,7 @@ export function createCreatorCommunity(db, { clock = Date.now } = {}) {
     domain: "demo",
   });
   const approvedColumns = `q.id,q.author,q.published_revision,p.display_name,
-    json_extract(r.content,'$.title') AS title,json_extract(r.content,'$.description') AS description,json_extract(r.content,'$.requirement') AS requirement,json_extract(r.content,'$.place') AS place,json_extract(r.content,'$.price') AS price`;
+    json_extract(r.content,'$.title') AS title,json_extract(r.content,'$.description') AS description,json_extract(r.content,'$.requirement') AS requirement,json_extract(r.content,'$.place') AS place,json_extract(r.content,'$.price') AS price,json_extract(r.content,'$.photo') AS photo`;
   const approvedJoins = `FROM creator_quests q
     JOIN creator_profiles p ON p.player_id=q.author AND p.public=1
     JOIN creator_revisions r ON r.quest_id=q.id AND r.revision=q.published_revision AND r.state='approved'`;
