@@ -20,7 +20,9 @@ import { MINIGAMES, createMinigame, scoreMinigame, minimumPlayMs } from "./minig
 import { createDuel, duelStart, duelRound, duelOver, duelVerdict, STANCES, MONSTER_STATS, playerPower } from "./duel.mjs";
 
 export const FORMATS = ["quiz", ...MINIGAMES, "duel"];
-export const ATTEMPT_COOLDOWN_MS = 60 * 60 * 1000;
+// One try an hour per monster. The Test Layer allows a new try after two
+// minutes, so the guided tour's monster step can always be finished.
+export const ATTEMPT_COOLDOWN_MS = (process.env.QL_LAYER === "test" ? 2 : 60) * 60 * 1000;
 export const CHALLENGE_TTL_MS = 3 * 60 * 1000;
 const NETWORK_SLACK_MS = 400;
 

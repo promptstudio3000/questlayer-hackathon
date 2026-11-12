@@ -5,6 +5,7 @@ import { ActorPortrait } from "./ActorPortrait";
 import { nearbyAction, type NearbyActor } from "./nearby-action";
 import type { Coin } from "./types";
 import { WorldSwitcher, type GameLayerConfig } from "./WorldSwitcher";
+import type { TourTarget } from "./TourHelper";
 import { questDisplayTitle } from "./quest-copy";
 import { mapObjective, canOfferNearbyAction } from "./map-objective";
 import { EmptyState } from "./EmptyState";
@@ -63,6 +64,7 @@ import {
   GoldShop,
   LocalChat,
   PlaceCompose,
+  TourHelper,
   CommunityPlaces,
   AddPlaceDialog,
   EmotePicker,
@@ -426,7 +428,7 @@ export default function App() {
     [mapNotes, setMapNotes] = useState<NotePin[]>([]),
     [noteOpenId, setNoteOpenId] = useState<string | null>(null),
     [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
-    [quickCreate, setQuickCreate] = useState<"note" | "topic" | "place" | null>(null),
+    [quickCreate, setQuickCreate] = useState<"note" | "topic" | "shout" | "place" | null>(null),
     [emotePicker, setEmotePicker] = useState(false),
     // The camera turns with the explorer unless switched off in Map settings.
     [mapRotate, setMapRotate] = useState(() => {
@@ -450,7 +452,8 @@ export default function App() {
     // Server switch LAYER_ENABLED: adds the virtual voxel Layer to the logo world picker.
     [virtualLayer, setVirtualLayer] = useState<PublicLayer | null>(null),
     // Test Layer or QuestLayer World (docs/TEST-LAYER.md).
-    [gameLayer, setGameLayer] = useState<GameLayerConfig | null>(null);
+    [gameLayer, setGameLayer] = useState<GameLayerConfig | null>(null),
+    [tourRunning, setTourRunning] = useState(false);
   useEffect(() => {
     void api<{ layer?: { layers?: PublicLayer[] } | null; gameLayer?: GameLayerConfig | null }>("/config")
       .then((c) => {
@@ -3592,7 +3595,8 @@ export default function App() {
     !nativePlay && streetFindTarget
       ? world?.coins.find((c) => c.id === streetFindTarget && c.find) || null
       : null;
-  const coachActive = learning.state.enabled && firstSession.visible && firstSession.progress.current?.id !== "secure" && !nativePlay && !world?.globalPreparation;
+  // The guided tour replaces the first-steps coach while it runs.
+  const coachActive = !tourRunning && learning.state.enabled && firstSession.visible && firstSession.progress.current?.id !== "secure" && !nativePlay && !world?.globalPreparation;
   const coachStep = coachActive ? firstSession.progress.current?.id : undefined;
   const movementTopic: HelpTopic = arena ? "movement-arena" : "movement-gps";
   const coachTopic: HelpTopic = coachStep === "find" && !learning.state.seen[movementTopic] ? movementTopic
@@ -3725,6 +3729,52 @@ export default function App() {
     setSheetExpanded(true);
     setMarketForm(form);
   };
+  // Guided tour (docs/GUIDED-TOUR.md): where a step points, and how to open it.
+  const TOUR_COMPANION = "seed-p-ondra";
+  const TOUR_ACTORS: Record<string, string[]> = { "quest-giver": ["quest_giver"], monster: ["roamer", "guardian", "boss"], trader: ["trader"], keeper: ["keeper"] };
+  function tourQuest(kind: string) {
+    let best: Quest | null = null;
+    for (const q of world?.quests || []) {
+      if (q.completed || q.kind !== kind || q.opens_at > now || q.closes_at <= now) continue;
+      if (!best || meters(position, questPoint(q)) < meters(position, questPoint(best))) best = q;
+    }
+    return best;
+  }
+  function tourResolve(t: TourTarget) {
+    if (t.kind === "coin" || t.kind === "find") {
+      const c = nearestCoin(t.kind === "find");
+      return c ? { lat: c.lat, lng: c.lng, label: t.kind === "find" ? tr("Street find") : undefined } : null;
+    }
+    if (t.kind === "quest") {
+      const q = tourQuest(t.quest);
+      return q ? { ...questPoint(q), label: questDisplayTitle(q.title) } : null;
+    }
+    // Characters walk: "Show me" focuses the map on the nearest one instead of a fixed arrow.
+    return null;
+  }
+  function tourGo(t: TourTarget) {
+    if (t.kind === "coin" || t.kind === "find") {
+      const c = nearestCoin(t.kind === "find");
+      if (c) goToStreetFind(c);
+      else notify(t.kind === "find" ? tr("No street find is left near you today.") : tr("No coin is left near you right now. More appear in the next wave."), true);
+    } else if (t.kind === "quest") {
+      const q = tourQuest(t.quest);
+      if (q) guideToQuest(q);
+      else void showGoal("quest");
+    } else if (t.kind === "actor") {
+      // The walking companion bot of the Test Layer (server/test-seed): its card has Wave and Message.
+      if (t.role === "companion") setCardPlayer(TOUR_COMPANION);
+      else if (TOUR_ACTORS[t.role]) showActor({ kinds: TOUR_ACTORS[t.role] });
+      else { setTab("community"); setSheetExpanded(true); }
+    } else if (t.kind === "screen") {
+      const tabs: Record<string, Tab> = { inventory: "inventory", market: "market", shop: "shop", stake: "fund", treasury: "fund" };
+      setTab(tabs[t.screen] || "explore");
+      setSheetExpanded(true);
+    } else if (t.kind === "action") {
+      if (t.action === "task") openNearbyForm("task");
+      else if (t.action === "note" || t.action === "topic" || t.action === "shout") setQuickCreate(t.action);
+    }
+  }
   const mapActions: MapAction[] = [
     { id: "note", label: tr("Leave a note"), icon: NotePencil, onSelect: () => setQuickCreate("note") },
     { id: "topic", label: tr("Open a topic"), icon: ChatsCircle, onSelect: () => setQuickCreate("topic") },
@@ -5177,6 +5227,15 @@ export default function App() {
               <ArrowsIn size={22} weight="bold" />
             </button>
           )}
+          {tab === "explore" && !globe && gameLayer?.tour && player && (
+            <TourHelper
+              position={position}
+              heading={arena && !nativePlay ? demoWalk.heading : (gpsCourse ?? undefined)}
+              resolve={tourResolve}
+              onGo={tourGo}
+              onRunning={setTourRunning}
+            />
+          )}
           {tab === "explore" && !globe && (
             <MapActions actions={mapActions}>
               {emotePicker && (
@@ -5202,6 +5261,21 @@ export default function App() {
               notify={notify}
               onChange={() => void refreshMapNotes()}
               onDone={() => setQuickCreate(null)}
+            />
+          )}
+          {quickCreate === "shout" && (
+            <PlaceCompose
+              kind="shout"
+              position={position}
+              fix={fix}
+              arena={arena && !nativePlay}
+              notify={notify}
+              onClose={() => setQuickCreate(null)}
+              onCreated={() => {
+                setQuickCreate(null);
+                void me();
+                void refreshGoldMap();
+              }}
             />
           )}
           {quickCreate === "topic" && (
