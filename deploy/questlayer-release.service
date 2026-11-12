@@ -1,0 +1,18 @@
+[Unit]
+Description=QuestLayer release runner: deploy branch, contract upgrades, operator jobs (docs/VPS-RELEASE-RUNNER.md)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Root orchestrates; npm, tests, builds and operator scripts run as
+# questlayer-release via runuser. Only the copy installed from main runs here.
+ExecStart=/usr/local/bin/node /usr/local/lib/questlayer-release/scripts/release-runner.mjs tick
+EnvironmentFile=-/etc/questlayer-release.env
+Environment=RELEASE_INSTALL_DIR=/usr/local/lib/questlayer-release
+StateDirectory=questlayer-release-state
+StateDirectoryMode=0700
+Nice=10
+IOSchedulingClass=best-effort
+TimeoutStartSec=90min
+UMask=0022
