@@ -2749,8 +2749,6 @@
  "Build": "Construire",
  "Choose your world": "Choisis ton monde",
  "Create your explorer to enter.": "Crée ton explorateur pour entrer.",
- "One explorer. Two worlds.": "Un explorateur. Deux mondes.",
- "Outdoor quests, real places and discoveries.": "Quêtes dehors, lieux réels et découvertes.",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "Les envois et remboursements atteignent ce compte dès que son premier paiement QGOLD l'enregistre auprès du jeton.",
  "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "L'escrow a besoin de {0} de stockage pour cet accord et il n'a pas pu être ajouté pour l'instant : {1}",
  "No street find is left near you today.": "Il ne reste plus de trouvaille de rue près de toi aujourd'hui.",
@@ -2976,7 +2974,6 @@
  "{0} votes": "{0} votes",
  "See the treasury DAO": "Voir la DAO de la trésorerie",
  "3D world. Move with W A S D, jump with Space, drag to look around.": "Monde 3D. Déplace-toi avec W A S D, saute avec Espace, fais glisser pour regarder autour.",
- "A shared voxel world in space: build your plot, explore, meet explorers.": "Un monde voxel partagé dans l'espace : construis ta parcelle, explore, rencontre d'autres explorateurs.",
  "Activate beacons: {0} of {1}": "Active des balises : {0} sur {1}",
  "Aether shallows": "Hauts-fonds d'éther",
  "Back to QuestLayer": "Retour à QuestLayer",
@@ -3180,7 +3177,6 @@
  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "Ton compte a reçu son NEAR de départ une seule fois, à sa création. Ajoute ton propre NEAR : envoie-le depuis n'importe quel portefeuille ou plateforme d'échange à {0}.",
  "Test Layer": "Test Layer",
  "The real game.": "Le vrai jeu.",
- "Every feature with test coins. Nothing here is real money.": "Toutes les fonctions avec des pièces de test. Rien ici n'est de l'argent réel.",
  "1 hit every 10 min · {0} hits earn the Bossbane Fangring": "1 coup toutes les 10 min · {0} coups donnent le Bossbane Fangring",
  "3-stop trail": "Parcours à 3 étapes",
  "All day": "Toute la journée",
@@ -3226,5 +3222,9 @@
  "Riddles": "Énigmes",
  "Rhythm": "Rythme",
  "Rune path": "Chemin runique",
- "Rune song": "Chant runique"
+ "Rune song": "Chant runique",
+ "About the game": "À propos du jeu",
+ "Test coins, not real money.": "Pièces de test, pas de vrai argent.",
+ "Real places outdoors.": "De vrais lieux en extérieur.",
+ "Shared voxel world.": "Monde voxel partagé."
 }

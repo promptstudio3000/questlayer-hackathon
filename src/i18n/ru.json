@@ -2749,8 +2749,6 @@
  "Build": "Строить",
  "Choose your world": "Выбери мир",
  "Create your explorer to enter.": "Создай исследователя, чтобы войти.",
- "One explorer. Two worlds.": "Один исследователь. Два мира.",
- "Outdoor quests, real places and discoveries.": "Задания на улице, реальные места и открытия.",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "Переводы и возвраты поступят на этот аккаунт, как только первая выплата QGOLD зарегистрирует его в токене.",
  "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "Эскроу требует {0} хранилища для этого соглашения, и сейчас его не удалось добавить: {1}",
  "No street find is left near you today.": "Сегодня рядом не осталось уличных находок.",
@@ -2976,7 +2974,6 @@
  "{0} votes": "Голосов: {0}",
  "See the treasury DAO": "Открыть DAO казны",
  "3D world. Move with W A S D, jump with Space, drag to look around.": "3D-мир. Двигайтесь клавишами W A S D, прыжок — пробел, перетаскивайте, чтобы осмотреться.",
- "A shared voxel world in space: build your plot, explore, meet explorers.": "Общий воксельный мир в космосе: стройте свой участок, исследуйте, встречайте исследователей.",
  "Activate beacons: {0} of {1}": "Активируйте маяки: {0} из {1}",
  "Aether shallows": "Эфирные отмели",
  "Back to QuestLayer": "Назад в QuestLayer",
@@ -3180,7 +3177,6 @@
  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "Ваш аккаунт получил стартовый NEAR один раз, при создании. Добавьте свой NEAR: отправьте его с любого кошелька или биржи на {0}.",
  "Test Layer": "Test Layer",
  "The real game.": "Настоящая игра.",
- "Every feature with test coins. Nothing here is real money.": "Все функции с тестовыми монетами. Здесь нет настоящих денег.",
  "1 hit every 10 min · {0} hits earn the Bossbane Fangring": "1 удар каждые 10 мин · {0} ударов дают Bossbane Fangring",
  "3-stop trail": "Маршрут из 3 точек",
  "All day": "Весь день",
@@ -3226,5 +3222,9 @@
  "Riddles": "Загадки",
  "Rhythm": "Ритм",
  "Rune path": "Путь рун",
- "Rune song": "Песнь рун"
+ "Rune song": "Песнь рун",
+ "About the game": "Об игре",
+ "Test coins, not real money.": "Тестовые монеты, не настоящие деньги.",
+ "Real places outdoors.": "Реальные места на улице.",
+ "Shared voxel world.": "Общий воксельный мир."
 }

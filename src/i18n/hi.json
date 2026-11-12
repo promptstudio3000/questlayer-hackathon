@@ -2749,8 +2749,6 @@
  "Build": "निर्माण",
  "Choose your world": "अपनी दुनिया चुनें",
  "Create your explorer to enter.": "प्रवेश के लिए अपना खोजी बनाएँ।",
- "One explorer. Two worlds.": "एक खोजी। दो दुनियाएँ।",
- "Outdoor quests, real places and discoveries.": "बाहरी अभियान, असली जगहें और नई खोजें।",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "भेजी गई राशियाँ और रिफ़ंड इस खाते तक तब पहुँचते हैं जब इसका पहला QGOLD भुगतान इसे टोकन पर पंजीकृत कर देता है।",
  "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "इस समझौते के लिए एस्क्रो को {0} स्टोरेज चाहिए और उसे अभी जोड़ा नहीं जा सका: {1}",
  "No street find is left near you today.": "आज आपके पास कोई स्ट्रीट फाइंड नहीं बचा।",
@@ -2976,7 +2974,6 @@
  "{0} votes": "{0} वोट",
  "See the treasury DAO": "ट्रेज़री DAO देखें",
  "3D world. Move with W A S D, jump with Space, drag to look around.": "3D दुनिया। W A S D से चलें, स्पेस से कूदें, चारों ओर देखने के लिए खींचें।",
- "A shared voxel world in space: build your plot, explore, meet explorers.": "अंतरिक्ष में साझा वॉक्सेल दुनिया: अपना प्लॉट बनाएँ, खोजें, खोजकर्ताओं से मिलें।",
  "Activate beacons: {0} of {1}": "बीकन सक्रिय करें: {1} में से {0}",
  "Aether shallows": "ईथर उथला पानी",
  "Back to QuestLayer": "QuestLayer पर वापस",
@@ -3180,7 +3177,6 @@
  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "आपके खाते को शुरुआती NEAR केवल एक बार, बनाते समय मिला। अपना NEAR जोड़ें: किसी भी वॉलेट या एक्सचेंज से {0} पर भेजें।",
  "Test Layer": "टेस्ट लेयर",
  "The real game.": "असली गेम।",
- "Every feature with test coins. Nothing here is real money.": "टेस्ट सिक्कों के साथ हर सुविधा। यहाँ कुछ भी असली पैसा नहीं है।",
  "1 hit every 10 min · {0} hits earn the Bossbane Fangring": "हर 10 मिनट में 1 वार · {0} वार पर Bossbane Fangring मिलता है",
  "3-stop trail": "3-पड़ाव ट्रेल",
  "All day": "पूरे दिन",
@@ -3226,5 +3222,9 @@
  "Riddles": "पहेलियाँ",
  "Rhythm": "ताल",
  "Rune path": "रून पथ",
- "Rune song": "रून गीत"
+ "Rune song": "रून गीत",
+ "About the game": "खेल के बारे में",
+ "Test coins, not real money.": "टेस्ट सिक्के, असली पैसा नहीं।",
+ "Real places outdoors.": "बाहर की असली जगहें।",
+ "Shared voxel world.": "साझा वॉक्सेल दुनिया।"
 }

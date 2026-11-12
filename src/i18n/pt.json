@@ -2749,8 +2749,6 @@
  "Build": "Construir",
  "Choose your world": "Escolha seu mundo",
  "Create your explorer to enter.": "Crie seu explorador para entrar.",
- "One explorer. Two worlds.": "Um explorador. Dois mundos.",
- "Outdoor quests, real places and discoveries.": "Missões ao ar livre, lugares reais e descobertas.",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "Envios e reembolsos chegam a esta conta assim que o seu primeiro pagamento em QGOLD a registar no token.",
  "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "O escrow precisa de {0} de armazenamento para este acordo e não foi possível adicioná-lo agora: {1}",
  "No street find is left near you today.": "Não resta nenhum achado de rua perto de você hoje.",
@@ -2976,7 +2974,6 @@
  "{0} votes": "{0} votos",
  "See the treasury DAO": "Ver a DAO da tesouraria",
  "3D world. Move with W A S D, jump with Space, drag to look around.": "Mundo 3D. Mova-se com W A S D, pule com Espaço, arraste para olhar em volta.",
- "A shared voxel world in space: build your plot, explore, meet explorers.": "Um mundo de voxels compartilhado no espaço: construa seu lote, explore, conheça exploradores.",
  "Activate beacons: {0} of {1}": "Ative faróis: {0} de {1}",
  "Aether shallows": "Baixios de éter",
  "Back to QuestLayer": "Voltar ao QuestLayer",
@@ -3180,7 +3177,6 @@
  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "Sua conta recebeu o NEAR inicial uma única vez, ao ser criada. Adicione seu próprio NEAR: envie de qualquer carteira ou corretora para {0}.",
  "Test Layer": "Test Layer",
  "The real game.": "O jogo real.",
- "Every feature with test coins. Nothing here is real money.": "Todos os recursos com moedas de teste. Nada aqui é dinheiro real.",
  "1 hit every 10 min · {0} hits earn the Bossbane Fangring": "1 golpe a cada 10 min · {0} golpes ganham o Bossbane Fangring",
  "3-stop trail": "Trilha de 3 paradas",
  "All day": "O dia todo",
@@ -3226,5 +3222,9 @@
  "Riddles": "Enigmas",
  "Rhythm": "Ritmo",
  "Rune path": "Trilha rúnica",
- "Rune song": "Canção rúnica"
+ "Rune song": "Canção rúnica",
+ "About the game": "Sobre o jogo",
+ "Test coins, not real money.": "Moedas de teste, não dinheiro real.",
+ "Real places outdoors.": "Lugares reais ao ar livre.",
+ "Shared voxel world.": "Mundo voxel compartilhado."
 }

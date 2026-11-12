@@ -2749,8 +2749,6 @@
  "Build": "建築",
  "Choose your world": "世界を選ぶ",
  "Create your explorer to enter.": "探索者を作成して入場しましょう。",
- "One explorer. Two worlds.": "一人の探索者。二つの世界。",
- "Outdoor quests, real places and discoveries.": "屋外のクエスト、実在する場所、新しい発見。",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "送金と返金は、最初の QGOLD 支払いでこのアカウントがトークンに登録されると届きます。",
  "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "この取り決めにはエスクローに {0} のストレージが必要ですが、今は追加できませんでした: {1}",
  "No street find is left near you today.": "今日は近くにストリートの発見物が残っていません。",
@@ -2976,7 +2974,6 @@
  "{0} votes": "{0}票",
  "See the treasury DAO": "トレジャリーDAOを見る",
  "3D world. Move with W A S D, jump with Space, drag to look around.": "3Dワールド。W A S Dで移動、スペースでジャンプ、ドラッグで見回せます。",
- "A shared voxel world in space: build your plot, explore, meet explorers.": "宇宙にある共有ボクセルワールド：自分の区画を建て、探索し、探検家と出会おう。",
  "Activate beacons: {0} of {1}": "ビーコンを起動：{0}/{1}",
  "Aether shallows": "エーテルの浅瀬",
  "Back to QuestLayer": "QuestLayerに戻る",
@@ -3180,7 +3177,6 @@
  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "アカウント作成時に一度だけ初期NEARが付与されました。自分のNEARを追加するには、任意のウォレットや取引所から {0} に送ってください。",
  "Test Layer": "テストレイヤー",
  "The real game.": "本番のゲーム。",
- "Every feature with test coins. Nothing here is real money.": "すべての機能をテスト用コインで。ここに本物のお金はありません。",
  "1 hit every 10 min · {0} hits earn the Bossbane Fangring": "10分ごとに1撃 · {0}撃でBossbane Fangring獲得",
  "3-stop trail": "3ストップトレイル",
  "All day": "終日",
@@ -3226,5 +3222,9 @@
  "Riddles": "なぞなぞ",
  "Rhythm": "リズム",
  "Rune path": "ルーンの道",
- "Rune song": "ルーンの歌"
+ "Rune song": "ルーンの歌",
+ "About the game": "ゲームについて",
+ "Test coins, not real money.": "テスト用コイン。本物のお金ではありません。",
+ "Real places outdoors.": "屋外の実在の場所。",
+ "Shared voxel world.": "共有ボクセルワールド。"
 }

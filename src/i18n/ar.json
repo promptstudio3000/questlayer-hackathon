@@ -2749,8 +2749,6 @@
  "Build": "بناء",
  "Choose your world": "اختر عالمك",
  "Create your explorer to enter.": "أنشئ مستكشفك للدخول.",
- "One explorer. Two worlds.": "مستكشف واحد. عالمان.",
- "Outdoor quests, real places and discoveries.": "مهام خارجية وأماكن حقيقية واكتشافات.",
  "Sends and refunds reach this account once its first QGOLD payout registers it on the token.": "تصل التحويلات والمبالغ المستردة إلى هذا الحساب بعد أن تسجّله أول دفعة QGOLD في الرمز.",
  "The escrow needs {0} of storage for this agreement and it could not be added right now: {1}": "يحتاج الضمان إلى {0} من التخزين لهذا الاتفاق ولم يمكن إضافته الآن: {1}",
  "No street find is left near you today.": "لم يتبق اليوم أي اكتشاف شارع بالقرب منك.",
@@ -2976,7 +2974,6 @@
  "{0} votes": "{0} أصوات",
  "See the treasury DAO": "عرض DAO الخزينة",
  "3D world. Move with W A S D, jump with Space, drag to look around.": "عالم ثلاثي الأبعاد. تحرّك بـ W A S D، واقفز بالمسافة، واسحب للنظر حولك.",
- "A shared voxel world in space: build your plot, explore, meet explorers.": "عالم فوكسل مشترك في الفضاء: ابنِ قطعتك واستكشف وقابل المستكشفين.",
  "Activate beacons: {0} of {1}": "فعّل المنارات: {0} من {1}",
  "Aether shallows": "ضحاضح الأثير",
  "Back to QuestLayer": "العودة إلى QuestLayer",
@@ -3180,7 +3177,6 @@
  "Your account got its starting NEAR once, when it was created. Add your own NEAR: send it from any wallet or exchange to {0}.": "حصل حسابك على NEAR الابتدائي مرة واحدة عند إنشائه. أضف NEAR الخاص بك: أرسله من أي محفظة أو منصة تداول إلى {0}.",
  "Test Layer": "طبقة الاختبار",
  "The real game.": "اللعبة الحقيقية.",
- "Every feature with test coins. Nothing here is real money.": "كل الميزات بعملات اختبار. لا شيء هنا مال حقيقي.",
  "1 hit every 10 min · {0} hits earn the Bossbane Fangring": "ضربة واحدة كل 10 دقائق · {0} ضربات تمنحك Bossbane Fangring",
  "3-stop trail": "مسار من 3 محطات",
  "All day": "طوال اليوم",
@@ -3226,5 +3222,9 @@
  "Riddles": "ألغاز",
  "Rhythm": "إيقاع",
  "Rune path": "مسار الرون",
- "Rune song": "أغنية الرون"
+ "Rune song": "أغنية الرون",
+ "About the game": "عن اللعبة",
+ "Test coins, not real money.": "عملات تجريبية، ليست مالاً حقيقياً.",
+ "Real places outdoors.": "أماكن حقيقية في الخارج.",
+ "Shared voxel world.": "عالم فوكسل مشترك."
 }
