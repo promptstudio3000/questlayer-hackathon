@@ -4,7 +4,8 @@ import { MapSurface } from "./MapSurface";
 import { ActorPortrait } from "./ActorPortrait";
 import { nearbyAction, type NearbyActor } from "./nearby-action";
 import type { Coin } from "./types";
-import { WorldSwitcher } from "./WorldSwitcher";
+import { WorldSwitcher, type GameLayerConfig } from "./WorldSwitcher";
+import type { TourTarget } from "./TourHelper";
 import { questDisplayTitle } from "./quest-copy";
 import { mapObjective, canOfferNearbyAction } from "./map-objective";
 import { EmptyState } from "./EmptyState";
@@ -63,6 +64,7 @@ import {
   GoldShop,
   LocalChat,
   PlaceCompose,
+  TourHelper,
   CommunityPlaces,
   AddPlaceDialog,
   EmotePicker,
@@ -160,6 +162,7 @@ import "./styles.css";
 import "./theme-accents.css";
 import "./compact-ui.css";
 import "./mobile-sheets.css";
+import "./arcade-ui.css";
 import { activeQuestRoute, questTarget } from "./quest-route";
 import { HudXpRing } from "./HudXpRing";
 import { RewardBursts } from "./RewardBursts";
@@ -261,12 +264,13 @@ import {
 // Passkey helpers load on first use, outside the welcome screen's first load.
 const webauthn = () => import("@simplewebauthn/browser");
 import { api, ApiError, GOLD, gold, near, meters, remaining } from "./api";
+import { goldFromYocto } from "./gold-units.ts";
 import { Dialog } from "./Dialog";
 import { Character } from "./Character";
-import { DeferredGameMap as GameMap, preloadGameMap } from "./DeferredGameMap";
+import { DeferredGameMap as GameMap, gameMapLoaded, preloadGameMap } from "./DeferredGameMap";
 import { useCreatorPlaces } from "./useCreatorPlaces";
 import { Ghost, AuraArt, BrandLogo } from "./Ghost";
-import { artUrl } from "./art-registry";
+import { Welcome } from "./Welcome";
 import type {
   Player,
   World,
@@ -360,6 +364,9 @@ const rarityNames: Record<string, string> = {
   get epic() { return tr("Epic"); },
   get legendary() { return tr("Legendary"); },
 };
+/** Markers that only open a dialog (no play on the map itself) stay off. */
+const MAP_DIALOG_PINS = false;
+
 export default function App() {
   const [map3D, setMap3D] = useState(() => {
     try {
@@ -421,7 +428,7 @@ export default function App() {
     [mapNotes, setMapNotes] = useState<NotePin[]>([]),
     [noteOpenId, setNoteOpenId] = useState<string | null>(null),
     [placeOpenId, setPlaceOpenId] = useState<string | null>(null),
-    [quickCreate, setQuickCreate] = useState<"note" | "topic" | "place" | null>(null),
+    [quickCreate, setQuickCreate] = useState<"note" | "topic" | "shout" | "place" | null>(null),
     [emotePicker, setEmotePicker] = useState(false),
     // The camera turns with the explorer unless switched off in Map settings.
     [mapRotate, setMapRotate] = useState(() => {
@@ -443,10 +450,17 @@ export default function App() {
     }),
     [now, setNow] = useState(Date.now()),
     // Server switch LAYER_ENABLED: adds the virtual voxel Layer to the logo world picker.
-    [virtualLayer, setVirtualLayer] = useState<PublicLayer | null>(null);
+    [virtualLayer, setVirtualLayer] = useState<PublicLayer | null>(null),
+    // Test Layer or QuestLayer World (docs/TEST-LAYER.md).
+    [gameLayer, setGameLayer] = useState<GameLayerConfig | null>(null),
+    [tourRunning, setTourRunning] = useState(false);
   useEffect(() => {
-    void api<{ layer?: { layers?: PublicLayer[] } | null }>("/config")
-      .then((c) => setVirtualLayer(c.layer?.layers?.[0] ?? null))
+    void api<{ layer?: { layers?: PublicLayer[] } | null; gameLayer?: GameLayerConfig | null }>("/config")
+      .then((c) => {
+        setVirtualLayer(c.layer?.layers?.[0] ?? null);
+        setGameLayer(c.gameLayer ?? null);
+        if (c.gameLayer?.test) document.documentElement.dataset.testLayer = "1";
+      })
       .catch(() => {});
   }, []);
   // Read guards follow the requested mode before React commits its next render.
@@ -479,9 +493,14 @@ export default function App() {
   // Once there is a player, fetch the map and the split-off screens in the
   // background so later taps do not wait for the network.
   const hasPlayer = !!player;
+  // The current HUD layout ships with the map chunk. The menu and the top bar
+  // render only once it is in, so a reload never flashes the old base layout.
+  // A failed load shows them anyway, so Inventory and Profile stay reachable.
+  const [hudReady, setHudReady] = useState(gameMapLoaded);
   useEffect(() => {
     if (!hasPlayer) return;
-    void preloadGameMap().catch(() => {});
+    const ready = () => setHudReady(true);
+    void preloadGameMap().then(ready, ready);
     const idle =
       window.requestIdleCallback ??
       ((f: () => void) => window.setTimeout(f, 200));
@@ -546,6 +565,36 @@ export default function App() {
   useEffect(() => {
     if (tab !== "inventory") setInventoryStart("all");
   }, [tab]);
+  // Player card: messages need this device's explorer account key
+  // (docs/PLAYER-INBOX.md). Says why it is missing and where to fix it.
+  function openAccountDevices() {
+    setCardPlayer(null);
+    chooseProfileTab("settings");
+    setTimeout(() => {
+      const el = document.getElementById("account-devices") as HTMLDetailsElement | null;
+      if (!el) return;
+      el.open = true;
+      el.scrollIntoView({ block: "start", behavior: "smooth" });
+    }, 300);
+  }
+  function messageOffReason(): { text: string; action?: { label: string; run: () => void } } {
+    const status = invisible.status;
+    if (status === "needs-recovery")
+      return {
+        text: invisible.canStartOver
+          ? tr("This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.")
+          : tr("This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey."),
+        action: { label: tr("Link this device"), run: openAccountDevices },
+      };
+    if (status === "play-first")
+      return { text: tr("Messages open with your explorer account, which you get with your first find or quest.") };
+    if (status === "error" || status === "unavailable")
+      return {
+        text: tr("Your explorer account is not available on this device, so messages are off here."),
+        action: { label: tr("Account and devices"), run: openAccountDevices },
+      };
+    return { text: tr("Your explorer account is being set up. Messages open in a moment.") };
+  }
   function openWardrobe() {
     setInventoryStart("wearables");
     setTab("inventory");
@@ -1872,7 +1921,7 @@ export default function App() {
     }
     if (step === "chest") {
       const chest = nearestChest();
-      if (chest) selectZone(chest.zone, chest.quest.id);
+      if (chest) startQuest(chest.quest);
       else setSheetExpanded(true);
       return;
     }
@@ -1936,6 +1985,56 @@ export default function App() {
     setGuideRequest({ questId: q.id, revision: Date.now(), worldId: world.id, playerId: player.id });
     requestAnimationFrame(() => document.querySelector<HTMLButtonElement>(".compact-selection")?.focus({ preventScroll: true }));
   }
+  // One tap on a quest, from any list, pin or dialog: straight to the map
+  // with the direction guide, or to the confirm button when already there.
+  function startQuest(q: Quest) {
+    setPointTarget(null);
+    const zone = world?.zones.find(z => z.id === q.zone_id);
+    if (!world || !player || !zone) return;
+    const t = Date.now();
+    const playable = !q.completed && zone.tier <= player.tier && !zone.operatorPause && zone.placeStatus !== "closed" && q.placeStatus !== "closed" &&
+      zone.opensAt <= t && zone.closesAt > t && q.opens_at <= t && q.closes_at > t;
+    if (!playable) { selectZone(zone, q.id); return; }
+    const here = meters(latest.current.position, questPoint(q)) <= 25 && !(zone.geometry && zoneInteriorMargin(zone, latest.current.position) === null);
+    setCatalogView(null);
+    if (!here) { guideToQuest(q); return; }
+    setGuideRequest(null);
+    setDemoTarget(null);
+    setStartedQuestKey(`${player.id}:${world.id}:${q.id}`);
+    setSelected(zone, q.id);
+    setTab("explore");
+    setSheetExpanded(true);
+  }
+  // A plain point as the map target (tour stops, player tasks, Secrets): the
+  // same highlight and clear X as a chosen quest, without opening anything.
+  const [pointTarget, setPointTarget] = useState<{ lat: number; lng: number; label: string; revision: number } | null>(null);
+  function navigateTo(p: { lat: number; lng: number; label: string }) {
+    if (selected) closeZone();
+    setCatalogView(null);
+    setTab("explore");
+    setSheetExpanded(false);
+    setOverview(false);
+    setPointTarget({ lat: p.lat, lng: p.lng, label: p.label, revision: Date.now() });
+    if (arena && !nativePlay) faceToward(p, p.label);
+    else setFollow(false);
+  }
+  function clearPointTarget() {
+    setPointTarget(null);
+    if (demoTarget && !demoTarget.coinId && !demoTarget.questId) setDemoTarget(null);
+  }
+  useEffect(() => {
+    if (pointTarget && metersBetween(position, pointTarget) < 15) setPointTarget(null);
+  }, [position, pointTarget]);
+  useEffect(() => {
+    const on = (e: Event) => {
+      const d = (e as CustomEvent<{ lat?: number; lng?: number; label?: string }>).detail;
+      if (d && Number.isFinite(d.lat) && Number.isFinite(d.lng)) navigateRef.current({ lat: d.lat!, lng: d.lng!, label: String(d.label || "") });
+    };
+    window.addEventListener("questlayer:navigate", on);
+    return () => window.removeEventListener("questlayer:navigate", on);
+  }, []);
+  const navigateRef = useRef(navigateTo);
+  navigateRef.current = navigateTo;
   function closeZone() {
     const zoneId = selected?.id;
     setGuideRequest(null);
@@ -1977,6 +2076,7 @@ export default function App() {
         quest?.id === z.id.replace(":zone:", ":quest:"),
     );
     if (!zone) return;
+    if (quest && quest.zone_id === zone.id && !quest.completed) { startQuest(quest); return; }
     setCatalogView({ scope: `${player?.id}:${world?.id}`, zoneId: zone.id, questId });
     setSheetExpanded(true);
     requestAnimationFrame(() => {
@@ -2892,6 +2992,15 @@ export default function App() {
     });
     return ok === true;
   }
+  async function startOverHere() {
+    const ok = await action("start-over", async () => {
+      await invisible.startOver();
+      setPlayer((await api<{ player: Player }>("/me")).player);
+      notify(tr("A new explorer account is being made on this device."));
+      return true;
+    });
+    return ok === true;
+  }
   async function revokeGameSessions(expectedAccount: string) {
     const ok = await action("session-recovery", async () => {
       const { wallet, accountId } = await chooseNearAccount();
@@ -3498,7 +3607,8 @@ export default function App() {
     !nativePlay && streetFindTarget
       ? world?.coins.find((c) => c.id === streetFindTarget && c.find) || null
       : null;
-  const coachActive = learning.state.enabled && firstSession.visible && firstSession.progress.current?.id !== "secure" && !nativePlay && !world?.globalPreparation;
+  // The guided tour replaces the first-steps coach while it runs.
+  const coachActive = !tourRunning && learning.state.enabled && firstSession.visible && firstSession.progress.current?.id !== "secure" && !nativePlay && !world?.globalPreparation;
   const coachStep = coachActive ? firstSession.progress.current?.id : undefined;
   const movementTopic: HelpTopic = arena ? "movement-arena" : "movement-gps";
   const coachTopic: HelpTopic = coachStep === "find" && !learning.state.seen[movementTopic] ? movementTopic
@@ -3538,7 +3648,7 @@ export default function App() {
       coachChest?.quest.id === poiNext.quest.id ? null : (
         <button
           className="first-session-next"
-          onClick={() => selectZone(poiNext.zone, poiNext.quest.id)}
+          onClick={() => startQuest(poiNext.quest)}
         >
           <MapPin size={18} aria-hidden="true" />
           <span>
@@ -3569,8 +3679,9 @@ export default function App() {
   const browsing = sheetExpanded && catalogView?.scope === `${player?.id}:${world?.id}` ? catalogView : null;
   const detailZone = browsing ? world?.zones.find(z => z.id === browsing.zoneId) || null : selected;
   const detailQuests = questsInZone(world?.quests || [], detailZone);
-  const detailQuest = detailQuests.find(q => q.id === (browsing ? browsing.questId : selectedQuestId)) ||
-    detailQuests.find(q => !q.completed && q.opens_at <= now && q.closes_at > now) || detailQuests[0];
+  // The zone dialog is a list of one-tap rows; a quest opens only when it
+  // was chosen (the player is there to confirm it, or it is not playable now).
+  const detailQuest = detailQuests.find(q => q.id === (browsing ? browsing.questId : selectedQuestId));
   const zoneQuest =
     zoneQuests.find((q) => q.id === selectedQuestId) ||
     zoneQuests.find(
@@ -3578,6 +3689,8 @@ export default function App() {
     ) ||
     zoneQuests[0];
   const selectedRequirement = zoneQuest && selected ? activityRequirement(zoneQuest, selected, position, now, arena, fix, online) : null;
+  // The distance on the chip already says "too far"; no sentence for it.
+  const farRequirement = !!zoneQuest && meters(position, questTarget(zoneQuest, position)) > 25;
   const questRoute =
     world && !nativePlay
       ? activeQuestRoute(world.quests, {
@@ -3628,6 +3741,52 @@ export default function App() {
     setSheetExpanded(true);
     setMarketForm(form);
   };
+  // Guided tour (docs/GUIDED-TOUR.md): where a step points, and how to open it.
+  const TOUR_COMPANION = "seed-p-ondra";
+  const TOUR_ACTORS: Record<string, string[]> = { "quest-giver": ["quest_giver"], monster: ["roamer", "guardian", "boss"], trader: ["trader"], keeper: ["keeper"] };
+  function tourQuest(kind: string) {
+    let best: Quest | null = null;
+    for (const q of world?.quests || []) {
+      if (q.completed || q.kind !== kind || q.opens_at > now || q.closes_at <= now) continue;
+      if (!best || meters(position, questPoint(q)) < meters(position, questPoint(best))) best = q;
+    }
+    return best;
+  }
+  function tourResolve(t: TourTarget) {
+    if (t.kind === "coin" || t.kind === "find") {
+      const c = nearestCoin(t.kind === "find");
+      return c ? { lat: c.lat, lng: c.lng, label: t.kind === "find" ? tr("Street find") : undefined } : null;
+    }
+    if (t.kind === "quest") {
+      const q = tourQuest(t.quest);
+      return q ? { ...questPoint(q), label: questDisplayTitle(q.title) } : null;
+    }
+    // Characters walk: "Show me" focuses the map on the nearest one instead of a fixed arrow.
+    return null;
+  }
+  function tourGo(t: TourTarget) {
+    if (t.kind === "coin" || t.kind === "find") {
+      const c = nearestCoin(t.kind === "find");
+      if (c) goToStreetFind(c);
+      else notify(t.kind === "find" ? tr("No street find is left near you today.") : tr("No coin is left near you right now. More appear in the next wave."), true);
+    } else if (t.kind === "quest") {
+      const q = tourQuest(t.quest);
+      if (q) guideToQuest(q);
+      else void showGoal("quest");
+    } else if (t.kind === "actor") {
+      // The walking companion bot of the Test Layer (server/test-seed): its card has Wave and Message.
+      if (t.role === "companion") setCardPlayer(TOUR_COMPANION);
+      else if (TOUR_ACTORS[t.role]) showActor({ kinds: TOUR_ACTORS[t.role] });
+      else { setTab("community"); setSheetExpanded(true); }
+    } else if (t.kind === "screen") {
+      const tabs: Record<string, Tab> = { inventory: "inventory", market: "market", shop: "shop", stake: "fund", treasury: "fund" };
+      setTab(tabs[t.screen] || "explore");
+      setSheetExpanded(true);
+    } else if (t.kind === "action") {
+      if (t.action === "task") openNearbyForm("task");
+      else if (t.action === "note" || t.action === "topic" || t.action === "shout") setQuickCreate(t.action);
+    }
+  }
   const mapActions: MapAction[] = [
     { id: "note", label: tr("Leave a note"), icon: NotePencil, onSelect: () => setQuickCreate("note") },
     { id: "topic", label: tr("Open a topic"), icon: ChatsCircle, onSelect: () => setQuickCreate("topic") },
@@ -3677,10 +3836,12 @@ export default function App() {
           wallet: tr("Wallet"),
         }[tab] ||
         "QuestLayer";
+  const nearbyHome = tab === "explore" && !detailZone && !nativePlay;
   return (
     <div
-      className={`app-shell${player && tab !== "explore" ? " sheet-open" : ""}${player && mapFullOn ? " map-full" : ""}`}
+      className={`app-shell${player && tab !== "explore" ? " sheet-open" : ""}${player && mapFullOn ? " map-full" : ""}${player && !hudReady ? " hud-loading" : ""}`}
       data-screen={tab}
+      data-target={player && tab === "explore" && !sheetExpanded ? (selected ? "quest" : pointTarget ? "point" : undefined) : undefined}
       data-area={showProfileTabs ? "profile" : showCommunityTabs ? "community" : undefined}
     >
       <div className="map-stage" inert={!!player && !mapInteractive} aria-hidden={!!player && !mapVisible}>
@@ -3766,7 +3927,9 @@ export default function App() {
           follow={follow}
           onPan={() => { gpsResumeOnMovement.current = false; setFollow(false); }}
           onMoveEnd={(center, zoom) => setMapCenter(zoom >= 13 ? center : null)}
-          creatorPlaces={creatorPlaces}
+          // Only game elements sit on the map. Community quests, player tasks
+          // and Secrets are reached from the Community button and Nearby.
+          creatorPlaces={MAP_DIALOG_PINS ? creatorPlaces : []}
           onCreatorPlace={(questId) => {
             setTab("community");
             setCreatorView({ page: "quest", questId });
@@ -3796,8 +3959,9 @@ export default function App() {
           }}
           actorReports={npcTasks && npcTasks.worldId === world?.id ? npcTasks.tasks.filter((t) => t.ready).map((t) => t.actorId) : []}
           actorFocus={actorFocus}
+          pointTarget={pointTarget}
           onActorFocus={(text, found) => notify(text, !found)}
-          marketPins={!!player && !arena && !nativePlay}
+          marketPins={MAP_DIALOG_PINS && !!player && !arena && !nativePlay}
           onMarketPin={() => {
             setTab("explore");
             setNearbyFilter("community");
@@ -3812,16 +3976,8 @@ export default function App() {
       )}
       <div className="map-vignette" />
       </div>
+      {player && hudReady && (<>
       <aside className="nav-rail">
-        <button
-          className="brand-mark"
-          aria-label={tr("QuestLayer home")}
-          onClick={() => {
-            setTab("explore");
-          }}
-        >
-          <BrandLogo />
-        </button>
         <div className="rail-links">
           {nav.filter((n) => n.id !== "settings").map((n) => (
             <button
@@ -3845,30 +4001,9 @@ export default function App() {
         </div>
       </aside>
       <header className="topbar">
-        {virtualLayer && player ? (
-          <WorldSwitcher virtual={tab === "layer"} enabled layerName={virtualLayer.name} onChoose={(virtual) => { setTab(virtual ? "layer" : "explore"); setSheetExpanded(false); }} />
-        ) : (
-        <div className="wordmark" onClick={() => setTab("explore")}>
-          <img className="wordmark-logo" src="/icon.svg" alt="" width={36} height={36} />
-          {artUrl("brand/wordmark") ? (
-            <span className="wordmark-text">
-              <img className="wordmark-art" src={artUrl("brand/wordmark")!} alt="QuestLayer" draggable={false} />
-            </span>
-          ) : (
-            <span>
-              QUEST<span>LAYER</span>
-            </span>
-          )}
-        </div>
+        {virtualLayer && player && (
+          <WorldSwitcher virtual={tab === "layer"} enabled layerName={virtualLayer.name} gameLayer={gameLayer} onChoose={(virtual) => { setTab(virtual ? "layer" : "explore"); setSheetExpanded(false); }} />
         )}
-        <div className="realm-label">
-          <span className="status-dot" />
-          <span>
-            {tab === "layer" ? tr("Virtual world") : nativePlay || !arena
-              ? world?.cityName || tr("Your surroundings")
-              : tr("Plzeň · city demo")}
-          </span>
-        </div>
         {player && (
           <div className="hud-left">
             {!virtualLayer && (
@@ -3891,6 +4026,7 @@ export default function App() {
         <div className="topbar-right">
           {player && (
             <>
+              <span id="hud-sky-slot" className="hud-sky-slot" />
               <div className="hud-bubble">
                 <button
                   className="profile-pill"
@@ -3940,12 +4076,7 @@ export default function App() {
                   <b>
                     {nativePlay
                       ? nativeGame.state?.balance
-                        ? (
-                            Number(
-                              BigInt(nativeGame.state.balance.credit) /
-                                1000000000000000n,
-                            ) / 1e6
-                          ).toLocaleString("en-US", { maximumFractionDigits: 3 })
+                        ? goldFromYocto(nativeGame.state.balance.credit)
                         : "—"
                       : gold(player.gold_u)}
                   </b>
@@ -4005,7 +4136,8 @@ export default function App() {
           )}
         </div>
       </header>
-      {player && zonePresence && !selected && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => selectZone(zonePresence.zone, zonePresence.questId)} />}
+      </>)}
+      {player && zonePresence && !selected && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => { const q = world?.quests.find(x => x.id === zonePresence.questId); if (q) startQuest(q); else selectZone(zonePresence.zone); }} />}
       {player && tab !== "explore" && (
         // Desktop: Inventory, Community and Profile open as a card over the
         // map; a click beside the card closes it like the panel's close button.
@@ -4048,7 +4180,7 @@ export default function App() {
             </button>
           )}
           {tab === "explore" &&
-            coachActive && showObjective("coach") && !selected && (
+            coachActive && showObjective("coach") && !selected && !pointTarget && (
               <FirstSessionCoach
                 session={firstSession}
                 hint={learning.visible(coachTopic) ? helpText(coachTopic) : undefined}
@@ -4069,19 +4201,32 @@ export default function App() {
               <span className="peek-body">
                 <strong>{zoneQuest && selectedQuestId === zoneQuest.id ? questDisplayTitle(zoneQuest.title) : selected.name}</strong>
                 <small>{zoneQuest ? activityProgress(zoneQuest, position) : tr("See what's here")}{" · "}{distanceLabel(meters(position, zoneQuest ? questPoint(zoneQuest) : selected))}</small>
-                {selectedRequirement && <small className="compact-requirement">{selectedRequirement}</small>}
-                {zoneQuest && learning.visible(questHelpTopic(zoneQuest)) && <small className="learning-hint">{helpText(questHelpTopic(zoneQuest))}</small>}
+                {selectedRequirement && !farRequirement && <small className="compact-requirement">{selectedRequirement}</small>}
               </span>
               <ArrowRight size={20} aria-hidden="true" />
             </button>
             <button
               className="sheet-peek-hide"
-              aria-label={tr("Close")}
-              title={tr("Close")}
+              aria-label={tr("Clear target")}
+              title={tr("Clear target")}
               onClick={closeZone}
             >
               <X size={16} aria-hidden="true" />
             </button>
+            </div>
+          )}
+          {tab === "explore" && pointTarget && !selected && (
+            <div className="sheet-peek sheet-peek-selection">
+              <button className="compact-selection" title={tr("Straight-line distance")} onClick={() => setPointTarget({ ...pointTarget, revision: Date.now() })}>
+                <span className="peek-art" aria-hidden="true"><MapPin size={28} /></span>
+                <span className="peek-body">
+                  <strong>{pointTarget.label}</strong>
+                  <small>{distanceLabel(meters(position, pointTarget))}</small>
+                </span>
+              </button>
+              <button className="sheet-peek-hide" aria-label={tr("Clear target")} title={tr("Clear target")} onClick={clearPointTarget}>
+                <X size={16} aria-hidden="true" />
+              </button>
             </div>
           )}
           {tab === "explore" && nativePlay && nativeObjective.reference && showObjective("native") && (
@@ -4135,9 +4280,18 @@ export default function App() {
             )}
             <div>
               <h1 tabIndex={-1}>
-                {tab === "explore" && detailZone ? detailZone.name : title}
+                {tab === "explore" && detailZone ? detailZone.name : nearbyHome && world?.cityName ? `${title} · ${world.cityName}` : title}
               </h1>
             </div>
+            {nearbyHome && sheetExpanded && world && (
+              <span className="heading-refresh" title={tr("Refresh in") + " " + remaining(world.endsAt)}>
+                <Clock size={14} aria-hidden="true" />
+                <span className="sr-only">{tr("Refresh in")} </span>{remaining(world.endsAt)}
+                {world.quality && world.cityStatus !== "auto" && !world.globalPreparation && (
+                  <InfoTip label={tr("About this map")}>{world.quality.notice}</InfoTip>
+                )}
+              </span>
+            )}
             {(tab !== "explore" || sheetExpanded) && (
               <button
                 className="icon-button panel-close"
@@ -4277,7 +4431,7 @@ export default function App() {
                   <div className="sheet-peek">
                   <button
                     className="recommended-quest"
-                    onClick={() => selectZone(recommendedZone, recommended.id)}
+                    onClick={() => startQuest(recommended)}
                   >
                     <span className="recommended-art">
                       <QuestThumbnail quest={recommended} now={now} playerTier={player.tier} size={40} />
@@ -4296,21 +4450,11 @@ export default function App() {
                   </button>
                   </div>
                 )}
-              <div className="day-row">
-                <Badge tone="green">
-                  <Leaf size={12} /> {world?.cityName || tr("Your surroundings")}
-                </Badge>
-                {world?.cityStatus === "auto" && (
+              {world?.cityStatus === "auto" && (
+                <div className="day-row">
                   <Badge tone="gold">{tr("Unverified map")}</Badge>
-                )}
-                <span>
-                  <Clock size={13} /> {" "}{tr("Refresh in")}{" "}
-                  {world ? remaining(world.endsAt) : "…"}
-                </span>
-                {world?.quality && world.cityStatus !== "auto" && !world.globalPreparation && (
-                  <InfoTip label={tr("About this map")} align="start">{world.quality.notice}</InfoTip>
-                )}
-              </div>
+                </div>
+              )}
               {!world?.globalPreparation && <PotRow worldId={world?.id ?? null} position={position} onOpen={() => setTab("funding")} />}
               {world?.quality && (world.cityStatus === "auto" || world.globalPreparation) && (
                 <details
@@ -4338,7 +4482,7 @@ export default function App() {
                   arena={arena}
                   filter={nearbyFilter}
                   onFilter={setNearbyFilter}
-                  onZone={(z, questId) => selectZone(z, questId)}
+                  onZone={(z, questId) => { const q = questId ? world.quests.find(x => x.id === questId) : null; if (q) startQuest(q); else selectZone(z); }}
                   onActor={(actor, distanceM) => {
                     if (distanceM <= 35) setActorOpen(actor);
                     else showActor({ actorId: actor.id });
@@ -4368,15 +4512,10 @@ export default function App() {
               choices={clueChoice} onChoose={chooseZoneQuest}
               onClue={(id, choice) => setClueChoice(all => ({ ...all, [id]: choice }))}
               onGuide={q => { setCatalogView(null); guideToQuest(q); }} onComplete={id => void complete(id)}
-              renderDetail={q => <QuestBrief compact playerId={player.id} quest={q} zone={detailZone} position={position} now={now} tier={player.tier} arena={arena} fix={fix} online={online}
+              renderDetail={q => <QuestBrief quest={q} zone={detailZone} position={position} now={now} tier={player.tier} arena={arena} fix={fix} online={online}
                 distance={meters(position, questPoint(q))} busy={!!busy}
                 started={startedQuestKey === `${player.id}:${world?.id}:${q.id}` || (!browsing && selectedQuestId === q.id)}
                 choice={clueChoice[q.id]} onChoose={choice => setClueChoice(all => ({ ...all, [q.id]: choice }))}
-                onStart={() => {
-                  setStartedQuestKey(`${player.id}:${world?.id}:${q.id}`);
-                  if (meters(position, questPoint(q)) > 25 || (detailZone.geometry && zoneInteriorMargin(detailZone, position) === null)) { setCatalogView(null); guideToQuest(q); }
-                  else { setSelected(detailZone, q.id); setCatalogView(null); }
-                }}
                 onPoint={() => { setCatalogView(null); guideToQuest(q); }} onLocate={() => void locate()} onComplete={() => void complete(q.id)} onMap={q.completed ? closeZone : closeMapPanel} />}
               lockedContent={<LockedZoneCard zone={detailZone} />}
             />
@@ -4726,7 +4865,6 @@ export default function App() {
                 <SettingsSwitch
                   icon={Cube}
                   label={tr("3D character")}
-                  hint={tr("Turn off for a lighter map")}
                   checked={map3D}
                   onChange={() => toggleMap3D()}
                 />
@@ -4751,7 +4889,6 @@ export default function App() {
                 <SettingsSwitch
                   icon={PersonSimpleRun}
                   label={tr("Reduce motion")}
-                  hint={tr("Stops map flights, walking and sparkles")}
                   checked={feedback.motion === "reduce"}
                   onChange={(on) =>
                     setFeedbackPreferences({ motion: on ? "reduce" : "system" })
@@ -4782,11 +4919,11 @@ export default function App() {
                 >
                   <ChartDonut size={22} aria-hidden="true" />
                   <span>
-                    {tr("Game economy")}<small>{tr("Where rewards come from")}</small>
+                    {tr("Game economy")}
                   </span>
                   <ArrowRight size={18} aria-hidden="true" />
                 </button>
-                <SettingsSwitch icon={Question} label={tr("First-time tips")} hint={tr("Short help for new activities.")} checked={learning.state.enabled} onChange={learning.enable} />
+                <SettingsSwitch icon={Question} label={tr("First-time tips")} checked={learning.state.enabled} onChange={learning.enable} />
                 {(!firstSession.visible || (objective === "coach" && dismissedObjective === objectiveKey)) && (
                   <button
                     type="button"
@@ -4805,7 +4942,7 @@ export default function App() {
                   </button>
                 )}
               </section>
-              <details className="settings-group screen-details">
+              <details id="account-devices" className="settings-group screen-details">
                 <summary><UserCircle size={20} aria-hidden="true" />{tr("Account and devices")}</summary>
                 <ChainSettings accountId={invisible.accountId} />
                 <div className="settings-pad">
@@ -4827,6 +4964,7 @@ export default function App() {
                     onRevoke={revokeDevice}
                     onRestore={restoreThisDevice}
                     onExportWallet={exportWalletWords}
+                    onStartOver={invisible.canStartOver ? startOverHere : undefined}
                     error={invisible.error}
                     onRetry={() => void invisible.ensure()}
                   />
@@ -5034,7 +5172,7 @@ export default function App() {
       )}
       {player && mapInteractive && showNearby && near && !mapFullOn && <button className="nearby-open" data-quest-id={near.kind === "quest" ? near.quest.id : undefined} onClick={() => {
         if (near.kind === "actor") setActorOpen(near.actor);
-        else if (near.kind === "quest") selectZone(near.zone, near.quest.id);
+        else if (near.kind === "quest") startQuest(near.quest);
         else if (world) setFindInspect({worldId:world.id,coin:near.coin});
       }}>
         <span className="nearby-open-art" aria-hidden="true">{near.kind === "actor" ? <ActorPortrait model={near.actor.model} label="" /> : near.kind === "find" ? <GameObjectArt kind="discovery" size={40} /> : <GameObjectArt {...questObjectPresentation(near.quest,{now,playerTier:player.tier})} size={40} />}</span>
@@ -5102,6 +5240,15 @@ export default function App() {
               <ArrowsIn size={22} weight="bold" />
             </button>
           )}
+          {tab === "explore" && !globe && gameLayer?.tour && player && (
+            <TourHelper
+              position={position}
+              heading={arena && !nativePlay ? demoWalk.heading : (gpsCourse ?? undefined)}
+              resolve={tourResolve}
+              onGo={tourGo}
+              onRunning={setTourRunning}
+            />
+          )}
           {tab === "explore" && !globe && (
             <MapActions actions={mapActions}>
               {emotePicker && (
@@ -5127,6 +5274,21 @@ export default function App() {
               notify={notify}
               onChange={() => void refreshMapNotes()}
               onDone={() => setQuickCreate(null)}
+            />
+          )}
+          {quickCreate === "shout" && (
+            <PlaceCompose
+              kind="shout"
+              position={position}
+              fix={fix}
+              arena={arena && !nativePlay}
+              notify={notify}
+              onClose={() => setQuickCreate(null)}
+              onCreated={() => {
+                setQuickCreate(null);
+                void me();
+                void refreshGoldMap();
+              }}
             />
           )}
           {quickCreate === "topic" && (
@@ -5182,6 +5344,8 @@ export default function App() {
           onBlocked={() =>
             setOthers((list) => list.filter((p) => p.id !== cardPlayer))
           }
+          // Why Message is off on this device, and the way to fix it.
+          messageOff={invisible.signer?.kind === "managed" ? null : messageOffReason()}
           // The encrypted inbox (src/inbox/Inbox.tsx) opens the conversation.
           onMessage={
             invisible.signer?.kind === "managed"
@@ -5353,14 +5517,13 @@ export default function App() {
           }
           onQuest={(id) => {
             const quest = world.quests.find(q => q.id === id);
-            if (!quest) return;
-            const zone = world.zones.find(z => z.id === quest.zone_id);
-            if (!zone) return;
-            setSelected(zone, id);
-            setCatalogView(null);
-            setStartedQuestKey(`${player.id}:${world.id}:${id}`);
-            setSheetExpanded(false);
-            if (arena) faceToward(questPoint(quest), quest.title, {questId:id});
+            if (quest) startQuest(quest);
+          }}
+          onShow={() => {
+            const id = actorOpen.id;
+            setActorOpen(null);
+            setTab("explore");
+            showActor({ actorId: id });
           }}
           onClose={() => setActorOpen(null)}
         />
@@ -5376,209 +5539,6 @@ export default function App() {
   );
 }
 
-function Welcome({
-  busy,
-  error,
-  onNear,
-  onEthereum,
-  action,
-  onPlayer,
-  onRestore,
-}: {
-  busy: string;
-  error?: string;
-  onRestore: () => Promise<boolean>;
-  onNear: (name: string) => Promise<void>;
-  onEthereum: (name: string) => Promise<void>;
-  action: <T>(n: string, f: () => Promise<T>) => Promise<T | undefined>;
-  onPlayer: (p: Player) => void;
-}) {
-  const [name, setName] = useState(""),
-    [existing, setExisting] = useState(false),
-    [testerPassword, setTesterPassword] = useState("");
-  // Owner tester sign-in (testnet only), shown at /?tester.
-  const tester = new URLSearchParams(location.search).has("tester");
-  async function testerSignIn(e: FormEvent) {
-    e.preventDefault();
-    await action("tester", async () => {
-      const r = await api<{ player: Player }>("/auth/tester", {
-        name: name.trim(),
-        password: testerPassword,
-      });
-      setTesterPassword("");
-      window.history.replaceState(null, "", location.pathname + location.hash);
-      onPlayer(r.player);
-    });
-  }
-  async function start(e?: FormEvent) {
-    e?.preventDefault();
-    await action("welcome", async () => {
-      const r = await api<{ player: Player }>("/session", {
-        name: name || tr("Explorer"),
-      });
-      if (!location.hash) beginLearning(r.player.id);
-      onPlayer(r.player);
-    });
-  }
-  async function passkey() {
-    await action("passkey", async () => {
-      const r = await api<{ options: any; challengeId: string }>(
-        "/passkey/options",
-        { action: existing ? "login" : "register", name: name || tr("Explorer") },
-      );
-      const response = existing
-        ? await (await webauthn()).startAuthentication({ optionsJSON: r.options })
-        : await (await webauthn()).startRegistration({ optionsJSON: r.options });
-      const verified = await api<{ player: Player }>("/passkey/verify", {
-        challengeId: r.challengeId,
-        response,
-      });
-      if (!existing && !location.hash) beginLearning(verified.player.id);
-      onPlayer(verified.player);
-    });
-  }
-  return (
-    <Dialog
-      label={tr("Welcome to QuestLayer")}
-      open={busy !== "near"}
-      onClose={() => {}}
-    >
-      <section className="welcome-card">
-        <div className="welcome-art">
-          <span className="orbit one" />
-          <span className="orbit two" />
-          <Sparkle className="star one" weight="fill" />
-          <Sparkle className="star two" weight="fill" />
-          <Ghost />
-          <span className="floating-coin">
-            <GameObjectArt kind="coin" size={32} />
-          </span>
-          <Leaf className="welcome-leaf" weight="duotone" />
-        </div>
-        <h1 tabIndex={-1} autoFocus>
-          {tr("Your city.")}<br />
-          <em>{tr("Your haunt to explore.")}</em>
-        </h1>
-        <p>
-          {tr("Walk real streets and open chests.")}<br />
-          {tr("Earn Auras, the glow your friendly ghost wears.")}</p>
-        <a className="welcome-how" href="/how-it-works">
-          <Sparkle size={16} weight="fill" aria-hidden="true" />
-          {tr("How it works")}<ArrowRight size={16} aria-hidden="true" />
-        </a>
-        {error && (
-          <p className="inline-error" role="alert">
-            {error}
-          </p>
-        )}
-        <form
-          noValidate
-          onSubmit={(e) => {
-            e.preventDefault();
-            void start();
-          }}
-        >
-          <label htmlFor="nickname">{tr("What should we call you?")}</label>
-          <input
-            id="nickname"
-            placeholder={tr("Your explorer name")}
-            value={name}
-            minLength={2}
-            maxLength={24}
-            onChange={(e) => setName(e.target.value)}
-            onFocus={preloadGameMap}
-            autoComplete="nickname"
-          />
-          <button className="primary-button" type="submit" disabled={!!busy}>
-            {busy === "welcome"
-              ? tr("Preparing your explorer…")
-              : tr("Start exploring")}
-            <ArrowRight size={20} />
-          </button>
-        </form>
-        <button
-          className="text-button"
-          disabled={!!busy}
-          onClick={() => {
-            setExisting(true);
-            void passkey();
-          }}
-        >
-          <Key size={16} /> {" "}{tr("I already have an explorer")}</button>
-        <button
-          className="text-button"
-          disabled={!!busy}
-          onClick={() => void onRestore()}
-        >
-          <Key size={16} />
-          {busy === "recovery-restore"
-            ? tr("Restoring your explorer…")
-            : tr("Restore with a recovery passkey")}
-        </button>
-        {tester && (
-          <form className="welcome-tester" onSubmit={(e) => void testerSignIn(e)}>
-            <input
-              aria-label={tr("Tester name")}
-              autoComplete="username"
-              placeholder={tr("Tester name")}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-            <input
-              aria-label={tr("Tester password")}
-              type="password"
-              autoComplete="current-password"
-              placeholder={tr("Password")}
-              value={testerPassword}
-              onChange={(e) => setTesterPassword(e.target.value)}
-            />
-            <button className="passkey-button" disabled={!!busy || !name.trim() || !testerPassword}>
-              <Key size={18} /> {busy === "tester" ? tr("Signing in…") : tr("Tester sign-in")}
-            </button>
-          </form>
-        )}
-        <details className="welcome-advanced">
-          <summary>{tr("Advanced")}</summary>
-          <button
-            className="passkey-button"
-            disabled={!!busy}
-            onClick={() => {
-              setExisting(false);
-              void passkey();
-            }}
-          >
-            <Key size={18} /> {" "}{tr("Create an explorer secured by a passkey")}</button>
-          <button
-            className="passkey-button"
-            disabled={!!busy}
-            onClick={() => void onNear(name || "Explorer")}
-          >
-            <Wallet size={18} />
-            {busy === "near"
-              ? tr("Waiting for your wallet…")
-              : tr("Continue with an external NEAR wallet")}
-          </button>
-          <button
-            className="passkey-button"
-            disabled={!!busy}
-            onClick={() => void onEthereum(name || "Explorer")}
-          >
-            <Wallet size={18} />
-            {busy === "evm-wallet"
-              ? tr("Waiting for your wallet…")
-              : tr("Continue with MetaMask or Rabby")}
-          </button>
-          <p className="identity-note">
-            {tr("A wallet signs a message, not a payment. Returning wallets restore the same explorer.")}</p>
-        </details>
-        <div className="welcome-note">
-          <ShieldCheck size={17} />
-          <span>{tr("No sign-up, no deposit. Play first, secure later.")}</span>
-        </div>
-      </section>
-    </Dialog>
-  );
-}
 function Npc({
   onClose,
   worldId,

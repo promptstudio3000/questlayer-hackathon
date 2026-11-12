@@ -10,7 +10,7 @@ import { FACTORY_ID, VAULT_POOLS } from "./vaults.mjs";
 import { SOCIAL_TESTNET, SOCIAL_CODE_HASH } from "./social-profile.mjs";
 
 import { existsSync, readFileSync } from "node:fs";
-import { NETWORK, NETWORK_LABEL } from "./network.mjs";
+import { NETWORK, NETWORK_LABEL, MANIFEST_SET } from "./network.mjs";
 import { isNativeAuraTokenId, isNativeEdition } from "../aura-catalog.mjs";
 // Contract identities are pinned by the reviewed public manifests, so a redeploy
 // under a new account only changes the manifests and their recorded code hashes.
@@ -21,9 +21,9 @@ const manifest = (name) => {
   const url = new URL(`../../public/${name}.json`, import.meta.url);
   return existsSync(url) ? JSON.parse(readFileSync(url, "utf8")) : {};
 };
-const MARKET_ID = manifest(`native-market-${NETWORK}`).marketContract ?? null;
-const NFT_ID = manifest(`native-claims-${NETWORK}`).contractId ?? null;
-const REWARDS_ID = manifest(`native-rewards-${NETWORK}`).contractId ?? null;
+const MARKET_ID = manifest(`native-market-${MANIFEST_SET}`).marketContract ?? null;
+const NFT_ID = manifest(`native-claims-${MANIFEST_SET}`).contractId ?? null;
+const REWARDS_ID = manifest(`native-rewards-${MANIFEST_SET}`).contractId ?? null;
 const integer = (value) => Number.isSafeInteger(value) && value >= 0;
 const amount = (value) =>
   typeof value === "string" &&

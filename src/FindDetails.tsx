@@ -26,10 +26,9 @@ export function FindDetails({ coin, available, distanceM, onClose, onPoint, onIn
       {coin.wearable && RARITY_NAMES[coin.wearable.rarity] && <p className={`find-details-rarity rarity-${coin.wearable.rarity}`}>
         {RARITY_NAMES[coin.wearable.rarity]()}
       </p>}
-      <p>{distanceLabel(distanceM)}</p>
-      <p role="status">{available ? tr("This find is collected automatically when you are close enough.") : tr("This find is no longer on the map.")}</p>
+      {!available && <p role="status">{tr("This find is no longer on the map.")}</p>}
       {available
-        ? <button className="primary-button" onClick={onPoint}>{tr("Point me there")}</button>
+        ? <button className="primary-button" onClick={onPoint}>{tr("Go")} · {distanceLabel(distanceM)}</button>
         : <button className="primary-button" onClick={onInventory}>{tr("Inventory")}</button>}
     </section>
   </Dialog>;

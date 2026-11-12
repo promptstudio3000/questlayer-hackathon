@@ -248,7 +248,6 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
       {help && (
         <FundsHelp
           title={tr("Why you can't buy this yet")}
-          needLine={tr("Buying it needs about {0} NEAR (the price and a little gas).", { 0: nearText(help.need, 2) })}
           funds={help}
           onRecheck={() => void checkFunds(help.account, help.need).then(setHelp)}
           onClose={() => setHelp(null)}

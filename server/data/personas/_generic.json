@@ -6,7 +6,7 @@
     {
       "id": "wayfinder-lenka",
       "archetype": "quest_giver",
-      "name": "Lenka the Wayfinder",
+      "name": "Lenka",
       "title": "Walker with errands",
       "voice": "Cheerful and practical. Short sentences, points with her lantern, calls the player 'explorer'.",
       "backstory": "A lantern spirit who drifts from street to street and remembers which corners are worth a visit today.",
@@ -27,7 +27,7 @@
     {
       "id": "storyteller-tobias",
       "archetype": "storyteller",
-      "name": "Grandpa Tobiáš",
+      "name": "Tobiáš",
       "title": "Teller of street stories",
       "voice": "Slow and kind, likes small details, never invents history. Says 'that I have not heard yet' when unsure.",
       "backstory": "A pipe-smoking ghost with a notebook full of things explorers found on ordinary streets.",
@@ -69,7 +69,7 @@
     {
       "id": "watchman-ota",
       "archetype": "storyteller",
-      "name": "Watchman Ota",
+      "name": "Ota",
       "title": "Keeps the lamps after dark",
       "voice": "Calm and low, counts the hours, swings his lantern. Short sentences, keeps explorers on lit streets and never sends anyone down dark side streets.",
       "backstory": "A lamp-keeper spirit who walks the lit streets after sunset and tells what the day left behind.",

@@ -112,7 +112,8 @@ node scripts/treasury-dao-testnet.mjs setup            # dry run: what would be 
 node scripts/treasury-dao-testnet.mjs setup --execute  # keeper + council keys, the DAO (about 6 NEAR storage), manifest, genesis adopt, first daily
 node scripts/treasury-dao-testnet.mjs status
 node scripts/treasury-dao-testnet.mjs daily --dry-run
-bash scripts/install-stnear-harvest-mac.sh             # LaunchAgent: harvest → DAO daily → rebalance → keep
+node scripts/treasury-dao-testnet.mjs approve-pending  # second council approval when the VPS holds only council-a
+# daily: VPS timer questlayer-treasury-daily (docs/TREASURY-WORKERS-VPS.md), no longer the Mac LaunchAgent
 ```
 
 `setup` writes `public/native-treasury-dao-testnet.json`; commit it, then deploy, so the server, the relayer and the
@@ -132,7 +133,9 @@ never in git or chat. `TREASURY_DAO_ENABLED=0` hides the DAO on a host.
 - The Explorer rule is a testnet sybil defence (level and recent play). Mainnet needs stronger proof of personhood.
 - The Explorers role lists every voter in the policy: fine for hundreds, for thousands the vote moves to token weight
   or to one DAO per community layer (the long-term plan: each layer gets its own DAO and share of the yield).
-- All three council keys sit on one Mac today; adding Lubos's own wallet as the third seat is one Admin proposal.
+- Since 11 Nov 2026 the daily step runs on the VPS (docs/TREASURY-WORKERS-VPS.md) with function-call keys for the
+  keeper and council-a (and council-b if the owner allows both automatic approvals); the full-access council keys
+  and the operator seat stay on the Mac. Adding Lubos's own wallet as the third seat is one Admin proposal.
 
 ## Staking first (11 Nov 2026)
 

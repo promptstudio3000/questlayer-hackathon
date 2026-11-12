@@ -16,7 +16,8 @@ const BUDGET = {
   jsGzipKb: Number(process.env.BUNDLE_BUDGET_JS_GZIP_KB || 220),
   // 37 since 11 Nov 2026: the bundler now splits the Ghost and game-object-art
   // styles into their own first-load files (same rules, ~0.7 KB more gzip overhead).
-  cssGzipKb: Number(process.env.BUNDLE_BUDGET_CSS_GZIP_KB || 37),
+  // 38 (owner, 11 Nov 2026): the arcade UI pass with note pins and the treasury page.
+  cssGzipKb: Number(process.env.BUNDLE_BUDGET_CSS_GZIP_KB || 38),
 };
 // Chunk names that must stay out of the first load.
 const DEFERRED = [

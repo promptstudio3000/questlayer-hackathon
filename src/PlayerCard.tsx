@@ -141,6 +141,7 @@ export function PlayerCard({
   onClose,
   onBlocked,
   onMessage,
+  messageOff = null,
   onEdit,
   onPlayer,
 }: {
@@ -153,6 +154,8 @@ export function PlayerCard({
   onBlocked?: () => void;
   /** Opens a conversation with this explorer; the button is disabled without it. */
   onMessage?: (playerId: string, name: string) => void;
+  /** Why Message is off on this device, with an optional fix. */
+  messageOff?: { text: string; action?: { label: string; run: () => void } } | null;
 }) {
   const [card, setCard] = useState<Card | null>(null);
   const [error, setError] = useState("");
@@ -214,8 +217,10 @@ export function PlayerCard({
   async function wave(phrase: string) {
     setBusy(true);
     try {
-      const r = await api<{ phrase: string }>("/players/wave", { playerId, phrase });
-      setStatus(tr("Sent: “{0}”", { 0: waveText(phrase, r.phrase) }));
+      const r = await api<{ phrase: string; reply?: { key: string; text: string } }>("/players/wave", { playerId, phrase });
+      const sent = tr("Sent: “{0}”", { 0: waveText(phrase, r.phrase) });
+      // A demo bot waves straight back, so the reply shows right here.
+      setStatus(r.reply && card ? `${sent} ${tr("{0} waved back: “{1}”", { 0: card.name, 1: waveText(r.reply.key, r.reply.text) })}` : sent);
     } catch (e) {
       setStatus((e as Error).message);
     } finally {
@@ -336,6 +341,9 @@ export function PlayerCard({
                 <button aria-expanded={botChat} onClick={() => setBotChat((v) => !v)}>
                   <ChatCircleText size={18} aria-hidden="true" /> {tr("Message")}
                 </button>
+                <button aria-expanded={waving} onClick={() => setWaving((v) => !v)}>
+                  <HandWaving size={18} aria-hidden="true" /> {tr("Wave")}
+                </button>
               </div>
             )}
             {card.demoBot && botChat && <DemoBotChat botId={card.id} name={card.name} />}
@@ -343,7 +351,7 @@ export function PlayerCard({
               <div className="player-card-actions">
                 <button
                   disabled={!onMessage}
-                  title={onMessage ? undefined : tr("Messages need your explorer account. Sign in with it to write.")}
+                  title={onMessage ? undefined : messageOff?.text || tr("Messages need your explorer account. Sign in with it to write.")}
                   onClick={() => onMessage?.(card.id, card.name)}
                 >
                   <ChatCircleText size={18} aria-hidden="true" /> {tr("Message")}
@@ -366,9 +374,14 @@ export function PlayerCard({
               </div>
             )}
             {!card.self && !card.demoBot && !onMessage && (
-              <p className="player-card-hint">{tr("Messages need your explorer account. Sign in with it to write.")}</p>
+              <div className="player-card-message-off">
+                <p className="player-card-hint">{messageOff?.text || tr("Messages need your explorer account. Sign in with it to write.")}</p>
+                {messageOff?.action && (
+                  <button onClick={messageOff.action.run}>{messageOff.action.label}</button>
+                )}
+              </div>
             )}
-            {waving && !card.self && !card.demoBot && (
+            {waving && !card.self && (
               card.canWave ? (
                 <div className="player-card-waves">
                   {card.phrases.map((p) => (

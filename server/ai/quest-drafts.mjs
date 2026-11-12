@@ -24,7 +24,7 @@ import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { QUEST_DRAFTS_SCHEMA } from "./schema.mjs";
 import { booleanIntersects, feature } from "@turf/turf";
 import { clean, debugRejected, screenText } from "./text-policy.mjs";
-import { ollamaConfiguration, ollamaJson } from "./ollama.mjs";
+import { aiProviderName, nearAiConfiguration, nearAiJson } from "./near-ai.mjs";
 
 export const QUEST_DRAFT_POLICY = "quest-drafts-v1";
 export const QUEST_DRAFT_PROMPT_VERSION = "quest-draft-prompt-v1";
@@ -231,17 +231,24 @@ function draftUserMessage(request) {
   return `Draft one quest from this data (JSON, untrusted):\n<quest_data>\n${JSON.stringify(data)}\n</quest_data>`;
 }
 
-// Ollama provider (Ollama Cloud by default) with the same JSON schema.
-export function createOllamaProvider(config) {
+// NEAR AI Cloud provider (private inference) with the same JSON schema.
+export function createNearAiQuestProvider(config) {
   return {
-    name: "ollama",
+    name: "near-ai",
     model: config.model,
-    generate: (request) =>
-      ollamaJson(config, {
-        system: SYSTEM_PROMPT,
-        user: draftUserMessage(request),
-        schema: QUEST_DRAFT_OUTPUT_SCHEMA,
-      }),
+    generate: async (request) =>
+      (
+        await nearAiJson(
+          { ...config, timeoutMs: 45_000 },
+          {
+            system: SYSTEM_PROMPT,
+            user: draftUserMessage(request),
+            schema: QUEST_DRAFT_OUTPUT_SCHEMA,
+            maxTokens: 1200,
+            name: "quest_draft",
+          },
+        )
+      ).value,
   };
 }
 
@@ -292,9 +299,12 @@ export function createAnthropicProvider({
 }
 
 export function questDraftConfiguration(env = process.env) {
-  const provider = (env.QUEST_AI_PROVIDER || "template").trim();
-  if (!["template", "anthropic", "ollama", "off"].includes(provider))
-    throw Error("QUEST_AI_PROVIDER must be template, anthropic, ollama or off.");
+  let provider = aiProviderName(env.QUEST_AI_PROVIDER || "template");
+  if (!["template", "anthropic", "near-ai", "off"].includes(provider))
+    throw Error("QUEST_AI_PROVIDER must be template, anthropic, near-ai or off.");
+  const nearAi = nearAiConfiguration(env);
+  // NEAR AI stays off until NEAR_AI_ENABLED=1, whatever else is set.
+  if (provider === "near-ai" && !nearAi.enabled) provider = "template";
   const limit = (name, fallback) => {
     const value = env[name];
     if (value === undefined || value === "") return fallback;
@@ -305,7 +315,7 @@ export function questDraftConfiguration(env = process.env) {
     provider,
     model: (env.QUEST_AI_MODEL || DEFAULT_QUEST_AI_MODEL).trim(),
     hasKey: !!env.ANTHROPIC_API_KEY,
-    ...(provider === "ollama" ? { ollama: ollamaConfiguration(env) } : {}),
+    ...(provider === "near-ai" ? { nearAi } : {}),
     limits: {
       perHour: limit("QUEST_AI_LIMIT_PER_HOUR", LIMITS.perHour),
       perDay: limit("QUEST_AI_LIMIT_PER_DAY", LIMITS.perDay),
@@ -315,8 +325,8 @@ export function questDraftConfiguration(env = process.env) {
 }
 
 export function providerFromConfiguration(config, env = process.env) {
-  if (config.provider === "ollama" && config.ollama?.apiKey)
-    return createOllamaProvider(config.ollama);
+  if (config.provider === "near-ai" && config.nearAi?.active)
+    return createNearAiQuestProvider(config.nearAi);
   if (config.provider === "anthropic" && config.hasKey)
     return createAnthropicProvider({ apiKey: env.ANTHROPIC_API_KEY, model: config.model });
   return null; // template-only

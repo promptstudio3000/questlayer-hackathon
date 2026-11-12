@@ -144,7 +144,7 @@ export default function QgoldExchange({ data, compact = false }: { data: Exchang
         </div>
       ) : null}
       <p className="qx-fine">
-        {buying ? `R + ${pctText(data.rules.buyFeeBps)} fee.` : `R − ${pctText(data.rules.sellFeeBps)} fee.`} The fee goes to the treasury.
+        {buying ? `Backing per QGOLD plus a ${pctText(data.rules.buyFeeBps)} fee.` : `Backing per QGOLD minus a ${pctText(data.rules.sellFeeBps)} fee.`} The fee goes to the treasury.
         {!buying && path === "near_instant" ? ` Instant exits left today: ${shortNear(left > 0n ? left.toString() : "0", 2)} NEAR for everyone.` : ""}
       </p>
       {tooMuch ? <p className="qx-msg bad">You hold {qgoldText(balance)} QGOLD.</p> : null}

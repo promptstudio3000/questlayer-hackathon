@@ -60,7 +60,7 @@ test("countdown shows when a zone opens even if the player cannot play it", () =
   assert.match(c.window, /Legendary · open 1 h/);
   const open = zoneCountdown(z, [], now + 2 * H);
   assert.equal(open.text, "Closes in 30:00");
-  assert.equal(zoneCountdown(z, [], now + 3 * H).text, "Closed");
+  assert.equal(zoneCountdown(z, [], now + 3 * H).text, "Closed · new zones tomorrow");
 });
 
 test("all-day zones say open now until their last hours", () => {
@@ -86,7 +86,7 @@ test("loot lists only what loaded data backs, rarest first", () => {
   );
 });
 
-test("walls keep boundary paths open, dim upcoming ones, vanish when spent", () => {
+test("walls keep boundary paths open, dim upcoming ones, stay low and dim when spent", () => {
   const open = zoneWallFeatures([zone()], [], now);
   const upcoming = zoneWallFeatures([zone({ opensAt: now + H })], [], now);
   const closed = zoneWallFeatures([zone({ closesAt: now - 1 })], [], now);
@@ -95,7 +95,9 @@ test("walls keep boundary paths open, dim upcoming ones, vanish when spent", () 
   assert.equal(open[0].geometry.coordinates.length, 49, "keeps the published circle boundary");
   assert.equal(upcoming[0].properties.dim, true);
   assert.ok(upcoming[0].properties.height < open[0].properties.height);
-  assert.equal(closed.length, 0);
+  assert.equal(closed.length, 1, "closed zones stay visible");
+  assert.equal(closed[0].properties.dim, true);
+  assert.ok(closed[0].properties.height < upcoming[0].properties.height);
 });
 
 test("every zone gets a totem; taller for rarer tiers; crown names the type", () => {

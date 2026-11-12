@@ -517,6 +517,35 @@ button.community-row-open:focus-visible {
   flex-wrap: nowrap;
 }
 
+/* Quick composers (note, topic, place): the pin art sits beside the title,
+   the public-pin disclosure stays, set as a note. Their own stylesheet loads
+   with the lazy chunk, so these selectors carry the dialog as well. */
+.game-dialog .quick-create {
+  grid-template-columns: auto minmax(0, 1fr);
+  column-gap: 12px;
+}
+.game-dialog .quick-create > * {
+  grid-column: 1 / -1;
+}
+.game-dialog .quick-create > .note-pin-art {
+  grid-column: 1;
+  align-self: center;
+  width: 80px;
+  height: 40px;
+  margin: 0;
+}
+.game-dialog .quick-create > h2 {
+  grid-column: 2;
+  align-self: center;
+  padding-inline-end: 44px;
+  font-size: var(--text-title);
+  text-align: start;
+}
+.game-dialog .quick-create .quick-create-fine,
+.game-dialog .quick-create .quick-create-gps {
+  font-size: var(--text-note);
+}
+
 /* ---- Local chat as a place chat (Lubos, 11 Nov 2026) ---- */
 /* Distance filter: one row of chips above everything. */
 .local-chat-range {

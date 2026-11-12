@@ -31,7 +31,8 @@ export type AuraSet = Readonly<{
 export type AuraEntitlement = Readonly<{ minZoneTier: number; minLevel: number }>;
 
 export const AURA_CATALOG_VERSION: number = catalog.version;
-export const AURA_SUPPLY: number = catalog.supplyPerEdition;
+/** Per-edition cap, or null: editions are uncapped (owner, 11 Nov 2026). */
+export const AURA_SUPPLY: number | null = catalog.supplyPerEdition ?? null;
 export const AURA_RARITIES = catalog.rarities as readonly AuraRarity[];
 export const AURA_CATALOG = Object.freeze(
   catalog.editions.map((e) => Object.freeze(e)),

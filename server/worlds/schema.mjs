@@ -177,7 +177,8 @@ export function checkSchema(pack, { bytes } = {}) {
         const p = `$.rewards.editions[${i}]`;
         if (!c.keys(e, p, ["id", "supply", "slot"])) return;
         c.str(e.id, `${p}.id`, 40, SLUG);
-        c.num(e.supply, `${p}.supply`, 1, 10000, true);
+        // null = no supply cap (Aavegotchi Auras, owner 11 Nov 2026).
+        if (e.supply !== null) c.num(e.supply, `${p}.supply`, 1, 10000, true);
         c.oneOf(e.slot, `${p}.slot`, EDITION_SLOTS);
       });
   }

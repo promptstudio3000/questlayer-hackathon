@@ -2,20 +2,6 @@
    bottom of the screen (docs/UI-SIMPLIFICATION.md, wave 3). Loaded after
    compact-ui.css so these rules win over the older phone rules. */
 
-.wordmark {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-/* Desktop already shows the logo at the top of the side rail. */
-.wordmark-logo {
-  display: none;
-  width: 36px;
-  height: 36px;
-  flex-shrink: 0;
-  border-radius: 10px;
-}
-
 @media (max-width: 760px) {
   /* ---- Compact header: logo left, HUD pills right ------------------- */
   .topbar {
@@ -25,15 +11,6 @@
     transition:
       transform 180ms var(--ease-out, ease-out),
       opacity 180ms var(--ease-out, ease-out);
-  }
-  .app-shell .topbar .wordmark {
-    display: flex;
-  }
-  .app-shell .topbar .wordmark > span {
-    display: none;
-  }
-  .wordmark-logo {
-    display: block;
   }
   .topbar .topbar-right {
     gap: 6px;

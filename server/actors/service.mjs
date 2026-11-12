@@ -6,7 +6,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { assert, distance, point } from "../domain.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { cityById } from "../spatial/city-pack.mjs";
-import { localDateStart } from "../spatial/calendar.mjs";
+import { localDateStart, shiftDate } from "../spatial/calendar.mjs";
 import {
   closedPlaces,
   effectiveCityPack,
@@ -16,7 +16,7 @@ import { pauseFor, pauseState } from "../operator/world-controls.mjs";
 import { cellToLatLng, getResolution, isValidCell } from "h3-js";
 import { DENSITY_CAP_PER_CELL, loadCityActors, loadGenericActors, REVEAL_RADIUS_M } from "./definitions.mjs";
 import { actorPois } from "./pois.mjs";
-import { pathGraph } from "./schedule.mjs";
+import { activeWindows, pathGraph } from "./schedule.mjs";
 import { buildActorMenu, menuHash } from "./menu.mjs";
 import { ACTORS_SCHEMA } from "./schema.mjs";
 import { planDay, positionAt } from "./schedule.mjs";
@@ -24,13 +24,15 @@ import { planSpawns } from "./spawns.mjs";
 import { skyAt } from "../sun.mjs";
 import { streetFindIds } from "../street-finds.mjs";
 import { ACTOR_HOME_RADIUS_M, compactActorCast } from "../demo-zones.mjs";
+import { FAIR_PLAY } from "../fair-play.mjs";
 
 export const ENCOUNTER_TTL_MS = 5 * 60_000;
 export const ENCOUNTER_RADIUS_M = 35;
 export const STATION_RADIUS_M = 50;
 export const MAX_GPS_ACCURACY_M = 30;
 export const MAX_FIX_AGE_MS = 15_000;
-export const MAX_SPEED_MPS = 15;
+// Same cap as the shared travel guard (about 15 km/h, server/fair-play.mjs).
+export const MAX_SPEED_MPS = FAIR_PLAY.maxSpeedMps;
 export const SEGMENT_HORIZON_MS = 2 * 3600_000;
 // The map refetches every minute, so the list sends only the next 20 minutes
 // of each walk (was the full 2 h: ~80 KB a minute on a phone, see
@@ -233,7 +235,15 @@ export function createActorService(db, options = {}) {
         }),
       };
     });
-    const plan = { seed, instances, center: pack.center, byId: new Map(instances.map((i) => [i.id, i])) };
+    const plan = {
+      seed,
+      instances,
+      center: pack.center,
+      byId: new Map(instances.map((i) => [i.id, i])),
+      // Kept for comeBackFor: when an actor is out again on a later day.
+      hours: city.hours,
+      allDay: forceAllDay || !!manifest.arena,
+    };
     plans.set(key, plan);
     while (plans.size > PLAN_CACHE_SIZE) plans.delete(plans.keys().next().value);
     return plan;
@@ -454,7 +464,35 @@ export function createActorService(db, options = {}) {
       expiresAt,
     );
     db.prepare("DELETE FROM actor_encounters WHERE expires_at<?").run(now - 7 * 86_400_000);
-    return { encounter: token, expiresAt, actor, menu, distanceM: Math.round(meters) };
+    const comeBack = menu.length ? null : comeBackFor(actor, instance.def, manifest, plan);
+    return { encounter: token, expiresAt, actor, menu, distanceM: Math.round(meters), ...(comeBack ? { comeBack } : {}) };
+  }
+
+  // When an actor with nothing on offer is worth a visit again: its first
+  // active minute on the next day (a beaten weekly boss: next Monday). Same
+  // opening hours, day/night phase and sunrise maths as the day plan.
+  function comeBackFor(actor, def, manifest, plan) {
+    if (actor.archetype === "trader") return null; // the trader board is always open
+    const boss = actor.archetype === "boss";
+    if (boss && actor.state !== "defeated") return null;
+    const reason = boss ? "boss_beaten" : actor.state === "defeated" ? "beaten" : "nothing_today";
+    const [y, m, d] = String(manifest.day).split("-").map(Number);
+    const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay() || 7;
+    const ahead = boss ? 8 - dow : 1;
+    try {
+      const day = shiftDate(manifest.day, ahead),
+        dayStart = localDateStart(day, manifest.timezone);
+      // Boss appearances are short windows; the first span of the day is enough here.
+      const spans = activeWindows({ ...def, windows: undefined }, {
+        dayStart,
+        hours: plan?.hours || ["07:00", "22:00"],
+        allDay: !!plan?.allDay,
+        sky: plan?.center || null,
+      });
+      return { reason, at: spans[0]?.[0] ?? dayStart };
+    } catch {
+      return null;
+    }
   }
 
   // For /talk, /offers and /challenge routes. Throws 403/404/410.
