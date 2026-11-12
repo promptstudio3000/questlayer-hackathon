@@ -38,7 +38,6 @@ export type PendingNativeTransaction = {
 export type NativeConfirmationContext = {
   playerId: string;
   storage?: Storage;
-  legacyStorage?: Storage | null;
   getAnchor?: (accountId: string) => Promise<number>;
   withLock?: <T>(name: string, work: () => T | Promise<T>) => Promise<T>;
   // Domain-specific financial confirmation still uses this durable wallet journal.
@@ -174,15 +173,6 @@ function write(
   }
   emit();
 }
-function legacyFor(context: NativeConfirmationContext) {
-  if (context.legacyStorage !== undefined) return context.legacyStorage;
-  if (context.storage) return null;
-  try {
-    return globalThis.sessionStorage;
-  } catch {
-    throw storageError();
-  }
-}
 function identicalOperation(
   a: PendingNativeTransaction,
   b: PendingNativeTransaction,
@@ -254,28 +244,8 @@ function mergeEntries(
     );
   return { entries: merged, imported };
 }
-function migrate(context: NativeConfirmationContext) {
-  const current = readPendingNativeTransactions(
-    context.playerId,
-    context.storage,
-  );
-  const legacy = legacyFor(context);
-  if (!legacy || legacy === storageFor(context.storage)) return current;
-  const oldRaw = legacy.getItem(key(context.playerId));
-  if (oldRaw === null) return current;
-  const old = readPendingNativeTransactions(context.playerId, legacy);
-  const merged = mergeEntries(current, old).entries;
-  write(context.playerId, merged, context.storage);
-  // Preserve a concurrently changed legacy journal; no old bytes are removed until
-  // the durable copy has been written and read back successfully.
-  if (legacy.getItem(key(context.playerId)) !== oldRaw) throw storageError();
-  try {
-    legacy.removeItem(key(context.playerId));
-    if (legacy.getItem(key(context.playerId)) !== null) throw storageError();
-  } catch {
-    throw storageError();
-  }
-  return merged;
+function journal(context: NativeConfirmationContext) {
+  return readPendingNativeTransactions(context.playerId, context.storage);
 }
 async function locked<T>(
   context: NativeConfirmationContext,
@@ -293,7 +263,7 @@ async function locked<T>(
 export async function initializePendingNativeTransactions(
   context: NativeConfirmationContext,
 ) {
-  return locked(context, () => migrate(context));
+  return locked(context, () => journal(context));
 }
 async function mutate(
   context: NativeConfirmationContext,
@@ -301,7 +271,7 @@ async function mutate(
   update: (entry: PendingNativeTransaction) => PendingNativeTransaction | null,
 ) {
   return locked(context, () => {
-    const current = migrate(context);
+    const current = journal(context);
     const found = current.find((e) => e.id === expected.id);
     if (!found) return false; // Another confirmed check removed it. Never resurrect it.
     if (
@@ -327,7 +297,7 @@ export async function exportPendingNativeTransactions(
   context: NativeConfirmationContext,
 ): Promise<string> {
   return locked(context, () => {
-    const entries = migrate(context).map((entry) => ({
+    const entries = journal(context).map((entry) => ({
       id: entry.id,
       playerId: entry.playerId,
       accountId: entry.accountId,
@@ -433,7 +403,7 @@ export async function importPendingNativeTransactions(
     };
   });
   return locked(context, () => {
-    const current = migrate(context),
+    const current = journal(context),
       merged = mergeEntries(current, incoming);
     write(context.playerId, merged.entries, context.storage);
     return { imported: merged.imported, total: merged.entries.length };
@@ -642,7 +612,7 @@ export async function sendConfirmedNative(
   if (!validQuote(quote))
     throw Error("The reviewed native operation is invalid.");
   const reserved = await locked(context, () => {
-    const entries = migrate(context);
+    const entries = journal(context);
     const accountEntries = entries.filter(
       (entry) => entry.accountId === quote.signerId,
     );
@@ -719,7 +689,7 @@ export async function sendConfirmedNative(
   // Recheck and initiate the call atomically, but return a wrapper rather than
   // the wallet promise: no Web Lock is held while a wallet dialog is open.
   const invocation = await locked(context, () => {
-    const current = migrate(context).find(
+    const current = journal(context).find(
       (candidate) => candidate.id === entry.id,
     );
     if (

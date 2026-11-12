@@ -204,20 +204,10 @@ export function MapNotes({
   const controllers = useRef(new Set<AbortController>()),
     heading = useRef<HTMLHeadingElement>(null),
     composer = useRef<HTMLTextAreaElement>(null);
-  const journal = useMemo(() => {
-    let legacy: Storage | null = null;
-    try {
-      legacy = sessionStorage;
-    } catch {
-      /* Old tab-only intents may be unavailable. */
-    }
-    return createNotePublicationJournal(
-      playerId,
-      arena,
-      browserDraftStorage(),
-      legacy,
-    );
-  }, [identity]);
+  const journal = useMemo(
+    () => createNotePublicationJournal(playerId, arena, browserDraftStorage()),
+    [identity],
+  );
   const [localView, setLocalView] = useState<MapNotesView>(quick ? "compose" : "browse");
   const view = requestedView ?? localView;
   function setView(next: MapNotesView) {
