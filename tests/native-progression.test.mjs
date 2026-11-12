@@ -554,15 +554,11 @@ test("edition cap and publisher permissions independently gate native level vouc
   const s = setup();
   try {
     await s.service.issue(s.player, "alice.testnet", 2);
+    // Uncapped editions: 256 minted copies no longer sell an edition out.
     s.state.minted = 256;
-    assert.equal(
-      (await s.service.snapshot(s.player, "alice.testnet")).milestones[0].state,
-      "sold_out",
-    );
-    await assert.rejects(
-      s.service.issue(s.player, "alice.testnet", 2),
-      /fully minted/,
-    );
+    const after = (await s.service.snapshot(s.player, "alice.testnet")).milestones[0];
+    assert.notEqual(after.state, "sold_out");
+    assert.equal(after.remaining, null);
     s.mint();
     assert.equal(
       (await s.service.issue(s.player, "alice.testnet", 2)).state,
@@ -578,7 +574,7 @@ test("tampered and disappeared immutable mint receipts never reopen a confirmed 
     { token_id: "aura:polar:2", receiver_id: "bob.testnet", edition: "polar" },
     { token_id: "aura:gold:2", receiver_id: "alice.testnet", edition: "gold" },
     {
-      token_id: "aura:polar:257",
+      token_id: "aura:polar:01",
       receiver_id: "alice.testnet",
       edition: "polar",
     },
