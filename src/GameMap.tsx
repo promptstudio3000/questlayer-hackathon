@@ -417,6 +417,8 @@ export function GameMap(props: GameMapProps) {
     let gone = false;
     const m = new maplibregl.Map({
       container: el.current,
+      // The canvas's aria-label follows the player's language.
+      locale: { "Map.Title": tr("Map") },
       style: "https://tiles.openfreemap.org/styles/positron",
       // The poi labels end up hidden, and tiles only keep the source-layers
       // some style layer uses when they load. One invisible layer keeps the
