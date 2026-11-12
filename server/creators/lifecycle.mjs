@@ -2,6 +2,7 @@ import { atomic } from "../database.mjs";
 import { levelFor } from "../domain.mjs";
 import { observationRequirement } from "./completion-policy.mjs";
 import { creatorPlace, creatorPrice } from "./place-policy.mjs";
+import { creatorPhoto } from "./feedback.mjs";
 import {
   creatorAssert as fail,
   creatorKey as key,
@@ -10,7 +11,7 @@ import {
   createCreatorOperations,
 } from "./operations.mjs";
 
-const OPTIONAL_CONTENT = ["place", "price", "requirement"];
+const OPTIONAL_CONTENT = ["place", "price", "requirement", "photo"];
 const content = (value) => {
   const keys = value && typeof value === "object" ? Object.keys(value) : [];
   fail(
@@ -37,6 +38,9 @@ const content = (value) => {
       : {}),
     ...(Object.hasOwn(value, "price")
       ? { price: creatorPrice(value.price) }
+      : {}),
+    ...(Object.hasOwn(value, "photo")
+      ? { photo: creatorPhoto(value.photo) }
       : {}),
   };
 };

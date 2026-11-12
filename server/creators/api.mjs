@@ -104,6 +104,7 @@ export function createCreatorApi({
   community,
   safety,
   completion,
+  feedback = null,
   drafter = null,
   authenticate,
   origin,
@@ -218,6 +219,13 @@ export function createCreatorApi({
           parts[2] === "completion"
         )
           result = completion.read(actor, parts[1]);
+        else if (
+          feedback &&
+          parts.length === 3 &&
+          parts[0] === "quests" &&
+          parts[2] === "feedback"
+        )
+          result = feedback.read(actor, parts[1]);
         else if (suffix === "/me/quests")
           result = community.myCreations(actor, options);
         else if (suffix === "/me/participations")
@@ -278,6 +286,39 @@ export function createCreatorApi({
             "privateConsent",
           ]);
           result = completion.submit({ actor, questId: parts[1], ...body });
+        } else if (
+          feedback &&
+          request.method === "PUT" &&
+          parts.length === 3 &&
+          parts[0] === "quests" &&
+          parts[2] === "rating"
+        ) {
+          fields(body, ["operationId", "stars"]);
+          result = feedback.rate({ actor, questId: parts[1], ...body });
+        } else if (
+          feedback &&
+          request.method === "POST" &&
+          parts.length === 3 &&
+          parts[0] === "quests" &&
+          parts[2] === "comments"
+        ) {
+          fields(body, ["operationId", "body"]);
+          result = feedback.comment({ actor, questId: parts[1], ...body });
+        } else if (
+          feedback &&
+          request.method === "POST" &&
+          parts.length === 5 &&
+          parts[0] === "quests" &&
+          parts[2] === "comments" &&
+          parts[4] === "remove"
+        ) {
+          fields(body, ["operationId"]);
+          result = feedback.removeComment({
+            actor,
+            questId: parts[1],
+            commentId: parts[3],
+            ...body,
+          });
         } else if (request.method === "PUT" && suffix === "/profile") {
           fields(body, [
             "operationId",
