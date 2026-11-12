@@ -12,7 +12,7 @@
     "dev:server": "node --watch server/index.mjs",
     "build": "tsc -b && vite build",
     "start": "node server/index.mjs",
-    "test": "node --test --test-concurrency=4 tests/*.test.mjs",
+    "test": "POI_DB_PATH=off AUTO_CITIES_DIR=off node --test --test-concurrency=4 tests/*.test.mjs",
     "test:mainnet": "node scripts/test-mainnet.mjs",
     "check": "npm run build && npm run budget && npm test && npm run test:mainnet",
     "budget": "node scripts/check-bundle-budget.mjs",
