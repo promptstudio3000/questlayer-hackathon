@@ -49,6 +49,7 @@ import { pathToFileURL } from "node:url";
 // Paced RPC with 429 backoff and fastnear/drpc failover, here and in every step.
 import "./lib/rpc-patience.mjs";
 import { Account, JsonRpcProvider, KeyPairSigner } from "near-api-js";
+import { rpcErrorText } from "../server/near-provider.mjs";
 
 const execute = process.argv.includes("--execute");
 const repo = resolve(import.meta.dirname, "..");
@@ -181,6 +182,34 @@ if (existsSync(workerFile)) {
     rmSync(workerFile);
     log({ step: "set aside reward worker key of another rewards account", account: bound });
   }
+}
+
+// 1b. Top-level accounts come from the operator through the `testnet`
+// registrar, not from helper.testnet.near.org: the helper rate-limits the VPS
+// IP for hours. An account that exists already is left alone, so the deploy
+// scripts find it and skip their own helper call.
+const NEAR = 10n ** 24n;
+const opAccount = new Account(op, provider, signer);
+for (const [key, id] of Object.entries(ACCOUNTS)) {
+  if (!id.endsWith(".testnet") || id.endsWith(`.${op}`)) continue;
+  try {
+    await provider.viewAccount({ accountId: id });
+    continue;
+  } catch (e) {
+    if (!/does not exist|doesnotexist|unknown_account/i.test(rpcErrorText(e))) throw e;
+  }
+  const deposit = key === "NEAR_QGOLD_ESCROW_PUBLISHER" ? NEAR : 5n * NEAR;
+  const r = await opAccount.callFunctionRaw({
+    contractId: "testnet",
+    methodName: "create_account",
+    args: { new_account_id: id, new_public_key: operator.publicKey },
+    deposit,
+    gas: 100n * 10n ** 12n,
+    waitUntil: "FINAL",
+  });
+  if (r.status?.Failure) throw new Error(`create_account ${id} failed: ${JSON.stringify(r.status)}`);
+  await provider.viewAccount({ accountId: id }); // throws if the registrar did not create it
+  log({ step: "created account from the operator", account: id, near: Number(deposit / NEAR), tx: r.transaction?.hash || r.transaction_outcome?.id });
 }
 
 // 2-3. The deploy scripts, in order, inside the work tree.
