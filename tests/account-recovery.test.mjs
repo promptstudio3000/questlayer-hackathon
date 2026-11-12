@@ -581,3 +581,144 @@ test('recovery preserves the new private device key across a lost AddKey reply',
  assert.equal(recovered.publicKey,saved.publicKey);assert.equal((await store.get(DEVICE_KEY)).secretKey,saved.secretKey);
  assert.equal(await store.get(`pending-recovery:${phone.accountId}`),null);
 });
+
+// Wallet words: 12 new words whose key joins the account, so the same account
+// opens in Meteor or another NEAR wallet (Settings → Account and devices).
+test("wallet words import with the standard NEAR phrase and never reach the server", async (t) => {
+  const { parseSeedPhrase } = await import("near-api-js/seed-phrase");
+  const { activateWalletWords, newWalletWords } = await import(
+    "../src/signing-vault/wallet-export.ts"
+  );
+  const { hasWalletWords } = await import("../src/account-recovery.ts");
+  const f = fixture();
+  t.after(() => f.db.close());
+  const phone = f.ready();
+  const { api, session } = server(f);
+  session.player = f.player;
+
+  const made = await newWalletWords(),
+    again = await newWalletWords();
+  assert.equal(made.words.length, 12);
+  assert.notDeepEqual(made.words, again.words);
+  // What a wallet derives from the typed words is the key we add.
+  assert.equal(
+    parseSeedPhrase(made.words.join(" ")).getPublicKey().toString(),
+    made.publicKey,
+  );
+
+  const calls = [];
+  const spy = async (path, data) => {
+    calls.push(JSON.stringify([path, data ?? null]));
+    return api(path, data);
+  };
+  await activateWalletWords({
+    deviceKey: deviceRecord(phone),
+    accountId: phone.accountId,
+    publicKey: made.publicKey,
+    api: spy,
+    intervalMs: 1,
+  });
+  assert.equal(keyState(f, made.publicKey), "active");
+  assert.equal(
+    f.state.accounts.get(phone.accountId).keys.get(made.publicKey).permission,
+    "FullAccess",
+  );
+  const keys = f.accounts.view(f.player).account.keys;
+  assert.ok(hasWalletWords(keys));
+  const row = deviceRows(keys, phone.publicKey).find((r) => r.wallet);
+  assert.equal(row.title, "Wallet words");
+  assert.equal(row.canRevoke, true);
+  // Nothing sent to the game or stored by it contains a word or a secret key.
+  const sent =
+    calls.join("\n") +
+    JSON.stringify(f.rows("managed_account_keys")) +
+    JSON.stringify(f.rows("relay_jobs"));
+  const secret = parseSeedPhrase(made.words.join(" ")).toString();
+  assert.ok(!sent.includes(secret) && !sent.includes(secret.slice(8)));
+  // Bip39 words can be ordinary English ("device", "label", "account"), so
+  // look for the phrase itself: any three words in their order.
+  for (let i = 0; i + 3 <= made.words.length; i++)
+    assert.ok(!sent.includes(made.words.slice(i, i + 3).join(" ")));
+
+  // Lost paper: the device revokes the words like any other key.
+  await revokeAccountKey({
+    deviceKey: deviceRecord(phone),
+    accountId: phone.accountId,
+    publicKey: made.publicKey,
+    api,
+    intervalMs: 1,
+  });
+  assert.equal(keyState(f, made.publicKey), "removed");
+  assert.ok(!f.state.accounts.get(phone.accountId).keys.has(made.publicKey));
+});
+
+test("the word check asks for two different words with the right one among four", async () => {
+  const { wordChecks } = await import("../src/signing-vault/wallet-export.ts");
+  const words = "apple bird cat dog egg fish goat hat ink jam kite apple".split(" ");
+  for (let run = 0; run < 50; run++) {
+    const rounds = wordChecks(words);
+    assert.equal(rounds.length, 2);
+    assert.notEqual(rounds[0].position, rounds[1].position);
+    for (const r of rounds) {
+      assert.equal(words[r.position - 1], r.answer);
+      assert.equal(r.options.length, 4);
+      assert.equal(new Set(r.options).size, 4);
+      assert.equal(r.options.filter((o) => o === r.answer).length, 1);
+    }
+  }
+});
+
+test("the passkey unlock for wallet words accepts only this account's live passkey", async (t) => {
+  const { confirmWithPasskey } = await import(
+    "../src/signing-vault/wallet-export.ts"
+  );
+  const f = fixture();
+  t.after(() => f.db.close());
+  const phone = f.ready();
+  const { api, session } = server(f);
+  session.player = f.player;
+  const passkeys = passkeyProvider();
+  await setupPasskeyRecovery({
+    deviceKey: deviceRecord(phone),
+    accountId: phone.accountId,
+    credentials: passkeys,
+    rpId: "localhost",
+    api,
+    intervalMs: 1,
+  });
+  const isFullAccessKey = async (accountId, publicKey) =>
+    f.state.accounts.get(accountId)?.keys.get(publicKey)?.permission ===
+    "FullAccess";
+  await confirmWithPasskey({
+    accountId: phone.accountId,
+    credentials: passkeys,
+    rpId: "localhost",
+    isFullAccessKey,
+  });
+  // A passkey that names this account but was never added to it.
+  const stranger = passkeyProvider();
+  await stranger.create({
+    publicKey: {
+      rp: { id: "localhost" },
+      user: { id: new TextEncoder().encode(phone.accountId) },
+    },
+  });
+  await assert.rejects(
+    confirmWithPasskey({
+      accountId: phone.accountId,
+      credentials: stranger,
+      rpId: "localhost",
+      isFullAccessKey,
+    }),
+    /does not belong/,
+  );
+  await assert.rejects(
+    confirmWithPasskey({
+      accountId: "someone-else.testnet",
+      credentials: passkeys,
+      rpId: "localhost",
+      isFullAccessKey,
+    }),
+    /does not belong/,
+  );
+});
