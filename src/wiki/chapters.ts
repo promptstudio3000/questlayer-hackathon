@@ -191,7 +191,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "One dismissible objective holds the next action. Confirmed results, recovery notices and the first equipment step come before nearby suggestions.",
-          "One tap on a quest (in Nearby, in a zone, from an NPC or from Today's board) goes straight to the map: the target is marked, a direction line points to it, other map content dims, and the X on the target chip clears it. No reward is reserved or claimed by choosing. At the place the same tap opens one confirm button.",
+          "One tap on a quest (in Nearby, in a zone, from an NPC or from Today's board) goes straight to the map: the target is marked, a direction line points to it, other map content dims, and the X on the target chip clears it. No reward is reserved or claimed by choosing. At the place the same tap opens one confirm button. A plain map point (a tour stop, for example) can be the target too: it gets a pulsing ring and the same chip with distance and X, and clears itself within 15 m.",
           "A zone dialog is the title, one row of icon facts (tier, open window, done today, XP, GOLD and Auras left) and a list of one-tap quests.",
           "Notes, shouts and topics sit on the map as closed icons; a tap opens the text, a second tap opens the thread and the X folds it again.",
           "Only game elements sit on the map. Community quests, player tasks and Secrets have no map markers; they are reached from Community and Nearby.",

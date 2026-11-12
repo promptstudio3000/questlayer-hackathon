@@ -1985,6 +1985,7 @@ export default function App() {
   // One tap on a quest, from any list, pin or dialog: straight to the map
   // with the direction guide, or to the confirm button when already there.
   function startQuest(q: Quest) {
+    setPointTarget(null);
     const zone = world?.zones.find(z => z.id === q.zone_id);
     if (!world || !player || !zone) return;
     const t = Date.now();
@@ -2001,6 +2002,36 @@ export default function App() {
     setTab("explore");
     setSheetExpanded(true);
   }
+  // A plain point as the map target (tour stops, player tasks, Secrets): the
+  // same highlight and clear X as a chosen quest, without opening anything.
+  const [pointTarget, setPointTarget] = useState<{ lat: number; lng: number; label: string; revision: number } | null>(null);
+  function navigateTo(p: { lat: number; lng: number; label: string }) {
+    if (selected) closeZone();
+    setCatalogView(null);
+    setTab("explore");
+    setSheetExpanded(false);
+    setOverview(false);
+    setPointTarget({ lat: p.lat, lng: p.lng, label: p.label, revision: Date.now() });
+    if (arena && !nativePlay) faceToward(p, p.label);
+    else setFollow(false);
+  }
+  function clearPointTarget() {
+    setPointTarget(null);
+    if (demoTarget && !demoTarget.coinId && !demoTarget.questId) setDemoTarget(null);
+  }
+  useEffect(() => {
+    if (pointTarget && metersBetween(position, pointTarget) < 15) setPointTarget(null);
+  }, [position, pointTarget]);
+  useEffect(() => {
+    const on = (e: Event) => {
+      const d = (e as CustomEvent<{ lat?: number; lng?: number; label?: string }>).detail;
+      if (d && Number.isFinite(d.lat) && Number.isFinite(d.lng)) navigateRef.current({ lat: d.lat!, lng: d.lng!, label: String(d.label || "") });
+    };
+    window.addEventListener("questlayer:navigate", on);
+    return () => window.removeEventListener("questlayer:navigate", on);
+  }, []);
+  const navigateRef = useRef(navigateTo);
+  navigateRef.current = navigateTo;
   function closeZone() {
     const zoneId = selected?.id;
     setGuideRequest(null);
@@ -3748,7 +3779,7 @@ export default function App() {
     <div
       className={`app-shell${player && tab !== "explore" ? " sheet-open" : ""}${player && mapFullOn ? " map-full" : ""}${player && !hudReady ? " hud-loading" : ""}`}
       data-screen={tab}
-      data-target={player && selected && tab === "explore" && !sheetExpanded ? "quest" : undefined}
+      data-target={player && tab === "explore" && !sheetExpanded ? (selected ? "quest" : pointTarget ? "point" : undefined) : undefined}
       data-area={showProfileTabs ? "profile" : showCommunityTabs ? "community" : undefined}
     >
       <div className="map-stage" inert={!!player && !mapInteractive} aria-hidden={!!player && !mapVisible}>
@@ -3866,6 +3897,7 @@ export default function App() {
           }}
           actorReports={npcTasks && npcTasks.worldId === world?.id ? npcTasks.tasks.filter((t) => t.ready).map((t) => t.actorId) : []}
           actorFocus={actorFocus}
+          pointTarget={pointTarget}
           onActorFocus={(text, found) => notify(text, !found)}
           marketPins={MAP_DIALOG_PINS && !!player && !arena && !nativePlay}
           onMarketPin={() => {
@@ -4086,7 +4118,7 @@ export default function App() {
             </button>
           )}
           {tab === "explore" &&
-            coachActive && showObjective("coach") && !selected && (
+            coachActive && showObjective("coach") && !selected && !pointTarget && (
               <FirstSessionCoach
                 session={firstSession}
                 hint={learning.visible(coachTopic) ? helpText(coachTopic) : undefined}
@@ -4119,6 +4151,20 @@ export default function App() {
             >
               <X size={16} aria-hidden="true" />
             </button>
+            </div>
+          )}
+          {tab === "explore" && pointTarget && !selected && (
+            <div className="sheet-peek sheet-peek-selection">
+              <button className="compact-selection" title={tr("Straight-line distance")} onClick={() => setPointTarget({ ...pointTarget, revision: Date.now() })}>
+                <span className="peek-art" aria-hidden="true"><MapPin size={28} /></span>
+                <span className="peek-body">
+                  <strong>{pointTarget.label}</strong>
+                  <small>{distanceLabel(meters(position, pointTarget))}</small>
+                </span>
+              </button>
+              <button className="sheet-peek-hide" aria-label={tr("Clear target")} title={tr("Clear target")} onClick={clearPointTarget}>
+                <X size={16} aria-hidden="true" />
+              </button>
             </div>
           )}
           {tab === "explore" && nativePlay && nativeObjective.reference && showObjective("native") && (
