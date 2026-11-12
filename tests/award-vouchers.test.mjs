@@ -167,7 +167,8 @@ test("ownership, open listings, signer configuration and full editions prevent i
       /not enabled/,
     );
     s.setKey(s.issuer.publicKey);
-    s.setMinted(256);
+    // Editions are uncapped on chain; only an invalid supply reading blocks.
+    s.setMinted(-1);
     await assert.rejects(
       s.vouchers.issue(s.player, "aura-test", "alice.testnet"),
       /fully minted/,
