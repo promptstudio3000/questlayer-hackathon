@@ -4,7 +4,7 @@
 // and a history line. Nothing is credited to anyone: in the QGOLD model the
 // backing stays in the vault, so every burn raises R for all holders.
 import { readFileSync } from "node:fs";
-import { assert, GameError, GOLD, id } from "../domain.mjs";
+import { assert, GameError, id } from "../domain.mjs";
 import { history } from "../database.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { GOLD_SPEND_SCHEMA } from "./schema.mjs";
@@ -22,8 +22,12 @@ export const GOLD_SPEND = Object.freeze(
   JSON.parse(readFileSync(new URL("../data/gold-spend.json", import.meta.url), "utf8")),
 );
 export const BURN_KINDS = Object.freeze(["emote", "cosmetic", "gear", "altar", "lure", "shout", "topic"]);
-/** Whole GOLD from the price table to integer micro-GOLD. */
-export const priceU = (gold) => Math.round(Number(gold) * GOLD);
+/**
+ * Price-table GOLD to integer units. 1 in-game GOLD is the smallest QGOLD
+ * unit (micro-QGOLD, owner 11 Nov 2026), so prices are already units.
+ */
+export const GAME_GOLD_U = 1;
+export const priceU = (gold) => Math.round(Number(gold) * GAME_GOLD_U);
 
 /** GOLD the Golden Altar takes for a recipe (whole GOLD). */
 export function altarFee(recipeId) {

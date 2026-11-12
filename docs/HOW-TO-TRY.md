@@ -47,7 +47,7 @@ What to check:
    invisible account there is no popup, otherwise your NEAR wallet asks. Without a vault server it says fueling isn't open.
 6. Profile → **Secure with a passkey** (also offered as "Secure your explorer with a passkey" after the first
    secured Aura): the same explorer now opens from any device that syncs the passkey
-   (Welcome → "I already have an explorer").
+   (Welcome → "I already have an explorer" → Passkey).
 7. On Explore, open the sheet (**Show discoveries** on a phone; **Show map** closes it) and find **Today's pot** under the objective.
    Without the native ledger it reads **Practice** ("Practice GOLD is play money with no value") and shows no
    amounts. With it, it shows the coins and zone prizes left today (of the amount funded today, when the server

@@ -23,6 +23,8 @@ export type ManagedAccountView = {
     state: "creating" | "ready" | "failed";
     errorCode: string | null;
     error: string | null;
+    /** Testnet, no recovery passkey: a device without a key may start over. */
+    canStartOver?: boolean;
     keys: {
       publicKey: string;
       kind: string;
@@ -60,6 +62,7 @@ export function useInvisibleAccount(
   }, []);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [canStartOver, setCanStartOver] = useState(false);
   const [keys, setKeys] = useState<
     NonNullable<ManagedAccountView["account"]>["keys"]
   >([]);
@@ -80,6 +83,7 @@ export function useInvisibleAccount(
         }
         let key = await loadDeviceKey(store);
         setKeys(view.account?.keys ?? []);
+        setCanStartOver(!!view.account?.canStartOver);
         if (view.account && view.account.state !== "failed") {
           const known = view.account.keys.some(
             (k) =>
@@ -181,6 +185,18 @@ export function useInvisibleAccount(
       : { signer: null, reason: statusRef.current };
   }, [ensure]);
 
+  // Testnet: the account's keys are on no device the explorer still has and
+  // there is no recovery passkey. Starts a new account with this device's key;
+  // the old one stays on chain, no longer used by the game.
+  const startOver = useCallback(async () => {
+    if (!playerId) return;
+    let key = await loadDeviceKey(store);
+    if (!key) key = await createDeviceKey(store);
+    await api("/account/start-over", { publicKey: key.publicKey });
+    setStatus("creating");
+    await ensure();
+  }, [playerId, store, ensure, setStatus]);
+
   // Re-reads the device list without re-running account creation.
   const refresh = useCallback(async () => {
     const view = await api<ManagedAccountView>("/account");
@@ -203,5 +219,7 @@ export function useInvisibleAccount(
     deviceKey: status === "ready" ? keyRef.current : null,
     keys,
     refresh,
+    canStartOver,
+    startOver,
   };
 }

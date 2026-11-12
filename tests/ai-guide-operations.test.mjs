@@ -15,7 +15,6 @@ import {
 } from "../server/ai/guide.mjs";
 import { createAiOperations, verifyAiAudit } from "../server/ai/operations.mjs";
 import { createQuestDrafter, questDraftConfiguration } from "../server/ai/quest-drafts.mjs";
-import { ollamaConfiguration, ollamaJson, DEFAULT_OLLAMA_MODEL } from "../server/ai/ollama.mjs";
 
 const NOW = Date.parse("2026-11-02T12:00:00Z");
 
@@ -117,29 +116,15 @@ test("rules answers stay useful with no world and answer chest/pot questions fro
   assert.match(r.answer, /No testnet day is live/);
 });
 
-test("Ollama provider sends the strict schema and never exposes the key", async () => {
-  assert.throws(() => ollamaConfiguration({ OLLAMA_BASE_URL: "http://evil.example" }), /https/);
-  const config = ollamaConfiguration({ OLLAMA_API_KEY: "test-key" });
-  assert.equal(config.model, DEFAULT_OLLAMA_MODEL);
-  const sent = [];
-  const fetcher = async (url, init) => {
-    sent.push({ url, init });
-    return { ok: true, json: async () => ({ done_reason: "stop", message: { content: '{"answer":"hi","factIds":["zones"]}' } }) };
-  };
-  const out = await ollamaJson({ ...config, fetcher }, { system: "s", user: "u", schema: { type: "object" } });
-  assert.deepEqual(out, { answer: "hi", factIds: ["zones"] });
-  assert.equal(sent[0].url, "https://ollama.com/api/chat");
-  const body = JSON.parse(sent[0].init.body);
-  assert.deepEqual(body.format, { type: "object" });
-  assert.equal(body.stream, false);
-  assert.ok(!sent[0].init.body.includes("test-key"));
-  assert.equal(sent[0].init.headers.Authorization, "Bearer test-key");
-  const failing = async () => ({ ok: false, status: 401, json: async () => ({}) });
-  await assert.rejects(ollamaJson({ ...config, fetcher: failing }, { system: "s", user: "u", schema: {} }), /provider-unavailable \(401\)/);
-  // Without a key both features stay on the offline template.
-  const qc = questDraftConfiguration({ QUEST_AI_PROVIDER: "ollama" });
-  assert.equal(qc.ollama.apiKey, "");
-  assert.equal(guideConfiguration({ GUIDE_AI_PROVIDER: "ollama" }).provider, "ollama");
+test("Ollama is gone: old provider settings run on NEAR AI or the offline template", () => {
+  // Without NEAR_AI_ENABLED=1 both features stay on the offline template.
+  assert.equal(questDraftConfiguration({ QUEST_AI_PROVIDER: "ollama" }).provider, "template");
+  assert.equal(guideConfiguration({ GUIDE_AI_PROVIDER: "ollama" }).provider, "template");
+  const on = { NEAR_AI_ENABLED: "1", NEAR_AI_API_KEY: "k" };
+  const qc = questDraftConfiguration({ ...on, QUEST_AI_PROVIDER: "ollama" });
+  assert.equal(qc.provider, "near-ai");
+  assert.equal(qc.nearAi.active, true);
+  assert.equal(guideConfiguration({ ...on, GUIDE_AI_PROVIDER: "ollama" }).provider, "near-ai");
 });
 
 test("operators preview a future day and AI drafts; decisions are audited and never publish", async (t) => {
@@ -181,8 +166,8 @@ test("operator CLI requires an existing database and explicit apply for decision
   assert.deepEqual(JSON.parse(run("verify", "--database", path, "--operator", "qa")), { broken: null });
 });
 
-test("lenient Ollama parsing: fences, prose, missing fact ids, number formats and one retry", async (t) => {
-  const { extractJsonObject } = await import("../server/ai/ollama.mjs");
+test("lenient JSON parsing: fences, prose, missing fact ids and number formats", async (t) => {
+  const { extractJsonObject } = await import("../server/ai/json-output.mjs");
   assert.deepEqual(extractJsonObject('```json\n{"answer":"a"}\n```'), { answer: "a" });
   assert.deepEqual(extractJsonObject('Sure! {"answer":"x {y}","factIds":[]} hope it helps'), { answer: "x {y}", factIds: [] });
   assert.throws(() => extractJsonObject(""), (e) => e.reason === "empty-content");
@@ -195,23 +180,6 @@ test("lenient Ollama parsing: fences, prose, missing fact ids, number formats an
   const ok = validateGuideOutput({ answer: `The nearest open discovery is ${spaced} m away in a straight line.` }, facts);
   assert.ok(ok.value, JSON.stringify(ok));
   assert.ok(ok.value.factIds.length > 1, "missing ids cite every fact; numbers stay checked");
-
-  const calls = [];
-  const replies = [
-    { ok: false, status: 400, json: async () => ({}) },
-    { ok: true, json: async () => ({ message: { content: "I think the answer is nice." } }) },
-    { ok: true, json: async () => ({ message: { content: '```json\n{"answer":"ok answer","factIds":["zones"]}\n```' } }) },
-  ];
-  const fetcher = async (url, init) => {
-    calls.push(JSON.parse(init.body));
-    return replies.shift();
-  };
-  const out = await ollamaJson({ ...ollamaConfiguration({ OLLAMA_API_KEY: "k" }), fetcher }, { system: "s", user: "u", schema: { type: "object" } });
-  assert.deepEqual(out, { answer: "ok answer", factIds: ["zones"] });
-  assert.equal(calls[0].think, false);
-  assert.equal("think" in calls[1], false, "repeated without think after a 400");
-  assert.equal(calls[2].format, "json");
-  assert.match(calls[2].messages[0].content, /JSON schema/);
 });
 
 test("rejected-output debug log is opt-in, redacted and truncated", async (t) => {

@@ -510,8 +510,9 @@ async function sharePosition(page) {
     await tabs.waitFor();
   }
   await page.getByRole("tab", { name: "Settings", exact: true }).click();
-  await page.getByRole("button", { name: /Share my position for 15 min/ }).click();
-  await page.getByRole("button", { name: /Stop sharing my position/ }).waitFor();
+  const share = page.getByRole("switch", { name: /Show me to nearby explorers/ });
+  if ((await share.getAttribute("aria-checked")) !== "true") await share.click();
+  await page.locator('[role="switch"][aria-checked="true"]', { hasText: "Show me to nearby explorers" }).waitFor();
   await closeOpenSheet(page);
 }
 async function startPlaying(page, url, name) {

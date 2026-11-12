@@ -78,9 +78,9 @@ export function setEscrowConfig(config) {
       }
     : null;
 }
-export function loadEscrowManifest(appRoot, network, env = process.env) {
+export function loadEscrowManifest(appRoot, manifestSet, env = process.env) {
   if (env.QGOLD_ESCROW_ENABLED === "0") return null;
-  const path = resolve(appRoot, `public/native-qgold-escrow-${network}.json`);
+  const path = resolve(appRoot, `public/native-qgold-escrow-${manifestSet}.json`);
   if (!existsSync(path)) return null;
   const m = JSON.parse(readFileSync(path, "utf8"));
   if (!m.contractId || !m.tokenId) return null;

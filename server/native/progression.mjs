@@ -1,3 +1,4 @@
+import { AURA_CHAIN_CAPPED, AURA_CHAIN_COPIES, chainEditionOpen } from "../aura-catalog.mjs";
 import { createHash } from "node:crypto";
 import { assert } from "../domain.mjs";
 import { levelItemMilestones } from "../levels.mjs";
@@ -323,10 +324,10 @@ export class NativeProgression {
     assert(
       receipt.receiver_id === progress.accountId &&
         receipt.edition === milestone.edition &&
-        new RegExp(`^aura:${milestone.edition}:([1-9][0-9]{0,2})$`).test(
+        new RegExp(`^aura:${milestone.edition}:([1-9][0-9]{0,9})$`).test(
           receipt.token_id,
         ) &&
-        Number(receipt.token_id.split(":")[2]) <= 256,
+        Number(receipt.token_id.split(":")[2]) <= AURA_CHAIN_COPIES,
       "The level claim receipt does not match its entitlement.",
       503,
     );
@@ -434,7 +435,7 @@ export class NativeProgression {
               }),
             ]);
             assert(
-              Number.isSafeInteger(minted) && minted >= 0 && minted <= 256,
+              Number.isSafeInteger(minted) && minted >= 0 && minted <= AURA_CHAIN_COPIES,
               "Invalid native edition supply.",
               503,
             );
@@ -463,7 +464,7 @@ export class NativeProgression {
             ? "locked"
             : !enabled
               ? "unavailable"
-              : minted === 256
+              : !chainEditionOpen(minted)
                 ? "sold_out"
                 : prior
                   ? "issued"
@@ -472,9 +473,9 @@ export class NativeProgression {
           ...milestone,
           claimId,
           state,
-          claimable: enabled && earned && !receipt && minted < 256,
+          claimable: enabled && earned && !receipt && chainEditionOpen(minted),
           tokenId: receipt?.token_id || null,
-          remaining: 256 - minted,
+          remaining: AURA_CHAIN_CAPPED ? AURA_CHAIN_COPIES - minted : null,
           expiresAt: prior?.expires_at || null,
         };
       });

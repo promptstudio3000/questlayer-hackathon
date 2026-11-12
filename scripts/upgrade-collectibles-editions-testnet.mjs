@@ -1,4 +1,6 @@
-// Code-only testnet upgrade of the collectibles Aura editions: catalog v2
+// Code-only testnet upgrade of the collectibles Aura editions (latest: uncapped
+// editions, 12 Nov 2026; the server lifts its 256 bound once this rewrites the
+// editions manifest): catalog v2
 // (PR #32), the NPC/monster-only editions (N5), the L5-L10 level editions and
 // the patron + hackathon season editions, whose CLAIM_ONLY_EDITIONS mint only
 // for earned:npc: / earned:monster: / earned:level: / earned:season: claims,

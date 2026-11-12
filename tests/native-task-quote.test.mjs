@@ -41,7 +41,7 @@ test("task amount parsing and GOLD display never pass through floating point", (
   );
   assert.equal(
     exactTaskGold("100000000000000000000001"),
-    "100.000000000000000000001",
+    "100,000,000.000000000000001",
   );
   for (const value of [
     "0",
