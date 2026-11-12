@@ -12,10 +12,8 @@ export function createNotePublicationJournal(
   playerId: string,
   arena: boolean,
   storage: JournalStorage | null,
-  legacyStorage?: Pick<Storage, "getItem" | "removeItem"> | null,
 ) {
   const prefix = `questlayer:note-operation:v2:${JSON.stringify([playerId, arena ? "arena" : "physical"])}:`;
-  const legacyKey = `questlayer:note-operation:v1:${playerId}:${arena ? "arena" : "physical"}`;
   function loadFirst(): NotePublicationIntent | null {
     const intents: {
       clientId: string;
@@ -51,7 +49,7 @@ export function createNotePublicationJournal(
         }
       }
     } catch {
-      /* Legacy status recovery is still useful if durable storage is blocked. */
+      /* Blocked storage never establishes a publication outcome. */
     }
     if (intents.length) {
       const oldest = intents.sort(
@@ -59,12 +57,6 @@ export function createNotePublicationJournal(
           a.createdAt - b.createdAt || a.clientId.localeCompare(b.clientId),
       )[0];
       return { clientId: oldest.clientId, draftRevision: oldest.draftRevision };
-    }
-    try {
-      const legacy = legacyStorage?.getItem(legacyKey);
-      if (operationId(legacy)) return { clientId: legacy };
-    } catch {
-      /* Never turn a storage failure into a successful receipt. */
     }
     return null;
   }
@@ -100,8 +92,6 @@ export function createNotePublicationJournal(
   function clear(clientId: string) {
     if (!operationId(clientId)) return;
     storage?.removeItem(prefix + clientId);
-    if (legacyStorage?.getItem(legacyKey) === clientId)
-      legacyStorage.removeItem(legacyKey);
   }
   return { loadFirst, remember, clear };
 }
