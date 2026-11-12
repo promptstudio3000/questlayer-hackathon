@@ -1327,7 +1327,6 @@ function sessionTokens(req) {
   const header = req.headers.cookie || "";
   return [
     /(?:^|;\s*)questlayer-hackathon=([a-f0-9]{64})(?:;|$)/.exec(header)?.[1],
-    /(?:^|;\s*)auratrail=([a-f0-9]{64})(?:;|$)/.exec(header)?.[1],
   ].filter(Boolean);
 }
 function sessionToken(req) {
@@ -1760,7 +1759,6 @@ async function api(req, res, url) {
       "Set-Cookie": [
         cookie("").replace(`Max-Age=${SESSION_MAX_AGE}`, "Max-Age=0"),
         "questlayer-management=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0",
-        "auratrail=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
       ],
     });
   }

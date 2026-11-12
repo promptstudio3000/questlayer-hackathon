@@ -6,7 +6,7 @@ export type AdventureResult = {
   version: 1;
   domain: "demo";
   source: "system-quest";
-  status: "confirmed" | "legacy-unavailable";
+  status: "confirmed";
   playerId: string;
   worldId: string;
   realm: AdventureRealm;
@@ -25,7 +25,7 @@ export type AdventureResult = {
       Item,
       "id" | "kind" | "name" | "rarity" | "slot" | "color" | "serial"
     > | null;
-  } | null;
+  };
   itemCurrent: {
     status:
       | "none"
@@ -34,8 +34,7 @@ export type AdventureResult = {
       | "reserved"
       | "minted"
       | "not-owned"
-      | "missing"
-      | "legacy-unavailable";
+      | "missing";
     equippable: boolean;
     equipped: boolean;
     reason: string | null;

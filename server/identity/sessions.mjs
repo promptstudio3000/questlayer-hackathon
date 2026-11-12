@@ -57,12 +57,6 @@ export class IdentitySessions {
       .prepare("SELECT * FROM sessions WHERE token_hash=? AND expires_at>?")
       .get(tokenHash, this.now());
     assert(session, "Please sign in again.", 401);
-    // Existing sessions remain usable. Unknown creation/authentication data stays unknown.
-    this.db
-      .prepare(
-        `INSERT OR IGNORE INTO identity_sessions VALUES(?,?,'legacy',NULL,NULL,NULL,NULL)`,
-      )
-      .run(tokenHash, id("session"));
     if (touch)
       this.db
         .prepare(
@@ -72,6 +66,7 @@ export class IdentitySessions {
     const metadata = this.db
       .prepare("SELECT public_id FROM identity_sessions WHERE token_hash=?")
       .get(tokenHash);
+    assert(metadata, "Please sign in again.", 401);
     return {
       playerId: session.player_id,
       tokenHash,
@@ -89,23 +84,15 @@ export class IdentitySessions {
     const rows = this.db
       .prepare(
         `SELECT s.*,i.public_id,i.kind,i.account_id,i.created_at,i.last_seen_at
-      FROM sessions s LEFT JOIN identity_sessions i ON s.token_hash=i.token_hash
+      FROM sessions s JOIN identity_sessions i ON s.token_hash=i.token_hash
       WHERE s.player_id=? AND s.expires_at>? ORDER BY s.token_hash=? DESC, s.expires_at DESC LIMIT 50`,
       )
       .all(current.playerId, this.now(), current.tokenHash);
     const sessions = rows.map((row) => {
-      if (!row.public_id) {
-        row.public_id = id("session");
-        this.db
-          .prepare(
-            `INSERT INTO identity_sessions VALUES(?,?,'legacy',NULL,NULL,NULL,NULL)`,
-          )
-          .run(row.token_hash, row.public_id);
-      }
       return {
         id: row.public_id,
         current: row.token_hash === current.tokenHash,
-        kind: row.kind || "legacy",
+        kind: row.kind,
         accountId: row.account_id || null,
         createdAt: row.created_at ?? null,
         lastSeenAt: row.last_seen_at ?? null,

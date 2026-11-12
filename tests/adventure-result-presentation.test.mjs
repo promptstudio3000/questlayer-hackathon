@@ -106,7 +106,6 @@ test("an exact old award cannot authorize equipping a transferred, listed, reser
     "minted",
     "not-owned",
     "missing",
-    "legacy-unavailable",
   ])
     assert.equal(
       adventureItemForEquip(
@@ -144,10 +143,9 @@ test("an exact old award cannot authorize equipping a transferred, listed, reser
   );
 });
 
-test("zero-item and genuinely unavailable legacy results remain inspectable without fabricating equipment", () => {
+test("zero-item results remain inspectable without fabricating equipment", () => {
   for (const receipt of [
     null,
-    { ...result, reward: null, status: "legacy-unavailable" },
     { ...result, reward: { xp: 50, goldU: 0, item: null } },
   ])
     assert.equal(adventureItemForEquip(receipt, player, "arena"), null);

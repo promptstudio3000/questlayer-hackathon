@@ -280,55 +280,6 @@ test("issued native vouchers stay reserved until verified restoration, even past
   db.prepare("DELETE FROM native_awards WHERE item_id=?").run(itemId);
   assert.equal(service.get(a, first.result.id).itemCurrent.equippable, true);
 });
-test("legacy completion never fabricates exact rewards or guesses an item ID from its name", async (t) => {
-  const { db, a, b, service, chest } = await fixture(t);
-  db.prepare("INSERT INTO quest_claims VALUES(?,?,?)").run(chest.id, a, now);
-  db.prepare("INSERT INTO history VALUES(?,?,?,?,?,?,?)").run(
-    "legacy-history",
-    a,
-    "quest",
-    chest.title,
-    123,
-    JSON.stringify({ quest: chest.id, xp: 50, item: "Northern Lights" }),
-    now,
-  );
-  db.prepare("INSERT INTO inventory VALUES(?,?,?,?,?,?,?,?,?,?)").run(
-    "different-unrelated-aura",
-    a,
-    "aura",
-    "Northern Lights",
-    "rare",
-    "above",
-    "#8dd8bd",
-    0,
-    77,
-    now,
-  );
-  const before = economy(db),
-    legacy = service.forQuest(a, chest.id);
-  assert.equal(legacy.status, "legacy-unavailable");
-  assert.equal(legacy.reward, null);
-  assert.equal(legacy.itemCurrent.equippable, false);
-  assert.equal(legacy.itemCurrent.status, "legacy-unavailable");
-  assert.equal(service.get(a, legacy.id).id, legacy.id);
-  assert.equal(service.list(a, { unviewedOnly: true }).results.length, 0);
-  assert.equal(service.list(a).results[0].status, "legacy-unavailable");
-  assert.equal(service.forQuest(b, chest.id), null);
-  assert.throws(
-    () => service.get(b, legacy.id),
-    (e) => e.status === 404,
-  );
-  assert.throws(
-    () => claimQuest(db, a, chest.id, null, now + 1),
-    (e) => e.code === "RESULT_LEGACY_UNAVAILABLE",
-  );
-  assert.deepEqual(economy(db), before);
-  assert.equal(service.markViewed(a, legacy.id, now + 2).viewedAt, now + 2);
-  assert.equal(
-    db.prepare("SELECT COUNT(*) n FROM adventure_results").get().n,
-    0,
-  );
-});
 test("owner/realm filters, bounded stable pagination and deliberate viewed acknowledgement do not settle anything", async (t) => {
   const { db, a, b, service, chest, visit } = await fixture(t);
   const first = claimQuest(db, a, chest.id, chest, now),

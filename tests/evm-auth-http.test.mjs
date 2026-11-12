@@ -128,15 +128,10 @@ test("Ethereum sign-in creates one explorer, restores it, links on request and p
       assert.equal((await request("/me", undefined, linked.cookie)).status,200);
     } finally { testDb.close(); }
   });
-  await t.test("logout revokes both presented cookie names for this explorer without revoking another explorer", async () => {
+  await t.test("logout revokes this explorer's session without revoking another explorer", async () => {
     const primary = (await (await signIn(wallet)).verify()).cookie.split("; ")[0];
-    const second = (await (await signIn(wallet)).verify()).cookie.split("; ")[0];
-    const legacy = second.replace("questlayer-hackathon=", "auratrail=");
-    assert.equal((await request("/logout", {}, primary + "; " + legacy)).status, 200);
-    for (const cookie of [primary, legacy]) assert.equal((await request("/me", undefined, cookie)).status, 401);
-    const next = (await (await signIn(wallet)).verify()).cookie.split("; ")[0];
-    const foreign = other.cookie.split("; ")[0].replace("questlayer-hackathon=", "auratrail=");
-    assert.equal((await request("/logout", {}, next + "; " + foreign)).status, 200);
+    assert.equal((await request("/logout", {}, primary)).status, 200);
+    assert.equal((await request("/me", undefined, primary)).status, 401);
     assert.equal((await request("/me", undefined, other.cookie)).status, 200);
   });
   const db = new DatabaseSync(join(dir, "db.sqlite"), { readOnly: true });
