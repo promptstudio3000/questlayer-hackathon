@@ -18,7 +18,7 @@ import {
 } from "./city-fuel";
 import type { VaultSnapshot } from "./NativeStaking";
 import { StakeToday } from "./StakeToday";
-import { StakeStory, TierLadder, type StakerStep } from "./StakeEarn";
+import { StakeStory, StakeWallet, TierLadder, type StakerStep } from "./StakeEarn";
 import { STAKER_SUGGEST_NEAR, takeStakePrefill } from "./LockedChip";
 import { qgoldOfNear } from "./qgold-display";
 import { parseTestNear, type VaultRequest } from "./native-vault-quote";
@@ -382,6 +382,7 @@ export function FuelTheCity({
   return (
     <section className="fuel" aria-labelledby="fuel-title">
       <h2 id="fuel-title" className="sr-only">{tr("Stake")}</h2>
+      <StakeWallet refreshKey={`${player.id}:${player.gold_u}:${player.xp}`} staked={!canStake && !loading} />
 
       <TierLadder
         step={ladderStep}

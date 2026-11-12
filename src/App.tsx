@@ -24,6 +24,7 @@ import {
   AdventureResultResume,
   AdventureResultHistoryButton,
   PendingNativeTransactions,
+  GasWatch,
   ChainSettings,
   WalletPanel,
   FundPanel,
@@ -69,8 +70,6 @@ import {
   AddPlaceDialog,
   EmotePicker,
   CharacterJourney,
-  StakeEarnSwitch,
-  EarningsPanel,
   LockedZoneCard,
   LockedZoneDialog,
 } from "./lazy-panels";
@@ -242,6 +241,8 @@ import {
   GameController,
   Lifebuoy,
   Code,
+  Receipt,
+  Info,
 } from "@phosphor-icons/react";
 import { ArrowRight, ArrowLeft } from "./dir-icons";
 import { ArrowRight as PhArrowRight } from "@phosphor-icons/react";
@@ -601,6 +602,10 @@ export default function App() {
   }
   const profileTab = profileTabOf(tab, profileView);
   const showProfileTabs = tab === "settings" || tab === "fuel" || tab === "wallet";
+  // Earnings merged into Stake (owner request, 12 Nov 2026); old links land there.
+  useEffect(() => {
+    if (tab === "wallet") setTab("fuel");
+  }, [tab]);
   function chooseProfileTab(next: ProfileTab) {
     if (next === "stake") setTab("fuel");
     else navigation.update({ tab: "settings", profileView: next });
@@ -4054,7 +4059,7 @@ export default function App() {
                   className="balance-pill"
                   onClick={() => {
                     setWalletView(nativePlay ? "rewards" : "demo");
-                    setTab("wallet");
+                    setTab("fuel");
                   }}
                 >
                   <CoinIcon />
@@ -4505,35 +4510,6 @@ export default function App() {
               lockedContent={<LockedZoneCard zone={detailZone} />}
             />
           )}
-          {(tab === "wallet" || tab === "fuel") && (
-            <StakeEarnSwitch
-              value={tab === "fuel" ? "stake" : "earnings"}
-              onChange={(v) => setTab(v === "stake" ? "fuel" : "wallet")}
-            />
-          )}
-          {tab === "wallet" && (
-            <EarningsPanel
-              refreshKey={`${player.id}:${player.gold_u}:${player.xp}`}
-              onLink={
-                invisible.status === "ready" && invisible.accountId
-                  ? undefined
-                  : () => void activateExplorer()
-              }
-            />
-          )}
-          {tab === "wallet" && (
-            <PendingNativeTransactions
-              key={player.id}
-              playerId={player.id}
-              linkedAccounts={player.wallets.map((wallet) => wallet.account_id)}
-              onConfirmed={async () => {
-                await Promise.allSettled([
-                  refreshNative(true),
-                  nativeGame.refresh(),
-                ]);
-              }}
-            />
-          )}
           {tab === "inventory" && (
             <ScreenTabPanel idBase="bag" value="wardrobe">
               <Inventory
@@ -4699,8 +4675,7 @@ export default function App() {
             </ScreenTabPanel>
           )}
           {((tab === "explore" && nativePlay) ||
-            tab === "expeditions" ||
-            (tab === "wallet" && nativePlay)) && (
+            tab === "expeditions") && (
             <>
               {tab === "explore" && nativePlay && (
                 <NativeCollectionControl
@@ -4717,7 +4692,7 @@ export default function App() {
               )}
               <NativeExpeditions
                 onBusyChange={setNativeVisitBusy}
-                view={tab === "wallet" ? "wallet" : "board"}
+                view="board"
                 control={{
                   ...nativeGame,
                   account: playAccount,
@@ -4732,24 +4707,17 @@ export default function App() {
                 onLocate={() => void locate()}
                 onWithdraw={withdrawNativeReward}
                 onWallet={(showReceipts = false) => {
-                  setWalletView("rewards");
-                  setTab("wallet");
-                  if (showReceipts)
-                    requestAnimationFrame(() => {
-                      const details =
-                        mainPanel.current?.querySelector<HTMLDetailsElement>(
-                          "[data-native-receipts]",
-                        );
-                      if (!details) return;
-                      details.open = true;
-                      details
-                        .querySelector("summary")
-                        ?.focus({ preventScroll: true });
-                      details.scrollIntoView({
-                        block: "start",
-                        behavior: "auto",
-                      });
-                    });
+                  if (!showReceipts) return setTab("fuel");
+                  // Receipts live in Settings now (owner request, 12 Nov 2026).
+                  chooseProfileTab("settings");
+                  requestAnimationFrame(() => {
+                    const details =
+                      mainPanel.current?.querySelector<HTMLDetailsElement>(".settings-receipts");
+                    if (!details) return;
+                    details.open = true;
+                    details.querySelector("summary")?.focus({ preventScroll: true });
+                    details.scrollIntoView({ block: "start", behavior: "auto" });
+                  });
                 }}
                 onFocus={(kind, index) => {
                   setNativePlay(true);
@@ -4954,6 +4922,23 @@ export default function App() {
                   />
                 </div>
               </details>
+              <details className="settings-group screen-details settings-receipts">
+                <summary><Receipt size={20} aria-hidden="true" />{tr("Receipts")}</summary>
+                <p className="fine-print settings-pad">
+                  <Info size={16} aria-hidden="true" /> {tr("Payments you signed keep a receipt here until the chain confirms them. If one was interrupted, check it here before paying again.")}
+                </p>
+                <PendingNativeTransactions
+                  key={player.id}
+                  playerId={player.id}
+                  linkedAccounts={player.wallets.map((wallet) => wallet.account_id)}
+                  onConfirmed={async () => {
+                    await Promise.allSettled([
+                      refreshNative(true),
+                      nativeGame.refresh(),
+                    ]);
+                  }}
+                />
+              </details>
               <button className="settings-row" onClick={() => void action("logout", async () => {
                 await api("/logout", {}); setPlayer(null); setWorld(null);
               })}><SignOut /><span>{tr("Sign out")}</span></button>
@@ -4996,6 +4981,10 @@ export default function App() {
               onExplore={() => setTab("explore")}
               onLedger={() => setTab("fund")}
             />
+          )}
+          {/* Opens "Convert QGOLD to gas" by itself when the explorer's gas runs low. */}
+          {invisible.status === "ready" && invisible.accountId && (
+            <GasWatch refreshKey={`${player.id}:${player.gold_u}:${tab}`} />
           )}
           {tab === "fuel" && (
             <ScreenTabPanel idBase="profile" value="stake">
