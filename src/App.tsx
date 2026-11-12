@@ -2839,6 +2839,18 @@ export default function App() {
     });
     return ok === true;
   }
+  async function exportWalletWords() {
+    const ok = await action("wallet-words", async () => {
+      const deviceKey = invisible.deviceKey;
+      if (!deviceKey || !invisible.accountId)
+        throw Error("Your explorer account is still being prepared.");
+      const { exportToWallet, hasRecoveryPasskey } = await import("./account-recovery");
+      await exportToWallet({ deviceKey, passkey: hasRecoveryPasskey(invisible.keys) });
+      await invisible.refresh();
+      return true;
+    });
+    return ok === true;
+  }
   async function revokeDevice(publicKey: string, signOutOthers: boolean) {
     const ok = await action("device-revoke", async () => {
       const deviceKey = invisible.deviceKey,
@@ -4814,6 +4826,7 @@ export default function App() {
                     onSetupRecovery={setupRecoveryPasskey}
                     onRevoke={revokeDevice}
                     onRestore={restoreThisDevice}
+                    onExportWallet={exportWalletWords}
                     error={invisible.error}
                     onRetry={() => void invisible.ensure()}
                   />

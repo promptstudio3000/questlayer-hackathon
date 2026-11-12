@@ -13,10 +13,12 @@ import {
 import {
   deviceRows,
   hasRecoveryPasskey,
+  hasWalletWords,
   type AccountKey,
 } from "./account-recovery";
 import type { InvisibleAccountStatus } from "./useInvisibleAccount";
 import { tr } from "./i18n";
+import { WalletWords } from "./WalletWords";
 
 export function DeviceKeys({
   status,
@@ -27,6 +29,7 @@ export function DeviceKeys({
   onSetupRecovery,
   onRevoke,
   onRestore,
+  onExportWallet,
   error = null,
   onRetry,
 }: {
@@ -40,6 +43,7 @@ export function DeviceKeys({
   onSetupRecovery: () => Promise<boolean>;
   onRevoke: (publicKey: string, signOutOthers: boolean) => Promise<boolean>;
   onRestore: () => Promise<boolean>;
+  onExportWallet?: () => Promise<boolean>;
 }) {
   const [confirm, setConfirm] = useState<string | null>(null),
     [lost, setLost] = useState(false),
@@ -105,18 +109,30 @@ export function DeviceKeys({
       className="play-native account-devices"
       aria-label={tr("Devices and recovery")}
     >
+      {onExportWallet && (
+        <WalletWords
+          accountId={accountId}
+          hasWords={hasWalletWords(keys)}
+          busy={busy}
+          onExport={onExportWallet}
+        />
+      )}
       <div className="play-section-heading">
         <h2>
           <DeviceMobile size={22} /> {" "}{tr("Devices")}</h2>
       </div>
       <p className="play-hint">
-        {tr("These keys can act for your explorer account")}{" "}<small>{accountId}</small>{tr(". Each one stays on its own device; QuestLayer never holds them.")}</p>
+        {onExportWallet
+          ? tr("Keys that can act for this account. Each one stays on its own device; QuestLayer never holds them.")
+          : <>{tr("These keys can act for your explorer account")}{" "}<small>{accountId}</small>{tr(". Each one stays on its own device; QuestLayer never holds them.")}</>}</p>
       <ul className="session-list device-list">
         {rows.map((row) => (
           <li key={row.publicKey}>
             <strong>
               {row.kind === "recovery" ? (
                 <Fingerprint size={16} />
+              ) : row.wallet ? (
+                <Key size={16} />
               ) : (
                 <DeviceMobile size={16} />
               )}{" "}

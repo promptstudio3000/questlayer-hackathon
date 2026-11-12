@@ -1170,8 +1170,8 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "account-seq",
     status: "live",
-    updated: "2026-11-11",
-    sources: ["docs/RELAYER.md", "docs/IDENTITY-RECOVERY.md", "docs/NATIVE-TRANSACTION-CONFIRMATION.md", "docs/DURABLE-NATIVE-RECOVERY.md", "docs/ETH-WALLETS.md", "docs/NATIVE-PROFILES.md", "server/relayer/policy.mjs", "server/relayer/accounts.mjs", "src/FuelCard.tsx"],
+    updated: "2026-11-12",
+    sources: ["docs/RELAYER.md", "docs/IDENTITY-RECOVERY.md", "docs/NATIVE-TRANSACTION-CONFIRMATION.md", "docs/DURABLE-NATIVE-RECOVERY.md", "docs/ETH-WALLETS.md", "docs/NATIVE-PROFILES.md", "server/relayer/policy.mjs", "server/relayer/accounts.mjs", "src/FuelCard.tsx", "src/signing-vault/wallet-export.ts", "src/WalletWords.tsx"],
     blocks: [
       { h: "Your explorer account" },
       {
@@ -1180,7 +1180,17 @@ export const CHAPTERS: Chapter[] = [
           "Gas is always sponsored. The small balance only covers the account's storage and the player's own payments (Aura buys, deposits), which the relayer never sponsors. When it drops below half, Profile → Stake → Earnings offers **Refuel** once a UTC day (inside a per-account daily top-up cap and the shared sponsorship budget), **Convert QGOLD to NEAR** at the vault, or **Add your own NEAR** from any wallet.",
           "Every in-game action (tasks, Secrets, Aura listings and equipment, staking, level rewards, badges, profile and note records) signs with this account, without a wallet pop-up. Before it exists, **Activate my account** prepares it.",
           "The device key lives in a separate signing origin, deployed with the game. If a browser blocks its storage, no account is created, Profile → Settings → Account and devices says so, and free play continues. Keys made before that origin are not rotated yet.",
+          "Profile → Settings → Account and devices shows the account name under **NEAR wallet**, with Copy name and **Open in a wallet**.",
           "Purchases, equipment, earned mini-games and getting ready to trade sign silently. Anything that can pay someone else (a sale or purchase, a task, Secret or send, a withdrawal, an asset transfer) and account recovery ask one plain Yes / No question in a small separate window, which a compromised game page cannot answer.",
+        ],
+      },
+      { h: "Open in a wallet (wallet words)" },
+      {
+        list: [
+          "**Open in a wallet** makes 12 new words (a standard NEAR seed phrase) and adds their key to the account as one more full-access key, sponsored like any key change. The same account then opens in Meteor, MyNearWallet or any wallet that imports a seed phrase. The device key itself is never shown or exported.",
+          "The steps run in the separate secure window: a warning, a press and hold (or the recovery passkey, when the account has one), the 12 numbered words shown only while the player keeps them open, a check of two of the words, then the key is added. The game then lists the wallet links and the three import steps.",
+          "The words exist only in that window's memory. They are never stored, logged, copied to the clipboard or sent to the game or its server, they hide when the window loses focus and after 2 minutes, and nobody can show them again. There is no copy button on purpose.",
+          "The key appears in Devices as **Wallet words** and can be revoked there; lost words are replaced by revoking and making new ones. A wallet holding the words has full control of the account and is not asked the game's Yes / No questions.",
         ],
       },
       { h: "Sign-in methods" },
