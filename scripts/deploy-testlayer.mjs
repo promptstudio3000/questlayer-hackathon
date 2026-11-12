@@ -45,6 +45,9 @@ import {
   writeFileSync,
 } from "node:fs";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+// Paced RPC with 429 backoff and fastnear/drpc failover, here and in every step.
+import "./lib/rpc-patience.mjs";
 import { Account, JsonRpcProvider, KeyPairSigner } from "near-api-js";
 
 const execute = process.argv.includes("--execute");
@@ -181,7 +184,8 @@ if (existsSync(workerFile)) {
 // 2-3. The deploy scripts, in order, inside the work tree.
 for (const s of STEPS) {
   log({ step: s.name, script: s.script });
-  execFileSync(process.execPath, [resolve(work, "scripts", s.script), ...(s.args || [])], { cwd: work, env, stdio: "inherit" });
+  const patience = pathToFileURL(resolve(work, "scripts/lib/rpc-patience.mjs")).href;
+  execFileSync(process.execPath, ["--import", patience, resolve(work, "scripts", s.script), ...(s.args || [])], { cwd: work, env, stdio: "inherit" });
 }
 
 // 4. Records into this repository under the Test Layer's names.
