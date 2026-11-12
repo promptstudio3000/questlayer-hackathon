@@ -57,7 +57,11 @@ const operator = JSON.parse(readFileSync(operatorPath, "utf8"));
 if (operator.network !== "testnet" || !operator.accountId.endsWith(".testnet"))
   throw new Error("The Test Layer is testnet only.");
 const op = operator.accountId;
-const top = (name) => `ql-${TAG}-${name}.testnet`;
+// Top-level ids keep the questlayer-<name>-<generation> shape: the vault
+// factory contract accepts only questlayer-vaults-* and questlayer-rewards-*
+// testnet accounts (contracts/vault-factory, "Pinned testnet factory only").
+// The first runs used ql-<tag>-<name>; those accounts stay unused.
+const top = (name) => `questlayer-${name}-${TAG}.testnet`;
 const sub = (name) => `${name}-${TAG}.${op}`;
 
 // Account ids of the Test Layer set. Top-level ids are created by the testnet
@@ -158,6 +162,20 @@ for (const id of readFileSync(fundsFile, "utf8").split("\n").map((s) => s.trim()
   swept[id] = r.transaction?.hash || r.transaction_outcome?.id;
   writeFileSync(fundsJournal, JSON.stringify(swept, null, 2));
   log({ step: "funded operator", from: id, near: Number(amount / 10n ** 21n) / 1000, tx: swept[id] });
+}
+
+// The reward worker key file names its contract account. One left by a run
+// with other account ids is set aside, so the funding script makes a new one.
+const workerFile = resolve(work, ".data/reward-worker.json");
+if (existsSync(workerFile)) {
+  const bound = JSON.parse(readFileSync(workerFile, "utf8")).accountId;
+  if (bound !== ACCOUNTS.NEAR_REWARDS_ACCOUNT) {
+    const aside = resolve(work, `.data/reward-worker.unused-${bound}.json`);
+    copyFileSync(workerFile, aside);
+    chmodSync(aside, 0o600);
+    rmSync(workerFile);
+    log({ step: "set aside reward worker key of another rewards account", account: bound });
+  }
 }
 
 // 2-3. The deploy scripts, in order, inside the work tree.

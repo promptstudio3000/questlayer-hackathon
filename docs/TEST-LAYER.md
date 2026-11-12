@@ -38,7 +38,7 @@ Same code, one switch: `QL_LAYER=test` (server, `server/native/network.mjs`) and
 
 The Test Layer uses no new contract code. `scripts/deploy-testlayer.mjs` runs the existing, reviewed deploy
 scripts in an isolated work tree (`.data/testlayer/work`) with the Test Layer's own account ids
-(`ql-tl1112-*.testnet` and `*-tl1112.<operator>`). This is also a rehearsal of a full fresh deployment, which
+(`questlayer-*-tl1112.testnet`, the shape the vault factory contract requires, and `*-tl1112.<operator>`). This is also a rehearsal of a full fresh deployment, which
 mainnet needs later.
 
 1. `node scripts/deploy-testlayer.mjs` prints the plan; `--execute` runs it on the Mac (operator key):
