@@ -131,7 +131,6 @@
 .fuel-vault dt { color: var(--ink-secondary); font-size: 13px; }
 .fuel-vault dd { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
 
-
 /* Top of Profile → Stake: my QGOLD, GOLD on the map today, my stake's yield. */
 .stake-wallet { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
 .stake-wallet div { flex: 1 1 120px; display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; background: var(--surface-soft, #f5f0ff); }
