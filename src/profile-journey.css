@@ -160,46 +160,6 @@
   box-shadow: 0 1px 3px rgb(40 10 90 / 0.15);
 }
 
-/* The illustrated "how it works" strip. */
-.stake-story {
-  margin: 0 0 16px;
-  padding: 14px 14px 12px;
-  border-radius: 18px;
-  background: linear-gradient(160deg, #2a0f5c 0%, #4b1fa3 60%, #7a2fd6 100%);
-  color: #fff;
-  overflow: hidden;
-}
-.stake-story h2 { margin: 0 0 4px; font-size: 19px; font-weight: 700; color: #fff; }
-.stake-story > p { margin: 0 0 8px; font-size: 14px; color: #e8dcff; }
-.stake-story svg { display: block; width: 100%; height: auto; }
-.stake-story ol {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 6px 0 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: step;
-}
-.stake-story li { font-size: 13px; line-height: 1.35; color: #f3edff; text-align: center; }
-.stake-story li b { display: block; font-size: 14px; color: #ffd76a; }
-.stake-vault-glow { animation: stake-glow 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
-@keyframes stake-glow { 0%, 100% { opacity: 0.3; transform: scale(0.92); } 50% { opacity: 0.7; transform: scale(1.06); } }
-@media (prefers-reduced-motion: reduce) { .stake-vault-glow { animation: none; } }
-:root[data-motion="reduce"] .stake-vault-glow { animation: none; }
-.stake-story-node {
-  position: absolute;
-  top: 36.7%;
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  transform: translate(-50%, -20px);
-  color: #fff;
-  pointer-events: none;
-}
-.stake-story-node small { font-size: 12px; font-weight: 600; color: #f3edff; }
-.stake-story-node .ghost-art, .stake-story-node svg:not([class]) { width: 40px; height: 40px; }
-.stake-story-node > svg { color: #ffd76a; }
 .stake-story-more { margin: 0 0 16px; }
 .stake-story-more > summary {
   min-height: 44px;

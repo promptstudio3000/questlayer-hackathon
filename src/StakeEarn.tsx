@@ -1,7 +1,7 @@
 // Profile → Stake (owner request, 10–12 Nov 2026): one screen. The small
 // wallet line on top, the tier ladder, the stake form (src/FuelTheCity.tsx)
-// and the idea as a small animated picture.
-import { useEffect, useState, type ReactNode } from "react";
+// and the loop as one numbered, animated picture.
+import { useEffect, useId, useState, type CSSProperties, type ReactNode } from "react";
 import { Flame, MapTrifold, Vault } from "@phosphor-icons/react";
 import { api, gold as fmtGold } from "./api";
 import { CoinIcon } from "./app-bits";
@@ -12,70 +12,159 @@ import { tr } from "./i18n";
 import type { StakeCard } from "./StakeToday";
 import { goldCompact, potView, refreshRewardFunding, useRewardFunding } from "./reward-funding";
 import "./profile-journey.css";
+import "./stake-story.css";
 
-/** Moving dots along one path; nothing moves when motion is reduced. */
-function Flow({ path, color, delays, still }: { path: string; color: string; delays: number[]; still: boolean }) {
+const QGOLD = "QGOLD";
+const VB_W = 340;
+const VB_H = 290;
+const YOU = { x: 60, y: 70 };
+const VAULT = { x: 280, y: 70 };
+const POOL = { x: 280, y: 222 };
+const MAP = { x: 60, y: 222 };
+const C = { stake: "#c4a3ff", pool: "#ffd76a", mine: "#7ef0b5", coin: "#ffb347", back: "#b9c4ff" };
+
+type FlowProps = {
+  step: number;
+  path: string;
+  color: string;
+  delays: number[];
+  still: boolean;
+  marker: string;
+  badge?: [number, number];
+};
+
+/** One arrowed lane with dots moving along it; nothing moves when motion is reduced. */
+function Flow({ step, path, color, delays, still, marker, badge }: FlowProps) {
   return (
-    <>
-      <path d={path} fill="none" stroke={color} strokeOpacity="0.35" strokeWidth="3" strokeDasharray="2 6" strokeLinecap="round" />
-      {delays.map((d) =>
-        still ? null : (
-          <circle key={d} r="4.5" fill={color} opacity="0">
-            <animateMotion dur="2.4s" begin={`${d}s`} repeatCount="indefinite" path={path} />
-            <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.85;1" dur="2.4s" begin={`${d}s`} repeatCount="indefinite" />
-          </circle>
-        ),
+    <g className="ss-flow" style={{ "--i": step - 1 } as CSSProperties}>
+      <path className="ss-lane" d={path} fill="none" stroke={color} strokeWidth="3" strokeDasharray="1 7" strokeLinecap="round" markerEnd={`url(#${marker})`} />
+      {still
+        ? null
+        : delays.map((d) => (
+            <circle key={d} r="4.5" fill={color} opacity="0">
+              <animateMotion dur="2.4s" begin={`${d}s`} repeatCount="indefinite" path={path} />
+              <animate attributeName="opacity" values="0;1;1;0" keyTimes="0;0.15;0.8;1" dur="2.4s" begin={`${d}s`} repeatCount="indefinite" />
+            </circle>
+          ))}
+      {badge && (
+        <g className="ss-badge">
+          <circle cx={badge[0]} cy={badge[1]} r="9.5" fill="#2a0f5c" stroke={color} strokeWidth="2" />
+          <text x={badge[0]} y={badge[1] + 3.8} textAnchor="middle" fill={color} fontSize="11" fontWeight="800">{step}</text>
+        </g>
       )}
-    </>
+    </g>
   );
 }
 
+const at = (p: { x: number; y: number }) => ({ left: `${(p.x / VB_W) * 100}%`, top: `${(p.y / VB_H) * 100}%` });
+
 /**
- * The idea in one picture: your NEAR goes into the vault and stays yours;
- * validators pay yield; part comes back to you, part fuels the prize pool
- * that becomes coins on the map for everyone.
+ * The whole loop in one picture (owner request, 12 Nov 2026):
+ * 1 you stake into your vault and the stake stays yours; 2 validators pay
+ * yield, the chosen part fills the prize pool and the rest is yours; 3 the
+ * pool becomes coins and prizes on the map; 4 explorers collect them on the
+ * map (never from the vault); 5 what nobody collects returns to the pool.
+ * The picture and the list share numbers, and a slow spotlight walks 1 → 5.
  */
 export function StakeStory({ sharePct }: { sharePct: number }) {
   const still = prefersReducedMotion();
+  const id = useId().replace(/:/g, "");
+  const rest = Math.max(0, 100 - sharePct);
+  const heads: [string, string][] = Object.entries(C);
+  const steps: [string, string, string][] = [
+    [C.stake, tr("Stake"), tr("Your stake sits in your vault and stays yours.")],
+    [
+      C.pool,
+      tr("Yield"),
+      rest > 0
+        ? tr("Validators pay yield: {0} % fills the prize pool, {1} % is yours.", { 0: sharePct, 1: rest })
+        : tr("Validators pay yield. All of it fills the prize pool."),
+    ],
+    [C.pool, tr("Rewards"), tr("Every day the pool becomes coins and prizes on the map.")],
+    [C.coin, tr("Collect"), tr("You collect QGOLD on the map, not from the vault.")],
+    [C.back, tr("Left over"), tr("What nobody collects returns to the pool.")],
+  ];
   return (
-    <section className="stake-story" aria-labelledby="stake-story-title">
-      <h2 id="stake-story-title">{tr("Your NEAR works while you explore")}</h2>
-      <div className="stake-story-art" style={{ position: "relative" }}>
-        <svg viewBox="0 0 320 120" role="img" aria-label={tr("Your stake goes into the vault, its yield goes back to you and into the prize pool")}>
-          <Flow path="M66 44 L134 44" color="#b892ff" delays={[0, 0.8, 1.6]} still={still} />
-          <Flow path="M184 36 Q222 0 256 36" color="#ffd76a" delays={[0.4, 1.6]} still={still} />
-          <Flow path="M134 58 Q100 112 66 58" color="#7ef0b5" delays={[1, 2.2]} still={still} />
-          <circle cx="160" cy="44" r="28" fill="#ffd76a" className="stake-vault-glow" opacity="0.4" />
-          <text x="252" y="12" textAnchor="middle" fill="#ffd76a" fontSize="11" fontWeight="700">{sharePct} %</text>
-          <text x="100" y="98" textAnchor="middle" fill="#7ef0b5" fontSize="11" fontWeight="700">{100 - sharePct} %</text>
-        </svg>
-        <span className="stake-story-node" style={{ left: "12.5%" }}>
-          <Ghost color="#ffffff" />
-          <small>{tr("You")}</small>
-        </span>
-        <span className="stake-story-node" style={{ left: "50%" }}>
-          <Vault size={40} weight="duotone" aria-hidden="true" />
-          <small>{tr("Vault")}</small>
-        </span>
-        <span className="stake-story-node" style={{ left: "87.5%" }}>
-          <GameObjectArt kind="chest" size={40} />
-          <small>{tr("Prize pool")}</small>
-        </span>
+    <section className={`stake-story${still ? " is-still" : ""}`} aria-labelledby="stake-story-title">
+      <h2 id="stake-story-title">{tr("Your stake works while you explore")}</h2>
+      <div className="stake-story-body">
+        <div className="stake-story-art">
+          <svg
+            viewBox={`0 0 ${VB_W} ${VB_H}`}
+            role="img"
+            aria-label={tr("You stake into your vault. Its yield fills the prize pool. The pool puts rewards on the map. You collect them there. Uncollected rewards return to the pool.")}
+          >
+            <defs>
+              {heads.map(([k, color]) => (
+                <marker key={k} id={`${id}-${k}`} viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.6" markerHeight="3.6" orient="auto-start-reverse">
+                  <path d="M1 1 L9 5 L1 9 Z" fill={color} />
+                </marker>
+              ))}
+            </defs>
+
+            <circle cx={VAULT.x} cy={VAULT.y} r="34" fill={C.pool} className="stake-vault-glow" opacity="0.35" />
+            {[YOU, VAULT, POOL, MAP].map((n, i) => (
+              <circle key={i} cx={n.x} cy={n.y} r="30" className="ss-disc" />
+            ))}
+            {still
+              ? null
+              : [0, 1, 2].map((i) => (
+                  <text key={i} x={VAULT.x + 22 + i * 8} y={VAULT.y - 22} fill={C.mine} fontSize="13" fontWeight="800" opacity="0">
+                    +
+                    <animate attributeName="opacity" values="0;1;0" dur="2.4s" begin={`${i * 0.8}s`} repeatCount="indefinite" />
+                    <animate attributeName="y" values={`${VAULT.y - 16};${VAULT.y - 36}`} dur="2.4s" begin={`${i * 0.8}s`} repeatCount="indefinite" />
+                  </text>
+                ))}
+
+            <Flow step={1} path="M95 60 L242 60" color={C.stake} delays={[0, 0.8, 1.6]} still={still} marker={`${id}-stake`} badge={[170, 60]} />
+            {rest > 0 && <Flow step={2} path="M248 86 Q170 124 96 88" color={C.mine} delays={[0.6, 1.8]} still={still} marker={`${id}-mine`} />}
+            <Flow step={2} path="M280 105 L280 184" color={C.pool} delays={[0.3, 1.5]} still={still} marker={`${id}-pool`} badge={[280, 146]} />
+            <Flow step={3} path="M245 212 L98 212" color={C.pool} delays={[0, 0.8, 1.6]} still={still} marker={`${id}-pool`} badge={[170, 212]} />
+            <Flow step={4} path="M60 187 L60 108" color={C.coin} delays={[0.3, 1.5]} still={still} marker={`${id}-coin`} badge={[60, 146]} />
+            <Flow step={5} path="M92 238 Q170 276 244 240" color={C.back} delays={[0.6, 1.8]} still={still} marker={`${id}-back`} badge={[170, 257]} />
+
+            <g className="ss-words" fontSize="11.5" fontWeight="700">
+              <text x={YOU.x} y="30" textAnchor="middle" className="ss-name">{tr("You")}</text>
+              <text x={VAULT.x} y="30" textAnchor="middle" className="ss-name">{tr("Vault")}</text>
+              <text x={MAP.x} y="268" textAnchor="middle" className="ss-name">{tr("Map")}</text>
+              <text x={POOL.x} y="268" textAnchor="middle" className="ss-name">{tr("Prize pool")}</text>
+              <text x="170" y="45" textAnchor="middle" fill={C.stake}>{tr("Stake")}</text>
+              {rest > 0 && (
+                <text x="170" y="122" textAnchor="middle" fill={C.mine}>{tr("{0} % yours", { 0: rest })}</text>
+              )}
+              <text x="264" y="143" textAnchor="end" fill={C.pool}>{tr("Yield")}</text>
+              <text x="264" y="158" textAnchor="end" fill={C.pool} fontSize="13" fontWeight="800">{sharePct} %</text>
+              <text x="170" y="197" textAnchor="middle" fill={C.pool}>{tr("Rewards")}</text>
+              <text x="76" y="143" fill={C.coin}>{tr("Collect")}</text>
+              <text x="76" y="158" fill={C.coin} fontSize="13" fontWeight="800">{QGOLD}</text>
+              <text x="170" y="281" textAnchor="middle" fill={C.back}>{tr("Left over")}</text>
+            </g>
+          </svg>
+          <span className="stake-story-node" style={at(YOU)}>
+            <Ghost color="#ffffff" />
+          </span>
+          <span className="stake-story-node" style={at(VAULT)}>
+            <Vault size={38} weight="duotone" aria-hidden="true" />
+          </span>
+          <span className="stake-story-node" style={at(POOL)}>
+            <GameObjectArt kind="chest" size={38} />
+          </span>
+          <span className="stake-story-node" style={at(MAP)}>
+            <MapTrifold size={38} weight="duotone" aria-hidden="true" />
+          </span>
+        </div>
+        <ol>
+          {steps.map(([color, title, text], i) => (
+            <li key={i} style={{ "--i": i, "--c": color } as CSSProperties}>
+              <i aria-hidden="true">{i + 1}</i>
+              <span>
+                <b>{title}</b>
+                {text}
+              </span>
+            </li>
+          ))}
+        </ol>
       </div>
-      <ol>
-        <li>
-          <b>{tr("Stake")}</b>
-          {tr("Your NEAR stays yours")}
-        </li>
-        <li>
-          <b>{tr("Earn")}</b>
-          {tr("Validators pay yield")}
-        </li>
-        <li>
-          <b>{tr("Share")}</b>
-          {tr("Part becomes map coins and opens Tier places")}
-        </li>
-      </ol>
     </section>
   );
 }

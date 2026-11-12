@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { openDatabase, createPlayer } from "../server/database.mjs";
-import { tourState, tourAction, TOUR_STEPS, TOUR_CHAPTERS } from "../server/tour/tour.mjs";
+import { tourState, tourAction, tourMark, TOUR_STEPS, TOUR_CHAPTERS } from "../server/tour/tour.mjs";
 import { CHAIN_LEDGER_SCHEMA } from "../server/chain-ledger/schema.mjs";
 import { ensureModuleVersion } from "../server/schema-compatibility.mjs";
 const ensureChainSchema = (db) => ensureModuleVersion(db, CHAIN_LEDGER_SCHEMA);
@@ -46,4 +46,15 @@ test("every chapter has a step and every step points somewhere", () => {
     assert.ok(s.target?.kind, s.id);
     assert.ok(s.say.length <= 40 && s.next.length <= 60, s.id);
   }
+});
+
+test("a chat with the companion bot counts as the message step", () => {
+  const db = openDatabase(":memory:");
+  const p = createPlayer(db, "Tess", Date.now());
+  tourAction(db, p, { action: "start" });
+  const done = () => tourState(db, p, { enabled: true }).steps.find((s) => s.id === "message").done;
+  assert.equal(done(), false);
+  tourMark(db, p, "message");
+  tourMark(db, p, "message");
+  assert.equal(done(), true);
 });

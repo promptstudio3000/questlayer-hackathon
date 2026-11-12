@@ -1,0 +1,85 @@
+/* Profile → Stake: the staking loop picture (src/StakeEarn.tsx, StakeStory).
+   Picture and list share step numbers; a slow spotlight walks 1 → 5. */
+.stake-story {
+  margin: 0 0 16px;
+  padding: 16px 14px 14px;
+  border-radius: 18px;
+  background:
+    radial-gradient(120% 80% at 85% 0%, rgb(255 215 106 / 0.14), transparent 60%),
+    linear-gradient(160deg, #24104f 0%, #43209a 60%, #6a2cc4 100%);
+  color: #fff;
+  overflow: hidden;
+  container-type: inline-size;
+}
+.stake-story h2 { margin: 0 0 8px; font-size: 19px; font-weight: 700; color: #fff; }
+.stake-story-body { display: grid; gap: 10px; }
+.stake-story-art { position: relative; width: 100%; max-width: 440px; margin: 0 auto; }
+.stake-story svg { display: block; width: 100%; height: auto; }
+.stake-story .ss-disc { fill: rgb(255 255 255 / 0.09); stroke: rgb(255 255 255 / 0.28); stroke-width: 1.5; }
+.stake-story .ss-name { fill: #fff; font-size: 12.5px; }
+.stake-story-node {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  transform: translate(-50%, -50%);
+  color: #ffd76a;
+  pointer-events: none;
+}
+.stake-story-node .ghost-art, .stake-story-node .game-object-art { width: 38px; height: 38px; }
+.stake-story-node .ghost-art img { width: 100%; height: 100%; object-fit: contain; }
+
+.stake-story ol {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-content: center;
+}
+.stake-story li {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 6px 8px;
+  border-radius: 12px;
+  font-size: 14px;
+  line-height: 1.35;
+  color: #f3edff;
+}
+.stake-story li i {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid var(--c);
+  color: var(--c);
+  font-style: normal;
+  font-size: 13px;
+  font-weight: 800;
+}
+.stake-story li b { display: block; color: var(--c); font-size: 14px; }
+
+/* Spotlight: 5 steps × 2.4 s. Lanes rest dim and light up on their turn. */
+.stake-story .ss-lane { opacity: 0.55; }
+.stake-story:not(.is-still) .ss-lane { animation: ss-lane 12s linear infinite; animation-delay: calc(var(--i) * 2.4s); }
+.stake-story:not(.is-still) li { animation: ss-row 12s linear infinite; animation-delay: calc(var(--i) * 2.4s); }
+@keyframes ss-lane { 0%, 20% { opacity: 1; stroke-width: 3.6; } 23%, 100% { opacity: 0.6; stroke-width: 3; } }
+@keyframes ss-row { 0%, 20% { background: rgb(255 255 255 / 0.13); } 23%, 100% { background: transparent; } }
+.stake-vault-glow { animation: stake-glow 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
+@keyframes stake-glow { 0%, 100% { opacity: 0.2; transform: scale(0.92); } 50% { opacity: 0.5; transform: scale(1.06); } }
+.stake-story.is-still .ss-lane { opacity: 0.9; }
+@media (prefers-reduced-motion: reduce) {
+  .stake-story .ss-lane, .stake-story li, .stake-vault-glow { animation: none !important; }
+  .stake-story .ss-lane { opacity: 0.9; }
+}
+:root[data-motion="reduce"] .stake-story .ss-lane,
+:root[data-motion="reduce"] .stake-story li,
+:root[data-motion="reduce"] .stake-vault-glow { animation: none !important; }
+
+/* Wide card: picture left, steps right. */
+@container (min-width: 620px) {
+  .stake-story-body { grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 24px; align-items: center; max-width: 860px; margin: 0 auto; }
+  .stake-story li { font-size: 15px; }
+}

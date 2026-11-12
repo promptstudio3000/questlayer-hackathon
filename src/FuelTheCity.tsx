@@ -561,14 +561,10 @@ export function FuelTheCity({
         )}
       </div>
 
-      {canStake ? (
+      <details className="stake-story-more">
+        <summary>{tr("How staking works")}</summary>
         <StakeStory sharePct={pct} />
-      ) : (
-        <details className="stake-story-more">
-          <summary>{tr("How staking works")}</summary>
-          <StakeStory sharePct={pct} />
-        </details>
-      )}
+      </details>
 
       {!canStake && <StakeToday />}
 

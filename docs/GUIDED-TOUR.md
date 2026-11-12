@@ -35,9 +35,20 @@ tour can never claim a transaction that did not happen. `POST /api/tour {action}
 hides or restarts. A skipped step never blocks a later one. State: table `tour_progress` (module
 `guided-tour`).
 
+## Guarantees
+
+Every step has to work for every explorer, so the Test Layer removes the waits that could stop one:
+
+- **Wave.** Ondra, the companion bot that walks near the active explorer (server/test-seed), can be
+  waved at. He waves straight back (`sendWave` stores both waves; the reply shows on his card).
+- **Message.** Ondra answers chat from fixed lines and stores no text; the tour notes only that the
+  chat happened (`tour_marks`), so the message step ticks. Real explorers' messages stay on the
+  encrypted NEAR inbox.
+- **Monster.** A lost fight can be tried again after 2 minutes in the Test Layer (1 hour in World,
+  `ATTEMPT_COOLDOWN_MS`).
+- **Sell.** The trader bot Marek buys an Aura a real explorer lists within about 45 seconds.
+- **Chest.** Auras are uncapped, so a chest always has one to give.
+
 ## Still to build
 
-- Guarantees so every step always works in the Test Layer: the Pip bot account (waves back, answers a
-  message, buys a listed Aura, completes a posted task), a reserved chest Aura per explorer and a training
-  monster without the hourly limit.
 - An end-to-end run of the whole tour on a phone viewport.

@@ -16,12 +16,28 @@ export const TOUR_SCHEMA = registerModuleSchema({
   sql: `CREATE TABLE IF NOT EXISTS tour_progress(player_id TEXT PRIMARY KEY REFERENCES players(id),started_at INTEGER NOT NULL,skipped TEXT NOT NULL DEFAULT '[]' CHECK(json_valid(skipped)),hidden INTEGER NOT NULL DEFAULT 0 CHECK(hidden IN (0,1)),finished_at INTEGER,updated_at INTEGER NOT NULL)`,
 });
 
+// Moments that leave no other record: a chat with a demo bot stores no text,
+// so the tour notes only that it happened.
+export const TOUR_MARKS_SCHEMA = registerModuleSchema({
+  name: "guided-tour-marks",
+  version: 1,
+  sql: `CREATE TABLE IF NOT EXISTS tour_marks(player_id TEXT NOT NULL REFERENCES players(id),step TEXT NOT NULL,at INTEGER NOT NULL,PRIMARY KEY(player_id,step))`,
+});
+
 const ready = new WeakSet();
 function ensure(db) {
   if (ready.has(db)) return;
   ensureModuleVersion(db, TOUR_SCHEMA);
+  ensureModuleVersion(db, TOUR_MARKS_SCHEMA);
   ready.add(db);
 }
+
+/** Notes that the explorer did `step` where no other record shows it. */
+export function tourMark(db, player, step, now = Date.now()) {
+  ensure(db);
+  db.prepare("INSERT OR IGNORE INTO tour_marks(player_id,step,at) VALUES(?,?,?)").run(player, step, now);
+}
+const mark = (step) => (db, p) => one(db, "SELECT 1 FROM tour_marks WHERE player_id=? AND step=?", p, step);
 
 const tableExists = (db, name) =>
   !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name);
@@ -71,8 +87,8 @@ export const TOUR_STEPS = Object.freeze([
   { id: "shout", chapter: "community", target: { kind: "action", action: "shout" }, say: "Shout something on the map.", next: "Shouts show as a bubble here for a day.", done: burn(["shout"]) },
   { id: "topic", chapter: "community", target: { kind: "action", action: "topic" }, say: "Start a topic at this place.", next: "Others can reply to it here.", done: burn(["topic"]) },
   { id: "task", chapter: "community", target: { kind: "action", action: "task" }, say: "Post a task with a QGOLD reward.", next: "The reward waits in escrow until it's done.", done: (db, p) => one(db, "SELECT 1 FROM mk_tasks WHERE poster=? LIMIT 1", p) },
-  { id: "wave", chapter: "people", target: { kind: "actor", role: "pip" }, say: "Wave at Pip.", next: "A wave back opens messages.", done: (db, p) => one(db, "SELECT 1 FROM player_waves WHERE from_id=? LIMIT 1", p) },
-  { id: "message", chapter: "people", target: { kind: "actor", role: "pip" }, say: "Send Pip a message.", next: "Messages are encrypted on NEAR.", done: relay(["set"], '%inbox%') },
+  { id: "wave", chapter: "people", target: { kind: "actor", role: "companion" }, say: "Wave at Ondra, who walks with you.", next: "Waves are quick hellos between explorers.", done: (db, p) => one(db, "SELECT 1 FROM player_waves WHERE from_id=? LIMIT 1", p) },
+  { id: "message", chapter: "people", target: { kind: "actor", role: "companion" }, say: "Send Ondra a message.", next: "Between real explorers, messages are encrypted on NEAR.", done: any(relay(["set"], '%inbox%'), mark("message")) },
   { id: "stake", chapter: "stake", target: { kind: "screen", screen: "stake" }, say: "Stake at the Gate Keeper.", next: "Your stake earns a share of the daily yield.", done: relay(["create_position", "deposit_and_stake"]) },
   { id: "vote", chapter: "stake", target: { kind: "screen", screen: "treasury" }, say: "Vote on the treasury mix.", next: "Stakers decide where the treasury earns.", done: relay(["act_proposal"]) },
 ]);

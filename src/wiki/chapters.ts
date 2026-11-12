@@ -209,6 +209,7 @@ export const CHAPTERS: Chapter[] = [
           "Profile → Settings → Help reopens the guide, toggles first-time tips and shows the first steps again; the links to How it works, Wiki, Economy and Treasury sit at the bottom of Settings.",
           "A picked-up coin flies to the GOLD counter (a fade under reduced motion). A new wearable opens a short, closable item moment once.",
           "On desktop, Inventory, Community and Profile open as a centred card over the dimmed map; on phones they are full screen.",
+          "The logo button at the top left opens the world menu: a dropdown under the button on desktop, a bottom sheet on phones. Its first row links to **How it works**, **Wiki** and **Treasury**; below are the worlds to switch between.",
         ],
       },
       { h: "Three kinds of value" },
@@ -434,7 +435,7 @@ export const CHAPTERS: Chapter[] = [
       { viz: "monster-flow" },
       {
         list: [
-          "Formats: quiz, rhythm, rune path, memory and stance duel. An encounter lists today's formats once with a one-line hint; picking one starts it. Power = level (capped at 20) + skill; Auras never change odds.",
+          "Formats: quiz, rhythm, rune path, memory and stance duel. An encounter shows today's formats as icon buttons with a short name (Riddles, Rhythm, Rune path, Rune song, Duel); picking one starts it. Traders and keepers open their counter right away, with no Continue step. Power = level (capped at 20) + skill; Auras never change odds.",
           "A new format can show a short example first (local, no request, no reward). Timed challenges never open help automatically. Touch and keyboard both work.",
           "A loss means a 1 h cooldown; one defeat per monster per day. No wagering of any kind.",
           "A monster or NPC with nothing for you says so and when to come back: after a lost try, the cooldown end; after a win, its first active minute tomorrow (same hours and day/night phase); a beaten weekly boss, next Monday. The server sends the time (`comeBack` on the encounter); the NPC chat stays open.",
@@ -1159,6 +1160,7 @@ export const CHAPTERS: Chapter[] = [
           "Submission is not payment: finalized per-leaf chain status confirms each receipt. Restart recovery reconciles pending leaves first; an exclusive fenced lease prevents overlapping workers.",
           "A player without a NEAR account yet keeps their coins waiting and joins the first payout after the account exists. `GET /api/qgold/pending` shows what is on its way.",
           "Profile → Stake shows the QGOLD balance and what the next payout brings. While payouts run, map days no longer send `claim_map`, so a coin is never paid twice.",
+          "Profile → Stake shows the whole loop as one numbered, animated picture: 1 you stake into your vault and the stake stays yours, 2 validators pay yield and your chosen share fills the prize pool (the rest is yours), 3 the pool becomes coins and prizes on the map each day, 4 explorers collect QGOLD on the map, never from the vault, 5 what nobody collects returns to the pool.",
         ],
       },
       { note: "The prepared Atlas adapter separately reserves a UTC day before opening and needs two reviewed testnet contract upgrades, including QGOLD's governance timelock. Until confirmed activation, Atlas quests award personal XP only." },
