@@ -193,6 +193,7 @@ export const CHAPTERS: Chapter[] = [
           "One tap on a quest (in Nearby, in a zone, from an NPC or from Today's board) goes straight to the map: the target is marked, a direction line points to it, other map content dims, and the X on the target chip clears it. No reward is reserved or claimed by choosing. At the place the same tap opens one confirm button.",
           "A zone dialog is the title, one row of icon facts (tier, open window, done today, XP, GOLD and Auras left) and a list of one-tap quests.",
           "Notes, shouts and topics sit on the map as closed icons; a tap opens the text, a second tap opens the thread and the X folds it again.",
+          "Only game elements sit on the map. Community quests, player tasks and Secrets have no map markers; they are reached from Community and Nearby.",
           "Each step shows its requirement (location, footprint, question) before confirmation. A minimum distance between stops is never described as a walking route; an unknown duration stays unknown.",
           "The confirmed result replaces the quest overlay; it is never stacked or repeated. Receipts, proofs and optional share actions sit under Learn more.",
           "Browsing Explore never replaces the active adventure; closing the list restores it and its server checkpoint.",

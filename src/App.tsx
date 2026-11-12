@@ -352,6 +352,9 @@ const rarityNames: Record<string, string> = {
   get epic() { return tr("Epic"); },
   get legendary() { return tr("Legendary"); },
 };
+/** Markers that only open a dialog (no play on the map itself) stay off. */
+const MAP_DIALOG_PINS = false;
+
 export default function App() {
   const [map3D, setMap3D] = useState(() => {
     try {
@@ -3768,7 +3771,9 @@ export default function App() {
           follow={follow}
           onPan={() => { gpsResumeOnMovement.current = false; setFollow(false); }}
           onMoveEnd={(center, zoom) => setMapCenter(zoom >= 13 ? center : null)}
-          creatorPlaces={creatorPlaces}
+          // Only game elements sit on the map. Community quests, player tasks
+          // and Secrets are reached from the Community button and Nearby.
+          creatorPlaces={MAP_DIALOG_PINS ? creatorPlaces : []}
           onCreatorPlace={(questId) => {
             setTab("community");
             setCreatorView({ page: "quest", questId });
@@ -3799,7 +3804,7 @@ export default function App() {
           actorReports={npcTasks && npcTasks.worldId === world?.id ? npcTasks.tasks.filter((t) => t.ready).map((t) => t.actorId) : []}
           actorFocus={actorFocus}
           onActorFocus={(text, found) => notify(text, !found)}
-          marketPins={!!player && !arena && !nativePlay}
+          marketPins={MAP_DIALOG_PINS && !!player && !arena && !nativePlay}
           onMarketPin={() => {
             setTab("explore");
             setNearbyFilter("community");
