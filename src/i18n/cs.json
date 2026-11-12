@@ -3246,5 +3246,18 @@
  "Start with a new account": "Začít s novým účtem",
  "Starting over…": "Začínám znovu…",
  "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "Jen na testovací síti. Tvůj průzkumník, XP, nálezy a předměty zůstanou. Na tomto zařízení vznikne nový NEAR účet; QGOLD a tokeny na starém účtu tam zůstanou a hra ho přestane používat.",
- "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Toto zařízení ještě není propojené s tvým účtem průzkumníka, takže nemůže posílat ani číst zprávy. Přidej ho záložním passkey, nebo tady začni s novým účtem."
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Toto zařízení ještě není propojené s tvým účtem průzkumníka, takže nemůže posílat ani číst zprávy. Přidej ho záložním passkey, nebo tady začni s novým účtem.",
+ "Test Layer": "Test Layer",
+ "The real game.": "Ostrá hra.",
+ "Every feature with test coins. Nothing here is real money.": "Všechny funkce s testovacími mincemi. Nic tu nejsou skutečné peníze.",
+ "Hi, I'm Pip. Want the tour?": "Ahoj, jsem Pip. Chceš prohlídku?",
+ "Again": "Znovu",
+ "Every quest, encounter and trade, step by step.": "Všechny questy, setkání a obchody, krok za krokem.",
+ "Fold the tour": "Sbalit prohlídku",
+ "Open the tour": "Otevřít prohlídku",
+ "Start the tour": "Začít prohlídku",
+ "Tour done: {0} transactions on NEAR.": "Prohlídka hotová: {0} transakcí na NEAR.",
+ "Tour": "Prohlídka",
+ "confirming": "potvrzuje se",
+ "{0} waved back: “{1}”": "{0} ti zamával zpátky: „{1}“"
 }

@@ -3246,5 +3246,18 @@
  "Start with a new account": "Recommencer avec un nouveau compte",
  "Starting over…": "Nouveau départ…",
  "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "Réseau de test uniquement. Ton explorateur, ton XP, tes trouvailles et tes objets restent. Un nouveau compte NEAR est créé sur cet appareil ; le QGOLD et les jetons de l’ancien compte y restent et le jeu ne l’utilise plus.",
- "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Cet appareil n’est pas encore associé à ton compte d’explorateur, il ne peut donc ni envoyer ni lire de messages. Ajoute-le avec ta passkey de récupération ou recommence ici avec un nouveau compte."
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Cet appareil n’est pas encore associé à ton compte d’explorateur, il ne peut donc ni envoyer ni lire de messages. Ajoute-le avec ta passkey de récupération ou recommence ici avec un nouveau compte.",
+ "Test Layer": "Test Layer",
+ "The real game.": "Le vrai jeu.",
+ "Every feature with test coins. Nothing here is real money.": "Toutes les fonctions avec des pièces de test. Rien ici n'est de l'argent réel.",
+ "Hi, I'm Pip. Want the tour?": "Salut, je suis Pip. Tu veux la visite ?",
+ "Again": "Encore",
+ "Every quest, encounter and trade, step by step.": "Chaque quête, rencontre et échange, pas à pas.",
+ "Fold the tour": "Replier la visite",
+ "Open the tour": "Ouvrir la visite",
+ "Start the tour": "Commencer la visite",
+ "Tour done: {0} transactions on NEAR.": "Visite terminée : {0} transactions sur NEAR.",
+ "Tour": "Visite",
+ "confirming": "en confirmation",
+ "{0} waved back: “{1}”": "{0} te salue en retour : « {1} »"
 }

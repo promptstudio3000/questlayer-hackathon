@@ -3246,5 +3246,18 @@
  "Start with a new account": "新しいアカウントで始める",
  "Starting over…": "やり直しています…",
  "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "テストネットのみ。探検者、XP、発見、アイテムはそのままです。このデバイスに新しいNEARアカウントが作られます。古いアカウントのQGOLDとトークンはそこに残り、ゲームでは使われなくなります。",
- "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "このデバイスはまだ探検者アカウントと連携していないため、メッセージを送受信できません。復旧用パスキーで追加するか、ここで新しいアカウントを始めてください。"
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "このデバイスはまだ探検者アカウントと連携していないため、メッセージを送受信できません。復旧用パスキーで追加するか、ここで新しいアカウントを始めてください。",
+ "Test Layer": "テストレイヤー",
+ "The real game.": "本番のゲーム。",
+ "Every feature with test coins. Nothing here is real money.": "すべての機能をテスト用コインで。ここに本物のお金はありません。",
+ "Hi, I'm Pip. Want the tour?": "やあ、ピップだよ。ツアーに行く？",
+ "Again": "もう一度",
+ "Every quest, encounter and trade, step by step.": "すべてのクエスト、出会い、取引をひとつずつ。",
+ "Fold the tour": "ツアーをたたむ",
+ "Open the tour": "ツアーを開く",
+ "Start the tour": "ツアーを始める",
+ "Tour done: {0} transactions on NEAR.": "ツアー完了：NEAR で {0} 件の取引。",
+ "Tour": "ツアー",
+ "confirming": "確認中",
+ "{0} waved back: “{1}”": "{0}が手を振り返した：「{1}」"
 }

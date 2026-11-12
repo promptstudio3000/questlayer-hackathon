@@ -55,7 +55,9 @@ function ensureWavesSchema(db) {
 const validPlayerId = (value) =>
   typeof value === "string" && /^player_[a-f0-9-]{36}$/.test(value);
 // Test-world bots (TEST_SEED=1, server/test-seed) walk the map with "seed-"
-// ids. Their card is the same dialog, labelled "demo-bot"; no waves, no block.
+// ids. Their card is the same dialog, labelled "demo-bot"; no block. A wave to
+// a bot is answered at once with a wave back, so the guided tour's wave step
+// always works (docs/GUIDED-TOUR.md).
 export const isDemoBot = (value) =>
   typeof value === "string" && /^seed-[a-z0-9-]{1,60}$/.test(value);
 
@@ -133,7 +135,7 @@ export function playerCard(db, viewer, target, appearance, now = Date.now()) {
       : null,
     // Name and rarity score of the worn original; never the token's wallet.
     gotchi: original ? { name: original.name, brs: original.brs } : null,
-    canWave: !self && !!mine && mine.arena === theirs?.arena,
+    canWave: demoBot ? !self && !!sharing(db, viewer, now) : !self && !!mine && mine.arena === theirs?.arena,
     waveHint: self || demoBot
       ? null
       : mine
@@ -201,20 +203,25 @@ export function profileOriginal(db, player, now = Date.now()) {
 
 export function sendWave(db, from, to, phrase, now = Date.now()) {
   ensureWavesSchema(db);
-  assert(validPlayerId(to) && to !== from, "Invalid explorer.", 400);
+  const bot = isDemoBot(to);
+  assert((validPlayerId(to) || bot) && to !== from, "Invalid explorer.", 400);
   assert(
     typeof phrase === "string" && Object.hasOwn(WAVE_PHRASES, phrase),
     "Pick one of the ready phrases.",
     400,
   );
-  const mine = sharing(db, from, now),
-    theirs = sharing(db, to, now);
+  const mine = sharing(db, from, now);
   assert(mine, "Share your position to wave.", 403);
-  assert(
-    theirs && theirs.arena === mine.arena && !isSocialBlocked(db, from, to),
-    "This explorer is no longer sharing their position.",
-    404,
-  );
+  if (bot) {
+    assert(db.prepare("SELECT 1 FROM players WHERE id=?").get(to), "This explorer's profile is not available.", 404);
+  } else {
+    const theirs = sharing(db, to, now);
+    assert(
+      theirs && theirs.arena === mine.arena && !isSocialBlocked(db, from, to),
+      "This explorer is no longer sharing their position.",
+      404,
+    );
+  }
   db.prepare("DELETE FROM player_waves WHERE created_at<?").run(
     now - WAVE_LIMITS.keepMs,
   );
@@ -250,7 +257,13 @@ export function sendWave(db, from, to, phrase, now = Date.now()) {
   db.prepare(
     "INSERT INTO player_waves(id,from_id,to_id,phrase,created_at,seen) VALUES(?,?,?,?,?,0)",
   ).run(id("wave"), from, to, phrase, now);
-  return { sent: true, phrase: WAVE_PHRASES[phrase] };
+  if (!bot) return { sent: true, phrase: WAVE_PHRASES[phrase] };
+  // The bot waves back right away; it is shown on the card, so it is stored as seen.
+  const back = phrase === "thanks" ? "see-you" : phrase === "hello" ? "hello" : "thanks";
+  db.prepare(
+    "INSERT INTO player_waves(id,from_id,to_id,phrase,created_at,seen) VALUES(?,?,?,?,?,1)",
+  ).run(id("wave"), to, from, back, now);
+  return { sent: true, phrase: WAVE_PHRASES[phrase], reply: { key: back, text: WAVE_PHRASES[back] } };
 }
 
 /** Unseen waves for a sharing explorer; reading marks them seen. */

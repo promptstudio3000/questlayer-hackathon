@@ -12,6 +12,7 @@ for (const relative of [
   "./gold-spend/purchases.mjs",
   "./gotchi-wearables.mjs",
   "./player-waves.mjs",
+  "./tour/tour.mjs",
   "./inbox/service.mjs",
   "./chain-ledger/schema.mjs",
   "./creators/bonus-vote.mjs",

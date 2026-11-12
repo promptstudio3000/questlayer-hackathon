@@ -3,6 +3,7 @@ import { coinMeta } from "./map-rewards/service.mjs";
 import { spotTakenBy } from "./coin-spots.mjs";
 import { earnGlobalQuest } from './global-rewards.mjs';
 import { randomBytes } from "node:crypto";
+import { SESSION_TTL_MS } from "./native/network.mjs";
 import {
   GOLD,
   DAY,
@@ -65,7 +66,7 @@ export function session(db, name, now = Date.now()) {
     db.prepare("INSERT INTO sessions VALUES (?,?,?)").run(
       hash(token),
       player,
-      now + 30 * DAY,
+      now + SESSION_TTL_MS,
     );
     return { token, player: playerView(db, player) };
   });

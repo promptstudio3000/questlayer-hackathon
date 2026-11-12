@@ -3246,5 +3246,18 @@
  "Start with a new account": "ابدأ بحساب جديد",
  "Starting over…": "جارٍ البدء من جديد…",
  "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "على شبكة الاختبار فقط. يبقى مستكشفك ونقاط الخبرة والاكتشافات والعناصر. يُنشأ حساب NEAR جديد على هذا الجهاز؛ يبقى QGOLD والرموز في الحساب القديم ولن تستخدمه اللعبة بعد الآن.",
- "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "هذا الجهاز غير مرتبط بحساب المستكشف بعد، لذا لا يمكنه إرسال الرسائل أو قراءتها. أضفه بمفتاح المرور الاحتياطي أو ابدأ هنا بحساب جديد."
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "هذا الجهاز غير مرتبط بحساب المستكشف بعد، لذا لا يمكنه إرسال الرسائل أو قراءتها. أضفه بمفتاح المرور الاحتياطي أو ابدأ هنا بحساب جديد.",
+ "Test Layer": "طبقة الاختبار",
+ "The real game.": "اللعبة الحقيقية.",
+ "Every feature with test coins. Nothing here is real money.": "كل الميزات بعملات اختبار. لا شيء هنا مال حقيقي.",
+ "Hi, I'm Pip. Want the tour?": "مرحبًا، أنا بيب. هل تريد الجولة؟",
+ "Again": "مرة أخرى",
+ "Every quest, encounter and trade, step by step.": "كل مهمة ولقاء وصفقة، خطوة بخطوة.",
+ "Fold the tour": "طي الجولة",
+ "Open the tour": "فتح الجولة",
+ "Start the tour": "ابدأ الجولة",
+ "Tour done: {0} transactions on NEAR.": "انتهت الجولة: {0} معاملة على NEAR.",
+ "Tour": "الجولة",
+ "confirming": "قيد التأكيد",
+ "{0} waved back: “{1}”": "لوّح {0} لك بالمقابل: «{1}»"
 }
