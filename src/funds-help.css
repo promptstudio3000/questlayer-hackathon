@@ -8,3 +8,5 @@
 
 .funds-help-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .funds-help-buttons .secondary-button { padding: 0 14px; }
+
+.funds-help-address { display: block; padding: 8px 10px; border-radius: 10px; background: var(--surface-soft, #f5f0ff); font-size: 13px; overflow-wrap: anywhere; }

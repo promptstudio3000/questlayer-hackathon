@@ -9,7 +9,7 @@ export const TEST_NEAR_FAUCET = "https://near-faucet.io/";
 export const NEAR_WALLETS = [
   { name: "Meteor Wallet", href: "https://wallet.meteorwallet.app/" },
   { name: "HOT Wallet", href: "https://hot-labs.org/wallet/" },
-  { name: "MyNearWallet (testnet)", href: "https://testnet.mynearwallet.com/" },
+  { name: "Intear Wallet", href: "https://wallet.intear.tech/" },
 ];
 /** Where a player swaps QGOLD back to NEAR (the vault exchange on /economy). */
 export const QGOLD_SWAP_URL = "/economy#qgold";
