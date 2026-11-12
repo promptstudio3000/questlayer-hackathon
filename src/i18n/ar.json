@@ -3240,5 +3240,14 @@
  "It didn't finish. If it was sent, it shows here in a minute.": "لم يكتمل. إذا تم الإرسال، سيظهر هنا خلال دقيقة.",
  "Test Layer": "طبقة الاختبار",
  "The real game.": "اللعبة الحقيقية.",
- "Every feature with test coins. Nothing here is real money.": "كل الميزات بعملات اختبار. لا شيء هنا مال حقيقي."
+ "Every feature with test coins. Nothing here is real money.": "كل الميزات بعملات اختبار. لا شيء هنا مال حقيقي.",
+ "Hi, I'm Pip. Want the tour?": "مرحبًا، أنا بيب. هل تريد الجولة؟",
+ "Again": "مرة أخرى",
+ "Every quest, encounter and trade, step by step.": "كل مهمة ولقاء وصفقة، خطوة بخطوة.",
+ "Fold the tour": "طي الجولة",
+ "Open the tour": "فتح الجولة",
+ "Start the tour": "ابدأ الجولة",
+ "Tour done: {0} transactions on NEAR.": "انتهت الجولة: {0} معاملة على NEAR.",
+ "Tour": "الجولة",
+ "confirming": "قيد التأكيد"
 }

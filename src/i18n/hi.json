@@ -3240,5 +3240,14 @@
  "It didn't finish. If it was sent, it shows here in a minute.": "यह पूरा नहीं हुआ। अगर भेजा गया था, तो यह एक मिनट में यहाँ दिखेगा।",
  "Test Layer": "टेस्ट लेयर",
  "The real game.": "असली गेम।",
- "Every feature with test coins. Nothing here is real money.": "टेस्ट सिक्कों के साथ हर सुविधा। यहाँ कुछ भी असली पैसा नहीं है।"
+ "Every feature with test coins. Nothing here is real money.": "टेस्ट सिक्कों के साथ हर सुविधा। यहाँ कुछ भी असली पैसा नहीं है।",
+ "Hi, I'm Pip. Want the tour?": "नमस्ते, मैं पिप हूँ। टूर करोगे?",
+ "Again": "फिर से",
+ "Every quest, encounter and trade, step by step.": "हर क्वेस्ट, मुलाकात और सौदा, कदम दर कदम।",
+ "Fold the tour": "टूर छोटा करें",
+ "Open the tour": "टूर खोलें",
+ "Start the tour": "टूर शुरू करें",
+ "Tour done: {0} transactions on NEAR.": "टूर पूरा: NEAR पर {0} लेन-देन।",
+ "Tour": "टूर",
+ "confirming": "पुष्टि हो रही है"
 }

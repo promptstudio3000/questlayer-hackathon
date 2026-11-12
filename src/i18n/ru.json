@@ -3240,5 +3240,14 @@
  "It didn't finish. If it was sent, it shows here in a minute.": "Не завершилось. Если отправлено, это появится здесь через минуту.",
  "Test Layer": "Test Layer",
  "The real game.": "Настоящая игра.",
- "Every feature with test coins. Nothing here is real money.": "Все функции с тестовыми монетами. Здесь нет настоящих денег."
+ "Every feature with test coins. Nothing here is real money.": "Все функции с тестовыми монетами. Здесь нет настоящих денег.",
+ "Hi, I'm Pip. Want the tour?": "Привет, я Пип. Хочешь экскурсию?",
+ "Again": "Ещё раз",
+ "Every quest, encounter and trade, step by step.": "Все задания, встречи и сделки, шаг за шагом.",
+ "Fold the tour": "Свернуть экскурсию",
+ "Open the tour": "Открыть экскурсию",
+ "Start the tour": "Начать экскурсию",
+ "Tour done: {0} transactions on NEAR.": "Экскурсия окончена: {0} транзакций в NEAR.",
+ "Tour": "Экскурсия",
+ "confirming": "подтверждается"
 }

@@ -3240,5 +3240,14 @@
  "It didn't finish. If it was sent, it shows here in a minute.": "没有完成。如果已发送，会在一分钟内显示在这里。",
  "Test Layer": "测试层",
  "The real game.": "正式游戏。",
- "Every feature with test coins. Nothing here is real money.": "用测试币体验所有功能。这里没有真钱。"
+ "Every feature with test coins. Nothing here is real money.": "用测试币体验所有功能。这里没有真钱。",
+ "Hi, I'm Pip. Want the tour?": "嗨，我是皮普。要来个导览吗？",
+ "Again": "再来",
+ "Every quest, encounter and trade, step by step.": "每个任务、遭遇和交易，一步一步来。",
+ "Fold the tour": "收起导览",
+ "Open the tour": "打开导览",
+ "Start the tour": "开始导览",
+ "Tour done: {0} transactions on NEAR.": "导览完成：NEAR 上 {0} 笔交易。",
+ "Tour": "导览",
+ "confirming": "确认中"
 }

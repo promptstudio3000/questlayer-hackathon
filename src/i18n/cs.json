@@ -3240,5 +3240,14 @@
  "It didn't finish. If it was sent, it shows here in a minute.": "Nedokončilo se to. Pokud se to odeslalo, ukáže se to tu do minuty.",
  "Test Layer": "Test Layer",
  "The real game.": "Ostrá hra.",
- "Every feature with test coins. Nothing here is real money.": "Všechny funkce s testovacími mincemi. Nic tu nejsou skutečné peníze."
+ "Every feature with test coins. Nothing here is real money.": "Všechny funkce s testovacími mincemi. Nic tu nejsou skutečné peníze.",
+ "Hi, I'm Pip. Want the tour?": "Ahoj, jsem Pip. Chceš prohlídku?",
+ "Again": "Znovu",
+ "Every quest, encounter and trade, step by step.": "Všechny questy, setkání a obchody, krok za krokem.",
+ "Fold the tour": "Sbalit prohlídku",
+ "Open the tour": "Otevřít prohlídku",
+ "Start the tour": "Začít prohlídku",
+ "Tour done: {0} transactions on NEAR.": "Prohlídka hotová: {0} transakcí na NEAR.",
+ "Tour": "Prohlídka",
+ "confirming": "potvrzuje se"
 }

@@ -3240,5 +3240,14 @@
  "It didn't finish. If it was sent, it shows here in a minute.": "Das wurde nicht fertig. Falls es gesendet wurde, erscheint es hier in einer Minute.",
  "Test Layer": "Test Layer",
  "The real game.": "Das echte Spiel.",
- "Every feature with test coins. Nothing here is real money.": "Alle Funktionen mit Testmünzen. Nichts hier ist echtes Geld."
+ "Every feature with test coins. Nothing here is real money.": "Alle Funktionen mit Testmünzen. Nichts hier ist echtes Geld.",
+ "Hi, I'm Pip. Want the tour?": "Hallo, ich bin Pip. Lust auf eine Tour?",
+ "Again": "Nochmal",
+ "Every quest, encounter and trade, step by step.": "Jede Quest, jede Begegnung und jeder Handel, Schritt für Schritt.",
+ "Fold the tour": "Tour einklappen",
+ "Open the tour": "Tour öffnen",
+ "Start the tour": "Tour starten",
+ "Tour done: {0} transactions on NEAR.": "Tour fertig: {0} Transaktionen auf NEAR.",
+ "Tour": "Tour",
+ "confirming": "wird bestätigt"
 }

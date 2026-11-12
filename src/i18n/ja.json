@@ -3240,5 +3240,14 @@
  "It didn't finish. If it was sent, it shows here in a minute.": "完了しませんでした。送信済みなら、1分ほどでここに表示されます。",
  "Test Layer": "テストレイヤー",
  "The real game.": "本番のゲーム。",
- "Every feature with test coins. Nothing here is real money.": "すべての機能をテスト用コインで。ここに本物のお金はありません。"
+ "Every feature with test coins. Nothing here is real money.": "すべての機能をテスト用コインで。ここに本物のお金はありません。",
+ "Hi, I'm Pip. Want the tour?": "やあ、ピップだよ。ツアーに行く？",
+ "Again": "もう一度",
+ "Every quest, encounter and trade, step by step.": "すべてのクエスト、出会い、取引をひとつずつ。",
+ "Fold the tour": "ツアーをたたむ",
+ "Open the tour": "ツアーを開く",
+ "Start the tour": "ツアーを始める",
+ "Tour done: {0} transactions on NEAR.": "ツアー完了：NEAR で {0} 件の取引。",
+ "Tour": "ツアー",
+ "confirming": "確認中"
 }
