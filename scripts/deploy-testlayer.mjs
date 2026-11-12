@@ -87,6 +87,8 @@ const STEPS = [
   { name: "creators", script: "deploy-creators-testnet.mjs" },
 ];
 const SHARED = ["native-intents"]; // records the Test Layer reuses as they are
+// Build facts, not contract ids: the slice checks the collectibles build's edition list.
+const KEEP = ["native-editions-testnet.json"];
 
 const log = (o) => console.log(JSON.stringify(o));
 log({ plan: execute ? "execute" : "plan only", tag: TAG, origin: ORIGIN, work, accounts: ACCOUNTS, steps: STEPS.map((s) => s.name), shared: SHARED });
@@ -97,7 +99,7 @@ if (!existsSync(work)) {
   mkdirSync(resolve(work, ".."), { recursive: true, mode: 0o700 });
   execFileSync("git", ["worktree", "add", "--detach", work, "HEAD"], { cwd: repo, stdio: "inherit" });
   for (const f of readdirSync(resolve(work, "public")))
-    if (/-testnet\.json$/.test(f) || f === "testnet-deployment.json") rmSync(resolve(work, "public", f));
+    if ((/-testnet\.json$/.test(f) || f === "testnet-deployment.json") && !KEEP.includes(f)) rmSync(resolve(work, "public", f));
   log({ step: "work tree ready, real testnet records removed", work });
 }
 mkdirSync(resolve(work, ".data"), { recursive: true, mode: 0o700 });
@@ -139,7 +141,7 @@ for (const s of STEPS) {
 const written = [];
 for (const f of readdirSync(resolve(work, "public"))) {
   const m = f.match(/^(.+)-testnet\.json$/);
-  if (!m && f !== "testnet-deployment.json") continue;
+  if ((!m && f !== "testnet-deployment.json") || KEEP.includes(f)) continue;
   const to = f === "testnet-deployment.json" ? "testlayer-deployment.json" : `${m[1]}-testlayer.json`;
   copyFileSync(resolve(work, "public", f), resolve(repo, "public", to));
   written.push(to);

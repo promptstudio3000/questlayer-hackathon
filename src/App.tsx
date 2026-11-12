@@ -3730,6 +3730,7 @@ export default function App() {
     setMarketForm(form);
   };
   // Guided tour (docs/GUIDED-TOUR.md): where a step points, and how to open it.
+  const TOUR_COMPANION = "seed-p-ondra";
   const TOUR_ACTORS: Record<string, string[]> = { "quest-giver": ["quest_giver"], monster: ["roamer", "guardian", "boss"], trader: ["trader"], keeper: ["keeper"] };
   function tourQuest(kind: string) {
     let best: Quest | null = null;
@@ -3761,7 +3762,9 @@ export default function App() {
       if (q) guideToQuest(q);
       else void showGoal("quest");
     } else if (t.kind === "actor") {
-      if (TOUR_ACTORS[t.role]) showActor({ kinds: TOUR_ACTORS[t.role] });
+      // The walking companion bot of the Test Layer (server/test-seed): its card has Wave and Message.
+      if (t.role === "companion") setCardPlayer(TOUR_COMPANION);
+      else if (TOUR_ACTORS[t.role]) showActor({ kinds: TOUR_ACTORS[t.role] });
       else { setTab("community"); setSheetExpanded(true); }
     } else if (t.kind === "screen") {
       const tabs: Record<string, Tab> = { inventory: "inventory", market: "market", shop: "shop", stake: "fund", treasury: "fund" };
