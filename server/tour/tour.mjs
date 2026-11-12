@@ -79,7 +79,9 @@ export const TOUR_STEPS = Object.freeze([
   { id: "errand", chapter: "npcs", target: { kind: "actor", role: "quest-giver" }, say: "Ráda has an errand. Do it.", next: "Characters give quest lines with an Aura at the end.", done: any(action(["errand"]), hist("npc-quest")) },
   { id: "clue", chapter: "npcs", target: { kind: "quest", quest: "clue" }, say: "Solve the landmark clue.", next: "Clues are riddles about real places.", done: action(["clue"]) },
   { id: "monster", chapter: "monsters", target: { kind: "actor", role: "monster" }, say: "Beat the Lickquidator.", next: "Skill wins, never money. Losing costs only time.", done: any(action(["monster", "boss"]), hist("monster")) },
-  { id: "roll", chapter: "monsters", target: { kind: "screen", screen: "inventory" }, say: "Use your roll ticket.", next: "Rolls are drawn on NEAR, anyone can check them.", done: relay(["start_roll"]) },
+  // Pocket Wisps (lurkers) hide at street finds and show within 60 m; a quiz win gives a roll ticket.
+  { id: "ticket", chapter: "monsters", target: { kind: "find" }, say: "Beat a Pocket Wisp for a roll ticket.", hint: "Wisps hide at sparkles and show within 60 m. Win their quiz.", next: "You won a roll ticket. A roll is free.", done: (db, p) => one(db, "SELECT 1 FROM monster_rewards WHERE player_id=? AND kind='roll' LIMIT 1", p) },
+  { id: "roll", chapter: "monsters", target: { kind: "screen", screen: "rolls" }, say: "Roll your ticket at the wisp.", hint: "Inventory › Secured on NEAR › Roll at the wisp.", next: "The draw ran on NEAR, anyone can check it.", done: relay(["start_roll"]) },
   { id: "sell", chapter: "trade", target: { kind: "screen", screen: "market" }, say: "Sell an Aura on the market.", next: "A buyer picks it up in under a minute.", done: any(relay(["nft_transfer_call"], '%market%'), (db, p) => one(db, "SELECT 1 FROM listings WHERE seller=? LIMIT 1", p)) },
   { id: "trade", chapter: "trade", target: { kind: "actor", role: "trader" }, say: "Trade with Vojtěch.", next: "He trades through NEAR Intents.", done: relay(["add_public_key", "ft_transfer_call", "nft_transfer_call"], '%intents%') },
   { id: "shop", chapter: "trade", target: { kind: "screen", screen: "shop" }, say: "Buy an emote with QGOLD.", next: "Spending burns QGOLD, which backs everyone else's.", done: burn(["emote", "cosmetic", "gear", "lure"]) },
@@ -145,7 +147,7 @@ export function tourState(db, player, { enabled }) {
     total: steps.length,
     steps,
     current: current
-      ? { id: current.id, chapter: current.chapter, say: current.say, next: current.next, target: current.target }
+      ? { id: current.id, chapter: current.chapter, say: current.say, ...(current.hint ? { hint: current.hint } : {}), next: current.next, target: current.target }
       : null,
     // What just happened: the newest finished step, for the helper's first line.
     last: (() => {

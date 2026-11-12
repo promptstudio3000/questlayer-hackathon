@@ -3827,9 +3827,17 @@ export default function App() {
       else if (TOUR_ACTORS[t.role]) showActor({ kinds: TOUR_ACTORS[t.role] });
       else { setTab("community"); setSheetExpanded(true); }
     } else if (t.kind === "screen") {
-      const tabs: Record<string, Tab> = { inventory: "inventory", market: "market", shop: "shop", stake: "fund", treasury: "fund" };
+      const tabs: Record<string, Tab> = { inventory: "inventory", rolls: "inventory", market: "market", shop: "shop", stake: "fund", treasury: "fund" };
       setTab(tabs[t.screen] || "explore");
       setSheetExpanded(true);
+      // The wisp roll sits in Inventory's "Secured on NEAR" fold: open it and scroll there.
+      if (t.screen === "rolls")
+        window.setTimeout(() => {
+          const rolls = document.querySelector<HTMLElement>(".wisp-rolls");
+          const fold = rolls?.closest("details");
+          if (fold) fold.open = true;
+          rolls?.scrollIntoView({ behavior: "smooth", block: "center" });
+        }, 600);
     } else if (t.kind === "action") {
       if (t.action === "task") openNearbyForm("task");
       else if (t.action === "note" || t.action === "topic" || t.action === "shout") setQuickCreate(t.action);
