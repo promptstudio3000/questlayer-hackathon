@@ -91,13 +91,13 @@ const env = { ...process.env, ...ACCOUNTS, NEAR_NETWORK: "testnet", APP_ORIGIN: 
 // --reviewed: the same pinned builds (contracts/wasm-sha256.json) World runs,
 // reviewed when they went live; each script still checks the WASM hashes.
 const STEPS = [
-  { name: "collectibles slice (+ factory, relayer, badges, npc-games)", script: "deploy-mainnet-slice.mjs", args: ["--execute"] },
-  { name: "rewards + vault factory", script: "deploy-native-funding-testnet.mjs" },
-  { name: "QGOLD vault", script: "deploy-qgold-testnet.mjs", args: ["--reviewed"] },
-  { name: "ledger + soulbound QGOLD", script: "deploy-ledger-testnet.mjs" },
-  { name: "market", script: "deploy-market-testnet.mjs" },
-  { name: "QGOLD escrow", script: "deploy-qgold-escrow-testnet.mjs", args: ["--reviewed"] },
-  { name: "creators", script: "deploy-creators-testnet.mjs" },
+  { name: "collectibles slice (+ factory, relayer, badges, npc-games)", script: "deploy-mainnet-slice.mjs", args: ["--execute"], record: "output/mainnet-slice-testnet/testnet-deployment.json" },
+  { name: "rewards + vault factory", script: "deploy-native-funding-testnet.mjs", record: "public/native-rewards-testnet.json" },
+  { name: "QGOLD vault", script: "deploy-qgold-testnet.mjs", args: ["--reviewed"], record: "public/native-qgold-vault-testnet.json" },
+  { name: "ledger + soulbound QGOLD", script: "deploy-ledger-testnet.mjs", record: "public/native-ledger-testnet.json" },
+  { name: "market", script: "deploy-market-testnet.mjs", record: "public/native-market-testnet.json" },
+  { name: "QGOLD escrow", script: "deploy-qgold-escrow-testnet.mjs", args: ["--reviewed"], record: "public/native-qgold-escrow-testnet.json" },
+  { name: "creators", script: "deploy-creators-testnet.mjs", record: "public/native-creators-testnet.json" },
 ];
 const SHARED = ["native-intents"]; // records the Test Layer reuses as they are
 // Build facts, not contract ids: the slice checks the collectibles build's edition list.
@@ -213,7 +213,14 @@ for (const [key, id] of Object.entries(ACCOUNTS)) {
 }
 
 // 2-3. The deploy scripts, in order, inside the work tree.
+// A step whose record is in the work tree finished in an earlier run and is
+// not run again: the scripts' smoke tests are not repeatable (the escrow smoke
+// compares an absolute payout balance). TESTLAYER_RERUN=<script> runs one anyway.
 for (const s of STEPS) {
+  if (existsSync(resolve(work, s.record)) && process.env.TESTLAYER_RERUN !== s.script) {
+    log({ step: s.name, skipped: "done in an earlier run", record: s.record });
+    continue;
+  }
   log({ step: s.name, script: s.script });
   const patience = pathToFileURL(resolve(work, "scripts/lib/rpc-patience.mjs")).href;
   execFileSync(process.execPath, ["--import", patience, resolve(work, "scripts", s.script), ...(s.args || [])], { cwd: work, env, stdio: "inherit" });
