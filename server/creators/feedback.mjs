@@ -4,7 +4,9 @@
 // change the rating later. Anyone who can see the quest may write in its
 // discussion. The quest list shows the average. A quest's public id is the
 // same id the creators contract registers (`register_quest`), so a rating can
-// later be anchored on chain against that id; `chain_ref` is reserved for it.
+// be anchored on chain against that id: the explorer's own account writes the
+// stars as a NEAR Social record (`createRatingAnchor` below) and `chain_ref`
+// keeps where it landed.
 import { randomUUID } from "node:crypto";
 import { mkdirSync, writeFileSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
@@ -140,7 +142,7 @@ export function createCreatorFeedback(db, { clock = Date.now, community }) {
     const owner = author(questId);
     const mine = db
       .prepare(
-        "SELECT stars FROM creator_quest_ratings WHERE quest_id=? AND player_id=?",
+        "SELECT stars,chain_ref FROM creator_quest_ratings WHERE quest_id=? AND player_id=?",
       )
       .get(questId, actor);
     const rows = db
@@ -155,6 +157,7 @@ export function createCreatorFeedback(db, { clock = Date.now, community }) {
       rating: {
         ...questFeedbackSummary(db, questId),
         mine: mine?.stars ?? null,
+        anchored: !!mine?.chain_ref,
         canRate: owner !== actor && started(actor, questId),
       },
       comments: rows
@@ -250,6 +253,133 @@ export function createCreatorFeedback(db, { clock = Date.now, community }) {
         ).run(now, commentId);
         return { questId, commentId };
       });
+    },
+  };
+}
+
+// ---- Ratings on chain ---------------------------------------------------------
+// The explorer's own account keeps the stars as a public NEAR Social record at
+// `<account>/questlayer/ratings/<quest id>`. Same flow as place records
+// (server/gold-spend/social.mjs): the server quotes the exact `set` call, the
+// account signs it (relayed for the invisible account) and confirm reads the
+// chain back. `registry` names the creators contract where the same quest id is
+// registered, when the host has one. Only the number is public, never a text.
+export const RATING_RECORD_SCHEMA = "questlayer.rating/1";
+export const RATING_KEY = /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/;
+const RATING_MUTATION = /^rating_[a-f0-9-]{36}$/;
+
+export function parseRatingRecord(value, questId) {
+  const fields = ["mutation_id", "quest_id", "registry", "schema", "stars", "updated_at"];
+  return value &&
+    typeof value === "object" &&
+    Object.keys(value).sort().join() === fields.join() &&
+    fields.every((f) => typeof value[f] === "string") &&
+    value.schema === RATING_RECORD_SCHEMA &&
+    value.quest_id === questId &&
+    /^[1-5]$/.test(value.stars) &&
+    RATING_MUTATION.test(value.mutation_id)
+    ? value
+    : null;
+}
+
+export function createRatingAnchor(
+  db,
+  socialRecords,
+  { clock = Date.now, registry = "", network = "testnet" } = {},
+) {
+  const enabled = !!socialRecords;
+  const mine = (player, questId) => {
+    key(questId);
+    // Lazy: a host with the Community off never gets creator tables.
+    ensureCreatorFeedbackSchema(db);
+    fail(
+      enabled,
+      "Public records are not enabled here.",
+      "CREATOR_ANCHOR_DISABLED",
+      503,
+    );
+    fail(
+      RATING_KEY.test(questId),
+      "This quest cannot carry a public rating.",
+      "CREATOR_INPUT",
+      400,
+    );
+    const row = db
+      .prepare(
+        "SELECT stars,chain_ref FROM creator_quest_ratings WHERE quest_id=? AND player_id=?",
+      )
+      .get(questId, player);
+    fail(row, "Rate this quest first.", "CREATOR_NOT_FOUND", 404);
+    return row;
+  };
+  const read = async (accountId, questId) => {
+    const value = await socialRecords.reader.view(
+      "get",
+      { keys: [`${accountId}/questlayer/ratings/${questId}/**`] },
+      true,
+    );
+    return parseRatingRecord(
+      value?.[accountId]?.questlayer?.ratings?.[questId],
+      questId,
+    );
+  };
+  return {
+    enabled,
+    async prepare(player, accountId, { questId } = {}) {
+      const row = mine(player, questId);
+      const storage = await socialRecords.storage(accountId, true);
+      fail(
+        storage.publishEnabled,
+        "Public records are temporarily unavailable.",
+        "CREATOR_ANCHOR_DISABLED",
+        503,
+      );
+      const record = {
+        schema: RATING_RECORD_SCHEMA,
+        quest_id: questId,
+        registry,
+        stars: String(row.stars),
+        updated_at: String(clock()),
+        mutation_id: `rating_${randomUUID()}`,
+      };
+      return {
+        network,
+        receiverId: socialRecords.contractId,
+        accountId,
+        methodName: "set",
+        gas: "80000000000000",
+        deposit: storage.deposit,
+        key: questId,
+        record,
+        args: {
+          data: { [accountId]: { questlayer: { ratings: { [questId]: record } } } },
+        },
+      };
+    },
+    async confirm(player, accountId, { questId, mutationId } = {}) {
+      const row = mine(player, questId);
+      fail(
+        RATING_MUTATION.test(mutationId || ""),
+        "Invalid record publication.",
+        "CREATOR_INPUT",
+        400,
+      );
+      const chain = await read(accountId, questId);
+      // A changed rating clears chain_ref; only the current stars count.
+      const confirmed =
+        !!chain &&
+        chain.mutation_id === mutationId &&
+        chain.stars === String(row.stars);
+      if (confirmed)
+        db.prepare(
+          "UPDATE creator_quest_ratings SET chain_ref=? WHERE quest_id=? AND player_id=? AND stars=?",
+        ).run(
+          `${accountId}/questlayer/ratings/${questId}#${mutationId}`,
+          questId,
+          player,
+          row.stars,
+        );
+      return { confirmed, questId };
     },
   };
 }
