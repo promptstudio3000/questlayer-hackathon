@@ -71,6 +71,10 @@ export const PendingNativeTransactions = lazyNamed(
   () => import("./PendingNativeTransactions"),
   "PendingNativeTransactions",
 );
+export const SettingsReceipts = lazyNamed(
+  () => import("./PendingNativeTransactions"),
+  "SettingsReceipts",
+);
 export const CreatorCommunity = lazyNamed(
   () => import("./CreatorCommunity"),
   "CreatorCommunity",

@@ -23,7 +23,7 @@ import {
   AdventureResultDialog,
   AdventureResultResume,
   AdventureResultHistoryButton,
-  PendingNativeTransactions,
+  SettingsReceipts,
   GasWatch,
   ChainSettings,
   WalletPanel,
@@ -241,8 +241,6 @@ import {
   GameController,
   Lifebuoy,
   Code,
-  Receipt,
-  Info,
 } from "@phosphor-icons/react";
 import { ArrowRight, ArrowLeft } from "./dir-icons";
 import { ArrowRight as PhArrowRight } from "@phosphor-icons/react";
@@ -4925,23 +4923,17 @@ export default function App() {
                   />
                 </div>
               </details>
-              <details className="settings-group screen-details settings-receipts">
-                <summary><Receipt size={20} aria-hidden="true" />{tr("Receipts")}</summary>
-                <p className="fine-print settings-pad">
-                  <Info size={16} aria-hidden="true" /> {tr("Payments you signed keep a receipt here until the chain confirms them. If one was interrupted, check it here before paying again.")}
-                </p>
-                <PendingNativeTransactions
-                  key={player.id}
-                  playerId={player.id}
-                  linkedAccounts={player.wallets.map((wallet) => wallet.account_id)}
-                  onConfirmed={async () => {
-                    await Promise.allSettled([
-                      refreshNative(true),
-                      nativeGame.refresh(),
-                    ]);
-                  }}
-                />
-              </details>
+              <SettingsReceipts
+                key={player.id}
+                playerId={player.id}
+                linkedAccounts={player.wallets.map((wallet) => wallet.account_id)}
+                onConfirmed={async () => {
+                  await Promise.allSettled([
+                    refreshNative(true),
+                    nativeGame.refresh(),
+                  ]);
+                }}
+              />
               <button className="settings-row" onClick={() => void action("logout", async () => {
                 await api("/logout", {}); setPlayer(null); setWorld(null);
               })}><SignOut /><span>{tr("Sign out")}</span></button>
