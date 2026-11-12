@@ -62,6 +62,13 @@ Status is public and secret-free: `GET /api/release/status` and `GET /api/releas
   never secrets), keeps every other line and a timestamped copy of the previous file.
   Restart or redeploy the service afterwards.
 
+- `deployTarget`: `{"id": "...", "deployTarget": "testlayer", "ref": "...", "sha": "...", "installKeys": [...], "runtimeEnv": {...}}`
+  runs no script. It installs the keys and runtime.env first, then builds that checkout (`npm run check`, then
+  `npm run build` with the target's `buildEnv`), activates it with the installed `vps-activate-release.sh`
+  and reinstalls the target's signing vault when its fingerprint changed. Targets are listed in
+  `deployTargets` (today: the Test Layer, `questlayer-testlayer` on 7093 with `questlayer-test-signer` on 7094).
+  A missing allowlisted key directory is created (0700); systemd hands it to the DynamicUser on first start.
+
 Operations already in the tree when the runner first starts are recorded as `baseline` and never run.
 
 ## One-time install (the last thing the Mac does)
