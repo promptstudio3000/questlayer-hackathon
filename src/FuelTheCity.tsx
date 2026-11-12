@@ -584,7 +584,6 @@ export function FuelTheCity({
       {helpOpen && (
         <FundsHelp
           title={tr("Why you can't stake yet")}
-          needLine={tr("Staking needs about {0} NEAR (vault setup, the stake and a little gas).", { 0: nearText(needYocto, 2) })}
           funds={{ account, have: balance, need: needYocto, qgold }}
           explorerAccount={explorerAccount}
           explorerStatus={explorerStatus}

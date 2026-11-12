@@ -2,28 +2,9 @@
 .funds-help { display: grid; gap: 12px; padding: 20px; max-width: 480px; }
 .funds-help h2 { margin: 0; font-size: 20px; }
 .funds-help-reason { margin: 0; font-size: 15px; line-height: 1.5; color: var(--ink); }
-.funds-help-options { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
-.funds-help-options li {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--decorative-border);
-  border-radius: 14px;
-  background: var(--surface-raised);
-}
-.funds-help-options b { font-size: 15px; color: var(--ink); }
-.funds-help-options span { font-size: 13px; line-height: 1.45; color: var(--ink-secondary); }
-.funds-help-options code { font-size: 12px; word-break: break-all; color: var(--ink-secondary); }
-.funds-help-options .secondary-button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-height: 44px;
-  font-size: 14px;
-  font-weight: 600;
-  text-decoration: none;
-}
+.funds-help .primary-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 48px; text-decoration: none; }
+.funds-help .secondary-button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 44px; font-size: 14px; font-weight: 600; text-decoration: none; }
+.funds-help-more summary { min-height: 44px; display: flex; align-items: center; font-size: 14px; font-weight: 600; color: var(--ink-secondary); cursor: pointer; }
 
 .funds-help-buttons { display: flex; flex-wrap: wrap; gap: 8px; }
 .funds-help-buttons .secondary-button { padding: 0 14px; }
