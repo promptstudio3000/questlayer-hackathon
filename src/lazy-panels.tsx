@@ -71,6 +71,10 @@ export const PendingNativeTransactions = lazyNamed(
   () => import("./PendingNativeTransactions"),
   "PendingNativeTransactions",
 );
+export const SettingsReceipts = lazyNamed(
+  () => import("./PendingNativeTransactions"),
+  "SettingsReceipts",
+);
 export const CreatorCommunity = lazyNamed(
   () => import("./CreatorCommunity"),
   "CreatorCommunity",
@@ -97,10 +101,8 @@ export const AccountSessions = lazyNamed(
 );
 export const DeviceKeys = lazyNamed(() => import("./DeviceKeys"), "DeviceKeys");
 export const BadgeBook = lazyNamed(() => import("./BadgeBook"), "BadgeBook");
+export const GasWatch = lazyNamed(() => import("./FuelCard"), "GasWatch", true);
 export const CharacterJourney = lazyNamed(() => import("./CharacterJourney"), "CharacterJourney");
-const stakeEarn = () => import("./StakeEarn");
-export const StakeEarnSwitch = lazyNamed(stakeEarn, "StakeEarnSwitch", true);
-export const EarningsPanel = lazyNamed(stakeEarn, "EarningsPanel");
 export const NativeLevelRewards = lazyNamed(
   () => import("./NativeLevelRewards"),
   "NativeLevelRewards",
