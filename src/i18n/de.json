@@ -3160,7 +3160,6 @@
  "The pool is confirming your last step. This takes a moment.": "Der Pool bestätigt deinen letzten Schritt. Das dauert einen Moment.",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "Der Rest der Rendite gehört dir. Mehr für den Preispool bringt dich schneller durch die Tiers.",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "Unstaking: Freigabe in Epoche {0} (jetzt {1}). Das Spiel bringt es für dich zurück; dann hier abheben.",
- "Vault details": "Tresor-Details",
  "Withdraw {0} NEAR": "{0} NEAR abheben",
  "Withdraw {0} NEAR to my balance": "{0} NEAR auf mein Guthaben abheben",
  "Withdrawal requested. Your NEAR is unstaking; it shows here when it's back.": "Auszahlung angefordert. Dein NEAR wird entstakt; es erscheint hier, wenn es zurück ist.",
@@ -3196,11 +3195,9 @@
  "Staking {0} NEAR…": "{0} NEAR werden gestakt…",
  "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "Dein Tresor ist bereit. Tippe noch einmal auf {0} NEAR staken.",
  "Connect a NEAR wallet": "NEAR-Wallet verbinden",
- "Explorer account": "Entdecker-Konto",
  "Install one, create an account, then come back and connect it.": "Installiere eine, erstelle ein Konto und verbinde sie dann hier.",
  "No NEAR wallet yet?": "Noch keine NEAR-Wallet?",
  "Not enough test NEAR yet. What can I do?": "Noch nicht genug Test-NEAR. Was kann ich tun?",
- "Pay from": "Zahlen von",
  "Pay from another crypto wallet": "Mit einer anderen Krypto-Wallet zahlen",
  "Pay with NEAR Intents · at mainnet": "Mit NEAR Intents zahlen · im Mainnet",
  "Send test NEAR to this account": "Sende Test-NEAR an dieses Konto",
@@ -3262,5 +3259,8 @@
  "Nothing for you today. Come back {0} for new tasks.": "Heute nichts für dich. Komm {0} wieder für neue Aufgaben.",
  "It has nothing for you today. Come back {0} to win something.": "Es hat heute nichts für dich. Komm {0} wieder, um etwas zu gewinnen.",
  "Come back later": "Komm später wieder",
- "You can still ask me anything.": "Fragen kannst du mich trotzdem alles."
+ "You can still ask me anything.": "Fragen kannst du mich trotzdem alles.",
+ "Owner": "Inhaber",
+ "Paying from {0}": "Du zahlst von {0}",
+ "Your vault": "Dein Tresor"
 }

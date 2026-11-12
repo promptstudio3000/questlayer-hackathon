@@ -3160,7 +3160,6 @@
  "The pool is confirming your last step. This takes a moment.": "プールが直前の手順を確認しています。少しお待ちください。",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "残りの利回りはあなたのもの。賞金プールへ多く回すほどティアが早く上がります。",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "アンステーク中: エポック {0} で解除（現在 {1}）。ゲームが自動で戻すので、その後ここで引き出してください。",
- "Vault details": "ボールトの詳細",
  "Withdraw {0} NEAR": "{0} NEARを引き出す",
  "Withdraw {0} NEAR to my balance": "{0} NEARを残高に引き出す",
  "Withdrawal requested. Your NEAR is unstaking; it shows here when it's back.": "引き出しをリクエストしました。NEARはアンステーク中で、戻るとここに表示されます。",
@@ -3196,11 +3195,9 @@
  "Staking {0} NEAR…": "{0} NEARをステーク中…",
  "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "ボールトの準備ができました。もう一度「{0} NEARをステーク」をタップしてください。",
  "Connect a NEAR wallet": "NEARウォレットを接続",
- "Explorer account": "エクスプローラーアカウント",
  "Install one, create an account, then come back and connect it.": "ウォレットをインストールしてアカウントを作成し、戻って接続してください。",
  "No NEAR wallet yet?": "NEARウォレットをまだお持ちでない？",
  "Not enough test NEAR yet. What can I do?": "テストNEARがまだ足りません。どうすればいい？",
- "Pay from": "支払い元",
  "Pay from another crypto wallet": "別の暗号資産ウォレットで支払う",
  "Pay with NEAR Intents · at mainnet": "NEAR Intentsで支払う · メインネットで",
  "Send test NEAR to this account": "このアカウントにテストNEARを送る",
@@ -3262,5 +3259,8 @@
  "Nothing for you today. Come back {0} for new tasks.": "今日はあなたへの用事はありません。新しい仕事は{0}に来てね。",
  "It has nothing for you today. Come back {0} to win something.": "今日はあなたに渡すものがありません。{0}に来れば何か手に入ります。",
  "Come back later": "また後で来てね",
- "You can still ask me anything.": "質問ならいつでもどうぞ。"
+ "You can still ask me anything.": "質問ならいつでもどうぞ。",
+ "Owner": "所有者",
+ "Paying from {0}": "{0} から支払い",
+ "Your vault": "あなたのボールト"
 }

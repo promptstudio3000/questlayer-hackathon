@@ -3160,7 +3160,6 @@
  "The pool is confirming your last step. This takes a moment.": "池子正在确认你的上一步，请稍候。",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "其余收益归你。投入奖池越多，等级提升越快。",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "解除质押中：将在纪元 {0} 解锁（当前 {1}）。游戏会替你转回，之后在这里提取。",
- "Vault details": "金库详情",
  "Withdraw {0} NEAR": "提取 {0} NEAR",
  "Withdraw {0} NEAR to my balance": "提取 {0} NEAR 到我的余额",
  "Withdrawal requested. Your NEAR is unstaking; it shows here when it's back.": "已申请提取。你的 NEAR 正在解除质押，回来后会显示在这里。",
@@ -3196,11 +3195,9 @@
  "Staking {0} NEAR…": "正在质押 {0} NEAR…",
  "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "你的金库已就绪。请再点一次“质押 {0} NEAR”。",
  "Connect a NEAR wallet": "连接 NEAR 钱包",
- "Explorer account": "探索者账户",
  "Install one, create an account, then come back and connect it.": "安装一个钱包，创建账户，然后回来连接它。",
  "No NEAR wallet yet?": "还没有 NEAR 钱包？",
  "Not enough test NEAR yet. What can I do?": "测试 NEAR 还不够。我能做什么？",
- "Pay from": "支付账户",
  "Pay from another crypto wallet": "用其他加密钱包支付",
  "Pay with NEAR Intents · at mainnet": "用 NEAR Intents 支付 · 主网上线后",
  "Send test NEAR to this account": "向此账户发送测试 NEAR",
@@ -3262,5 +3259,8 @@
  "Nothing for you today. Come back {0} for new tasks.": "今天没有给你的东西。{0}再来领取新任务。",
  "It has nothing for you today. Come back {0} to win something.": "它今天没有给你的东西。{0}再来就能赢到东西。",
  "Come back later": "稍后再来",
- "You can still ask me anything.": "你仍然可以问我任何问题。"
+ "You can still ask me anything.": "你仍然可以问我任何问题。",
+ "Owner": "所有者",
+ "Paying from {0}": "从 {0} 支付",
+ "Your vault": "你的金库"
 }

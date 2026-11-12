@@ -5,6 +5,7 @@ import {
   CheckCircle,
   Clock,
   Flame,
+  Vault,
   WarningCircle,
 } from "@phosphor-icons/react";
 import { api } from "./api";
@@ -15,7 +16,7 @@ import {
   summarizeFuel,
   type FuelPosition,
 } from "./city-fuel";
-import { NativeStaking, type VaultSnapshot } from "./NativeStaking";
+import type { VaultSnapshot } from "./NativeStaking";
 import { StakeToday } from "./StakeToday";
 import { StakeStory, TierLadder, type StakerStep } from "./StakeEarn";
 import { STAKER_SUGGEST_NEAR, takeStakePrefill } from "./LockedChip";
@@ -115,7 +116,6 @@ export function FuelTheCity({
   account: explorerAccount,
   managed: explorerManaged,
   explorerStatus,
-  onConnect,
   onLinkWallet,
   onTransaction,
 }: {
@@ -437,18 +437,8 @@ export function FuelTheCity({
               {eur && !busy ? <small>{eur}</small> : null}
               <Flame size={20} aria-hidden="true" />
             </button>
-            {payOptions.length > 1 && (
-              <label className="fuel-payfrom">
-                <span>{tr("Pay from")}</span>
-                <select value={account} disabled={busy} onChange={(e) => setChosen(e.target.value)}>
-                  {payOptions.map((id) => (
-                    <option key={id} value={id}>
-                      {id === explorerAccount ? tr("Explorer account") + " · " : ""}
-                      {id}
-                    </option>
-                  ))}
-                </select>
-              </label>
+            {account && account !== explorerAccount && (
+              <p className="fuel-payfrom">{tr("Paying from {0}", { 0: account })}</p>
             )}
             {(short || !account) && (
               <button type="button" className="fuel-why" onClick={() => setHelpOpen(true)}>
@@ -601,12 +591,40 @@ export function FuelTheCity({
         />
       )}
 
-      <details className="play-details fuel-advanced">
-        <summary>
-          <ArrowsClockwise size={18} aria-hidden="true" /> {tr("Vault details")}
-        </summary>
-        <NativeStaking player={player} onConnect={onConnect} onTransaction={onTransaction} />
-      </details>
+      {"position" in phase && phase.position.position && (
+        // Shown once there is a stake: where the NEAR sits, in plain words.
+        <details className="play-details fuel-advanced">
+          <summary>
+            <Vault size={18} aria-hidden="true" /> {tr("Your vault")}
+          </summary>
+          <dl className="fuel-vault">
+            <div>
+              <dt>{tr("Vault")}</dt>
+              <dd>
+                <a href={`https://testnet.nearblocks.io/address/${phase.position.account_id}`} target="_blank" rel="noreferrer">
+                  {phase.position.account_id}
+                </a>
+              </dd>
+            </div>
+            <div>
+              <dt>{tr("Owner")}</dt>
+              <dd>{phase.position.position.beneficiary || account}</dd>
+            </div>
+            <div>
+              <dt>{tr("Validator")}</dt>
+              <dd>{phase.position.position.pool}</dd>
+            </div>
+            <div>
+              <dt>{tr("Staked")}</dt>
+              <dd>{fmt(principal, 3)} NEAR</dd>
+            </div>
+            <div>
+              <dt>{tr("Yield to the prize pool")}</dt>
+              <dd>{pct} %</dd>
+            </div>
+          </dl>
+        </details>
+      )}
     </section>
   );
 }

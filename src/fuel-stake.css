@@ -137,14 +137,9 @@
   text-align: start;
   cursor: pointer;
 }
-.fuel-payfrom { display: grid; gap: 4px; font-size: 13px; color: var(--ink-secondary); }
-.fuel-payfrom select {
-  min-height: 44px;
-  padding: 0 10px;
-  border: 1px solid var(--decorative-border);
-  border-radius: 12px;
-  background: var(--surface-raised);
-  font: inherit;
-  font-size: 14px;
-  color: var(--ink);
-}
+.fuel-payfrom { margin: 0; font-size: 13px; color: var(--ink-secondary); overflow-wrap: anywhere; }
+.fuel-vault { display: grid; gap: 8px; margin: 8px 0 0; }
+.fuel-vault div { display: grid; grid-template-columns: minmax(96px, auto) 1fr; gap: 12px; }
+.fuel-vault dt { color: var(--ink-secondary); font-size: 13px; }
+.fuel-vault dd { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+

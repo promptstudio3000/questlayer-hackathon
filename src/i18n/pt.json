@@ -3160,7 +3160,6 @@
  "The pool is confirming your last step. This takes a moment.": "O pool está a confirmar o teu último passo. Demora um momento.",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "O resto do rendimento é teu. Mais para o prémio sobe os tiers mais depressa.",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "Unstaking: desbloqueia na época {0} (agora {1}). O jogo devolve-o por ti; depois levanta-o aqui.",
- "Vault details": "Detalhes do cofre",
  "Withdraw {0} NEAR": "Levantar {0} NEAR",
  "Withdraw {0} NEAR to my balance": "Levantar {0} NEAR para o meu saldo",
  "Withdrawal requested. Your NEAR is unstaking; it shows here when it's back.": "Levantamento pedido. O teu NEAR está em unstaking; aparece aqui quando voltar.",
@@ -3196,11 +3195,9 @@
  "Staking {0} NEAR…": "A fazer stake de {0} NEAR…",
  "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "O teu cofre está pronto. Toca mais uma vez em Fazer stake de {0} NEAR.",
  "Connect a NEAR wallet": "Conectar uma carteira NEAR",
- "Explorer account": "Conta de explorador",
  "Install one, create an account, then come back and connect it.": "Instale uma, crie uma conta e volte para conectá-la.",
  "No NEAR wallet yet?": "Ainda não tem carteira NEAR?",
  "Not enough test NEAR yet. What can I do?": "Ainda não há NEAR de teste suficiente. O que posso fazer?",
- "Pay from": "Pagar com",
  "Pay from another crypto wallet": "Pagar com outra carteira cripto",
  "Pay with NEAR Intents · at mainnet": "Pagar com NEAR Intents · na mainnet",
  "Send test NEAR to this account": "Envie NEAR de teste para esta conta",
@@ -3262,5 +3259,8 @@
  "Nothing for you today. Come back {0} for new tasks.": "Nada para você hoje. Volte {0} para novas tarefas.",
  "It has nothing for you today. Come back {0} to win something.": "Ele não tem nada para você hoje. Volte {0} para ganhar algo.",
  "Come back later": "Volte mais tarde",
- "You can still ask me anything.": "Você ainda pode me perguntar qualquer coisa."
+ "You can still ask me anything.": "Você ainda pode me perguntar qualquer coisa.",
+ "Owner": "Dono",
+ "Paying from {0}": "Pagando com {0}",
+ "Your vault": "Seu cofre"
 }

@@ -3160,7 +3160,6 @@
  "The pool is confirming your last step. This takes a moment.": "पूल तुम्हारे पिछले चरण की पुष्टि कर रहा है। इसमें थोड़ा समय लगता है।",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "बाकी यील्ड तुम्हारी है। इनाम पूल में ज़्यादा देने से टियर तेज़ी से बढ़ते हैं।",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "अनस्टेकिंग: एपॉक {0} में खुलेगा (अभी {1})। गेम इसे तुम्हारे लिए वापस लाता है; फिर यहाँ निकालो।",
- "Vault details": "तिजोरी विवरण",
  "Withdraw {0} NEAR": "{0} NEAR निकालें",
  "Withdraw {0} NEAR to my balance": "{0} NEAR मेरे बैलेंस में निकालें",
  "Withdrawal requested. Your NEAR is unstaking; it shows here when it's back.": "निकासी का अनुरोध हो गया। तुम्हारा NEAR अनस्टेक हो रहा है; वापस आने पर यहाँ दिखेगा।",
@@ -3196,11 +3195,9 @@
  "Staking {0} NEAR…": "{0} NEAR स्टेक हो रहा है…",
  "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "तुम्हारी तिजोरी तैयार है। एक बार फिर {0} NEAR स्टेक करें पर टैप करो।",
  "Connect a NEAR wallet": "NEAR वॉलेट जोड़ें",
- "Explorer account": "एक्सप्लोरर खाता",
  "Install one, create an account, then come back and connect it.": "एक इंस्टॉल करें, खाता बनाएँ, फिर लौटकर उसे जोड़ें।",
  "No NEAR wallet yet?": "अभी तक NEAR वॉलेट नहीं है?",
  "Not enough test NEAR yet. What can I do?": "अभी पर्याप्त टेस्ट NEAR नहीं है। मैं क्या कर सकता हूँ?",
- "Pay from": "इससे भुगतान करें",
  "Pay from another crypto wallet": "किसी दूसरे क्रिप्टो वॉलेट से भुगतान करें",
  "Pay with NEAR Intents · at mainnet": "NEAR Intents से भुगतान · mainnet पर",
  "Send test NEAR to this account": "इस खाते में टेस्ट NEAR भेजें",
@@ -3262,5 +3259,8 @@
  "Nothing for you today. Come back {0} for new tasks.": "आज तुम्हारे लिए कुछ नहीं है। नए काम के लिए {0} आना।",
  "It has nothing for you today. Come back {0} to win something.": "आज इसके पास तुम्हारे लिए कुछ नहीं है। कुछ जीतने के लिए {0} आना।",
  "Come back later": "बाद में आना",
- "You can still ask me anything.": "फिर भी तुम मुझसे कुछ भी पूछ सकते हो।"
+ "You can still ask me anything.": "फिर भी तुम मुझसे कुछ भी पूछ सकते हो।",
+ "Owner": "मालिक",
+ "Paying from {0}": "{0} से भुगतान",
+ "Your vault": "आपका वॉल्ट"
 }

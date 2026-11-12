@@ -3160,7 +3160,6 @@
  "The pool is confirming your last step. This takes a moment.": "المجمع يؤكد خطوتك الأخيرة. يستغرق ذلك لحظة.",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "باقي العائد لك. المزيد لصندوق الجوائز يرفع المستويات أسرع.",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "فك التخزين: يُفتح في الحقبة {0} (الآن {1}). اللعبة تعيده لك؛ ثم اسحبه هنا.",
- "Vault details": "تفاصيل الخزنة",
  "Withdraw {0} NEAR": "اسحب {0} NEAR",
  "Withdraw {0} NEAR to my balance": "اسحب {0} NEAR إلى رصيدي",
  "Withdrawal requested. Your NEAR is unstaking; it shows here when it's back.": "تم طلب السحب. NEAR الخاص بك قيد فك التخزين؛ سيظهر هنا عند عودته.",
@@ -3196,11 +3195,9 @@
  "Staking {0} NEAR…": "جارٍ تخزين {0} NEAR…",
  "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "خزنتك جاهزة. اضغط خزّن {0} NEAR مرة أخرى.",
  "Connect a NEAR wallet": "اربط محفظة NEAR",
- "Explorer account": "حساب المستكشف",
  "Install one, create an account, then come back and connect it.": "ثبّت محفظة، وأنشئ حسابًا، ثم عد واربطها.",
  "No NEAR wallet yet?": "لا تملك محفظة NEAR بعد؟",
  "Not enough test NEAR yet. What can I do?": "لا يوجد ما يكفي من NEAR التجريبي بعد. ماذا يمكنني أن أفعل؟",
- "Pay from": "الدفع من",
  "Pay from another crypto wallet": "الدفع من محفظة عملات رقمية أخرى",
  "Pay with NEAR Intents · at mainnet": "الدفع عبر NEAR Intents · على الشبكة الرئيسية",
  "Send test NEAR to this account": "أرسل NEAR تجريبيًا إلى هذا الحساب",
@@ -3262,5 +3259,8 @@
  "Nothing for you today. Come back {0} for new tasks.": "لا شيء لك اليوم. عد {0} لمهام جديدة.",
  "It has nothing for you today. Come back {0} to win something.": "ليس لديه شيء لك اليوم. عد {0} لتربح شيئًا.",
  "Come back later": "عد لاحقًا",
- "You can still ask me anything.": "لا يزال بإمكانك أن تسألني أي شيء."
+ "You can still ask me anything.": "لا يزال بإمكانك أن تسألني أي شيء.",
+ "Owner": "المالك",
+ "Paying from {0}": "الدفع من {0}",
+ "Your vault": "خزنتك"
 }

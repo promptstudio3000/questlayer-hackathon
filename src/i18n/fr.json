@@ -3160,7 +3160,6 @@
  "The pool is confirming your last step. This takes a moment.": "Le pool confirme ta dernière étape. Cela prend un instant.",
  "The rest of the yield is yours. More to the prize pool climbs the tiers faster.": "Le reste du rendement est à toi. Plus pour la cagnotte fait monter les tiers plus vite.",
  "Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.": "Unstaking : déblocage à l'époque {0} (maintenant {1}). Le jeu le ramène pour toi ; retire-le ensuite ici.",
- "Vault details": "Détails du coffre",
  "Withdraw {0} NEAR": "Retirer {0} NEAR",
  "Withdraw {0} NEAR to my balance": "Retirer {0} NEAR vers mon solde",
  "Withdrawal requested. Your NEAR is unstaking; it shows here when it's back.": "Retrait demandé. Tes NEAR sont en unstaking ; ils apparaîtront ici à leur retour.",
@@ -3196,11 +3195,9 @@
  "Staking {0} NEAR…": "Stake de {0} NEAR…",
  "Your vault is ready. Tap Stake {0} NEAR once more to stake.": "Ton coffre est prêt. Touche encore une fois Staker {0} NEAR.",
  "Connect a NEAR wallet": "Connecter un portefeuille NEAR",
- "Explorer account": "Compte d'explorateur",
  "Install one, create an account, then come back and connect it.": "Installe-en un, crée un compte, puis reviens le connecter.",
  "No NEAR wallet yet?": "Pas encore de portefeuille NEAR ?",
  "Not enough test NEAR yet. What can I do?": "Pas encore assez de NEAR de test. Que puis-je faire ?",
- "Pay from": "Payer depuis",
  "Pay from another crypto wallet": "Payer depuis un autre portefeuille crypto",
  "Pay with NEAR Intents · at mainnet": "Payer avec NEAR Intents · sur le mainnet",
  "Send test NEAR to this account": "Envoie des NEAR de test à ce compte",
@@ -3262,5 +3259,8 @@
  "Nothing for you today. Come back {0} for new tasks.": "Rien pour toi aujourd'hui. Reviens {0} pour de nouvelles tâches.",
  "It has nothing for you today. Come back {0} to win something.": "Il n'a rien pour toi aujourd'hui. Reviens {0} pour gagner quelque chose.",
  "Come back later": "Reviens plus tard",
- "You can still ask me anything.": "Tu peux quand même tout me demander."
+ "You can still ask me anything.": "Tu peux quand même tout me demander.",
+ "Owner": "Propriétaire",
+ "Paying from {0}": "Tu paies depuis {0}",
+ "Your vault": "Ton coffre"
 }
