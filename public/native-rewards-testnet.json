@@ -1,18 +1,19 @@
 {
   "network": "testnet",
-  "verifiedAt": "2026-11-01T12:31:34.699Z",
+  "verifiedAt": "2026-11-10T01:00:19.807Z",
   "contractId": "questlayer-rewards-20261101b.testnet",
-  "codeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
-  "wasmSha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
+  "codeHash": "5Ci3cxE7KL9QnNRomx1ddrajeDKGdbwQygX5DadH1q1h",
+  "wasmSha256": "3e6e8be931b0887a39b9ad038efd11ef015c879b896e37a2ddb97bd2f7a2faa8",
   "attestor": "MGT5FD2Zjbpzzi1o4q577SoOkuteao1fdS7iAtnir5E=",
   "workerPublicKey": "ed25519:CxnutmQc11uvbAG8G15tCZutTN1MDGMADNsrTqNPDFhB",
   "factory": {
     "contractId": "questlayer-vaults-20261101b.testnet",
-    "codeHash": "CuXpM81e398FHSfLeZ3JfgqXMnnNXgiQQizTiKFBvVJx",
-    "wasmSha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9",
-    "vaultCodeHash": "JkPjjmee2icPSBNQ1weT1J1g2nMATgYFXZoqXedDB8i",
-    "vaultWasmSha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7",
-    "setupDeposit": "3520000000000000000000000"
+    "codeHash": "5mn94vZFGdvT43PEUpx3YrFjVNbtZTbEgcYHWTMeNRZD",
+    "wasmSha256": "46e7579d5a542cb9980e92dfd4578b57b2ec6e8dbe8db9ef263b96fb953818c4",
+    "vaultCodeHash": "4bnUo5Bn5MJqME8o5SrK9YfacYjzwmqFGPfQ4gxp3TbY",
+    "vaultWasmSha256": "357c3b5715d7700aa1d11bc827c7407ddbc28e3892b702405d7cbbe8f5e7535b",
+    "setupDeposit": "3520000000000000000000000",
+    "generation": "v3-20261109"
   },
   "vaults": [
     {
@@ -142,6 +143,14 @@
     {
       "label": "Authorize only bounded UTC world reservation operations",
       "transaction": "7dKjY7HRy9ZBgEi1aFdn1RNTXAMua7UKvynpfdce3iGr"
+    },
+    {
+      "label": "Upgrade vault factory: new positions get vault v3 (stuck-op recovery, harvest limits, settled basis)",
+      "transaction": "6iVrzdtifvvRYcTGbxz3ubheM1HskWwpt61AYnJE4JXv"
+    },
+    {
+      "label": "Upgrade rewards: measured callback gas, batch 8, recorded mint attempts and reconcile (M4)",
+      "transaction": "78JLcTXSw5yh79vnqYjZmN3rsk253BjmRrbeJToZkNgA"
     }
   ],
   "streetFinds": {
@@ -169,10 +178,10 @@
     "close_world_day"
   ],
   "globalRewards": {
-    "enabled": false,
-    "rewardsCodeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+    "enabled": true,
+    "rewardsCodeHash": "5Ci3cxE7KL9QnNRomx1ddrajeDKGdbwQygX5DadH1q1h",
     "qgoldContractId": "questlayer-qgold-vault-20261104.testnet",
-    "qgoldCodeHash": "F4p3S4cuvTScZXBWbqssNUxohgDN3rBGQq8gRS74jj4A",
+    "qgoldCodeHash": "4iWCUy9qvQ9B57zVdqncQAycVP21JuDNYjVreBYiFAgG",
     "fundingTransactions": [
       {
         "hash": "2hAcJpBfstwzYVt1ewpSP8zsg4S4UVYijGBvbr9QUMmQ",
@@ -184,6 +193,14 @@
       },
       {
         "hash": "GSjfp1xjeXkpj8o5tqxwXARxeTgDd3yRT2HZ7QPBAYJx",
+        "signerId": "questlayer-rewards-20261101b.testnet"
+      },
+      {
+        "hash": "GfSe2X8D7PhDAaHgc5HRYHpGdfUrjPsJtfhvhH2kfDQs",
+        "signerId": "questlayer-rewards-20261101b.testnet"
+      },
+      {
+        "hash": "GpRStW6fMr464me5Yx7paufP7MtHzTr2Md6PNHBup8Hn",
         "signerId": "questlayer-rewards-20261101b.testnet"
       }
     ],
@@ -199,5 +216,41 @@
     "workerAllowanceAtGrantYocto": "280890509269139100000000",
     "globalFinancialActivation": false,
     "awaitingQgoldProposal": 2
+  },
+  "factoryHistory": [
+    {
+      "contractId": "questlayer-vaults-20261101b.testnet",
+      "codeHash": "CuXpM81e398FHSfLeZ3JfgqXMnnNXgiQQizTiKFBvVJx",
+      "wasmSha256": "b0e59a36692df7248a103307ddc771477b6449397de3aee86f2a0c7a043d1ea9",
+      "vaultCodeHash": "JkPjjmee2icPSBNQ1weT1J1g2nMATgYFXZoqXedDB8i",
+      "vaultWasmSha256": "048beff061ff49513ea41f0c49ae9219fb888a321de958c37c10ce0009beaee7",
+      "setupDeposit": "3520000000000000000000000",
+      "replacedAt": "2026-11-09T23:55:59.017Z",
+      "replacedBy": "6iVrzdtifvvRYcTGbxz3ubheM1HskWwpt61AYnJE4JXv",
+      "backup": ".data/contract-backups/questlayer-vaults-20261101b.testnet-CuXpM81e398FHSfLeZ3JfgqXMnnNXgiQQizTiKFBvVJx.wasm",
+      "createdPositions": 0
+    }
+  ],
+  "previousDeployments": [
+    {
+      "contractId": "questlayer-rewards-20261101b.testnet",
+      "codeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+      "wasmSha256": "1345d1648e406d781f409cb4e9f984aa7e657145c2aa8fdaa274741c7757bbcc",
+      "replacedAt": "2026-11-10T01:00:19.807Z",
+      "replacedBy": "78JLcTXSw5yh79vnqYjZmN3rsk253BjmRrbeJToZkNgA",
+      "backup": ".data/contract-backups/questlayer-rewards-20261101b.testnet-2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT.wasm"
+    }
+  ],
+  "callbackRecoveryUpgrade": {
+    "verifiedAt": "2026-11-10T01:00:19.807Z",
+    "sourceCommit": "c2bc01c6a22d291bee16d541d9a800bfbae72f41",
+    "previousCodeHash": "2JEVdTubVxUMt5v9bqrzH6VG7myeSroByRroyKQRDpgT",
+    "newCodeHash": "5Ci3cxE7KL9QnNRomx1ddrajeDKGdbwQygX5DadH1q1h",
+    "treasuryUnchanged": true,
+    "payoutMaxBatch": 8,
+    "mintTgas": 15,
+    "callbackTgas": 10,
+    "reconcileAfterMs": 86400000,
+    "note": "Code-only deploy of PR #240 (M4). Root Borsh layout unchanged; attempts live under new LookupMap prefixes. Worker key unchanged: it does not call the reconcile methods."
   }
 }

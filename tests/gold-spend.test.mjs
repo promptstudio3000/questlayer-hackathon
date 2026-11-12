@@ -77,7 +77,7 @@ test("a short balance burns nothing", () => {
   const g = createGoldSpend(db, { now: () => noon });
   const p = createPlayer(db, "Broke");
   db.prepare("UPDATE players SET gold_u=? WHERE id=?").run(1000, p);
-  assert.throws(() => g.buy(p, { sku: "cosmetic:frame-gold" }), /Not enough GOLD/);
+  assert.throws(() => g.buy(p, { sku: "cosmetic:frame-gold" }), /Not enough QGOLD/);
   assert.equal(gold(db, p), 1000);
   assert.equal(burnTotals(db).totalU, 0);
 });

@@ -18,12 +18,21 @@ the demo starts.
 
    | Zone | From the square | Shape |
    |---|---|---|
-   | náměstí Republiky | in the square (start) | 85 m circle |
-   | sady Pětatřicátníků North | ~290 m NW | 55 m circle |
-   | sady Pětatřicátníků West | ~250 m W | 55 m circle |
-   | Smetanovy sady | ~330 m SW | 55 m circle |
-   | Šafaříkovy sady | ~300 m SE | 55 m circle |
-   | sady 5. května | ~330 m E | 75 m circle |
+   | náměstí Republiky | in the square (start) | square outline, ~85 m |
+   | sady Pětatřicátníků North | ~290 m NW | irregular blob, ~55 m |
+   | sady Pětatřicátníků West | ~250 m W | irregular blob, ~55 m |
+   | Smetanovy sady | ~330 m SW | irregular blob, ~55 m |
+   | Šafaříkovy sady | ~300 m SE | irregular blob, ~55 m |
+   | sady 5. května | ~330 m E | park outline, ~75 m |
+
+   Shapes (11 Nov 2026): each zone is its OpenStreetMap park or square
+   outline cut to about 1.45× its radius around the anchor
+   (`server/data/demo-zones/plzen-compact-outlines.json` holds the two the
+   CityPack lacks). Where that leaves too little area (the narrow promenade,
+   tiny park pieces) the zone is a seeded irregular blob
+   (`server/spatial/organic-shape.mjs`). The Tier 3 zone of the day is
+   shown but locked until the explorer reaches Tier 3 (see
+   `placeTier` in `server/staker-gates.mjs`).
 
    Zones keep at least 80 m between them (250 m in the citywide layout). The
    round loop through all six is about 2 km.
@@ -48,3 +57,16 @@ Delete the `Environment=DEMO_ZONES=plzen-compact` line (or set
 `DEMO_ZONES=off`) and deploy. The next world uses the citywide zones with
 their rarity windows. `/api/health` shows `demoZones: "off"`. Mainnet refuses
 to start with the flag.
+
+## Start where you are (11 Nov 2026)
+
+The compact layout only changes Plzeň. Everywhere else the GPS world is the
+normal one: POI quests, funded cell zones and backed coins of the day's map
+plan for every street cell (`ensureWorld` in `server/world.mjs`; the plan
+covers Czechia for now).
+
+The game starts in that world (`src/play-here.ts`): after sign-in it asks for
+location and loads the player's own cell right away. The Plzeň city demo is the
+fallback when location is refused or unavailable, and when the player picks
+Demo in Map settings (`questlayer.playMode=demo` in localStorage, kept until
+they pick Use GPS again). A refused start-up request shows no warning.

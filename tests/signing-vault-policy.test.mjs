@@ -313,13 +313,13 @@ test("the approval window names the escrow task's beneficiary, the amount, the c
   assert.match(t, /Contract: qgold\.testnet/);
   assert.match(t, /Method: ft_transfer_call/);
   assert.match(t, /Paid into \(escrow\): escrow\.testnet/);
-  assert.match(t, /Amount: 9\.9 QGOLD/);
-  assert.match(t, /Task reward: 9 QGOLD/);
-  assert.match(t, /Market fee: 0\.9 QGOLD/);
+  assert.match(t, /Amount: 9,900,000 QGOLD/);
+  assert.match(t, /Task reward: 9,000,000 QGOLD/);
+  assert.match(t, /Market fee: 900,000 QGOLD/);
   assert.match(t, /Reward goes to: eve\.testnet \(named worker\)/);
   assert.match(t, /Deadline: 2030-01-01 00:00 UTC/);
   assert.ok(
-    view.warnings.some((w) => w.includes("eve.testnet") && w.includes("9 QGOLD")),
+    view.warnings.some((w) => w.includes("eve.testnet") && w.includes("9,000,000 QGOLD")),
   );
 });
 
@@ -343,11 +343,11 @@ test("escrow sends, Secrets, plain token sends and unreadable messages are decod
     ),
   );
   assert.match(send, /Paid to: bob\.testnet/);
-  assert.match(send, /Amount: 2\.5 QGOLD/);
+  assert.match(send, /Amount: 2,500,000 QGOLD/);
   assert.match(send, /within 50 m of place place-1/);
   assert.match(
     send,
-    /2\.5 QGOLD leaves your account and can be released to bob\.testnet/,
+    /2,500,000 QGOLD leaves your account and can be released to bob\.testnet/,
   );
   const secret = shown(
     describeReview(
@@ -368,7 +368,7 @@ test("escrow sends, Secrets, plain token sends and unreadable messages are decod
     ),
   );
   assert.match(secret, /Paid to \(creator\): carol\.testnet/);
-  assert.match(secret, /Price: 1 QGOLD/);
+  assert.match(secret, /Price: 1,000,000 QGOLD/);
   const raw = describeReview(
     call(
       action("ft_transfer_call", {
@@ -388,7 +388,7 @@ test("escrow sends, Secrets, plain token sends and unreadable messages are decod
     escrowConfig,
   );
   assert.match(shown(plain), /Recipient: eve\.testnet/);
-  assert.match(shown(plain), /Amount: 123\.456789 QGOLD/);
+  assert.match(shown(plain), /Amount: 123,456,789 QGOLD/);
   assert.ok(plain.warnings.some((w) => w.includes("eve.testnet")));
   const deposit = shown(
     describeReview(
@@ -441,7 +441,7 @@ test("signed messages show their content; NEAR Intents are decoded with target a
   );
   const t = shown(intents);
   assert.match(t, /Action: Sign NEAR Intents/);
-  assert.match(t, /Intent 1: Transfer 2 wNEAR, 5 QGOLD to eve\.testnet/);
+  assert.match(t, /Intent 1: Transfer 2 wNEAR, 5,000,000 QGOLD to eve\.testnet/);
   assert.match(
     t,
     /Intent 2: Trade: you give 1 × collectible aura:1 \(nft\.testnet\); you receive 0\.1 wNEAR/,
@@ -540,7 +540,7 @@ test("the approval window asks one plain question", () => {
       call(action("ft_transfer_call", { receiver_id: "escrow.testnet", amount: "2500000", msg: JSON.stringify({ kind: "transfer", to: "bob.testnet" }) })),
       c,
     ),
-    "Send 2.5 GOLD to bob.testnet?",
+    "Send 2,500,000 QGOLD to bob.testnet?",
   );
   assert.equal(reviewQuestion({ operation: "setupRecovery", account: "alice.testnet" }, c), "Create recovery passkey?");
   assert.equal(reviewQuestion(call(action("odd_method")), c), "Allow this account action?");

@@ -28,14 +28,12 @@ import type {
 } from "./native-game-types";
 import { EXPLORER_BASE } from "./near-network.ts";
 import { tr } from "./i18n";
+import { goldFromYocto } from "./gold-units.ts";
 const nearAmount = (s: string) =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits: 8 }).format(
     Number(s) / 1e24,
   );
-const nativeGold = (s: string) =>
-  new Intl.NumberFormat("en-US", { maximumFractionDigits: 5 }).format(
-    Number(s) / 1e21,
-  );
+const nativeGold = (s: string) => goldFromYocto(s);
 export function NativeExpeditions({
   player,
   fix,
@@ -323,7 +321,7 @@ export function NativeExpeditions({
                 ? tr("Prize claimed")
                 : q.prizePending
                   ? tr("Prize pending")
-                  : `${nativeGold(q.reward)} GOLD`}
+                  : `${nativeGold(q.reward)} QGOLD`}
             </span>
           )}
         </div>
@@ -437,7 +435,7 @@ export function NativeExpeditions({
             {tr("Visit the stops in order. Only your GPS position at each stop is checked. Use safe public paths; distances are straight lines, not routes.")}</p>
           {q.reward !== "0" && (
             <p>
-              {tr("The GOLD prize goes to the first explorer to finish; your XP is always yours. GOLD here is test NEAR with no monetary value.")}</p>
+              {tr("The QGOLD prize goes to the first explorer to finish; your XP is always yours. QGOLD here is test NEAR with no monetary value.")}</p>
           )}
         </details>
       </article>
@@ -484,7 +482,7 @@ export function NativeExpeditions({
               {objective.view.receipt.amount === null ||
               objective.view.receipt.xp === null
                 ? tr("Confirmed · reward details unavailable")
-                : tr("{0} GOLD · {1} confirmed XP", { 0: nativeGold(objective.view.receipt.amount), 1: objective.view.receipt.xp })}
+                : tr("{0} QGOLD · {1} confirmed XP", { 0: nativeGold(objective.view.receipt.amount), 1: objective.view.receipt.xp })}
             </p>
           )}
           {objective.view.status !== "confirmed" && (
@@ -525,7 +523,7 @@ export function NativeExpeditions({
                       <h2>{coin ? tr("{0} m away", { 0: coin.distance }) : tr("Coin gone")}</h2>
                       <p>
                         {coin
-                          ? tr("{0} GOLD · first explorer takes it", { 0: nativeGold(state.day?.coinUnit || "0") })
+                          ? tr("{0} QGOLD · first explorer takes it", { 0: nativeGold(state.day?.coinUnit || "0") })
                           : tr("Someone may have collected it. Pick another nearby.")}
                       </p>
                       <button
@@ -636,9 +634,9 @@ export function NativeExpeditions({
                   <span>{tr("{0} nearby", { 0: state.day?.coins.length || 0 })}</span>
                 </summary>
                 <p>
-                  {state.day ? nativeGold(state.day.coinUnit) : "0"} {" "}{tr("GOLD per coin · first explorer takes it · up to 100 a day.")}{state.day?.findCount
+                  {state.day ? nativeGold(state.day.coinUnit) : "0"} {" "}{tr("QGOLD per coin · first explorer takes it · up to 100 a day.")}{state.day?.findCount
                     ? state.day.findXp
-                      ? tr(" Starred street finds pay the same GOLD and {0} XP instead of 2.", { 0: state.day.findXp })
+                      ? tr(" Starred street finds pay the same QGOLD and {0} XP instead of 2.", { 0: state.day.findXp })
                       : tr(" Starred street finds mark spots worth a detour; they pay the same as any coin.")
                     : ""}
                 </p>
@@ -687,7 +685,7 @@ export function NativeExpeditions({
               </span>
               <small>{tr("Secured rewards")}</small>
               <strong>
-                {state.balance ? nativeGold(state.balance.credit) : "—"} GOLD
+                {state.balance ? nativeGold(state.balance.credit) : "—"} QGOLD
               </strong>
               <span>
                 {state.balance ? nearAmount(state.balance.credit) : "—"} {" "}{tr("test NEAR ·")}{" "}{state.balance?.xp ?? "—"} XP
@@ -764,7 +762,7 @@ export function NativeExpeditions({
               {tr("Receipts & status")}</summary>
             <p>
               {tr("Tier")}{" "}{state.access.tier} · {nativeGold(state.access.weighted)}{" "}
-              {tr("eligible GOLD. Practice stake does not unlock these tiers.")}</p>
+              {tr("eligible QGOLD. Practice stake does not unlock these tiers.")}</p>
             {state.day && (
               <p>
                 {state.day.claimsAccepted}/{state.day.claimsLimit} {" "}{tr("visits confirmed today. When the limit is reached, practice play still works.")}</p>
@@ -780,7 +778,7 @@ export function NativeExpeditions({
                   <span>
                     {r.kind === "coin" ? tr("Street coin") : tr("Walk")} ·{" "}
                     {r.state === "confirmed"
-                      ? `${nativeGold(r.amount || "0")} GOLD + ${r.xp} XP`
+                      ? `${nativeGold(r.amount || "0")} QGOLD + ${r.xp} XP`
                       : r.state === "retrying"
                         ? tr("Confirming again; your visit is saved")
                         : tr("Waiting for confirmation")}

@@ -20,6 +20,12 @@
 //      Node, opens in the vault and shows in the conversation; after closing,
 //      the envelope badge ("Messages: 1 new") leads to the list and back into
 //      the conversation, which is then read.
+//   6. Wallet words (Settings → Account and devices → "Open in a wallet"):
+//      the secure window warns, shows 12 new words only while held open,
+//      checks two of them and adds their key to the account through the
+//      relayer. The words open the same key in any NEAR wallet
+//      (parseSeedPhrase), and never appear in a request, the game page or
+//      the vault's storage.
 //   4. Storage blocked inside the vault frame (indexedDB/localStorage throw,
 //      as in a browser that blocks third-party site data): the player sees a
 //      clear "Secure account unavailable" message with Try again, no account
@@ -49,6 +55,7 @@ import { join, resolve } from "node:path";
 import { randomUUID } from "node:crypto";
 import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
+import { parseSeedPhrase } from "near-api-js/seed-phrase";
 import { build } from "vite";
 import { closeOpenSheet } from "./lib/e2e-nav.mjs";
 import { serveBlankMapStyle } from "./lib/e2e-map-style.mjs";
@@ -178,7 +185,7 @@ async function startServers() {
 // Network-layer stand-ins for the account factory, the relayer, NEAR Social
 // reads and the RPC. Everything they saw is recorded in `log`.
 async function stubChain(context, { appOrigin, vaultOrigin }, { inbox = null } = {}) {
-  const log = { creates: [], accessKeyQueries: [], prepares: [], relayed: [], profilePrepares: 0, rejected: [], inboxSends: [] };
+  const log = { creates: [], accessKeyQueries: [], prepares: [], relayed: [], profilePrepares: 0, rejected: [], inboxSends: [], keyRequests: [], grants: 0 };
   // unread: the peer's reply until the list is opened after the badge saw it.
   const state = { account: null, playerName: null, published: false, jobs: new Map(), social: {}, messages: [], unread: 0, unreadSeen: false };
   // NEAR Social as a nested object: every relayed `set` is merged in.
@@ -209,7 +216,7 @@ async function stubChain(context, { appOrigin, vaultOrigin }, { inbox = null } =
   await context.route(
     (url) =>
       url.origin === appOrigin &&
-      (/^\/api\/(account|relay|me$|native\/profile)/.test(url.pathname) || (!!inbox && url.pathname.startsWith("/api/inbox"))),
+      (/^\/api\/(account|relay|me$|native\/profile|identity\/management)/.test(url.pathname) || (!!inbox && url.pathname.startsWith("/api/inbox"))),
     async (route) => {
       const req = route.request(),
         url = new URL(req.url()),
@@ -240,6 +247,31 @@ async function stubChain(context, { appOrigin, vaultOrigin }, { inbox = null } =
           };
           return json(route, 201, { account: state.account });
         }
+        if (path === "/api/identity/management/challenge") {
+          assert.equal(body.accountId, state.account?.accountId);
+          const playerId = `player_${randomUUID()}`;
+          return json(route, 200, {
+            challengeId: `challenge_${randomUUID()}`,
+            playerId,
+            nonce: Buffer.from(crypto.getRandomValues(new Uint8Array(32))).toString("base64"),
+            recipient: appOrigin,
+            message: `Authorize management of sign-in methods for explorer ${playerId} with ${body.accountId} on NEAR testnet for five minutes. No transaction or transfer.`,
+          });
+        }
+        if (path === "/api/identity/management/verify") {
+          assert.equal(body.accountId, state.account.accountId);
+          assert.ok(state.account.keys.some((k) => k.publicKey === body.publicKey && k.state === "active"), "the grant is signed by an active key");
+          log.grants += 1;
+          return json(route, 200, { ok: true });
+        }
+        if (path === "/api/account/keys" && req.method() === "POST") {
+          assert.ok(log.grants > log.keyRequests.length, "a key change needs a fresh management grant");
+          assert.deepEqual(Object.keys(body).sort(), ["kind", "label", "publicKey"], "only public fields register a key");
+          assert.match(body.publicKey, /^ed25519:[1-9A-HJ-NP-Za-km-z]{43,44}$/);
+          log.keyRequests.push(body);
+          state.account.keys.push({ publicKey: body.publicKey, kind: body.kind, state: "pending", label: body.label, createdAt: Date.now() });
+          return json(route, 200, accountView());
+        }
         if (path === "/api/relay/prepare") {
           assert.equal(body.accountId, state.account?.accountId);
           log.prepares.push(body);
@@ -256,7 +288,9 @@ async function stubChain(context, { appOrigin, vaultOrigin }, { inbox = null } =
           assert.ok(verifySignedDelegate(decoded), "the delegate signature verifies");
           const call = validateDelegate(decoded, {
             accountId: state.account.accountId,
-            keys: state.account.keys.map((k) => k.publicKey),
+            keys: state.account.keys.filter((k) => k.state === "active").map((k) => k.publicKey),
+            addKeys: state.account.keys.filter((k) => k.state === "pending").map((k) => k.publicKey),
+            removeKeys: [],
             nonce: String(CHAIN.nonce),
             blockHeight: CHAIN.blockHeight,
             blockTtl: CHAIN.blockTtl,
@@ -278,6 +312,7 @@ async function stubChain(context, { appOrigin, vaultOrigin }, { inbox = null } =
           state.jobs.set(job.id, job);
           log.relayed.push({ ...call, delegateHash: decoded.delegateHash, preview: body.preview });
           if (call.receiverId === SOCIAL_CONTRACT) merge(state.social, call.args.data);
+          if (call.kind === "addKey") state.account.keys.find((k) => k.publicKey === call.args.publicKey).state = "active";
           return json(route, 202, job);
         }
         const jobPath = /^\/api\/relay\/(relay_[a-f0-9-]{36})$/.exec(path);
@@ -510,8 +545,9 @@ async function sharePosition(page) {
     await tabs.waitFor();
   }
   await page.getByRole("tab", { name: "Settings", exact: true }).click();
-  await page.getByRole("button", { name: /Share my position for 15 min/ }).click();
-  await page.getByRole("button", { name: /Stop sharing my position/ }).waitFor();
+  const share = page.getByRole("switch", { name: /Show me to nearby explorers/ });
+  if ((await share.getAttribute("aria-checked")) !== "true") await share.click();
+  await page.locator('[role="switch"][aria-checked="true"]', { hasText: "Show me to nearby explorers" }).waitFor();
   await closeOpenSheet(page);
 }
 async function startPlaying(page, url, name) {
@@ -567,7 +603,7 @@ async function runDevice(name, servers) {
     // The game's service worker would answer API requests itself on WebKit,
     // where Playwright cannot route service-worker traffic; block it so the
     // stubs below see every request on every engine.
-    const context = await browser.newContext({ ...profile, reducedMotion: "reduce", locale: "en-GB", serviceWorkers: "block" });
+    const context = await browser.newContext({ ...profile, reducedMotion: "reduce", locale: "en-GB", serviceWorkers: "block" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     // Unrelated hosts (map tiles, fonts) stay offline; the journey is loopback only.
     await context.route((url) => !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname), (r) => r.abort());
     // ...except the map style, served blank so the map (and explorers on it) loads offline.
@@ -669,6 +705,124 @@ async function runDevice(name, servers) {
         }
         await capture(page, "after-reload", again.locator(".account-devices"));
         assert.equal(log.relayed.length, 1, "the profile is published once");
+
+        // The approval window is a top-level page of the vault origin. In this
+        // test the game (127.0.0.1) and the vault (localhost) are different
+        // sites, and WebKit gives the vault frame storage partitioned by the
+        // game's site, so the window cannot see the frame's pending request.
+        // Production serves both from one site, where storage is shared.
+        if (engine === webkit && log.accessKeyQueries.length > queriesBefore) {
+          report.scenarios.push({ name: "wallet words", mechanism: "not run on WebKit: cross-site test origins partition the vault storage; covered on Chromium" });
+          console.log("6. Wallet words: not run on WebKit (cross-site test origins partition vault storage)");
+        } else if (log.accessKeyQueries.length > queriesBefore) {
+          console.log("6. Wallet words: warn, show, check, add the key; nothing secret leaves the window");
+          // Everything any page sends anywhere from here on is kept and searched.
+          const sent = [];
+          context.on("request", (r) => sent.push(`${r.url()}\n${r.postData() || ""}`));
+          const devicesPanel = again.locator(".account-devices");
+          await devicesPanel.getByRole("button", { name: "Open in a wallet", exact: true }).click();
+          const intro = page.getByRole("dialog", { name: "Open in a wallet" });
+          await intro.getByText("Whoever has the words has the account").waitFor();
+          await capture(page, "wallet-intro", intro);
+          const [secure] = await Promise.all([
+            context.waitForEvent("page"),
+            intro.getByRole("button", { name: "Continue", exact: true }).click(),
+          ]);
+          await secure.getByRole("heading", { name: "Get 12 words for a wallet?" }).waitFor();
+          await secure.getByText(state.account.accountId).waitFor();
+          await secure.screenshot({ path: join(shots, "wallet-1-warning.png") });
+          // A short tap does nothing; only a held press goes on.
+          const hold = secure.getByRole("button", { name: "Hold to continue" });
+          const box = await hold.boundingBox();
+          await secure.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+          await secure.mouse.down();
+          await secure.waitForTimeout(150);
+          await secure.mouse.up();
+          await secure.waitForTimeout(1500);
+          assert.equal(await secure.getByRole("heading", { name: "Get 12 words for a wallet?" }).count(), 1, "a tap does not open the words");
+          await secure.mouse.down();
+          await secure.getByRole("heading", { name: "Write these 12 words down" }).waitFor({ timeout: 10_000 }).catch(async (e) => {
+            throw Error(`the words did not open; the window says: ${(await secure.locator("body").innerText()).replace(/\s+/g, " ").slice(0, 400)}`, { cause: e });
+          });
+          await secure.mouse.up();
+          const cells = secure.locator(".wallet-grid li");
+          assert.equal(await cells.count(), 12);
+          const closed = (await cells.allInnerTexts()).join(" ");
+          assert.doesNotMatch(closed, /[a-z]/, "closed, the page holds no word");
+          assert.ok(await secure.getByRole("button", { name: "I wrote them down" }).isDisabled(), "cannot go on before looking");
+          await secure.screenshot({ path: join(shots, "wallet-2-hidden.png") });
+          await secure.getByRole("button", { name: "Show my words" }).click();
+          const words = await cells.allInnerTexts();
+          assert.ok(words.every((w) => /^[a-z]{3,8}$/.test(w)), "twelve plain words");
+          await secure.screenshot({ path: join(shots, "wallet-3-shown.png") });
+          // Leaving the window hides them again.
+          await secure.evaluate(() => window.dispatchEvent(new Event("blur")));
+          assert.doesNotMatch((await cells.allInnerTexts()).join(" "), /[a-z]/, "the words hide when the window loses focus");
+          assert.equal(await secure.evaluate(() => getComputedStyle(document.querySelector(".wallet-words")).userSelect), "none");
+          await secure.getByRole("button", { name: "I wrote them down" }).click();
+          // A wrong answer sends the player back to their copy.
+          let ask = secure.getByRole("heading", { name: /^Which is word \d+\?$/ });
+          await ask.waitFor();
+          let n = Number((await ask.innerText()).match(/\d+/)[0]);
+          const options = await secure.locator(".wallet-options button").allInnerTexts();
+          await secure.locator(".wallet-options button", { hasText: new RegExp(`^${options.find((o) => o !== words[n - 1])}$`) }).click();
+          await secure.getByText("Not that one. Check your copy and try again.").waitFor();
+          await secure.getByRole("button", { name: "Show my words" }).click();
+          assert.deepEqual(await cells.allInnerTexts(), words, "the same words come back");
+          await secure.getByRole("button", { name: "I wrote them down" }).click();
+          for (let round = 0; round < 2; round++) {
+            await secure.getByText(`Check ${round + 1} of 2.`).waitFor();
+            ask = secure.getByRole("heading", { name: /^Which is word \d+\?$/ });
+            n = Number((await ask.innerText()).match(/\d+/)[0]);
+            if (round === 0) await secure.screenshot({ path: join(shots, "wallet-4-check.png") });
+            await secure.locator(".wallet-options button", { hasText: new RegExp(`^${words[n - 1]}$`) }).click();
+          }
+          // The key joins the account; the game closes the secure window.
+          await waitFor(() => secure.isClosed(), "the secure window to close");
+          const done = page.getByRole("dialog", { name: "Your words work now" });
+          await done.getByText(state.account.accountId).waitFor();
+          assert.equal(await done.getByRole("link", { name: /Meteor Wallet/ }).getAttribute("href"), "https://wallet.meteorwallet.app/");
+          assert.equal(await done.getByRole("link", { name: /Intear Wallet/ }).getAttribute("href"), "https://wallet.intear.tech/");
+          await capture(page, "wallet-done", done);
+          await done.getByRole("button", { name: "Done", exact: true }).click();
+          await devicesPanel.locator(".device-list li", { hasText: "Wallet words" }).getByRole("button", { name: "Revoke Wallet words" }).waitFor();
+          await capture(page, "wallet-in-devices", devicesPanel);
+
+          // What a wallet derives from the typed words is the key now on the account.
+          const walletKey = parseSeedPhrase(words.join(" "));
+          const added = state.account.keys.find((k) => k.label === "Wallet words");
+          assert.equal(added.publicKey, walletKey.getPublicKey().toString(), "the words open the key that was added");
+          assert.equal(added.state, "active");
+          assert.equal(added.kind, "device");
+          const addKey = log.relayed.at(-1);
+          assert.equal(addKey.kind, "addKey");
+          assert.equal(addKey.publicKey, publicKey, "signed by this device's key");
+          assert.equal(addKey.args.publicKey, added.publicKey);
+          // Nothing secret went anywhere or stayed anywhere.
+          const secret = walletKey.toString().slice(8);
+          const vaultStored = await vaultFrame().evaluate(
+            () =>
+              new Promise((resolve, reject) => {
+                const open = indexedDB.open("questlayer-secure-account", 1);
+                open.onerror = () => reject(open.error);
+                open.onsuccess = () => {
+                  const all = open.result.transaction("records").objectStore("records").getAll();
+                  all.onsuccess = () => resolve(JSON.stringify(all.result));
+                  all.onerror = () => reject(all.error);
+                };
+              }),
+          );
+          assert.match(vaultStored, /exportWallet/, "the finished request is what was searched");
+          const gameStored = await page.evaluate(() => JSON.stringify([{ ...localStorage }, { ...sessionStorage }, document.body.innerText]));
+          const clipboard = await page.evaluate(() => navigator.clipboard.readText()).catch(() => "");
+          for (const [where, text] of [["a request", sent.join("\n")], ["vault storage", vaultStored], ["the game page", gameStored], ["the clipboard", clipboard]]) {
+            assert.ok(!text.includes(secret), `the secret key is not in ${where}`);
+            for (let i = 0; i + 3 <= words.length; i++)
+              assert.ok(!text.includes(words.slice(i, i + 3).join(" ")) && !text.includes(words.slice(i, i + 3).join('","')), `the words are not in ${where}`);
+          }
+          assert.ok(sent.length > 3, "requests were recorded");
+          report.scenarios.push({ name: "wallet words", publicKey: added.publicKey, requestsSearched: sent.length });
+        }
       }
       assert.deepEqual(log.rejected, [], "every stubbed call was accepted");
       if (pageErrors.length) report.pageErrors = pageErrors;

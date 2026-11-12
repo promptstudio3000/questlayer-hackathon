@@ -109,7 +109,7 @@ export function zoneCountdown(
       ? { phase, text: tr("Open now"), window }
       : { phase, text: tr("Closes in {0}", { 0: clock(zone.closesAt - now) }), window };
   if (phase === "done") return { phase, text: tr("Cleared"), window };
-  if (phase === "closed") return { phase, text: tr("Closed"), window };
+  if (phase === "closed") return { phase, text: tr("Closed · new zones tomorrow"), window };
   return { phase, text: "", window };
 }
 
@@ -215,8 +215,11 @@ export function zoneWallFeatures(zones: readonly Zone[], quests: readonly Quest[
   const out: Feature[] = [];
   for (const z of zones) {
     const phase = zonePhase(z, quests, now);
-    if (phase === "closed" || phase === "done" || phase === "unknown") continue;
-    const height = (WALL_HEIGHT[z.tier] || WALL_HEIGHT[1]) * (phase === "open" ? 1 : .82);
+    // Every zone stays visible all day (owner, 11 Nov 2026): closed and
+    // cleared zones keep a low, dimmed wall instead of disappearing.
+    if (phase === "unknown") continue;
+    const spent = phase === "closed" || phase === "done";
+    const height = (WALL_HEIGHT[z.tier] || WALL_HEIGHT[1]) * (phase === "open" ? 1 : spent ? .5 : .82);
     for (const poly of zonePolygons(z)) for (const ring of poly) {
       if (ring.length < 4) continue;
       out.push({type:"Feature",properties:{id:z.id,color:zoneAuraColor(z.tier),height,halo:height*WALL_HALO,dim:phase!=="open",rarity:zoneRarity(z.tier)},geometry:{type:"LineString",coordinates:ring}});
@@ -332,74 +335,6 @@ export function beamFeatures(spots: readonly BeamSpot[]): Feature[] {
         },
         geometry: { type: "Polygon", coordinates: [circle(b.lng, b.lat, r, 10)] },
       });
-  }
-  return out;
-}
-
-function inside([x, y]: [number, number], ring: Ring) {
-  let hit = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i],
-      [xj, yj] = ring[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi)
-      hit = !hit;
-  }
-  return hit;
-}
-
-/** Spots for item icons: around the totem, kept inside the zone outline. */
-function lootSpots(zone: Zone, count: number): [number, number][] {
-  const polys = zonePolygons(zone);
-  const within = (p: [number, number]) =>
-    polys.some((poly) => poly[0] && inside(p, poly[0]));
-  const spots: [number, number][] = [];
-  for (const r of [20, 14, 28, 9, 38, 50]) {
-    for (let i = 0; i < 12 && spots.length < count; i++) {
-      const a = Math.PI / 2 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * (Math.PI / 6);
-      const p = offset(zone.lng, zone.lat, Math.cos(a) * r, -Math.sin(a) * r);
-      if (
-        within(p) &&
-        spots.every(
-          (q) =>
-            Math.hypot(q[0] - p[0], q[1] - p[1]) * M_PER_DEG > 6,
-        )
-      )
-        spots.push(p);
-    }
-    if (spots.length >= count) break;
-  }
-  return spots;
-}
-
-/** Item icons scattered inside each zone, so a player sees what is there. */
-export function zoneLootFeatures(
-  zones: readonly Zone[],
-  quests: readonly Quest[],
-  now: number,
-): Feature[] {
-  const out: Feature[] = [];
-  for (const z of zones) {
-    const phase = zonePhase(z, quests, now);
-    if (phase === "closed" || phase === "done" || phase === "unknown") continue;
-    const loot = zoneLoot(z, quests),
-      spots = lootSpots(z, loot.length);
-    loot.forEach((item, i) => {
-      if (!spots[i]) return;
-      out.push({
-        type: "Feature",
-        properties: {
-          id: `${z.id}:${item.id}`,
-          image: item.image,
-          dim: phase !== "open",
-          // Read by the map's tap handler to explain the item.
-          zoneId: z.id,
-          kind: item.kind,
-          name: item.name,
-          rarity: item.rarity || "",
-        },
-        geometry: { type: "Point", coordinates: spots[i] },
-      });
-    });
   }
   return out;
 }

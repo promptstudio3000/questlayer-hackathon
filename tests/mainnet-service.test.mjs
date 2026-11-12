@@ -60,6 +60,6 @@ test("deploy-vps --mainnet refuses without the explicit confirmation", () => {
     encoding: "utf8",
   });
   assert.equal(unknown.status, 1);
-  assert.match(unknown.stderr, /testnet or mainnet/);
+  assert.match(unknown.stderr, /testnet, testlayer or mainnet/);
 });
 

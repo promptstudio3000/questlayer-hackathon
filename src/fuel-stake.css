@@ -1,0 +1,139 @@
+/* Stake page (11 Nov 2026): layout first, numbers fill in. */
+.skeleton-text {
+  color: transparent !important;
+  border-radius: 6px;
+  background: linear-gradient(90deg, var(--surface-soft, #f1ebff) 0%, var(--decorative-border, #e2d8f5) 50%, var(--surface-soft, #f1ebff) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.2s linear infinite;
+  user-select: none;
+}
+@keyframes skeleton-shimmer {
+  from { background-position: 200% 0; }
+  to { background-position: -200% 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-text { animation: none; }
+}
+.fuel-ratio {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 6px 12px;
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--decorative-border);
+}
+.fuel-ratio-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.fuel-ratio-label svg { color: var(--discovery); }
+.fuel-ratio-fixed { font-size: 18px; color: var(--ink); }
+.fuel-ratio small {
+  grid-column: 1 / -1;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--ink-secondary);
+}
+.fuel-ratio-choice {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+}
+.fuel-ratio-choice button {
+  min-width: 52px;
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+.fuel-ratio-choice button[aria-checked="true"] {
+  background: var(--action);
+  color: var(--surface-raised, #fff);
+}
+.fuel-ratio-choice button:disabled { cursor: default; opacity: 0.6; }
+.fuel-stake-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 52px;
+  font-size: 17px;
+}
+.fuel-stake-button small { font-size: 13px; font-weight: 600; }
+.fuel-mine {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.fuel-mine > div { display: grid; gap: 2px; }
+.fuel-mine > div span { font-size: 13px; color: var(--ink-secondary); }
+.fuel-mine > div b { font-size: 22px; color: var(--ink); }
+.fuel-confirm { display: grid; gap: 10px; }
+.fuel-confirm p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink-secondary); }
+.fuel-confirm-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.fuel-stake-button small { color: inherit; opacity: 1; }
+.fuel-action .secondary-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 48px;
+  font-size: 15px;
+  font-weight: 600;
+}
+.fuel-short {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface-soft);
+}
+.fuel-short p { margin: 0; font-size: 14px; line-height: 1.45; color: var(--ink); }
+.fuel-short code {
+  font-size: 12px;
+  word-break: break-all;
+  color: var(--ink-secondary);
+}
+.fuel-why {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--action);
+  text-align: start;
+  cursor: pointer;
+}
+.fuel-payfrom { margin: 0; font-size: 13px; color: var(--ink-secondary); overflow-wrap: anywhere; }
+.fuel-vault { display: grid; gap: 8px; margin: 8px 0 0; }
+.fuel-vault div { display: grid; grid-template-columns: minmax(96px, auto) 1fr; gap: 12px; }
+.fuel-vault dt { color: var(--ink-secondary); font-size: 13px; }
+.fuel-vault dd { margin: 0; font-size: 14px; overflow-wrap: anywhere; }
+
+/* Top of Profile → Stake: my QGOLD, GOLD on the map today, my stake's yield. */
+.stake-wallet { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 12px; }
+.stake-wallet div { flex: 1 1 120px; display: grid; gap: 2px; padding: 10px 12px; border-radius: 14px; background: var(--surface-soft, #f5f0ff); }
+.stake-wallet dt { display: flex; align-items: center; gap: 4px; font-size: 12px; color: var(--ink-secondary); }
+.stake-wallet dd { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; margin: 0; font-size: 17px; font-weight: 700; color: var(--ink); }
+.stake-wallet dd small { flex-basis: 100%; font-size: 12px; font-weight: 500; color: var(--ink-secondary); }

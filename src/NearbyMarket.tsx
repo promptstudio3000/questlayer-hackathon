@@ -33,6 +33,7 @@ import { BotTag, CommunityRow, ExplorerAvatar, FilterChips, type PublicLook } fr
 import { api, gold, GOLD } from "./api";
 import { tr } from "./i18n";
 import { Dialog } from "./Dialog";
+import { ArrowLeft } from "./dir-icons";
 import { EmptyState } from "./EmptyState";
 import { Badge, CoinIcon, distanceLabel, units } from "./app-bits";
 import type { Fix, Point } from "./types";
@@ -358,7 +359,7 @@ export function NearbyMarket({
       )}
       {form === "send" && (
         <SendForm position={position} onClose={() => setForm("")} busy={busy === "send:new"} submit={async (input) => {
-          const r = await run("send:new", () => api("/market/transfers", input), tr("GOLD is held until the condition is met."));
+          const r = await run("send:new", () => api("/market/transfers", input), tr("QGOLD is held until the condition is met."));
           if (r) setForm("");
         }} />
       )}
@@ -399,7 +400,7 @@ export function NearbyMarket({
             </button>
           }
         />
-        {data.transfers.length === 0 && <p className="nearby-empty">{tr("Nothing waiting. Send GOLD that unlocks at a time or a place.")}</p>}
+        {data.transfers.length === 0 && <p className="nearby-empty">{tr("Nothing waiting. Send QGOLD that unlocks at a time or a place.")}</p>}
         {data.transfers.map((t) => (
           <TransferCard key={t.id} t={t} busy={!!busy} act={(action) =>
             run(`send:${t.id}`, () => api("/market/transfer/act", { transferId: t.id, action, fix: fix() }))
@@ -593,7 +594,7 @@ function TaskDialog({ id, k, fix, busy, run, onClose }: { id: string; k?: string
         {task && (
           <>
             <div className="market-facts">
-              <Badge tone="gold"><CoinIcon /> {gold(task.reward)} GOLD</Badge>
+              <Badge tone="gold"><CoinIcon /> {gold(task.reward)} QGOLD</Badge>
               <Badge>{TYPE_LABEL[task.type]?.() ?? task.type}</Badge>
               {task.visibility !== "public" && <Badge tone="purple"><LockKey size={12} /> {tr("Invite only")}</Badge>}
             </div>
@@ -696,12 +697,12 @@ function PosterControls({ task, busy, act }: { task: MarketTask; busy: string; a
         <div key={c.id} className="market-claim-row">
           <p>
             <strong>{c.worker.name}</strong> · {STATE_LABEL[c.state]?.() ?? c.state}
-            {c.offer ? ` · ${tr("asks {0} GOLD", { 0: gold(c.offer) })}` : ""}
+            {c.offer ? ` · ${tr("asks {0} QGOLD", { 0: gold(c.offer) })}` : ""}
           </p>
           {c.evidence && <p className="market-meta">{c.evidence}</p>}
           {c.state === "offered" && (
             <button disabled={!!busy} onClick={() => act("accept", "/market/task/accept-offer", { claimId: c.id }, tr("Offer accepted. The extra amount plus 10 % is now held."))}>
-              {tr("Accept for {0} GOLD + fee", { 0: gold((c.offer || 0) - task.reward) })}
+              {tr("Accept for {0} QGOLD + fee", { 0: gold((c.offer || 0) - task.reward) })}
             </button>
           )}
           {c.state === "submitted" && (
@@ -715,7 +716,7 @@ function PosterControls({ task, busy, act }: { task: MarketTask; busy: string; a
         </div>
       ))}
       {task.state === "open" && (
-        <button className="secondary-button" disabled={!!busy} onClick={() => act("cancel", "/market/task/cancel", { taskId: task.id }, tr("Task closed. Unused GOLD and its fee are back."))}>
+        <button className="secondary-button" disabled={!!busy} onClick={() => act("cancel", "/market/task/cancel", { taskId: task.id }, tr("Task closed. Unused QGOLD and its fee are back."))}>
           {tr("Close task and refund the rest")}
         </button>
       )}
@@ -788,8 +789,8 @@ function SecretDialog({ id, k, position, fix, busy, run, notify, onClose }: { id
           <>
             <div className="market-facts">
               <Badge tone="purple"><LockKey size={12} /> {s.kind === "route" ? tr("Secret route") : s.kind === "sponsored" ? tr("Sponsored Secret") : s.kind === "private" ? tr("Private Secret") : tr("Secret place")}</Badge>
-              {s.price > 0 && <Badge tone="gold"><CoinIcon /> {gold(s.price)} GOLD</Badge>}
-              {s.kind === "sponsored" && <Badge tone="green">{tr("{0} GOLD for finding it · {1} left", { 0: gold(s.visitReward), 1: s.visitsLeft })}</Badge>}
+              {s.price > 0 && <Badge tone="gold"><CoinIcon /> {gold(s.price)} QGOLD</Badge>}
+              {s.kind === "sponsored" && <Badge tone="green">{tr("{0} QGOLD for finding it · {1} left", { 0: gold(s.visitReward), 1: s.visitsLeft })}</Badge>}
             </div>
             {s.teaser && <p>{s.teaser}</p>}
             <p className="market-meta">
@@ -836,7 +837,7 @@ function SecretDialog({ id, k, position, fix, busy, run, notify, onClose }: { id
                   const r = await act("reveal", "/market/secret/reveal", { secretId: s.id, k });
                   if (r) notify(tr("Revealed. Go and find it."));
                 }}>
-                  <Eye size={18} /> {s.price > 0 ? tr("Reveal for {0} GOLD", { 0: gold(s.price) }) : tr("Reveal for free")}
+                  <Eye size={18} /> {s.price > 0 ? tr("Reveal for {0} QGOLD", { 0: gold(s.price) }) : tr("Reveal for free")}
                 </button>
               )
             )}
@@ -847,14 +848,21 @@ function SecretDialog({ id, k, position, fix, busy, run, notify, onClose }: { id
   );
 }
 
-function FormShell({ title, onClose, onSubmit, children }: { title: string; onClose: () => void; onSubmit: (e: FormEvent) => void; children: ReactNode }) {
+function FormShell({ title, onClose, onSubmit, step, steps, onBack, children }: {
+  title: string; onClose: () => void; onSubmit: (e: FormEvent) => void;
+  /** Multi-step forms: the current step (from 0) and how many there are. */
+  step?: number; steps?: number; onBack?: () => void; children: ReactNode;
+}) {
   return (
     <Dialog label={title} onClose={onClose}>
       <form className="market-dialog" onSubmit={(e) => { e.preventDefault(); onSubmit(e); }}>
         <div className="market-dialog-head">
+          {onBack && step ? <button type="button" className="icon-button" onClick={onBack} aria-label={tr("Back")}><ArrowLeft size={18} /></button> : null}
           <h2>{title}</h2>
+          {steps ? <span className="market-steps" aria-hidden="true">{(step || 0) + 1}/{steps}</span> : null}
           <button type="button" className="icon-button" onClick={onClose} aria-label={tr("Close")}><X size={18} /></button>
         </div>
+        {steps ? <div className="market-step-bar" aria-hidden="true">{Array.from({ length: steps }, (_, i) => <i key={i} data-on={i <= (step || 0) || undefined} />)}</div> : null}
         {children}
       </form>
     </Dialog>
@@ -863,9 +871,17 @@ function FormShell({ title, onClose, onSubmit, children }: { title: string; onCl
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return <label className="market-field"><span>{label}</span>{children}</label>;
 }
+/** One line of the review step. */
+function Review({ label, children }: { label: string; children: ReactNode }) {
+  return <div className="market-review"><dt>{label}</dt><dd>{children}</dd></div>;
+}
 
+// Three short steps instead of one long form: what, reward, review. Each step
+// is validated by the browser before the next one opens; nothing is sent
+// until the last step.
 function TaskForm({ balance, position, busy, onClose, submit }: { balance: number; position: Point; busy: boolean; onClose: () => void; submit: (input: Record<string, unknown>) => void }) {
   const [v, setV] = useState({ title: "", description: "", type: "go", reward: "5", slots: "1", days: "7", visibility: "public", assignee: "", group: "", answer: "", rounds: "4", everyDays: "7" });
+  const [step, setStep] = useState(0);
   const set = (key: keyof typeof v) => (e: { target: { value: string } }) => setV({ ...v, [key]: e.target.value });
   const reward = units(v.reward),
     slots = Math.max(1, Number(v.slots) || 1),
@@ -873,8 +889,15 @@ function TaskForm({ balance, position, busy, onClose, submit }: { balance: numbe
   const total = reward * slots * rounds,
     fee = feeOnTop(total);
   const short = total + fee > balance;
+  const VISIBILITY: Record<string, string> = {
+    public: tr("Everyone nearby"),
+    link: tr("Anyone with the link"),
+    private: tr("Only with a private link"),
+    user: tr("One player"),
+    group: tr("A group of players"),
+  };
   return (
-    <FormShell title={tr("Post a task")} onClose={onClose} onSubmit={() => submit({
+    <FormShell title={tr("Post a task")} step={step} steps={3} onBack={() => setStep(step - 1)} onClose={onClose} onSubmit={() => step < 2 ? setStep(step + 1) : submit({
       title: v.title, description: v.description, type: v.type, lat: position.lat, lng: position.lng,
       reward, slots, days: Number(v.days), visibility: v.visibility,
       ...(v.visibility === "user" ? { assignee: v.assignee.trim() } : {}),
@@ -882,91 +905,109 @@ function TaskForm({ balance, position, busy, onClose, submit }: { balance: numbe
       ...(v.type === "answer" ? { answer: v.answer } : {}),
       ...(v.type === "recurring" ? { rounds, everyDays: Number(v.everyDays) } : {}),
     })}>
-      <Field label={tr("What should explorers do?")}><input required minLength={5} maxLength={100} value={v.title} onChange={set("title")} /></Field>
-      <Field label={tr("Type")}>
-        <select value={v.type} onChange={set("type")}>
-          {Object.keys(TYPE_LABEL).filter((t) => t !== "chain").map((t) => <option key={t} value={t}>{TYPE_LABEL[t]()}</option>)}
-        </select>
-      </Field>
-      <Field label={tr("Details")}><textarea maxLength={1000} value={v.description} onChange={set("description")} /></Field>
-      {v.type === "answer" && <Field label={tr("Correct answer (kept secret)")}><input required value={v.answer} onChange={set("answer")} /></Field>}
-      <div className="market-form-row">
-        <Field label={tr("Reward (GOLD)")}><input inputMode="decimal" required value={v.reward} onChange={set("reward")} /></Field>
-        <Field label={tr("Completions")}><input type="number" min={1} max={50} value={v.slots} onChange={set("slots")} /></Field>
-        {v.type === "recurring" ? (
-          <>
-            <Field label={tr("Rounds")}><input type="number" min={2} max={12} value={v.rounds} onChange={set("rounds")} /></Field>
-            <Field label={tr("Every (days)")}><input type="number" min={1} max={30} value={v.everyDays} onChange={set("everyDays")} /></Field>
-          </>
-        ) : (
-          <Field label={tr("Open (days)")}><input type="number" min={1} max={30} value={v.days} onChange={set("days")} /></Field>
-        )}
-      </div>
-      <Field label={tr("Who can see it")}>
-        <select value={v.visibility} onChange={set("visibility")}>
-          <option value="public">{tr("Everyone nearby")}</option>
-          <option value="link">{tr("Anyone with the link")}</option>
-          <option value="private">{tr("Only with a private link")}</option>
-          <option value="user">{tr("One player")}</option>
-          <option value="group">{tr("A group of players")}</option>
-        </select>
-      </Field>
-      {v.visibility === "user" && <Field label={tr("Player id or NEAR account")}><input required value={v.assignee} onChange={set("assignee")} /></Field>}
-      {v.visibility === "group" && <Field label={tr("Player ids or NEAR accounts, separated by commas")}><input required value={v.group} onChange={set("group")} /></Field>}
-      <p className="market-meta">{tr("Pinned at your current position.")}</p>
-      <p className="market-total" role="status">
-        {tr("You pay {0} GOLD: {1} in rewards + {2} fee (10 %). Unused GOLD and its fee come back.", { 0: gold(total + fee), 1: gold(total), 2: gold(fee) })}
-      </p>
-      {short && <p role="alert">{tr("Not enough QGOLD in your account.")}</p>}
-      <button disabled={busy || short || reward < 0.01 * GOLD}>{tr("Post and hold the reward")}</button>
+      {step === 0 && <>
+        <Field label={tr("What should explorers do?")}><input autoFocus required minLength={5} maxLength={100} value={v.title} onChange={set("title")} /></Field>
+        <Field label={tr("Type")}>
+          <select value={v.type} onChange={set("type")}>
+            {Object.keys(TYPE_LABEL).filter((t) => t !== "chain").map((t) => <option key={t} value={t}>{TYPE_LABEL[t]()}</option>)}
+          </select>
+        </Field>
+        <Field label={tr("Details")}><textarea maxLength={1000} value={v.description} onChange={set("description")} /></Field>
+        {v.type === "answer" && <Field label={tr("Correct answer (kept secret)")}><input required value={v.answer} onChange={set("answer")} /></Field>}
+      </>}
+      {step === 1 && <>
+        <div className="market-form-row">
+          <Field label={tr("Reward (QGOLD)")}><input autoFocus inputMode="numeric" required value={v.reward} onChange={set("reward")} /></Field>
+          <Field label={tr("Completions")}><input type="number" min={1} max={50} value={v.slots} onChange={set("slots")} /></Field>
+          {v.type === "recurring" ? (
+            <>
+              <Field label={tr("Rounds")}><input type="number" min={2} max={12} value={v.rounds} onChange={set("rounds")} /></Field>
+              <Field label={tr("Every (days)")}><input type="number" min={1} max={30} value={v.everyDays} onChange={set("everyDays")} /></Field>
+            </>
+          ) : (
+            <Field label={tr("Open (days)")}><input type="number" min={1} max={30} value={v.days} onChange={set("days")} /></Field>
+          )}
+        </div>
+        <Field label={tr("Who can see it")}>
+          <select value={v.visibility} onChange={set("visibility")}>
+            {Object.entries(VISIBILITY).map(([id, label]) => <option key={id} value={id}>{label}</option>)}
+          </select>
+        </Field>
+        {v.visibility === "user" && <Field label={tr("Player id or NEAR account")}><input required value={v.assignee} onChange={set("assignee")} /></Field>}
+        {v.visibility === "group" && <Field label={tr("Player ids or NEAR accounts, separated by commas")}><input required value={v.group} onChange={set("group")} /></Field>}
+        {short && <p role="alert">{tr("Not enough QGOLD in your account.")}</p>}
+      </>}
+      {step === 2 && <>
+        <dl className="market-review-list">
+          <Review label={TYPE_LABEL[v.type]()}><b>{v.title}</b></Review>
+          <Review label={tr("Reward (QGOLD)")}>{gold(reward)} × {slots}{rounds > 1 ? ` × ${rounds}` : ""}</Review>
+          {v.type === "recurring"
+            ? <Review label={tr("Every (days)")}>{v.everyDays}</Review>
+            : <Review label={tr("Open (days)")}>{v.days}</Review>}
+          <Review label={tr("Who can see it")}>{VISIBILITY[v.visibility]}</Review>
+        </dl>
+        <p className="market-total" role="status">
+          {tr("You pay {0} QGOLD: {1} in rewards + {2} fee (10 %). Unused QGOLD and its fee come back.", { 0: gold(total + fee), 1: gold(total), 2: gold(fee) })}
+        </p>
+        <p className="market-meta">{tr("Pinned at your current position.")}</p>
+        {short && <p role="alert">{tr("Not enough QGOLD in your account.")}</p>}
+      </>}
+      {step < 2
+        ? <button disabled={step === 1 && reward < 100 * GOLD}>{tr("Continue")}</button>
+        : <button disabled={busy || short || reward < 100 * GOLD}>{tr("Post and hold the reward")}</button>}
     </FormShell>
   );
 }
 
 function SecretForm({ position, busy, onClose, submit }: { position: Point; busy: boolean; onClose: () => void; submit: (input: Record<string, unknown>) => void }) {
   const [v, setV] = useState({ kind: "place", title: "", teaser: "", reveal: "", price: "2", fog: "700", visitReward: "1", visits: "10" });
+  const [step, setStep] = useState(0);
   const set = (key: keyof typeof v) => (e: { target: { value: string } }) => setV({ ...v, [key]: e.target.value });
   const sponsored = v.kind === "sponsored";
   const budget = units(v.visitReward) * (Number(v.visits) || 0);
   return (
-    <FormShell title={tr("Hide a Secret")} onClose={onClose} onSubmit={() => submit({
+    <FormShell title={tr("Hide a Secret")} step={step} steps={3} onBack={() => setStep(step - 1)} onClose={onClose} onSubmit={() => step < 2 ? setStep(step + 1) : submit({
       kind: v.kind, title: v.title, teaser: v.teaser, reveal: v.reveal,
       lat: position.lat, lng: position.lng, fogRadiusM: Number(v.fog),
       ...(sponsored ? { visitReward: units(v.visitReward), visits: Number(v.visits) } : { price: units(v.price) }),
     })}>
-      <p className="market-meta">{tr("Stand at the place you are hiding. Others see only a fog circle around it until they reveal it.")}</p>
-      <Field label={tr("Type")}>
-        <select value={v.kind} onChange={set("kind")}>
-          <option value="place">{tr("Secret place")}</option>
-          <option value="private">{tr("Private, for people with the link")}</option>
-          <option value="sponsored">{tr("Sponsored: free to reveal, you pay finders")}</option>
-        </select>
-      </Field>
-      <Field label={tr("Title")}><input required minLength={3} maxLength={80} value={v.title} onChange={set("title")} /></Field>
-      <Field label={tr("Teaser everyone sees")}><input maxLength={300} value={v.teaser} onChange={set("teaser")} /></Field>
-      <Field label={tr("What they find (shown after reveal)")}><textarea required minLength={10} maxLength={2000} value={v.reveal} onChange={set("reveal")} /></Field>
-      <Field label={tr("Fog circle")}>
-        <select value={v.fog} onChange={set("fog")}>
-          <option value="500">500 m</option>
-          <option value="700">700 m</option>
-          <option value="1000">{tr("1 km")}</option>
-        </select>
-      </Field>
-      {sponsored ? (
+      {step === 0 && <>
+        <p className="market-meta">{tr("Stand at the place you are hiding. Others see only a fog circle around it until they reveal it.")}</p>
+        <Field label={tr("Title")}><input autoFocus required minLength={3} maxLength={80} value={v.title} onChange={set("title")} /></Field>
+        <Field label={tr("Teaser everyone sees")}><input maxLength={300} value={v.teaser} onChange={set("teaser")} /></Field>
+        <Field label={tr("Type")}>
+          <select value={v.kind} onChange={set("kind")}>
+            <option value="place">{tr("Secret place")}</option>
+            <option value="private">{tr("Private, for people with the link")}</option>
+            <option value="sponsored">{tr("Sponsored: free to reveal, you pay finders")}</option>
+          </select>
+        </Field>
+      </>}
+      {step === 1 && <>
+        <Field label={tr("What they find (shown after reveal)")}><textarea autoFocus required minLength={10} maxLength={2000} value={v.reveal} onChange={set("reveal")} /></Field>
+        <Field label={tr("Fog circle")}>
+          <select value={v.fog} onChange={set("fog")}>
+            <option value="500">500 m</option>
+            <option value="700">700 m</option>
+            <option value="1000">{tr("1 km")}</option>
+          </select>
+        </Field>
+      </>}
+      {step === 2 && (sponsored ? (
         <>
           <div className="market-form-row">
-            <Field label={tr("GOLD per finder")}><input inputMode="decimal" value={v.visitReward} onChange={set("visitReward")} /></Field>
+            <Field label={tr("QGOLD per finder")}><input autoFocus inputMode="decimal" value={v.visitReward} onChange={set("visitReward")} /></Field>
             <Field label={tr("Finders")}><input type="number" min={1} max={500} value={v.visits} onChange={set("visits")} /></Field>
           </div>
-          <p className="market-total">{tr("You pay {0} GOLD: {1} for finders + {2} fee (10 %).", { 0: gold(budget + feeOnTop(budget)), 1: gold(budget), 2: gold(feeOnTop(budget)) })}</p>
+          <p className="market-total">{tr("You pay {0} QGOLD: {1} for finders + {2} fee (10 %).", { 0: gold(budget + feeOnTop(budget)), 1: gold(budget), 2: gold(feeOnTop(budget)) })}</p>
         </>
       ) : (
         <>
-          <Field label={tr("Price to reveal (GOLD, 0 = free)")}><input inputMode="decimal" value={v.price} onChange={set("price")} /></Field>
+          <Field label={tr("Price to reveal (QGOLD, 0 = free)")}><input autoFocus inputMode="decimal" value={v.price} onChange={set("price")} /></Field>
           <p className="market-total">{tr("You get 90 % of each reveal when the explorer gets there, or after 7 days without a dispute.")}</p>
         </>
-      )}
-      <button disabled={busy}>{tr("Hide it here")}</button>
+      ))}
+      {step < 2 ? <button>{tr("Continue")}</button> : <button disabled={busy}>{tr("Hide it here")}</button>}
     </FormShell>
   );
 }
@@ -982,7 +1023,7 @@ function SendForm({ position, busy, onClose, submit }: { position: Point; busy: 
       ...(v.condition === "gps" ? { place: { lat: position.lat, lng: position.lng } } : {}),
     })}>
       <Field label={tr("To (player id or NEAR account)")}><input required value={v.to} onChange={set("to")} /></Field>
-      <Field label={tr("Amount (GOLD)")}><input inputMode="decimal" required value={v.amount} onChange={set("amount")} /></Field>
+      <Field label={tr("Amount (QGOLD)")}><input inputMode="numeric" required value={v.amount} onChange={set("amount")} /></Field>
       <Field label={tr("Released when")}>
         <select value={v.condition} onChange={set("condition")}>
           <option value="both_confirm">{tr("You both confirm")}</option>

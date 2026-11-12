@@ -8,6 +8,7 @@ import {
   decodeTransaction,
   encodeSignedDelegate,
 } from "near-api-js";
+import { actionView } from "./action-view.ts";
 import {
   createDeviceKey,
   DEVICE_KEY,
@@ -21,6 +22,7 @@ import {
   signOutOtherSessions,
 } from "../account-recovery.ts";
 import {
+  approvalTtl,
   describeReview,
   needsProtection,
   reviewQuestion,
@@ -33,6 +35,12 @@ import {
 } from "./policy.ts";
 import { localVaultKeyStore, vaultRecord, vaultRequests } from "./store.ts";
 import { inboxKey, inboxOpen, inboxReveal, inboxSeal } from "./inbox.ts";
+import {
+  activateWalletWords,
+  confirmWithPasskey,
+  newWalletWords,
+} from "./wallet-export.ts";
+import { walletExportView } from "./wallet-export-view.ts";
 const config: VaultConfig = validateVaultOrigins(
   await (await fetch("/vault-config.json")).json(),
 );
@@ -87,28 +95,6 @@ async function api<T = Record<string, unknown>>(
     throw Error(result.error ?? "The game could not verify this action.");
   return result;
 }
-function actionView(a: ReturnType<typeof actions.functionCall>): VaultAction {
-  if (a.functionCall)
-    return {
-      kind: "functionCall",
-      methodName: a.functionCall.methodName,
-      args: JSON.parse(
-        new TextDecoder("utf-8", { fatal: true }).decode(a.functionCall.args),
-      ),
-      gas: String(a.functionCall.gas),
-      deposit: String(a.functionCall.deposit),
-    };
-  if (a.addKey) {
-    need(
-      a.addKey.accessKey.permission.enum === "fullAccess",
-      "Unsupported key permission.",
-    );
-    return { kind: "addKey", publicKey: a.addKey.publicKey.toString() };
-  }
-  if (a.deleteKey)
-    return { kind: "deleteKey", publicKey: a.deleteKey.publicKey.toString() };
-  throw Error("This action is not supported by the secure account.");
-}
 function nearAction(a: VaultAction) {
   if (a.kind === "functionCall")
     return actions.functionCall(
@@ -129,8 +115,13 @@ async function reviewed(request: Request, record: PlayerKeyRecord) {
       "restoreRecovery",
       "revokeKey",
       "revokeSessions",
+      "exportWallet",
     ].includes(request.method)
-  )
+  ) {
+    need(
+      request.method !== "exportWallet" || record.accountId,
+      "No secure account is bound on this device.",
+    );
     return {
       protected: true,
       review: {
@@ -141,6 +132,7 @@ async function reviewed(request: Request, record: PlayerKeyRecord) {
           : {}),
       },
     };
+  }
   need(
     record.accountId && i.publicKey === record.publicKey,
     "The account key changed.",
@@ -201,24 +193,9 @@ async function reviewed(request: Request, record: PlayerKeyRecord) {
   );
   return { protected: protectedAction, review: call };
 }
-async function execute(request: Request) {
-  const record = await store.get(DEVICE_KEY),
-    i = request.input;
-  if (request.method === "restoreRecovery")
-    return navigator.locks.request("vault-device-key", () =>
-      restoreWithPasskey({
-        store,
-        credentials: navigator.credentials,
-        rpId: location.hostname,
-        api,
-        userAgent: navigator.userAgent,
-      }),
-    );
-  need(record?.accountId, "No secure account is bound on this device.");
-  const key = record!,
-    accountId = key.accountId!;
-  // Only these already reviewed device actions can obtain a short management grant.
-  async function deviceApi<T>(path: string, input?: unknown): Promise<T> {
+// Only already reviewed device actions can obtain a short management grant.
+function managementApi(key: PlayerKeyRecord, accountId: string) {
+  return async function deviceApi<T>(path: string, input?: unknown): Promise<T> {
     if (path === "/account/keys") {
       const challenge = await api<{
         challengeId: string;
@@ -241,7 +218,45 @@ async function execute(request: Request) {
       });
     }
     return api<T>(path, input);
+  };
+}
+async function fullAccessKey(accountId: string, publicKey: string) {
+  try {
+    const access = await new JsonRpcProvider({ url: config.rpcUrl }).query({
+      request_type: "view_access_key",
+      account_id: accountId,
+      public_key: publicKey,
+      finality: "final",
+    });
+    return (
+      !!access &&
+      typeof access === "object" &&
+      "permission" in access &&
+      access.permission === "FullAccess"
+    );
+  } catch {
+    return false;
   }
+}
+async function execute(request: Request) {
+  const record = await store.get(DEVICE_KEY),
+    i = request.input;
+  if (request.method === "restoreRecovery")
+    return navigator.locks.request("vault-device-key", () =>
+      restoreWithPasskey({
+        store,
+        credentials: navigator.credentials,
+        rpId: location.hostname,
+        api,
+        userAgent: navigator.userAgent,
+      }),
+    );
+  need(record?.accountId, "No secure account is bound on this device.");
+  const key = record!,
+    accountId = key.accountId!;
+  // The words flow runs its own steps in the approval window, never here.
+  need(request.method !== "exportWallet", "Unsupported signing request.");
+  const deviceApi = managementApi(key, accountId);
   if (request.method === "setupRecovery")
     return setupPasskeyRecovery({
       deviceKey: key,
@@ -404,7 +419,10 @@ async function receive(request: Request) {
     if (!existing) {
       let active = 0;
       for (const row of await vaultRequests<Pending>()) {
-        if (row.state !== "executing" && Date.now() - row.createdAt > 180000)
+        if (
+          row.state !== "executing" &&
+          Date.now() - row.createdAt > approvalTtl(row.request.method)
+        )
           await vaultRecord(`request:${row.request.id}`, undefined, true);
         else active++;
       }
@@ -424,6 +442,55 @@ async function receive(request: Request) {
     return { awaitingApproval: true };
   });
 }
+// Claims the waiting request, runs the approved work, stores only its public
+// result and tells the game. Returns the error to show, and whether the game
+// was told.
+async function settle(
+  id: string,
+  pending: Pending,
+  accepted: boolean,
+  work: () => Promise<unknown>,
+) {
+  const done: Pending = { ...pending, state: "done" };
+  let claimed = false;
+  try {
+    await navigator.locks.request("vault-approval-queue", async () => {
+      const fresh = await vaultRecord<Pending>(`request:${id}`);
+      need(
+        fresh?.state === "waiting" &&
+          JSON.stringify(fresh.request) === JSON.stringify(pending.request),
+        "This account action is already being handled.",
+      );
+      await vaultRecord(`request:${id}`, { ...pending, state: "executing" });
+      claimed = true;
+    });
+    if (!accepted) throw Error("Account action cancelled.");
+    need(
+      Date.now() - pending.createdAt <= approvalTtl(pending.request.method),
+      "Account action expired.",
+    );
+    done.result = await navigator.locks.request(
+      "vault-account-approval",
+      async () => {
+        if (pending.request.method !== "restoreRecovery") {
+          const current = await store.get(DEVICE_KEY);
+          need(
+            current?.accountId === pending.accountId &&
+              current?.publicKey === pending.publicKey,
+            "The account changed after review. Start the action again.",
+          );
+        }
+        return work();
+      },
+    );
+  } catch (error) {
+    if (!claimed) return { error: (error as Error).message, told: false };
+    done.error = (error as Error).message;
+  }
+  await vaultRecord(`request:${id}`, done);
+  channel.postMessage({ id });
+  return { error: done.error ?? null, told: true };
+}
 if (location.pathname === "/approve") {
   need(
     window.top === window,
@@ -438,12 +505,44 @@ if (location.pathname === "/approve") {
   if (
     !pending ||
     pending.state !== "waiting" ||
-    Date.now() - pending.createdAt > 180000
+    Date.now() - pending.createdAt > approvalTtl(pending.request.method)
   ) {
     const p = document.createElement("p");
     p.textContent =
       "This request expired or is already complete. You can close this window.";
     main.append(p);
+  } else if (pending.request.method === "exportWallet") {
+    const accountId = pending.accountId!;
+    walletExportView(main, heading, {
+      accountId,
+      // The game says whether a recovery passkey exists. A wrong "no" only
+      // drops the extra unlock; the words still never leave this window.
+      passkey: pending.request.input.passkey === true,
+      confirmPasskey: () =>
+        confirmWithPasskey({
+          accountId,
+          credentials: navigator.credentials,
+          rpId: location.hostname,
+          isFullAccessKey: fullAccessKey,
+        }),
+      create: newWalletWords,
+      activate: async (publicKey) =>
+        (
+          await settle(id, pending, true, async () => {
+            const key = await store.get(DEVICE_KEY);
+            need(key?.accountId === accountId, "The account changed.");
+            return activateWalletWords({
+              deviceKey: key!,
+              accountId,
+              publicKey,
+              api: managementApi(key!, accountId),
+            });
+          })
+        ).error,
+      cancel: async () => {
+        await settle(id, pending, false, async () => null);
+      },
+    });
   } else {
     // One plain question with Yes / No. The decoded breakdown and the exact
     // request stay one tap away under "Details"; warnings stay visible.
@@ -493,52 +592,12 @@ if (location.pathname === "/approve") {
     cancel.focus();
     const finish = async (accepted: boolean) => {
       cancel.disabled = approve.disabled = true;
-      const done: Pending = { ...pending, state: "done" };
-      let claimed = false;
-      try {
-        await navigator.locks.request("vault-approval-queue", async () => {
-          const fresh = await vaultRecord<Pending>(`request:${id}`);
-          need(
-            fresh?.state === "waiting" &&
-              JSON.stringify(fresh.request) === JSON.stringify(pending.request),
-            "This account action is already being handled.",
-          );
-          await vaultRecord(`request:${id}`, {
-            ...pending,
-            state: "executing",
-          });
-          claimed = true;
-        });
-        if (!accepted) throw Error("Account action cancelled.");
-        need(
-          Date.now() - pending.createdAt <= 180000,
-          "Account action expired.",
-        );
-        done.result = await navigator.locks.request(
-          "vault-account-approval",
-          async () => {
-            if (pending.request.method !== "restoreRecovery") {
-              const current = await store.get(DEVICE_KEY);
-              need(
-                current?.accountId === pending.accountId &&
-                  current?.publicKey === pending.publicKey,
-                "The account changed after review. Start the action again.",
-              );
-            }
-            return execute(pending.request);
-          },
-        );
-      } catch (error) {
-        if (!claimed) {
-          status.textContent = (error as Error).message;
-          return;
-        }
-        done.error = (error as Error).message;
-      }
-      await vaultRecord(`request:${id}`, done);
-      channel.postMessage({ id });
-      status.textContent = done.error ?? "Done. Back to QuestLayer…";
-      if (!done.error) setTimeout(() => window.close(), 700);
+      const outcome = await settle(id, pending, accepted, () =>
+        execute(pending.request),
+      );
+      status.textContent = outcome.error ?? "Done. Back to QuestLayer…";
+      if (outcome.told && !outcome.error)
+        setTimeout(() => window.close(), 700);
     };
     cancel.onclick = () => void finish(false);
     approve.onclick = () => void finish(true);

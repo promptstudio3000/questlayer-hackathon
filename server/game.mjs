@@ -1,7 +1,9 @@
 import { grantWearableFind } from "./gotchi-wearables.mjs";
 import { coinMeta } from "./map-rewards/service.mjs";
+import { spotTakenBy } from "./coin-spots.mjs";
 import { earnGlobalQuest } from './global-rewards.mjs';
 import { randomBytes } from "node:crypto";
+import { SESSION_TTL_MS } from "./native/network.mjs";
 import {
   GOLD,
   DAY,
@@ -64,7 +66,7 @@ export function session(db, name, now = Date.now()) {
     db.prepare("INSERT INTO sessions VALUES (?,?,?)").run(
       hash(token),
       player,
-      now + 30 * DAY,
+      now + SESSION_TTL_MS,
     );
     return { token, player: playerView(db, player) };
   });
@@ -118,6 +120,17 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
     );
     assert(
       !coin.claimant,
+      "Another explorer got this coin first. Pick another one nearby.",
+      409,
+      "ALREADY_CLAIMED",
+    );
+    // The same street coin can sit in several worlds (GPS city, demo arena):
+    // whoever picks it up first, in any of them, takes it (coin-spots.mjs).
+    const sibling = spotTakenBy(db, coin);
+    if (sibling?.claimant === player)
+      return { alreadyClaimed: true, value: coin.value_u };
+    assert(
+      !sibling,
       "Another explorer got this coin first. Pick another one nearby.",
       409,
       "ALREADY_CLAIMED",
@@ -504,7 +517,7 @@ export function stake(db, player, value, contribution, pool, now = Date.now()) {
   );
   return atomic(db, () => {
     const p = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
-    assert(p.gold_u >= value, "Not enough practice GOLD for this stake.");
+    assert(p.gold_u >= value, "Not enough practice QGOLD for this stake.");
     db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=?").run(
       value,
       player,
@@ -612,7 +625,7 @@ export function redeem(db, player, withdrawalId, now = Date.now()) {
     assert(w.state === "pending", "Withdrawal is already complete.", 409);
     assert(
       w.ready_at <= now,
-      "Your GOLD is still unlocking. Check back in a moment.",
+      "Your QGOLD is still unlocking. Check back in a moment.",
     );
     db.prepare("UPDATE withdrawals SET state='paid' WHERE id=?").run(w.id);
     db.prepare("UPDATE players SET gold_u=gold_u+? WHERE id=?").run(
@@ -740,7 +753,7 @@ export function buyItem(db, player, listingId, now = Date.now()) {
       409,
     );
     const p = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
-    assert(p.gold_u >= x.price_u, "Not enough practice GOLD for this price.");
+    assert(p.gold_u >= x.price_u, "Not enough practice QGOLD for this price.");
     db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=?").run(
       x.price_u,
       player,

@@ -14,6 +14,8 @@ import type { LinkedEvmWallet } from "./evm-wallet";
 import type { NativeItem } from "./types";
 import { ChainLink } from "./ChainLink";
 import { tr } from "./i18n";
+import { FundsHelp } from "./FundsHelp";
+import { checkFunds, fundsReason, nearText, GAS_HEADROOM, type FundsShortfall } from "./funds-help";
 
 const GAS = "100000000000000",
   NFT_GAS = "200000000000000",
@@ -40,7 +42,9 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
     [error, setError] = useState(""),
     [done, setDone] = useState<{ text: string; tx?: string } | null>(null),
     [evmWallets, setEvmWallets] = useState<LinkedEvmWallet[]>([]),
-    [signWith, setSignWith] = useState("device");
+    [signWith, setSignWith] = useState("device"),
+    // Why a Buy can't go through (no NEAR, QGOLD to swap) instead of a bare error.
+    [help, setHelp] = useState<FundsShortfall | null>(null);
   const accountId = signer?.accountId ?? null;
   const canSign = !!signer?.key;
   // A linked Ethereum wallet (MetaMask, Rabby) can sign the same intents
@@ -108,8 +112,14 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
       await api("/native/intents/orders", { signed: await sign([auraTokenDiff("sell", c.nftContract, tokenId, yocto, c.wnear)]) });
       return { text: tr("Your Aura is listed. Anyone can buy it with one signed intent.") };
     });
-  const buy = (orderId: string, tokenId: string, yocto: string) =>
-    run(async () => {
+  const buy = async (orderId: string, tokenId: string, yocto: string) => {
+    const wrap = BigInt(grossForNet(yocto, c.fee || 0)) - BigInt(mine?.wnear || "0");
+    if (accountId && wrap > 0n) {
+      setStep(tr("Working…"));
+      const funds = await checkFunds(accountId, wrap + GAS_HEADROOM).finally(() => setStep(""));
+      if (fundsReason(funds) !== "unknown") return setHelp(funds);
+    }
+    await run(async () => {
       // The buyer pays the seller's price plus the verifier fee (to the treasury).
       let missing = BigInt(grossForNet(yocto, c.fee || 0)) - BigInt(mine?.wnear || "0");
       // A 0.05 NEAR deposit would look like a storage deposit and be routed
@@ -126,6 +136,7 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
       });
       return { text: tr("Done. Settled on chain."), tx: r.transactionHash };
     });
+  };
   const withdraw = () =>
     run(async () => {
       const intents: unknown[] = (mine?.auras || []).slice(0, 3).map((token_id) => ({ intent: "nft_withdraw", token: c.nftContract, token_id, receiver_id: accountId }));
@@ -233,6 +244,14 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
             </>
           )}
         </>
+      )}
+      {help && (
+        <FundsHelp
+          title={tr("Why you can't buy this yet")}
+          funds={help}
+          onRecheck={() => void checkFunds(help.account, help.need).then(setHelp)}
+          onClose={() => setHelp(null)}
+        />
       )}
     </section>
   );

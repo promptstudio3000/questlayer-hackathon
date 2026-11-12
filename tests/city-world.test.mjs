@@ -126,18 +126,20 @@ test("ordered walking checkpoints cannot be skipped replayed or completed from o
   );
   db.close();
 });
-test("exhausted Aura supply is visible and never mints beyond edition caps", async () => {
+test("Auras have no supply cap: chests keep dropping past the old 256 copies", async () => {
   const db = openDatabase(":memory:"),
     player = createPlayer(db, "Collector");
   for (const name of DEMO_AURA_NAMES)
     db.prepare("INSERT INTO editions VALUES (?,256,256)").run(name);
+  // Opening the database lifts old 256 caps (server/database.mjs).
+  db.exec("UPDATE editions SET max_supply=9007199254740991 WHERE max_supply<9007199254740991");
   const w = await ensureWorld(db, HOME, true, now),
     q = worldView(db, w.id, player).quests.find(
       (q) => q.tier === 1 && q.kind === "chest",
     );
-  assert.equal(q.itemAvailable, false);
+  assert.equal(q.itemAvailable, true);
   const result = claimQuest(db, player, q.id, q, now);
-  assert.equal(result.item, null);
+  assert.equal(result.item.serial, 257);
   assert.equal(result.xp, 80);
   db.close();
 });

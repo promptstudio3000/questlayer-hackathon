@@ -53,6 +53,8 @@ const adventureResults = () => import("./AdventureResults");
 export const GameIntro = lazyNamed(() => import("./GameIntro"), "GameIntro", true);
 export const QuestBrief = lazyNamed(() => import("./QuestBrief"), "QuestBrief");
 export const WearableMoment = lazyNamed(() => import("./WearableMoment"), "WearableMoment");
+export const LockedZoneCard = lazyNamed(() => import("./LockedZone"), "LockedZoneCard", true);
+export const LockedZoneDialog = lazyNamed(() => import("./LockedZone"), "LockedZoneDialog", true);
 export const AdventureResultDialog = lazyNamed(
   adventureResults,
   "AdventureResultDialog",
@@ -68,6 +70,10 @@ export const AdventureResultHistoryButton = lazyNamed(
 export const PendingNativeTransactions = lazyNamed(
   () => import("./PendingNativeTransactions"),
   "PendingNativeTransactions",
+);
+export const SettingsReceipts = lazyNamed(
+  () => import("./PendingNativeTransactions"),
+  "SettingsReceipts",
 );
 export const CreatorCommunity = lazyNamed(
   () => import("./CreatorCommunity"),
@@ -95,10 +101,8 @@ export const AccountSessions = lazyNamed(
 );
 export const DeviceKeys = lazyNamed(() => import("./DeviceKeys"), "DeviceKeys");
 export const BadgeBook = lazyNamed(() => import("./BadgeBook"), "BadgeBook");
+export const GasWatch = lazyNamed(() => import("./FuelCard"), "GasWatch", true);
 export const CharacterJourney = lazyNamed(() => import("./CharacterJourney"), "CharacterJourney");
-const stakeEarn = () => import("./StakeEarn");
-export const StakeEarnSwitch = lazyNamed(stakeEarn, "StakeEarnSwitch", true);
-export const EarningsPanel = lazyNamed(stakeEarn, "EarningsPanel");
 export const NativeLevelRewards = lazyNamed(
   () => import("./NativeLevelRewards"),
   "NativeLevelRewards",
@@ -170,11 +174,12 @@ export const NearbyList = lazyNamed(() => import("./NearbyList"), "NearbyList");
 // Community · Tasks reuses the Nearby chunk (NearbyList re-exports NearbyMarket).
 export const NearbyMarket = lazyNamed(() => import("./NearbyList"), "NearbyMarket");
 export const GoldShop = lazyNamed(() => import("./GoldShop"), "GoldShop");
-export const PlaceMessages = lazyNamed(
-  () => import("./PlaceMessages"),
-  "PlaceMessages",
+export const LocalChat = lazyNamed(
+  () => import("./LocalChat"),
+  "LocalChat",
 );
 export const PlaceCompose = lazyNamed(() => import("./PlaceMessages"), "PlaceCompose");
+export const TourHelper = lazyNamed(() => import("./TourHelper"), "default");
 export const CommunityPlaces = lazyNamed(() => import("./CommunityPlaces"), "CommunityPlaces");
 export const AddPlaceDialog = lazyNamed(() => import("./CommunityPlaces"), "AddPlaceDialog");
 export const EmotePicker = lazyNamed(

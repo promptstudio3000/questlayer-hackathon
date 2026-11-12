@@ -36,7 +36,7 @@ const report={phase:before?"before":"after",engine:engine.name(),provenance:"Act
 const angle=(a,b)=>Math.abs(((a-b+540)%360)-180);
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function context(motion="reduce",point=home){
- const c=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:motion,serviceWorkers:"block"});
+ const c=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:motion,serviceWorkers:"block"});await c.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
  await c.addInitScript(({offset,point})=>{
   const D=Date;window.Date=class extends D{constructor(...a){super(...(a.length?a:[D.now()+offset]));}static now(){return D.now()+offset;}};
   let p=point,course=null,speed=0,accuracy=5;
@@ -107,7 +107,7 @@ try{
   await p.keyboard.down("w");await p.locator(".demo-forward").hover();await p.mouse.down();await pause(150);await p.mouse.up();assert.equal(await p.locator(".demo-forward").getAttribute("aria-pressed"),"true");await p.keyboard.up("w");
   await p.keyboard.down("w");await p.locator(".daily-board-chip").click();await p.locator("dialog[open]").waitFor();await p.waitForFunction(()=>document.querySelector(".demo-forward")?.getAttribute("aria-pressed")==="false");
   const stopped=await pose(p);await p.keyboard.press("Escape");await p.keyboard.down("w");await pause(250);assert.equal(await p.locator(".demo-forward").getAttribute("aria-pressed"),"false");await p.keyboard.up("w");assert.ok(metersBetween(point(stopped.position),point((await pose(p)).position))<.2);
-  await p.getByRole("button",{name:"Community",exact:true}).click();await p.getByRole("tab",{name:"Local chat",exact:true}).click();await p.getByRole("button",{name:"Write a note",exact:true}).click();await p.locator("#map-note-text").fill("WASD stays in this draft.");await p.locator("#map-note-text").press("ArrowLeft");assert.equal(await p.locator("#map-note-text").inputValue(),"WASD stays in this draft.");await p.keyboard.press("Escape");
+  await p.getByRole("button",{name:"Community",exact:true}).click();await p.getByRole("tab",{name:"Local chat",exact:true}).click();await p.getByRole("button",{name:"Write a message",exact:true}).click();await p.locator("#map-note-text").fill("WASD stays in this draft.");await p.locator("#map-note-text").press("ArrowLeft");assert.equal(await p.locator("#map-note-text").inputValue(),"WASD stays in this draft.");await p.keyboard.press("Escape");
   const close=p.getByRole("button",{name:"Close panel",exact:true});if(await close.isVisible())await close.click();
   await p.locator(".maplibregl-canvas").focus();const restart=await pose(p);await p.keyboard.down("ArrowUp");
   await p.waitForFunction(start=>{const q=window.__testAvatar.getLngLat();return Math.hypot((q.lng-start[0])*Math.cos(q.lat*Math.PI/180),q.lat-start[1])*111320>2;},restart.position,{timeout:10000});

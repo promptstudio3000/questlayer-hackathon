@@ -3,6 +3,7 @@
 //   node scripts/treasury-dao-testnet.mjs setup [--execute]    # keeper + 2 council keys, the Sputnik DAO, the manifest
 //   node scripts/treasury-dao-testnet.mjs status               # roles, this week's vote, adopted mix, today's run
 //   node scripts/treasury-dao-testnet.mjs daily [--dry-run]    # tally / open polls, sync Explorers, file + auto-approve today's run
+//   node scripts/treasury-dao-testnet.mjs approve-pending      # add this host's council approvals to checked open proposals
 //   node scripts/treasury-dao-testnet.mjs poll "<question>" "<option a>" "<option b>" [...]  # extra vote for this week
 //   node scripts/treasury-dao-testnet.mjs qgold-council [--execute]  # QGOLD vault council -> the DAO (SetCouncil)
 //   node scripts/treasury-dao-testnet.mjs adopt <preset> [--execute]  # owner decision: the council adopts a preset now
@@ -22,7 +23,7 @@
 import { readFileSync, writeFileSync, statSync, existsSync, renameSync } from "node:fs";
 import assert from "node:assert/strict";
 import { Account, KeyPair, KeyPairSigner } from "near-api-js";
-import { createNearProvider } from "../server/near-provider.mjs";
+import { createNearProvider, rpcErrorText } from "../server/near-provider.mjs";
 import { mixSettings, readMix } from "../server/native/treasury-mix.mjs";
 import {
   DAO_FACTORY,
@@ -42,6 +43,7 @@ import {
   adoptedMix,
   dailyRun,
   checkDailyRun,
+  sameTargets,
   weekOf,
   utcDate,
 } from "../server/native/treasury-dao.mjs";
@@ -51,17 +53,27 @@ const flag = (f) => rest.includes(f);
 const dryRun = flag("--dry-run");
 const execute = flag("--execute");
 
+// On the Mac the operator key sits in .data/near-operator.json. On the VPS
+// (docs/TREASURY-WORKERS-VPS.md) there is no operator key: QUESTLAYER_OPERATOR_ACCOUNT
+// names the operator (the parent of keeper/council-*) and the keys file holds
+// only the keeper's and council's function-call keys for the DAO.
 const operatorPath = process.env.NEAR_OPERATOR_KEY_PATH || ".data/near-operator.json";
-const operator = JSON.parse(readFileSync(operatorPath));
+const operatorFile = existsSync(operatorPath) ? JSON.parse(readFileSync(operatorPath)) : null;
+const operatorId = process.env.QUESTLAYER_OPERATOR_ACCOUNT || operatorFile?.accountId;
+const operator =
+  operatorFile && operatorFile.accountId === operatorId ? operatorFile : { network: "testnet", accountId: operatorId, secretKey: null };
 assert.equal(operator.network, "testnet", "Testnet only");
-assert.equal(statSync(operatorPath).mode & 0o077, 0, "Operator key file must be private (chmod 600)");
+assert(operator.accountId?.endsWith(".testnet"), `No ${operatorPath} and no QUESTLAYER_OPERATOR_ACCOUNT.`);
+if (operator.secretKey) assert.equal(statSync(operatorPath).mode & 0o077, 0, "Operator key file must be private (chmod 600)");
+// The account whose treasury mix the daily run checks (the treasury-ops account on the VPS).
+const mixAccount = process.env.TREASURY_MIX_ACCOUNT || operator.accountId;
 const provider = createNearProvider();
 assert.equal((await provider.viewNodeStatus()).chain_id, "testnet");
 
 const factory = DAO_FACTORY.testnet;
 const daoId = process.env.TREASURY_DAO_ID || `${DAO_NAME}.${factory}`;
 const manifestPath = "public/native-treasury-dao-testnet.json";
-const keysPath = ".data/treasury-dao-keys.json";
+const keysPath = process.env.TREASURY_DAO_KEYS_PATH || ".data/treasury-dao-keys.json";
 const apiBase = process.env.TREASURY_DAO_API || "https://questlayer.promptstudio3000.com";
 const TGAS = 10n ** 12n;
 const NEAR = 10n ** 24n;
@@ -76,7 +88,7 @@ const accountsFor = (op) => ({
   councilB: `council-b.${op}`,
 });
 const ids = accountsFor(operator.accountId);
-const operatorAccount = new Account(operator.accountId, provider, KeyPairSigner.fromSecretKey(operator.secretKey));
+const operatorAccount = operator.secretKey ? new Account(operator.accountId, provider, KeyPairSigner.fromSecretKey(operator.secretKey)) : null;
 
 function loadKeys() {
   if (!existsSync(keysPath)) return {};
@@ -89,7 +101,10 @@ function saveKeys(keys) {
 }
 const keys = loadKeys();
 const signerAccount = (id) => {
-  if (id === operator.accountId) return operatorAccount;
+  if (id === operator.accountId) {
+    assert(operatorAccount, "The operator key is not on this host (this step runs on the Mac).");
+    return operatorAccount;
+  }
   const k = Object.values(keys).find((x) => x.accountId === id);
   assert(k, `No key for ${id} in ${keysPath}. Run setup first.`);
   return new Account(id, provider, KeyPairSigner.fromSecretKey(k.secretKey));
@@ -100,7 +115,8 @@ async function exists(accountId) {
     await provider.viewAccount({ accountId });
     return true;
   } catch (e) {
-    if (/does not exist|unknown_account/i.test(String(e?.message || e) + JSON.stringify(e?.data || ""))) return false;
+    // The failover provider wraps AccountDoesNotExist; rpcErrorText unwraps it.
+    if (/does not exist|unknown_account/i.test(rpcErrorText(e))) return false;
     throw e;
   }
 }
@@ -131,10 +147,18 @@ async function act(from, id, action, kind) {
   const r = await call(from, daoId, "act_proposal", { id, action, proposal: kind }, { gas: 150n });
   log({ voted: action, id, by: from, transaction: txOf(r) });
 }
-/** The two automatic council keys approve a proposal this script checked. */
+const hasKey = (id) => Object.values(keys).some((x) => x.accountId === id);
+/**
+ * The automatic council keys approve a proposal this script checked. A host
+ * holds only the council keys it was given: on the VPS that can be council-a
+ * alone, and the second approval then comes from the Mac (`approve-pending`)
+ * or from Lubos's operator seat.
+ */
 async function councilApprove(id, kind) {
-  await act(ids.councilA, id, "VoteApprove", kind);
-  await act(ids.councilB, id, "VoteApprove", kind);
+  const seats = [ids.councilA, ids.councilB].filter(hasKey);
+  assert(seats.length, `No council key in ${keysPath}.`);
+  for (const seat of seats) await act(seat, id, "VoteApprove", kind);
+  if (seats.length < 2 && id != null) log({ waiting: id, note: "one council approval here; the second comes from approve-pending on the Mac or the operator seat" });
 }
 
 function writeManifest(extra = {}) {
@@ -276,9 +300,9 @@ async function daily() {
   const filed = dailyRun(dao.proposals, date);
   // A run filed before today's adoption has another target: file it again.
   if (filed && (!adopted || sameTargets(filed.meta.target, adopted.targets))) return log({ daily: date, note: "already filed" });
-  const settings = mixSettings({ ...process.env, TREASURY_MIX_ACCOUNT: operator.accountId }, "testnet");
+  const settings = mixSettings({ ...process.env, TREASURY_MIX_ACCOUNT: mixAccount }, "testnet");
   if (adopted) settings.target = adopted.targets;
-  const live = await readMix(provider, settings, { account: operator.accountId, record: existsSync(".data/treasury-mix.json") ? JSON.parse(readFileSync(".data/treasury-mix.json")) : null });
+  const live = await readMix(provider, settings, { account: mixAccount, record: existsSync(".data/treasury-mix.json") ? JSON.parse(readFileSync(".data/treasury-mix.json")) : null });
   const moved = live.plan.steps.filter((s) => ["sell-lst", "withdraw-vault", "unwrap", "sell-stable"].includes(s.op)).reduce((a, s) => a + BigInt(s.value), 0n);
   const meta = {
     t: "daily",
@@ -385,13 +409,55 @@ async function status() {
   });
 }
 
+// ---------------------------------------------------------------- second approval
+// For a host that holds only some council keys (docs/TREASURY-WORKERS-VPS.md):
+// re-checks every open keeper proposal this script would have approved and adds
+// this host's council approvals. On the Mac with council-b, after the VPS filed
+// and approved with council-a.
+async function approvePending() {
+  const dao = await readDao(provider, daoId);
+  assert(dao.exists, `${daoId} does not exist.`);
+  const seats = [ids.councilA, ids.councilB].filter(hasKey);
+  assert(seats.length, `No council key in ${keysPath}.`);
+  const now = Date.now();
+  const adopted = adoptedMix(dao.proposals);
+  const settings = mixSettings({ ...process.env, TREASURY_MIX_ACCOUNT: mixAccount }, "testnet");
+  if (adopted) settings.target = adopted.targets;
+  for (const x of dao.proposals.filter((y) => y.status === "InProgress" && y.proposer === dao.keeper && y.meta && y.meta.t !== "poll")) {
+    const todo = seats.filter((seat) => !x.voters.includes(seat));
+    if (!todo.length) continue;
+    const raw = await view(daoId, "get_proposal", { id: x.id });
+    let problem = null;
+    if (x.meta.t === "daily") {
+      if (x.meta.date !== utcDate(now)) problem = "not today's run";
+      else problem = checkDailyRun(x.meta, { adopted, settings }).join(" ") || null;
+    } else if (x.meta.t === "adopt") {
+      const t = /^(mix|extra)-/.test(x.meta.poll || "") ? tallyPoll(dao.proposals, x.meta.poll) : null;
+      if (!t) problem = "only poll results are approved here; owner decisions are approved where they are filed";
+      else if (!t.closesAt || t.closesAt > now) problem = "the poll is still open";
+      else if (t.winner !== x.meta.option) problem = `the poll's winner is ${t.winner}, not ${x.meta.option}`;
+    } else if (x.meta.t === "members") {
+      const role = raw.kind?.ChangePolicyAddOrUpdateRole?.role;
+      const group = role?.kind?.Group;
+      if (role?.name !== "Explorers" || !Array.isArray(group) || !group.includes(ids.keeper) || !group.every((a) => typeof a === "string" && a.endsWith(".testnet"))) problem = "not an Explorers role update";
+    } else problem = `type ${x.meta.t} is not approved automatically`;
+    if (problem) {
+      log({ proposal: x.id, title: x.title, skipped: problem });
+      continue;
+    }
+    if (dryRun) log({ dryRun: true, wouldApprove: x.id, title: x.title, by: todo });
+    for (const seat of todo) await act(seat, x.id, "VoteApprove", raw.kind);
+  }
+}
+
 if (command === "setup") await setup();
+else if (command === "approve-pending") await approvePending();
 else if (command === "daily") await daily();
 else if (command === "poll") await extraPoll();
 else if (command === "qgold-council") await qgoldCouncil();
 else if (command === "adopt") await adoptNow();
 else if (command === "status") await status();
 else {
-  console.error("Commands: setup [--execute] | status | daily [--dry-run] | poll <question> <a> <b> | qgold-council [--execute] | adopt <preset> [--execute]");
+  console.error("Commands: setup [--execute] | status | daily [--dry-run] | approve-pending [--dry-run] | poll <question> <a> <b> | qgold-council [--execute] | adopt <preset> [--execute]");
   process.exit(2);
 }

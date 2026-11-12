@@ -301,3 +301,27 @@ test("routes require sign-in and answer disabled when the inbox is off", async (
   assert.deepEqual(calls.pop(), { unread: 2, requests: 1 });
   assert.equal(await on.handle({ method: "GET" }, {}, new URL("http://x/api/other"), { player: "p", body: async () => ({}), respond, assert: assertFn }), false);
 });
+
+test("explorers within 1 km of each other may write right away; the conversation stays open", async (t) => {
+  const w = world(t);
+  const alice = w.explorer("Alice", ALICE),
+    bob = w.explorer("Bob", BOB);
+  await w.publishKey(alice);
+  await w.publishKey(bob);
+  const share = (p, lat, lng, arena = 1) =>
+    w.db
+      .prepare("INSERT OR REPLACE INTO presence(player_id,lat,lng,expires_at,updated_at,arena) VALUES(?,?,?,?,?,?)")
+      .run(p.id, lat, lng, w.now() + 60_000, w.now(), arena);
+  share(alice, 49.7474, 13.3774);
+  share(bob, 49.7474, 13.4074); // ~2.2 km east
+  assert.equal(w.inbox.relation(alice.id, bob.id), "none");
+  share(bob, 49.7474, 13.3874, 0); // ~720 m, but in the other realm
+  assert.equal(w.inbox.relation(alice.id, bob.id), "none");
+  share(bob, 49.7474, 13.3874); // ~720 m, same realm
+  assert.equal(w.inbox.relation(alice.id, bob.id), "open");
+  const m = await send(w, alice, bob, "Jsem kousek od tebe");
+  assert.equal(m.state, "delivered");
+  w.db.prepare("DELETE FROM presence").run();
+  w.tick(5000);
+  assert.equal(w.inbox.relation(bob.id, alice.id), "open", "meeting once keeps the conversation open");
+});

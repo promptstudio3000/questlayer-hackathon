@@ -2,6 +2,7 @@
 // gave to the prize pool today, the E+2 countdown in real epochs, the one-time
 // maturity / tier ceremony and the Keeper's inner vault. Data comes from
 // server/npc/keeper-vault.mjs (Keeper sheet, or GET /api/keeper/stake).
+import { goldFromYocto } from "./gold-units.ts";
 import { useEffect, useState } from "react";
 import { api } from "./api";
 import LockedChip from "./LockedChip";
@@ -83,19 +84,9 @@ export interface PatronRank {
   rankUp: { rank: number; name: string } | null;
 }
 
-const GOLD = 10n ** 21n; // 1 GOLD = 0.001 NEAR
-export function gold(yocto: string | null | undefined, digits = 3): string {
-  let v: bigint;
-  try {
-    v = BigInt(yocto || "0");
-  } catch {
-    return "–";
-  }
-  const neg = v < 0n;
-  if (neg) v = -v;
-  const scale = 10n ** BigInt(digits);
-  const n = Number((v * scale) / GOLD) / Number(scale);
-  return `${neg ? "−" : ""}${n.toLocaleString("en-US", { maximumFractionDigits: digits })}`;
+// Whole GOLD (1 GOLD = the smallest QGOLD unit, src/gold-units.ts).
+export function gold(yocto: string | null | undefined, _digits?: number): string {
+  return goldFromYocto(yocto || "0");
 }
 const sumField = (card: StakeCard, pick: (v: StakeVault) => string | undefined) =>
   card.accounts
@@ -118,7 +109,7 @@ function ceremonyText(c: StakeCeremony, card: StakeCard) {
     };
   return {
     title: tr("Your fuel has matured"),
-    text: tr("{0} GOLD of new stake now fuels the prize pool{1}.", { 0: gold(c.amount), 1: c.epoch != null ? ` (epoch ${c.epoch})` : "" }),
+    text: tr("{0} QGOLD of new stake now fuels the prize pool{1}.", { 0: gold(c.amount), 1: c.epoch != null ? ` (epoch ${c.epoch})` : "" }),
   };
 }
 
@@ -148,10 +139,10 @@ function maturityLine(v: StakeVault, card: StakeCard) {
   switch (m.state) {
     case "pending":
       return m.byEpoch != null
-        ? tr("{0} GOLD matures by epoch {1} at the latest (now {2}{3}).", { 0: gold(m.pending), 1: m.byEpoch, 2: card.epoch, 3: m.epochsLeft ? `, ${m.epochsLeft} epoch${m.epochsLeft === 1 ? "" : "s"} ≈ ${m.hoursLeft} h` : ", any moment" })
-        : tr("{0} GOLD is still maturing (E+{1}).", { 0: gold(m.pending), 1: card.maturityEpochs });
+        ? tr("{0} QGOLD matures by epoch {1} at the latest (now {2}{3}).", { 0: gold(m.pending), 1: m.byEpoch, 2: card.epoch, 3: m.epochsLeft ? `, ${m.epochsLeft} epoch${m.epochsLeft === 1 ? "" : "s"} ≈ ${m.hoursLeft} h` : ", any moment" })
+        : tr("{0} QGOLD is still maturing (E+{1}).", { 0: gold(m.pending), 1: card.maturityEpochs });
     case "mature":
-      return tr("All {0} GOLD has matured and fuels the prize pool.", { 0: gold(v.principal) });
+      return tr("All {0} QGOLD has matured and fuels the prize pool.", { 0: gold(v.principal) });
     case "uncounted":
       return tr("At 0 % prize pool share this stake earns only for you and does not count toward a tier. It still makes you a Staker once it has matured.");
     case "refreshing":
@@ -222,7 +213,7 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
       {onSeen && <StakeCeremonies card={card} onSeen={onSeen} />}
       {onRankSeen && card.rank && <PatronRankUp rank={card.rank} onSeen={onRankSeen} />}
       <header>
-        <h3 id="stake-today-title">{tr("Your stake today")}</h3>
+        <h3 id="stake-today-title">{tr("Your stake")}</h3>
         {card.patron && <span className="stake-patron">✦ {card.patron.title}</span>}
         {card.rank && card.rank.name && (
           <span className="stake-patron stake-rank">
@@ -255,15 +246,15 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
           <dl className="stake-today-numbers">
             <div>
               <dt>{tr("Kept for you")}</dt>
-              <dd>+{gold(sumField(card, (v) => v.today?.retained))} GOLD</dd>
+              <dd>+{gold(sumField(card, (v) => v.today?.retained))} QGOLD</dd>
             </div>
             <div>
               <dt>{tr("Given to the prize pool")}</dt>
-              <dd>+{gold(sumField(card, (v) => v.today?.given))} GOLD</dd>
+              <dd>+{gold(sumField(card, (v) => v.today?.given))} QGOLD</dd>
             </div>
             <div>
               <dt>{tr("Growing in the pool")}</dt>
-              <dd>{gold(sumField(card, (v) => v.totals?.inPool))} GOLD</dd>
+              <dd>{gold(sumField(card, (v) => v.totals?.inPool))} QGOLD</dd>
             </div>
           </dl>
           {since != null && (
@@ -273,8 +264,8 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
           {card.coins && (
             <p className="stake-coins">
               {card.coins.funding === "realized_yield"
-                ? tr("Your vaults have paid {0} GOLD into the global prize pool: the value of {1} of today's {2} coins. The coins stay shared, first come first served.", { 0: gold(card.coins.givenPaid), 1: card.coins.backed, 2: card.coins.coinCount })
-                : tr("Today's {0} coins are sponsor-funded. The {1} GOLD your vaults paid in waits in the pot for coming days.", { 0: card.coins.coinCount, 1: gold(card.coins.givenPaid) })}
+                ? tr("Your vaults have paid {0} QGOLD into the global prize pool: the value of {1} of today's {2} coins. The coins stay shared, first come first served.", { 0: gold(card.coins.givenPaid), 1: card.coins.backed, 2: card.coins.coinCount })
+                : tr("Today's {0} coins are sponsor-funded. The {1} QGOLD your vaults paid in waits in the pot for coming days.", { 0: card.coins.coinCount, 1: gold(card.coins.givenPaid) })}
             </p>
           )}
           </>
@@ -292,7 +283,7 @@ export function StakeTodayCard({ card, onSeen, onRankSeen }: { card: StakeCard; 
           </ul>
           <p className="stake-note">
             {card.tier > 1 ? tr("Tier {0}", { 0: card.tier }) : card.staker?.staker ? tr("Staker") : tr("Free explorer")}
-            {card.nextTier ? tr(" · {0} GOLD more matured fuel opens Tier {1}.", { 0: gold(card.nextTier.missing, 0), 1: card.nextTier.tier }) : tr(" · every place on the map is open to you.")}
+            {card.nextTier ? tr(" · {0} QGOLD more matured fuel opens Tier {1}.", { 0: gold(card.nextTier.missing, 0), 1: card.nextTier.tier }) : tr(" · every place on the map is open to you.")}
           </p>
         </>
       )}

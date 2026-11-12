@@ -166,7 +166,19 @@ async function check(page, lang, dir, shot, report, keepDialog = false) {
   await page.waitForTimeout(700);
   if (!keepDialog) await dismissOverlays(page);
   const file = `${String(report.screens.length + 1).padStart(2, "0")}-${shot}.png`;
-  await page.screenshot({ path: join(dir, file) });
+  // Chromium's software GL sometimes refuses one capture of the WebGL map
+  // ("Unable to capture screenshot") and takes the next. The picture is only
+  // evidence; the checks below read the live page either way.
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await page.screenshot({ path: join(dir, file) });
+      break;
+    } catch (error) {
+      if (attempt === 3 || !/Unable to capture screenshot/.test(error.message)) throw error;
+      console.log(`  ${shot}: screenshot refused, retry ${attempt}`);
+      await page.waitForTimeout(1000);
+    }
+  }
   const layout = await page.evaluate(layoutProblems);
   const english = lang === "en" ? [] : await page.evaluate(untranslated, DICTS[lang]);
   report.screens.push({ screen: shot, file, layout, english });
@@ -178,7 +190,7 @@ async function runLanguage(browser, url, lang) {
   rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   const report = { lang, screens: [], problems: [] };
-  const context = await browser.newContext({ ...PHONE_390, reducedMotion: "reduce", locale: "en-GB" });
+  const context = await browser.newContext({ ...PHONE_390, reducedMotion: "reduce", locale: "en-GB" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
   const page = await context.newPage();
   page.on("pageerror", (e) => report.problems.push(`page error: ${e.message}`));
   await page.goto(`${url}/?lang=${lang}`);

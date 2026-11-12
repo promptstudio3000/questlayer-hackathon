@@ -194,7 +194,7 @@ export function AdventureResultDialog({
                         {new Date(receipt.completedAt).toLocaleString()}
                         <br />
                         {receipt.reward
-                          ? tr("+{0} XP · {1} GOLD{2}", { 0: receipt.reward.xp, 1: gold(receipt.reward.goldU, 6), 2: receipt.reward.item ? ` · ${receipt.reward.item.name}` : " · no Aura" })
+                          ? tr("+{0} XP · {1} QGOLD{2}", { 0: receipt.reward.xp, 1: gold(receipt.reward.goldU, 6), 2: receipt.reward.item ? ` · ${receipt.reward.item.name}` : " · no Aura" })
                           : tr("Details not recorded")}
                       </small>
                     </span>
@@ -225,11 +225,11 @@ export function AdventureResultDialog({
                   <h3>{item?.name || result.title}</h3>
                   {item && <p className="reward-edition">
                     {set?.name && <span>{set.name}</span>}
-                    {item.serial !== null && <span>#{item.serial}{edition ? ` / ${AURA_SUPPLY}` : ""}</span>}
+                    {item.serial !== null && <span>#{item.serial}{edition && AURA_SUPPLY ? ` / ${AURA_SUPPLY}` : ""}</span>}
                     <span>{item.rarity === "common" ? tr("Common") : item.rarity === "rare" ? tr("Rare") : item.rarity === "epic" ? tr("Epic") : item.rarity === "legendary" ? tr("Legendary") : item.rarity}</span>
                     <span>{item.slot === "above" ? tr("Above character") : tr("Below character")}</span>
                   </p>}
-                  {result.reward && <p className="reward-moment-values"><strong>+{result.reward.xp} XP</strong>{result.reward.goldU > 0 && <> · {gold(result.reward.goldU, 6)} GOLD</>}</p>}
+                  {result.reward && <p className="reward-moment-values"><strong>+{result.reward.xp} XP</strong>{result.reward.goldU > 0 && <> · {gold(result.reward.goldU, 6)} QGOLD</>}</p>}
                   {result.reward?.near && <p className="reward-moment-values"><strong>+{result.reward.near.amountNear} {tr("NEAR testnet")}</strong><br />{result.reward.near.state === "converted" ? tr("Converted to QGOLD") : result.reward.near.state === "conversion-carry" ? tr("Fractional NEAR remains credited") : tr("Awaiting QGOLD settlement")}</p>}
                   {!item && result.reward && <p>{tr("No Aura this time. XP still counts.")}</p>}
                   {note && <p>{note}</p>}
@@ -247,8 +247,8 @@ export function AdventureResultDialog({
                   <p>{result.title}</p>
                   <p className="adventure-result-date">{tr("Confirmed")} {new Date(result.completedAt).toLocaleString()}{tr(". Viewing this does not collect the reward again.")}</p>
                   {result.status === "legacy-unavailable" || !result.reward ? <p>{tr("This visit was confirmed before rewards were recorded in detail. The visit still counts.")}</p>
-                    : <p>+{result.reward.xp} {"XP"} · {gold(result.reward.goldU, 6)} GOLD</p>}
-                  {edition && <p>{tr("Edition size: {0}. This is the series limit, not the number remaining.", { 0: AURA_SUPPLY })}</p>}
+                    : <p>+{result.reward.xp} {"XP"} · {gold(result.reward.goldU, 6)} QGOLD</p>}
+                  {edition && AURA_SUPPLY && <p>{tr("Edition size: {0}. This is the series limit, not the number remaining.", { 0: AURA_SUPPLY })}</p>}
                   {item && <p>{result.itemCurrent.reason || (result.itemCurrent.status === "owned" ? tr("This Aura is in your collection.") : tr("Check that you still own this Aura before trying it on."))}</p>}
                   {liveItem && result.itemCurrent.status === "owned" && <div className="reward-outfit-preview"><Character items={previewItems} originTokenId={player.appearance.originTokenId} preview /></div>}
                   {intent !== "share" && item && liveItem && selection.fresh && itemActions?.(liveItem)}

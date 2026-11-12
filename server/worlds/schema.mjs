@@ -171,13 +171,14 @@ export function checkSchema(pack, { bytes } = {}) {
   const w = pack.rewards;
   if (c.keys(w, "$.rewards", ["xpWeight", "editions", "money"])) {
     c.num(w.xpWeight, "$.rewards.xpWeight", 0, 1);
-    if (w.money !== "none") c.fail("$.rewards.money", 'must be "none": layers never create GOLD or NEAR', "economy");
+    if (w.money !== "none") c.fail("$.rewards.money", 'must be "none": layers never create QGOLD or NEAR', "economy");
     if (c.arr(w.editions, "$.rewards.editions", 0, 32))
       w.editions.forEach((e, i) => {
         const p = `$.rewards.editions[${i}]`;
         if (!c.keys(e, p, ["id", "supply", "slot"])) return;
         c.str(e.id, `${p}.id`, 40, SLUG);
-        c.num(e.supply, `${p}.supply`, 1, 10000, true);
+        // null = no supply cap (Aavegotchi Auras, owner 11 Nov 2026).
+        if (e.supply !== null) c.num(e.supply, `${p}.supply`, 1, 10000, true);
         c.oneOf(e.slot, `${p}.slot`, EDITION_SLOTS);
       });
   }

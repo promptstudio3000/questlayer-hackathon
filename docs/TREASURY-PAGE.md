@@ -11,26 +11,47 @@ Read in parallel, each section degrades on its own when an endpoint is off:
 
 | Endpoint | Used for |
 |---|---|
-| `GET /api/treasury/mix` | total, 50/40/10 mix now vs target, protocol exposure vs the 40 % cap, next run |
+| `GET /api/treasury/mix` | total, mix now vs the DAO target (staked / stables / reserve), protocol exposure vs the 40 % cap, next run |
 | `GET /api/economy/ledger` | prize pool funded/paid, realized yield, stNEAR growth, daily budget by date (yield vs treasury), audit checks, trade fees |
 | `GET /api/economy/qgold` | vault backing, R and its history, buy/sell price, Rhea pool, keeper ask ladder, exit caps, fees table |
 | `GET /api/map/rewards/day` | today's map split by formula component (votes 50, demand 20, random 15, potential 10, stake 5), cells, pioneer reserve |
 
-## Layout (11 Nov 2026: hero card + tabs)
+## Layout (11 Nov 2026, second pass: on-chain pots, swap, FAQ)
 
-The page is short first. On top a hero card shows the one number that matters
-(NEAR held in the treasury, USD, a strip of the current mix) and three small
-stats (QGOLD backing, R, yield earned). Below it sticky tabs split the rest so
+The page is short first and every number can be checked by a click.
+
+- **Headline** (`Pots` in `src/economy/TreasuryExplain.tsx`): the sum of the
+  three on-chain accounts that hold the game's NEAR, each a row linked to the
+  NEAR explorer: the treasury (`/api/treasury/mix` total, operator account),
+  the prize pool (rewards contract, ledger `treasury.liquid`) and the QGOLD
+  vault (`vault.backing`). A strip shows their sizes.
+- **Three stats** with an "i" button each: the treasury's blended yearly rate
+  (staked NEAR at `STAKING_APR` per network, an estimate: testnet 9.5 % = about
+  9.8 % gross validator rate less a 3 % pool fee; stablecoins at Rhea's live
+  supply rate; liquid staking 0 on testnet because its price is frozen), the
+  yield per day at that rate, and R.
+- **Swap card** (`src/economy/QgoldExchange.tsx`, also on /economy): buy QGOLD
+  at R + 1 % or sell at R − 1 % (instant or queued), the player's balance from
+  `GET /api/qgold/account`, signed with the game key on this device. Purple
+  buttons always use white text (`--on-action`). Desktop: beside the headline;
+  phone: under the stats.
+- Info buttons (`InfoTip`) explain a number in place; Escape or a tap outside
+  closes them.
+
+Below it sticky tabs split the rest so
 each topic is its own screen. The tab is kept in the URL hash (`#vote`,
 `#flow` …); old anchors still work (`#dao` and `#tr-dao` open Vote, `#tr-mix`
 Overview, `#tr-budget` Money flow, `#tr-fees` QGOLD, `#tr-safety` Safety).
 
-1. **Overview**: the TL;DR as four icon rows, a "This week's vote is open"
-   card that jumps to Vote, the mix donut (outer ring now, inner ring target)
-   with one row per bucket (staked NEAR, liquid staking, stables, reserve;
-   empty buckets hidden) and the next run, the **treasury history** (one
-   stacked bar per day, last 30 days, from `GET /api/treasury/history`) and
-   today's map tiles.
+1. **Overview**: an animated four-step loop (treasury → daily yield → QGOLD →
+   spent and burned), a "This week's vote is open" card that jumps to Vote,
+   **Where the treasury is heading** (12-month projection at today's rate: the
+   treasury stays, the yield band grows; straight line, labelled an estimate),
+   the mix donut (outer ring now, inner ring target) with one row per bucket
+   and the next run, the **treasury history**, the **How it works** FAQ
+   accordion (what the treasury is, what pays the map, what backs QGOLD, why
+   stablecoins, why burns raise R, swapping back, who decides, how to check
+   it, with explorer links) and today's map tiles.
 2. **Vote**: the weekly treasury mix vote, playable on this page
    (`src/economy/TreasuryVoteCard.tsx`). Each option shows its mix strip,
    votes and share, Recommended and In force tags. A browser with a game
@@ -74,3 +95,18 @@ the page, an hourly timer) stores the newest view of the day. Days before the
 recorder existed are seeded from the public records (`stnear-treasury` first
 deposit, each `treasury-mix` run's before and after). Totals only, no player
 data.
+
+The public history starts on 1 Nov 2026: 31 Oct was a one-off pilot test
+(owner, 11 Nov). `treasury-history` drops earlier days and the public ledger
+(`publishedDays`, `confirmedPayouts` in `server/native/public-ledger.mjs`)
+lists days and claims from `PUBLIC_HISTORY_START` on; on-chain totals are
+unchanged.
+
+## Plain names (12 Nov 2026)
+
+The page never shows a bare "R": it says **backing per QGOLD** (vault NEAR ÷
+QGOLD supply). Names that still need a word of context (validator, liquid
+staking tokens, stablecoins, Rhea / Rhea Lend, NEAR reserve, keeper, council,
+Sputnik DAO, insurance fund, utilization) carry an info button with the
+explanation from `GLOSSARY` in `src/economy/TreasuryExplain.tsx` (`Term`,
+`InfoTip`).

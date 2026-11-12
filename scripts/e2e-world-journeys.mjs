@@ -173,6 +173,7 @@ async function journey(browser, server, device, j, expected) {
     geolocation: { latitude: j.spot.lat, longitude: j.spot.lng, accuracy: 8 },
     permissions: ["geolocation"],
   });
+  await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});  // Start in the city demo (src/play-here.ts).
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
@@ -334,15 +335,17 @@ async function journey(browser, server, device, j, expected) {
       // …and the coach opens it.
       if (pinOnly) await opener.dispatchEvent("click");
       else await opener.click();
-      await page
-        .getByRole("heading", { level: 1, name: zone.name })
-        .waitFor({ timeout: 10_000 });
+      // One tap starts the quest: straight to the map with the target chip
+      // when it is further away, the confirm button when the explorer is
+      // already there. The marker itself opens the zone's one-tap list.
+      const zoneQuestIds = world.quests.filter((q) => q.zone_id === zone.id).map((q) => q.id);
       await page
         .locator(
-          world.quests
-            .filter((q) => q.zone_id === zone.id)
-            .map((q) => `[id="quest-${q.id}"]`)
-            .join(", "),
+          [
+            ".compact-selection",
+            ...zoneQuestIds.map((id) => `[id="quest-${id}"]`),
+            ...zoneQuestIds.map((id) => `.activity-row[data-quest-id="${id}"]`),
+          ].join(", "),
         )
         .first()
         .waitFor({ state: "attached", timeout: 10_000 });

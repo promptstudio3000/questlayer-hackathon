@@ -11,7 +11,6 @@
   display: flex; align-items: center; justify-content: space-between; gap: 8px;
   min-height: calc(64px + env(safe-area-inset-top));
 }
-.app-shell[data-screen] .topbar .wordmark, .app-shell[data-screen] .topbar .realm-label { display: none; }
 .hud-left { display: flex; align-items: center; gap: 8px; min-width: 0; pointer-events: auto; }
 .hud-brand {
   display: grid; place-items: center; flex: none; width: 48px; height: 48px; padding: 0;
@@ -177,6 +176,7 @@
   font-size: 14px; font-weight: 400; line-height: 1.45; text-align: start; box-shadow: 0 8px 24px #1a033540;
   white-space: normal;
 }
+.info-tip-flyout[data-side="above"] { top: auto; bottom: calc(100% + 6px); }
 .info-tip-end .info-tip-flyout { right: -8px; }
 .info-tip-start .info-tip-flyout { left: -8px; }
 
@@ -216,9 +216,6 @@
 .pot-row-detail { padding: 0 8px 8px; }
 .pot-row-detail .todays-pot { margin: 0; }
 .app-shell[data-screen] .day-row { margin-bottom: 8px; }
-.places-head { display: flex; align-items: center; gap: 6px; }
-.places-head h2 { margin: 0; }
-.app-shell[data-screen] .places-head .places-count { margin-inline-start: auto; color: var(--ink-secondary); font-size: 14px; }
 
 /* ---- Nearby: create buttons sit in their own sections ------------------- */
 .nearby-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
@@ -324,3 +321,78 @@
 .app-shell[data-screen] .sheet-compact .sheet-peek-hide { position: absolute; top: 50%; right: 0; transform: translateY(-50%); }
 .app-shell[data-screen] .sheet-compact:has(.sheet-peek-hide) > .objective-dismiss-bar { display: none; }
 @media (prefers-reduced-motion: reduce) { .app-shell[data-screen] .demo-pad, .app-shell[data-screen] .demo-pad-open, .map-actions { transition: none; } }
+
+/* Map messages are closed by default: only the icon shows until tapped. */
+.gold-place-pin:not([data-open]) { max-width: none; min-height: 0; padding: 4px; border-radius: 50%; border-left: 0; display: grid; place-items: center; width: 40px; height: 40px; }
+.gold-place-pin:not([data-open]) > span, .gold-place-pin:not([data-open]) .pin-close { display: none; }
+.gold-place-pin:not([data-open]) .map-kit-note { margin: 0; width: 28px; height: 28px; }
+.gold-place-pin:not([data-open]).kind-topic::before { content: none; }
+.gold-place-pin[data-open] { display: flex; align-items: center; gap: 6px; max-width: 240px; z-index: 5; -webkit-line-clamp: unset; overflow: visible; }
+.gold-place-pin[data-open] .map-kit-note { margin: 0; flex: none; }
+.gold-place-pin[data-open] > span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.gold-place-pin .pin-close { flex: none; display: grid; place-items: center; width: 28px; height: 28px; margin: -2px -4px -2px 0; border-radius: 50%; background: rgb(26 3 53 / 0.1); font: 400 18px/1 var(--font-body, sans-serif); font-style: normal; }
+
+/* Nearby: the city sits in the title and the refresh timer next to close,
+   so the header is one low row. */
+.main-panel .panel-heading .heading-refresh {
+  display: inline-flex; align-items: center; gap: 4px; flex: none;
+  font-size: 14px; color: var(--ink-secondary); white-space: nowrap;
+}
+
+/* A chosen quest owns the map: everything else steps back until the target
+   is cleared with the chip's X. */
+.app-shell[data-target] .zone-totem-marker:not(:has(.zone-map-pin[aria-pressed="true"])),
+.app-shell[data-target] .wearable-find-marker,
+.app-shell[data-target] .market-map-pin,
+.app-shell[data-target] .creator-map-pin,
+.app-shell[data-target] .gold-place-pin,
+.app-shell[data-target] .gold-lure-marker,
+.app-shell[data-target] .map-peek-pin,
+.app-shell[data-target] .other-player-marker,
+.app-shell[data-target] .actor-marker {
+  opacity: 0.28;
+  filter: saturate(0.4);
+  transition: opacity 0.2s;
+}
+.app-shell[data-target] .quest-route-stop.next,
+.app-shell[data-target] .map-kit-checkpoint.next {
+  filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px var(--action));
+}
+
+/* Header: no bar and no blur over the map, only the floating buttons. */
+.app-shell[data-screen] .topbar { background: none; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0; box-shadow: none; pointer-events: none; }
+.app-shell[data-screen] .topbar .topbar-right > *, .app-shell[data-screen] .topbar .hud-left { pointer-events: auto; }
+/* Day/night next to the avatar instead of its own row. */
+.hud-sky-slot { display: inline-flex; flex: none; }
+.app-shell[data-screen] .hud-sky-slot .map-sky-chip { position: static; height: 36px; padding: 0 10px; border-radius: 18px; max-width: none; }
+.app-shell[data-screen] .hud-sky-slot .map-sky-chip > span:not(.map-wave-hint) { display: none; }
+@media (max-width: 480px) { .app-shell[data-screen] .hud-sky-slot .map-wave-hint { display: none; } }
+/* Direction guide at the very top: centred between the header buttons on
+   wide screens, right under them on a phone. */
+.app-shell[data-screen] .map-guide-key { top: calc(env(safe-area-inset-top) + 10px); bottom: auto; left: 50%; right: auto; transform: translateX(-50%); z-index: 19; }
+@media (max-width: 760px) {
+  .app-shell[data-screen] .map-guide-key { top: calc(env(safe-area-inset-top) + 66px); left: 12px; transform: none; max-width: calc(100% - 24px); }
+  .app-shell[data-screen] .zone-presence { top: calc(70px + env(safe-area-inset-top)); }
+}
+
+/* "Go" on a Community quest: a chip under the header leads back to the quest. */
+.community-goal { position: absolute; top: calc(env(safe-area-inset-top) + 66px); left: 50%; transform: translateX(-50%); z-index: 19; display: flex; align-items: center; gap: 4px; max-width: min(420px, calc(100% - 24px)); padding: 4px; border-radius: 28px; background: var(--surface); box-shadow: 0 4px 16px #1a033533; }
+.community-goal-open { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 0; min-height: 48px; padding: 0 8px 0 4px; border: 0; border-radius: 24px; background: none; color: var(--ink); text-align: start; cursor: pointer; }
+.community-goal-open img { flex: none; image-rendering: pixelated; }
+.community-goal-open span { display: grid; flex: 1; min-width: 0; }
+.community-goal-open strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.community-goal-open small { color: var(--ink-secondary); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.community-goal { width: max-content; }
+@media (max-width: 760px) { .community-goal { left: 12px; right: 12px; width: auto; max-width: none; transform: none; } }
+.community-goal-open svg { flex: none; color: var(--action); }
+.community-goal-close { flex: none; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: var(--surface-soft); color: var(--ink); cursor: pointer; }
+.app-shell[data-screen]:has(.community-goal) .map-guide-key { display: none; }
+/* Test Layer (docs/TEST-LAYER.md): Test QGOLD carries a TEST tag wherever the balance shows. */
+html[data-test-layer] .balance-pill { position: relative; }
+html[data-test-layer] .balance-pill::after { content: "TEST"; position: absolute; top: -6px; right: -4px; padding: 0 4px; border-radius: 6px; background: #f2b84b; color: #2a1d00; font: 800 9px/14px system-ui, sans-serif; letter-spacing: .04em; }
+
+/* A plain point chosen as the target (navigateTo): a pulsing ring that stays
+   bright while the rest of the map steps back. */
+.map-point-target { width: 28px; height: 28px; border-radius: 50%; border: 4px solid #fff; background: var(--action); box-shadow: 0 0 0 6px rgb(255 255 255 / 0.35), 0 0 18px var(--action); animation: point-target-pulse 1.6s ease-in-out infinite; }
+@keyframes point-target-pulse { 50% { box-shadow: 0 0 0 14px rgb(255 255 255 / 0.12), 0 0 26px var(--action); } }
+@media (prefers-reduced-motion: reduce) { .map-point-target { animation: none; } }

@@ -3,10 +3,11 @@
 // pool, burns, fees, the keeper's committed sale times and the R chart.
 // Reads GET /api/economy/qgold. Before the vault exists it shows the rules
 // only, never invented numbers.
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { shortHash, shortNear } from "./format";
 import { scrollRegionKeys } from "../scroll-region";
-import { buyQuote, parseUnits, sellQuote, type ExitPath } from "./qgold-quote";
+import { type ExitPath } from "./qgold-quote";
+import QgoldExchange from "./QgoldExchange";
 
 type Path = { id: ExitPath; label: string; available: boolean; note: string; left24h?: string | null; safeWindowMs?: number | null };
 type KeeperAction = { day: string; slot: number; at: string; kind: string; state: string; qgold: string | null; near: string | null; reason: string | null; txHashes: string[] };
@@ -102,86 +103,6 @@ function Chart({ points }: { points: QgoldData["chart"] }) {
   );
 }
 
-function Trade({ data }: { data: QgoldData }) {
-  const v = data.vault!;
-  const rate = BigInt(v.rate);
-  const [mode, setMode] = useState<"buy" | "sell">("buy");
-  const [amount, setAmount] = useState("1");
-  const [path, setPath] = useState<ExitPath>("near_instant");
-  const [account, setAccount] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<{ ok: boolean; text: string; hash?: string } | null>(null);
-  useEffect(() => {
-    void import("./qgold-trade").then((m) => m.playerAccount()).then(setAccount).catch(() => {});
-  }, []);
-  const parsed = parseUnits(amount, mode === "buy" ? 24 : 6);
-  const out = parsed == null ? null : mode === "buy" ? buyQuote(parsed, rate, data.rules.buyFeeBps) : sellQuote(parsed, rate, data.rules.sellFeeBps);
-  const paths = data.exitPaths.filter((p) => p.available);
-  async function go() {
-    if (parsed == null || out == null || out <= 0n) return;
-    setBusy(true);
-    setResult(null);
-    try {
-      const m = await import("./qgold-trade");
-      const r = mode === "buy" ? await m.buyQgold(v.contract, parsed, out) : await m.sellQgold(v.contract, parsed, path, out);
-      setResult({ ok: true, text: mode === "buy" ? "Bought." : path === "near_queue" ? "Queued. Claim it after the safe window." : "Sold.", hash: r.transactionHash });
-    } catch (e) {
-      setResult({ ok: false, text: String((e as Error)?.message || e) });
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <div className="qg-trade">
-      <div className="qg-tabs" role="tablist" aria-label="Buy or sell">
-        {(["buy", "sell"] as const).map((m) => (
-          <button key={m} role="tab" aria-selected={mode === m} className={mode === m ? "on" : ""} onClick={() => setMode(m)}>
-            {m === "buy" ? "Buy" : "Sell"}
-          </button>
-        ))}
-      </div>
-      <label className="qg-field">
-        <span>{mode === "buy" ? "You pay (test NEAR)" : "You sell (QGOLD)"}</span>
-        <input inputMode="decimal" value={amount} onChange={(e) => setAmount(e.target.value)} />
-      </label>
-      {mode === "sell" ? (
-        <label className="qg-field">
-          <span>Paid out as</span>
-          <select value={path} onChange={(e) => setPath(e.target.value as ExitPath)}>
-            {paths.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.label}
-              </option>
-            ))}
-          </select>
-        </label>
-      ) : null}
-      <p className="qg-quote">
-        {out == null ? "Enter an amount." : mode === "buy" ? <>You get about <b>{qgoldLabel(out.toString(), 4)} QGOLD</b> at R + {bps(data.rules.buyFeeBps)}.</> : <>You get about <b>{shortNear(out.toString(), 6)} NEAR</b> at R − {bps(data.rules.sellFeeBps)}.</>}
-      </p>
-      {account ? (
-        <button className="qg-go" disabled={busy || out == null || out <= 0n || v.paused} onClick={go}>
-          {busy ? "Signing…" : `${mode === "buy" ? "Buy" : "Sell"} as ${account.length > 24 ? account.slice(0, 10) + "…" : account}`}
-        </button>
-      ) : (
-        <p className="eco-muted">
-          Buying and selling uses your game account. <a href="/">Play once on this device</a>, then come back.
-        </p>
-      )}
-      {result ? (
-        <p className={result.ok ? "eco-note ok" : "eco-error"} role="status">
-          {result.text}{" "}
-          {result.hash ? (
-            <a href={`https://testnet.nearblocks.io/txns/${result.hash}`} target="_blank" rel="noreferrer">
-              {shortHash(result.hash)} ↗
-            </a>
-          ) : null}
-        </p>
-      ) : null}
-    </div>
-  );
-}
-
 export default function QgoldSection() {
   const [data, setData] = useState<QgoldData | null>(null);
   const [failed, setFailed] = useState(false);
@@ -217,12 +138,12 @@ export default function QgoldSection() {
             <div className="eco-stat"><span className="eco-stat-label">Backing</span><span className="eco-stat-value">{shortNear(v.backing)} <small>NEAR</small></span><span className="eco-stat-note">insurance {shortNear(v.insurance)} NEAR</span></div>
           </div>
           <Chart points={data.chart} />
-          <Trade data={data} />
+          <QgoldExchange data={{ ...data, exitPaths: data.exitPaths }} />
         </>
       ) : (
         <p className="eco-note">
-          The QGOLD vault is not deployed on testnet yet. Until then the game pays practice GOLD. It starts at R = 0.001 NEAR
-          per QGOLD (1 NEAR = 1,000 GOLD).
+          The QGOLD vault is not deployed on testnet yet. Until then the game pays practice amounts. It starts at R = 0.001 NEAR
+          per QGOLD (1 NEAR = 1,000 QGOLD).
         </p>
       )}
 

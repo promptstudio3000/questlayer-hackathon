@@ -13,7 +13,7 @@ Until now the sponsor treasury (operator `questlayer-dev-20261101.testnet`) was 
 came from NEAR staking and its whole value moved with the NEAR price. Lending stablecoins on Rhea Lend adds a second
 yield source that does not depend on NEAR, and keeps 40 % of the treasury's value in dollars when NEAR falls.
 
-The QGOLD backing is a different pot and stays in LSTs only (build plan, core model).
+The QGOLD backing is a different pot: NEAR locked in the QGOLD vault (the LST backing of the build plan waits until testnet LST prices move). Stablecoins steady the treasury; they do not sit in the QGOLD vault.
 
 ## Buckets
 
@@ -75,9 +75,10 @@ node scripts/treasury-mix-testnet.mjs rebalance           # one run (at most 25 
 node scripts/treasury-mix-testnet.mjs keep                # supply stables to Rhea, harvest their interest
 ```
 
-Daily at 06:30 the Mac LaunchAgent `com.questlayer.stnear-harvest` runs the stNEAR harvest, then `rebalance` and
-`keep` (Lubos approved 4 Nov 2026). Reinstall it with `bash scripts/install-stnear-harvest-mac.sh`; log
-`.data/logs/stnear-harvest.log`.
+Daily at 06:30 Prague time the VPS timer `questlayer-treasury-daily` runs the stNEAR harvest, the DAO step, then
+`rebalance` and `keep`, signed by the dedicated `treasury-ops` account (docs/TREASURY-WORKERS-VPS.md, owner decision
+11 Nov 2026; until then the Mac LaunchAgent `com.questlayer.stnear-harvest` did this). `rebalance` runs at most once a
+day; an hourly retry runs it once the DAO approved the day's run.
 
 `TREASURY_MIX_RECORD_PUSH=1` copies `public/treasury-mix-testnet.json` to the VPS state directory, so `/economy`
 shows a run without a redeploy. State: `.data/treasury-mix.json`.

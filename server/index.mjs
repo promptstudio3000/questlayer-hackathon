@@ -2,6 +2,7 @@ import { createLayerStore } from "./layer/store.mjs";
 import { createLayerRoutes } from "./layer/routes.mjs";
 import { LAYER_REGISTRY, publicLayer } from "./layer/layers.mjs";
 import { defaultDatabasePath } from "./state-path.mjs";
+import { readReleaseStatus } from "./release-status.mjs";
 import {
   cellProof,
   mapRewardsDay,
@@ -10,6 +11,7 @@ import {
 import { publicLevelTable } from "./levels.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
+import { QuestPhotos, createRatingAnchor } from "./creators/feedback.mjs";
 import { createMarketRoutes } from "./market/routes.mjs";
 import {
   escrowHealth,
@@ -123,6 +125,7 @@ import { NativeCollectibles } from "./native/collectibles.mjs";
 import { chainFeed, chainItems } from "./native/chain-feed.mjs";
 import { clientAddress, RateWindows, pruneRateWindows, publicRpcUrl } from "./http-security.mjs";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
+import { tourState, tourAction, tourMark } from "./tour/tour.mjs";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -132,18 +135,23 @@ import {
   featureEnabled,
   DEFAULT_RPC,
   manifestName,
+  MANIFEST_SET,
+  LAYER,
+  TEST_LAYER,
+  SESSION_TTL_MS,
   SOCIAL_CONTRACT_ID,
 } from "./native/network.mjs";
 const BUILD_ID = resolveBuildId();
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // The relayer is built before the market; it reads the same escrow manifest.
 function escrowManifestForRelay() {
-  return loadEscrowManifest(APP_ROOT, NETWORK);
+  return loadEscrowManifest(APP_ROOT, MANIFEST_SET);
 }
 import { createHash, randomBytes } from "node:crypto";
 import { monitorEventLoopDelay, performance } from "node:perf_hooks";
 import { ensureMapReadIndexes } from "./map-read-indexes.mjs";
 import { ensureHotPathIndexes } from "./hot-path-indexes.mjs";
+import { ensureCoinSpots, spotWorlds } from "./coin-spots.mjs";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -268,6 +276,7 @@ const layerRoutes = layerEnabled
   : null;
 ensureMapReadIndexes(db);
 ensureHotPathIndexes(db);
+ensureCoinSpots(db);
 // Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
 const testSeedMode = readTestSeedMode(process.env, NETWORK);
 // Compact always-open demo zones (docs/DEMO-ZONES.md); throws on mainnet.
@@ -277,6 +286,7 @@ const adventureResults = createAdventureResults(db);
 const socialContent = new SocialContent(db);
 const communityPlaces = createCommunityPlaces(db);
 const noteMedia = new NoteMedia();
+const questPhotos = new QuestPhotos();
 // Private sponsored-task photos and the shared report intake. Operator
 // decisions are made only through server/cli/moderate.mjs.
 const taskEvidence = new TaskEvidence(db);
@@ -298,11 +308,30 @@ const browserRpc = publicRpcUrl(process.env.PUBLIC_NEAR_RPC_URL, DEFAULT_RPC);
 const provider = createNearProvider(rpc);
 const identitySessions = new IdentitySessions(db, { origin, provider });
 initializeTesterLogin(db);
+// Test Layer vs QuestLayer World (docs/TEST-LAYER.md): each runs as its own
+// server with its own database and contract set; the world picker links them.
+const linkOrigin = (value) => {
+  try {
+    const u = new URL(String(value || ""));
+    return u.protocol === "https:" || u.hostname === "127.0.0.1" || u.hostname === "localhost" ? u.origin : null;
+  } catch {
+    return null;
+  }
+};
+const tourEnabled = NETWORK === "testnet" && (TEST_LAYER || process.env.TOUR_ENABLED === "1");
+const gameLayerConfig = Object.freeze({
+  id: LAYER,
+  test: TEST_LAYER,
+  tour: tourEnabled,
+  // The other world, for the picker: World links to the Test Layer only on testnet.
+  testLayerUrl: TEST_LAYER || NETWORK !== "testnet" ? null : linkOrigin(process.env.TEST_LAYER_ORIGIN),
+  worldUrl: TEST_LAYER ? linkOrigin(process.env.WORLD_ORIGIN) : null,
+});
 const deploymentManifestPath = existsSync(
-  resolve(APP_ROOT, `public/${NETWORK}-deployment.json`),
+  resolve(APP_ROOT, `public/${MANIFEST_SET}-deployment.json`),
 )
-  ? resolve(APP_ROOT, `public/${NETWORK}-deployment.json`)
-  : resolve(APP_ROOT, `dist/${NETWORK}-deployment.json`);
+  ? resolve(APP_ROOT, `public/${MANIFEST_SET}-deployment.json`)
+  : resolve(APP_ROOT, `dist/${MANIFEST_SET}-deployment.json`);
 const deploymentManifest = JSON.parse(
   readFileSync(deploymentManifestPath, "utf8"),
 );
@@ -432,6 +461,7 @@ const managedAccounts = relayConfig.factoryAccount
       factoryId: relayConfig.factoryAccount,
       fundYocto: relayConfig.fundYocto,
       topupCapYocto: relayConfig.topupCapYocto,
+      refuel: relayConfig.refuel,
       subsidyBudget: new SubsidyBudget(db, { dailyYocto: relayConfig.subsidyDailyYocto, dailyOperations: relayConfig.subsidyDailyOperations, gasReserveYocto: relayConfig.subsidyGasReserveYocto }),
     })
   : null;
@@ -456,7 +486,7 @@ const treasuryDaoManifest = (() => {
 const treasuryDao = treasuryDaoManifest ? createTreasuryDaoView({ provider, manifest: treasuryDaoManifest }) : null;
 // The QGOLD token the relayer may sponsor burns on (and escrow funding).
 const qgoldTokenForRelay = (() => {
-  const path = resolve(APP_ROOT, `public/native-qgold-vault-${NETWORK}.json`);
+  const path = resolve(APP_ROOT, `public/${manifestName("native-qgold-vault")}`);
   const settings = qgoldVaultSettings(
     process.env,
     existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null,
@@ -619,8 +649,8 @@ function warmActorPlan(world) {
     } catch {}
   });
 }
-// NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
-// Ollama setup; the key stays in the runtime environment only.
+// NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset uses NEAR AI Cloud
+// when it is on; the key stays in the runtime environment only.
 // NEAR → EUR reference for "Stake 2 NEAR (~5 €)" labels (server/near-price.mjs).
 const nearPrice = createNearPrice({ env: process.env });
 const npcRoutes = createNpcRoutes(
@@ -793,7 +823,7 @@ const liquidStake =
     : null;
 // Yield vault (docs/YIELD-VAULT.md): locked deposits count toward Staker at once.
 // Contract from YIELD_VAULT_ACCOUNT or public/native-yield-vault-<network>.json.
-const yieldVaultManifestPath = resolve(APP_ROOT, `public/native-yield-vault-${NETWORK}.json`);
+const yieldVaultManifestPath = resolve(APP_ROOT, `public/${manifestName("native-yield-vault")}`);
 const yieldVaultConfig = yieldVaultSettings(
   process.env,
   existsSync(yieldVaultManifestPath) ? JSON.parse(readFileSync(yieldVaultManifestPath, "utf8")) : null,
@@ -803,7 +833,7 @@ const yieldVaultReader = yieldVaultConfig.enabled
   : null;
 // QGOLD vault (docs/QGOLD-VAULT.md): backing, R, exits and the invariant monitor.
 // Contract from QGOLD_VAULT_ACCOUNT or public/native-qgold-vault-<network>.json.
-const qgoldManifestPath = resolve(APP_ROOT, `public/native-qgold-vault-${NETWORK}.json`);
+const qgoldManifestPath = resolve(APP_ROOT, `public/${manifestName("native-qgold-vault")}`);
 const qgoldConfig = qgoldVaultSettings(
   process.env,
   existsSync(qgoldManifestPath) ? JSON.parse(readFileSync(qgoldManifestPath, "utf8")) : null,
@@ -906,7 +936,7 @@ const marketModerators = new Set(
 // function-call key for the escrow) lives at <state dir>/escrow-publisher.json
 // or QGOLD_ESCROW_PUBLISHER_KEY_PATH; without it fundings are still
 // confirmed but payouts wait in the queue.
-const escrowManifest = loadEscrowManifest(APP_ROOT, NETWORK);
+const escrowManifest = loadEscrowManifest(APP_ROOT, MANIFEST_SET);
 setEscrowConfig(escrowManifest);
 const marketEscrowView = escrowManifest ? escrowView(provider, escrowManifest.contractId) : null;
 if (escrowManifest && process.env.QGOLD_ESCROW_WORKER !== "0") {
@@ -1097,6 +1127,12 @@ const creatorMoney = creatorsManifest
     })
   : null;
 const creatorMoneyRoutes = createCreatorMoneyRoutes(creatorMoney);
+const RATING_ANCHOR_PATH = /^\/api\/creator-ratings\/([^/]{1,128})\/(prepare|confirm)$/;
+const ratingAnchors = createRatingAnchor(
+  db,
+  featureEnabled("social") ? socialRecords : null,
+  { registry: creatorsManifest?.contractId || "", network: NETWORK },
+);
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
 // Public economy ledger for the /economy page (docs/ECONOMY-PAGE.md).
 const yieldCycleProofPath = resolve(APP_ROOT, "public/native-yield-cycle-proof.json");
@@ -1283,8 +1319,9 @@ function emit(type, data, worldId = null) {
 const coinWorld = (coinId) => String(coinId).split(":coin:")[0] || null;
 const questWorld = (questId) =>
   db.prepare("SELECT world_id FROM quests WHERE id=?").get(String(questId))?.world_id ?? null;
+const SESSION_MAX_AGE = Math.floor(SESSION_TTL_MS / 1000);
 function cookie(token) {
-  return `questlayer-hackathon=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${origin.startsWith("https:") ? "; Secure" : ""}`;
+  return `questlayer-hackathon=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_MAX_AGE}${origin.startsWith("https:") ? "; Secure" : ""}`;
 }
 function sessionTokens(req) {
   const header = req.headers.cookie || "";
@@ -1304,7 +1341,7 @@ function newSession(player, kind = "guest", accountId = null) {
   db.prepare("INSERT INTO sessions VALUES (?,?,?)").run(
     hash(token),
     player,
-    Date.now() + 30 * DAY,
+    Date.now() + SESSION_TTL_MS,
   );
   identitySessions.record(token, kind, accountId);
   return token;
@@ -1512,12 +1549,18 @@ async function api(req, res, url) {
     assert(n <= 600, "Please try again shortly.", 429);
   }
   if (await creatorRuntime.handle(req, res)) return;
+  if (req.method === "GET" && path.startsWith("/api/release/")) {
+    const r = readReleaseStatus(path, { network: NETWORK });
+    return respond(res, r.body, r.status);
+  }
   if (path === "/api/health")
     return respond(res, {
       status: "ok",
       app: "QuestLayer",
       version: "0.1.0",
       network: NETWORK,
+      gameLayer: LAYER,
+      manifestSet: MANIFEST_SET,
       features: ENABLED_FEATURES,
       ...schemaStatus(db, { buildId: BUILD_ID }),
       mode: "demo",
@@ -1642,6 +1685,7 @@ async function api(req, res, url) {
     return respond(res, {
       mode: "demo",
       network: NETWORK,
+      gameLayer: gameLayerConfig,
       signingVaultOrigin: secureSigningOrigin,
       features: ENABLED_FEATURES,
       layer: layerEnabled ? { layers: LAYER_REGISTRY.map(publicLayer) } : null,
@@ -1714,7 +1758,7 @@ async function api(req, res, url) {
     db.prepare("DELETE FROM presence WHERE player_id=?").run(player);
     return respond(res, { ok: true }, 200, {
       "Set-Cookie": [
-        cookie("").replace("Max-Age=2592000", "Max-Age=0"),
+        cookie("").replace(`Max-Age=${SESSION_MAX_AGE}`, "Max-Age=0"),
         "questlayer-management=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0",
         "auratrail=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
       ],
@@ -2135,6 +2179,47 @@ async function api(req, res, url) {
         )
         .all(),
     });
+  // A quest rating as a NEAR Social record from the explorer's own account.
+  const ratingAnchor = path.match(RATING_ANCHOR_PATH);
+  if (ratingAnchor && method === "POST") {
+    const rater = auth(req);
+    assert(creatorRuntime.config.enabled, "Not found", 404);
+    const input = await body(req);
+    const linked = input.accountId || linkedAccount(rater);
+    assert(linked, "Your explorer account is still being prepared.", 409);
+    const accountId = nearAccountId(linked);
+    assert(linkedAccount(rater, accountId), "Link this account first.", 403);
+    const questId = decodeURIComponent(ratingAnchor[1]);
+    return respond(
+      res,
+      ratingAnchor[2] === "prepare"
+        ? await ratingAnchors.prepare(rater, accountId, { questId })
+        : await ratingAnchors.confirm(rater, accountId, {
+            questId,
+            mutationId: input.mutationId,
+          }),
+    );
+  }
+  // Header photos creators attach to their quests (server/creators/feedback.mjs).
+  if (path === "/api/creator-photos" && method === "POST") {
+    const uploader = auth(req);
+    assert(creatorRuntime.config.enabled, "Not found", 404);
+    const input = await body(req);
+    assert(auth(req) === uploader, "Please sign in again.", 401);
+    return respond(res, { photo: await questPhotos.store(uploader, input.image) }, 201);
+  }
+  if (path.startsWith("/api/creator-photos/") && method === "GET") {
+    auth(req);
+    const file = questPhotos.file(path);
+    assert(file && existsSync(file), "Image not found.", 404);
+    res.writeHead(200, {
+      "Content-Type": "image/jpeg",
+      "Cache-Control": "private,max-age=86400,immutable",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer",
+    });
+    return createReadStream(file).pipe(res);
+  }
   if (path.startsWith("/api/media/") && method === "GET") {
     const viewer = auth(req);
     const file = noteMedia.file(path);
@@ -3059,7 +3144,12 @@ async function api(req, res, url) {
     limit("coin", player, 240, "Please slow down collecting coins.");
     const input = await body(req),
       result = game.claimCoin(db, player, input.coinId, input.fix);
-    if (!result.alreadyClaimed) emit("coin", { id: input.coinId }, coinWorld(input.coinId));
+    if (!result.alreadyClaimed) {
+      // Copies of this coin in other worlds (same spot, same day) go too.
+      const claimed = db.prepare("SELECT lat,lng FROM coins WHERE id=?").get(String(input.coinId));
+      for (const world of [coinWorld(input.coinId), ...spotWorlds(db, input.coinId)])
+        emit("coin", { id: input.coinId, ...(claimed ? { lat: claimed.lat, lng: claimed.lng } : {}) }, world);
+    }
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/checkpoint" && method === "POST") {
@@ -3170,6 +3260,7 @@ async function api(req, res, url) {
         lat: Number(url.searchParams.get("lat") ?? HOME.lat),
         lng: Number(url.searchParams.get("lng") ?? HOME.lng),
         arena: url.searchParams.get("arena") !== "0",
+        radiusKm: url.searchParams.has("radiusKm") ? Number(url.searchParams.get("radiusKm")) : null,
       }),
     );
   if (path === "/api/messages" && method === "POST") {
@@ -3464,7 +3555,9 @@ async function api(req, res, url) {
     limit("bot-chat", player, 12, "Please wait a moment before writing again.");
     const i = await body(req);
     assert(auth(req) === player, "Please sign in again.", 401);
-    return respond(res, demoBotReply(db, player, i.playerId, i.text));
+    const reply = demoBotReply(db, player, i.playerId, i.text);
+    if (tourEnabled) tourMark(db, player, "message");
+    return respond(res, reply);
   }
   if (path === "/api/players/wave" && method === "POST") {
     limit("wave", player, 20, "Please wait before waving again.");
@@ -3740,6 +3833,14 @@ async function api(req, res, url) {
     });
     return res.end(svg);
   }
+  // Guided tour with helper Pip (docs/GUIDED-TOUR.md): Test Layer, or TOUR_ENABLED=1.
+  if (path === "/api/tour" && method === "GET")
+    return respond(res, tourState(db, player, { enabled: tourEnabled }), 200, { "Cache-Control": "private,no-store" });
+  if (path === "/api/tour" && method === "POST") {
+    assert(tourEnabled, "The tour runs in the Test Layer.", 404, "TOUR_OFF");
+    tourAction(db, player, await body(req));
+    return respond(res, tourState(db, player, { enabled: true }));
+  }
   if (path === "/api/guide/hint" && method === "POST") {
     // First-session coach: one grounded sentence for the player's current
     // step, from the same live world the guide reads. No model, no quota.
@@ -3807,7 +3908,7 @@ async function api(req, res, url) {
     const b = id("bounty");
     atomic(db, () => {
       const p = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
-      assert(p.gold_u >= i.amount, "Not enough GOLD.");
+      assert(p.gold_u >= i.amount, "Not enough QGOLD.");
       db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=?").run(
         i.amount,
         player,

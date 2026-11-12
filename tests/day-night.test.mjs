@@ -106,7 +106,7 @@ test("the actor list shows the night cast at night and reports the sky", async (
   assert.equal(evening.list.sky.phase, "night");
   assert.ok(noon.ids.includes("lickquidator-1") && !noon.ids.some((id) => id.startsWith("dire-tire")), noon.ids.join());
   assert.ok(evening.ids.some((id) => id.startsWith("dire-tire")) && !evening.ids.includes("lickquidator-1"), evening.ids.join());
-  assert.ok(!evening.ids.includes("kronikarka-bela"));
+  assert.ok(evening.ids.includes("kronikarka-bela"), "NPCs stay around the clock, whatever their phase");
   assert.ok(evening.ids.includes("kupec-vojtech"), "any-phase actors stay");
   assert.equal(evening.list.actors.find((a) => a.id.startsWith("dire-tire")).phase, "night");
 });

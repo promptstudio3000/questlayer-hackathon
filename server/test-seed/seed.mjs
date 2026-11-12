@@ -201,8 +201,8 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
           const id = `seed-note-${n.slug}-${arena ? "a" : "g"}`;
           db.prepare(
             "INSERT OR IGNORE INTO messages(id,player_id,text,lat,lng,image,author_fix,created_at) VALUES(?,?,?,?,?,NULL,NULL,?)",
-          ).run(id, n.author, n.text, n.at.lat, n.at.lng, now);
-          db.prepare("INSERT OR IGNORE INTO social_note_meta VALUES(?,?,'published',?)").run(id, arena, now);
+          ).run(id, n.author, n.text, n.at.lat, n.at.lng, now - (n.ago || 0) * 60_000);
+          db.prepare("INSERT OR IGNORE INTO social_note_meta VALUES(?,?,'published',?)").run(id, arena, now - (n.ago || 0) * 60_000);
         }
     });
   }
@@ -304,6 +304,33 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return created;
   }
 
+  // Example ratings and discussion so quest lists and details are not empty.
+  // Deterministic: the same seed players always leave the same stars.
+  function applyQuestFeedback() {
+    if (!tableExists(db, "creator_quest_ratings")) return;
+    const now = clock();
+    const lines = [
+      "Nice short walk, the answer is easy to spot.",
+      "Took me ten minutes. Good one for a lunch break.",
+      "Look up, not down. That is all I will say.",
+      "Did it with my kid, she loved it.",
+    ];
+    SEED_CREATOR_QUESTS.forEach((q, qi) => {
+      const raters = SEED_PLAYERS.filter((p) => p.id !== q.author).slice(0, 2 + ((qi * 3) % 6));
+      raters.forEach((p, pi) => {
+        const stars = 5 - ((qi + pi * 2) % 3 === 0 ? 1 : 0) - ((qi * 5 + pi) % 7 === 0 ? 1 : 0);
+        db.prepare(
+          "INSERT OR IGNORE INTO creator_quest_ratings(quest_id,player_id,stars,created_at,updated_at) VALUES (?,?,?,?,?)",
+        ).run(q.id, p.id, stars, now, now);
+      });
+      raters.slice(0, qi % 3).forEach((p, pi) =>
+        db.prepare(
+          "INSERT OR IGNORE INTO creator_quest_comments(id,quest_id,player_id,body,created_at) VALUES (?,?,?,?,?)",
+        ).run(`seed-qc-${qi}-${pi}`, q.id, p.id, lines[(qi + pi) % lines.length], now - (pi + 1) * 3_600_000),
+      );
+    });
+  }
+
   function applyCreators() {
     if (!creators?.services) return { published: 0, skipped: "creator community is off" };
     const { lifecycle, community } = creators.services;
@@ -344,6 +371,7 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
         });
       if (row().state === "published") published++;
     }
+    applyQuestFeedback();
     return { published };
   }
 

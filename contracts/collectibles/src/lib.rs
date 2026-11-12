@@ -18,7 +18,8 @@ const EXPLORER_MEDIA: &str = include_str!("../assets/explorer-uri.txt");
 /// Aura editions this contract can mint: (edition id, title, cover media).
 /// Mirrors the `native` entries of server/data/aura-catalog.json (a Node test
 /// keeps them equal). Code-only: adding an edition needs no state migration,
-/// and token ids stay `aura:<edition>:<serial>` with a 256 cap per edition.
+/// and token ids stay `aura:<edition>:<serial>`. Editions are uncapped: serials
+/// keep counting up, because Auras keep appearing as quest and map rewards.
 const AURA_EDITIONS: [(&str, &str, &str); 23] = [
     ("polar", "Northern Lights", include_str!("../assets/aura-polar-uri.txt")),
     ("moon", "Moonwake Aura", include_str!("../assets/aura-moon-uri.txt")),
@@ -352,7 +353,7 @@ impl Collectibles {
                     description.into()
                 }),
                 media: Some(media.trim().into()),
-                copies: Some(256),
+                copies: None,
                 ..Default::default()
             },
         )
@@ -590,7 +591,6 @@ impl Collectibles {
     fn next_aura(&mut self, edition: &String) -> TokenId {
         assert!(aura_edition(edition).is_some(), "Unknown edition");
         let n = self.minted.get(edition).unwrap_or(0);
-        assert!(n < 256, "Edition exhausted");
         self.minted.insert(edition, &(n + 1));
         format!("aura:{}:{}", edition, n + 1)
     }
@@ -1043,13 +1043,15 @@ mod tests {
         c.equip_aura(t.token_id, None);
     }
     #[test]
-    #[should_panic(expected = "Edition exhausted")]
-    fn edition_cap_is_enforced() {
+    fn editions_are_uncapped() {
         let mut c = fresh();
         c.minted.insert(&"polar".into(), &255);
         mint(&mut c, "polar");
         assert_eq!(c.edition_minted("polar".into()), 256);
-        mint(&mut c, "polar");
+        let t = mint(&mut c, "polar");
+        assert_eq!(t.token_id, "aura:polar:257");
+        assert_eq!(t.metadata.unwrap().copies, None);
+        assert_eq!(c.edition_minted("polar".into()), 257);
     }
     #[test]
     #[should_panic(expected = "Oracle only")]

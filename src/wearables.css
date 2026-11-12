@@ -76,12 +76,6 @@
 }
 
 /* Wearable tile (wardrobe and explorer card). */
-.wearable-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: 10px;
-  margin: 10px 0;
-}
 .wearable-tile {
   position: relative;
   display: grid;
@@ -131,18 +125,6 @@ button.wearable-tile {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
-}
-.wearable-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 14px;
-  font-size: 14px;
-}
-.wearable-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 /* Explorer card (inside the shared game dialog). */
@@ -368,4 +350,15 @@ button.wearable-tile {
 .player-card-botchat button:disabled {
   opacity: 0.5;
   cursor: default;
+}
+.player-card-message-off button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 2px solid #8348ff;
+  background: #fff;
+  color: #2c0a56;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
 }

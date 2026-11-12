@@ -81,7 +81,7 @@ test("aavegotchi is the live default layer and its file is pinned", () => {
   // Published layer files are immutable: a change is a new -v<n> file.
   assert.equal(
     createHash("sha256").update(aavegotchiText).digest("hex"),
-    "439585967e9bc687f4a43b7ecff818935c32cc1e179b848554ec5f00c0c98a1a",
+    "47e656bc1a79907cbdfb51d25d788bea473ddd30bd6be27621a6eb80db11d4e0",
   );
   assert.equal(DEFAULT_LAYER.hash, layerSummary(DEFAULT_LAYER).hash);
   // The default theme cannot be switched off by its kill switch.

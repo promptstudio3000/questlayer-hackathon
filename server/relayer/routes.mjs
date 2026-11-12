@@ -57,6 +57,26 @@ export function createRelayerRoutes({ relayer = null, accounts = null, authorize
       );
       return true;
     }
+    // Testnet: an explorer whose account keys are on no device they still have
+    // (and no recovery passkey) starts a new account on this device.
+    if (path === "/api/account/start-over" && method === "POST") {
+      assert(
+        accounts?.factory,
+        "Managed accounts are disabled on this host.",
+        503,
+        "ACCOUNT_DISABLED",
+      );
+      const input = await body(req);
+      respond(
+        res,
+        await accounts.startOver(player, {
+          publicKey: input.publicKey,
+          authorizeEnrollment: () => checkCreation(req, player),
+        }),
+        201,
+      );
+      return true;
+    }
     if (path === "/api/account/keys" && method === "POST") {
       assert(
         accounts?.factory,

@@ -160,46 +160,6 @@
   box-shadow: 0 1px 3px rgb(40 10 90 / 0.15);
 }
 
-/* The illustrated "how it works" strip. */
-.stake-story {
-  margin: 0 0 16px;
-  padding: 14px 14px 12px;
-  border-radius: 18px;
-  background: linear-gradient(160deg, #2a0f5c 0%, #4b1fa3 60%, #7a2fd6 100%);
-  color: #fff;
-  overflow: hidden;
-}
-.stake-story h2 { margin: 0 0 4px; font-size: 19px; font-weight: 700; color: #fff; }
-.stake-story > p { margin: 0 0 8px; font-size: 14px; color: #e8dcff; }
-.stake-story svg { display: block; width: 100%; height: auto; }
-.stake-story ol {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
-  margin: 6px 0 0;
-  padding: 0;
-  list-style: none;
-  counter-reset: step;
-}
-.stake-story li { font-size: 13px; line-height: 1.35; color: #f3edff; text-align: center; }
-.stake-story li b { display: block; font-size: 14px; color: #ffd76a; }
-.stake-vault-glow { animation: stake-glow 2.4s ease-in-out infinite; transform-origin: center; transform-box: fill-box; }
-@keyframes stake-glow { 0%, 100% { opacity: 0.3; transform: scale(0.92); } 50% { opacity: 0.7; transform: scale(1.06); } }
-@media (prefers-reduced-motion: reduce) { .stake-vault-glow { animation: none; } }
-:root[data-motion="reduce"] .stake-vault-glow { animation: none; }
-.stake-story-node {
-  position: absolute;
-  top: 36.7%;
-  display: grid;
-  justify-items: center;
-  gap: 2px;
-  transform: translate(-50%, -20px);
-  color: #fff;
-  pointer-events: none;
-}
-.stake-story-node small { font-size: 12px; font-weight: 600; color: #f3edff; }
-.stake-story-node .ghost-art, .stake-story-node svg:not([class]) { width: 40px; height: 40px; }
-.stake-story-node > svg { color: #ffd76a; }
 .stake-story-more { margin: 0 0 16px; }
 .stake-story-more > summary {
   min-height: 44px;
@@ -312,19 +272,8 @@
 .earn-sources dt { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-secondary); }
 .earn-sources dd { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
 .earn-sources dd small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-secondary); }
-.earn-note { margin: 4px 0 16px; font-size: 12px; color: var(--ink-secondary); }
 .earn-link { justify-self: start; margin-top: 8px; }
 /* Fuel: the explorer's own NEAR for storage and own payments */
-.fuel-card { display: grid; gap: 8px; margin: 0 0 16px; padding: 14px; border-radius: 16px; background: var(--surface-soft, #f5f0ff); }
-.fuel-card h3 { display: flex; align-items: center; gap: 6px; margin: 0; font-size: 16px; }
-.fuel-balance { display: flex; align-items: center; gap: 8px; margin: 0; }
-.fuel-balance strong { font-size: 22px; color: var(--ink); }
-.fuel-low { padding: 2px 8px; border-radius: 999px; background: #ffe1d6; color: #7a2a0c; font-size: 13px; font-weight: 700; }
-.fuel-note { margin: 0; font-size: 14px; color: var(--ink-secondary); }
-.fuel-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.fuel-actions .secondary-button { min-height: 48px; display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
-.fuel-hint { font-size: 13px; color: var(--ink-secondary); overflow-wrap: anywhere; }
-.fuel-message { margin: 0; font-size: 14px; font-weight: 600; color: var(--ink); }
 /* Wide screens: the picture keeps its phone size instead of filling the card. */
 .stake-story-art { max-width: 420px; margin: 0 auto; }
 .stake-story ol { max-width: 520px; margin-inline: auto; }

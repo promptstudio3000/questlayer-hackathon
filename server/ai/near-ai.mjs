@@ -10,10 +10,10 @@
 // (docs/NEAR-AI-CLOUD.md). The TDX/GPU quotes themselves are checked in the
 // NEAR AI Verification Center, not here.
 import { createHash, createPublicKey, randomBytes, verify } from "node:crypto";
-import { extractJsonObject, ProviderOutputError } from "./ollama.mjs";
+import { extractJsonObject, ProviderOutputError } from "./json-output.mjs";
 
 export const DEFAULT_NEAR_AI_URL = "https://cloud-api.near.ai/v1";
-// Same model family as our Ollama setup, attested, $0.30 in / $1.20 out per
+// Attested, $0.30 in / $1.20 out per
 // 1M tokens (Nov 2026). Best Czech and in-character voice in the 4 Nov
 // comparison (docs/NEAR-AI-CLOUD.md).
 export const DEFAULT_NEAR_AI_MODEL = "deepseek-ai/DeepSeek-V4.1-Flash-1017";
@@ -21,6 +21,16 @@ export const NEAR_AI_VERIFY_URL = "https://cloud.near.ai/verify";
 const REPORT_TTL_MS = 6 * 60 * 60 * 1000;
 
 const sha256 = (data) => createHash("sha256").update(data).digest("hex");
+
+/**
+ * Provider name from an *_AI_PROVIDER setting. Ollama was removed on
+ * 11 Nov 2026 (owner: NEAR AI only); a server env that still says "ollama"
+ * runs on NEAR AI instead of failing to start.
+ */
+export function aiProviderName(value) {
+  const name = String(value || "").trim();
+  return name === "ollama" ? "near-ai" : name;
+}
 
 export function nearAiConfiguration(env = process.env) {
   const enabled = (env.NEAR_AI_ENABLED || "").trim() === "1";

@@ -16,6 +16,9 @@ import { ChainLink } from "./ChainLink";
 import type { ChainRef } from "./chain-proof";
 import { Dialog } from "./Dialog";
 import { EmptyState } from "./EmptyState";
+import { FundsHelp } from "./FundsHelp";
+import { qgoldOfNear } from "./qgold-display";
+import { checkFunds, fundsReason, nearText, GAS_HEADROOM, type FundsShortfall } from "./funds-help";
 import type {
   NativeCollectionState,
   NativeMarketBalance,
@@ -47,11 +50,19 @@ export function MarketBoard({
   onConnect,
   onTrade,
   onBought,
+  explorerAccount,
+  explorerStatus,
+  onLinkWallet,
 }: {
   player: Player;
   orderSigner: OrderSigner | null;
   busy: string;
   onConnect: () => Promise<void>;
+  /** The invisible explorer account and why it may not be ready yet. */
+  explorerAccount?: string;
+  explorerStatus?: string;
+  /** Links a NEAR wallet the player already has. */
+  onLinkWallet?: () => Promise<void> | void;
   onTrade: (request: NativeTradeRequest) => Promise<boolean>;
   onBought: () => void;
 }) {
@@ -66,6 +77,8 @@ export function MarketBoard({
   const [openKey, setOpenKey] = useState<string | null>(null);
   const [working, setWorking] = useState(false);
   const [result, setResult] = useState<{ text: string; proof?: ChainRef; error?: boolean } | null>(null);
+  // Why a Buy can't go through and what to do, instead of a bare error.
+  const [help, setHelp] = useState<{ funds: FundsShortfall } | null>(null);
   const generation = useRef(0);
   const accounts = player.wallets.map((w) => w.account_id);
   const myAccount = orderSigner?.accountId || accounts[0] || "";
@@ -155,10 +168,34 @@ export function MarketBoard({
   const credit = balances.find((b) => b.accountId === myAccount && b.credit !== "0" && b.withdrawing === "0");
   const mineCount = listings.filter((l) => l.mine).length;
 
+  /** The account that pays for this listing ("" when none can) and the NEAR it needs, gas included. */
+  async function buyerNeeds(listing: MarketListing): Promise<{ account: string; need: bigint }> {
+    const viaIntents = listing.source === "intents";
+    const account = viaIntents ? (orderSigner?.key ? orderSigner.accountId : "") : myAccount;
+    let need = BigInt(listing.pays) + GAS_HEADROOM;
+    if (viaIntents && account) {
+      // wNEAR already deposited in the Intents account pays first.
+      const held = await api<{ wnear?: string }>(`/native/intents/account?account=${encodeURIComponent(account)}`)
+        .then((r) => BigInt(r.wnear || "0"))
+        .catch(() => 0n);
+      need = need > held ? need - held : GAS_HEADROOM;
+    }
+    return { account, need };
+  }
+  async function explain(listing: MarketListing): Promise<boolean> {
+    const { account, need } = await buyerNeeds(listing);
+    const funds = await checkFunds(account, need);
+    // Enough NEAR and an account: the cause is elsewhere, so the plain message stays.
+    if (fundsReason(funds) === "unknown") return false;
+    setHelp({ funds });
+    return true;
+  }
   async function buy(listing: MarketListing) {
     setWorking(true);
     setResult(null);
     try {
+      // Explain first when it can't work: no account to pay from, or too little NEAR.
+      if (await explain(listing)) return;
       if (listing.source === "intents") {
         if (!orderSigner?.key) throw Error(tr("Trades through Intents need the explorer's device key."));
         const { buyAuraOnIntents } = await import("./intents-order");
@@ -180,7 +217,9 @@ export function MarketBoard({
       onBought();
       await load(true);
     } catch (e) {
-      setResult({ text: e instanceof Error ? e.message : tr("The market action could not finish. Try again."), error: true });
+      const text = e instanceof Error ? e.message : tr("The market action could not finish. Try again.");
+      // A failed buy opens the same help: it re-reads the balance and says why.
+      if (!(await explain(listing).catch(() => false))) setResult({ text, error: true });
     } finally {
       setWorking(false);
     }
@@ -270,7 +309,7 @@ export function MarketBoard({
       {credit && (
         <p className="market-board-credit">
           <span>
-            {tr("Available to withdraw:")} <strong>{formatNativeNear(credit.credit)} NEAR</strong>
+            {tr("Available to withdraw:")} <strong>{`${qgoldOfNear(formatNativeNear(credit.credit))} QGOLD`}</strong>
           </span>
           <button type="button" className="button secondary" disabled={locked} onClick={() => void withdraw()}>
             {tr("Withdraw market balance")}
@@ -294,7 +333,7 @@ export function MarketBoard({
                   setResult(null);
                   setOpenKey(l.key);
                 }}
-                aria-label={tr("{0}, {1}, {2} NEAR", { 0: l.title, 1: rarityLabel(l.rarity), 2: shortNear(l.pays) })}
+                aria-label={tr("{0}, {1}, {2} QGOLD", { 0: l.title, 1: rarityLabel(l.rarity), 2: qgoldOfNear(shortNear(l.pays)) })}
               >
                 {l.mine && <span className="market-card-mine">{tr("Yours")}</span>}
                 <span className="market-card-art" aria-hidden="true">
@@ -302,7 +341,7 @@ export function MarketBoard({
                 </span>
                 <strong>{l.title}</strong>
                 <small className={`inv-rarity rarity-${l.rarity}`}>{rarityLabel(l.rarity)}</small>
-                <span className="market-card-price">{shortNear(l.pays)} NEAR</span>
+                <span className="market-card-price">{`${qgoldOfNear(shortNear(l.pays))} QGOLD`}</span>
               </button>
             </li>
           ))}
@@ -329,7 +368,7 @@ export function MarketBoard({
             <dl className="market-detail-facts">
               <div>
                 <dt>{tr("Price")}</dt>
-                <dd>{shortNear(open.pays)} NEAR</dd>
+                <dd>{`${qgoldOfNear(shortNear(open.pays))} QGOLD`}</dd>
               </div>
               <div>
                 <dt>{tr("Seller")}</dt>
@@ -359,11 +398,24 @@ export function MarketBoard({
             ) : (
               <button type="button" className="inventory-action" disabled={locked} onClick={() => void buy(open)}>
                 <Tag size={20} aria-hidden="true" />
-                {working ? tr("Working…") : tr("Buy for {0} NEAR", { 0: shortNear(open.pays) })}
+                {working ? tr("Working…") : tr("Buy for {0} QGOLD", { 0: qgoldOfNear(shortNear(open.pays)) })}
               </button>
             )}
           </section>
         </Dialog>
+      )}
+      {help && (
+        <FundsHelp
+          title={tr("Why you can't buy this yet")}
+          funds={help.funds}
+          explorerAccount={explorerAccount}
+          explorerStatus={explorerStatus}
+          onRecheck={() =>
+            void checkFunds(help.funds.account, help.funds.need).then((funds) => setHelp((h) => (h ? { ...h, funds } : h)))
+          }
+          onLinkWallet={onLinkWallet}
+          onClose={() => setHelp(null)}
+        />
       )}
     </section>
   );

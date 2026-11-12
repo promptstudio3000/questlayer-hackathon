@@ -31,6 +31,8 @@ export function MapPeek({
     if (!el.current) return;
     const map = new maplibregl.Map({
       container: el.current,
+      // The canvas label a screen reader announces, in the player's language.
+      locale: { "Map.Title": tr("Map") },
       style: "https://tiles.openfreemap.org/styles/positron",
       center: [target.lng, target.lat],
       zoom: 17,

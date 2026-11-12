@@ -2,7 +2,7 @@
 // what the row is, the explorer who made it with their own avatar, the place
 // on one line, and the reward on the right (Lubos, 11 Nov 2026).
 import type { ReactNode } from "react";
-import { MapPin, SealCheck } from "@phosphor-icons/react";
+import { MapPin, SealCheck, Star } from "@phosphor-icons/react";
 import { ArrowRight } from "./dir-icons";
 import { characterMarkerMarkup } from "./character-art";
 import { mapKitUrl } from "./map-kit";
@@ -70,6 +70,8 @@ export function CommunityRow({
   meta,
   where,
   reward,
+  rating,
+  photo,
   onOpen,
   current,
 }: {
@@ -84,6 +86,10 @@ export function CommunityRow({
   /** Distance or place, on its own line with a pin. */
   where?: string | null;
   reward?: ReactNode;
+  /** Average stars and how many rated; shown once someone rated. */
+  rating?: { average: number | null; count: number } | null;
+  /** The creator's header photo, used instead of the type art. */
+  photo?: string;
   onOpen: () => void;
   current?: boolean;
 }) {
@@ -95,7 +101,11 @@ export function CommunityRow({
       aria-current={current ? "true" : undefined}
     >
       <span className="cl-art" aria-hidden="true">
-        <img src={mapKitUrl(`quests/${ART[art]}.png`)} width={48} height={48} alt="" draggable={false} />
+        {photo ? (
+          <img className="cl-photo" src={photo} width={48} height={48} alt="" loading="lazy" draggable={false} />
+        ) : (
+          <img src={mapKitUrl(`quests/${ART[art]}.png`)} width={48} height={48} alt="" draggable={false} />
+        )}
         {glyph && <span className="cl-glyph">{glyph}</span>}
       </span>
       <span className="cl-body">
@@ -105,8 +115,9 @@ export function CommunityRow({
           <span className="cl-author">{author}</span>
           <BotTag look={look} />
         </span>
-        {(where || meta) && (
+        {(where || meta || rating?.count) && (
           <span className="cl-where">
+            <Stars rating={rating} />
             {where && <MapPin size={14} weight="fill" aria-hidden="true" />}
             <span className="cl-meta">{[where, meta].filter(Boolean).join(" · ")}</span>
           </span>
@@ -115,6 +126,18 @@ export function CommunityRow({
       {reward && <span className="cl-reward">{reward}</span>}
       <ArrowRight size={18} aria-hidden="true" className="cl-go" />
     </button>
+  );
+}
+
+/** "★ 4.6 (12)": the average and how many explorers rated. Nothing before the first rating. */
+export function Stars({ rating }: { rating?: { average: number | null; count: number } | null }) {
+  if (!rating?.count || rating.average === null) return null;
+  return (
+    <span className="cl-stars" aria-label={tr("{0} of 5 stars from {1} explorers", { 0: rating.average.toFixed(1), 1: rating.count })}>
+      <Star size={14} weight="fill" aria-hidden="true" />
+      <b aria-hidden="true">{rating.average.toFixed(1)}</b>
+      <span aria-hidden="true">({rating.count})</span>
+    </span>
   );
 }
 

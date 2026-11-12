@@ -13,10 +13,12 @@ import {
 import {
   deviceRows,
   hasRecoveryPasskey,
+  hasWalletWords,
   type AccountKey,
 } from "./account-recovery";
 import type { InvisibleAccountStatus } from "./useInvisibleAccount";
 import { tr } from "./i18n";
+import { WalletWords } from "./WalletWords";
 
 export function DeviceKeys({
   status,
@@ -27,8 +29,10 @@ export function DeviceKeys({
   onSetupRecovery,
   onRevoke,
   onRestore,
+  onExportWallet,
   error = null,
   onRetry,
+  onStartOver,
 }: {
   status: InvisibleAccountStatus;
   accountId: string | null;
@@ -40,10 +44,14 @@ export function DeviceKeys({
   onSetupRecovery: () => Promise<boolean>;
   onRevoke: (publicKey: string, signOutOthers: boolean) => Promise<boolean>;
   onRestore: () => Promise<boolean>;
+  onExportWallet?: () => Promise<boolean>;
+  /** Testnet without a recovery passkey: start a new account on this device. */
+  onStartOver?: () => Promise<boolean>;
 }) {
   const [confirm, setConfirm] = useState<string | null>(null),
     [lost, setLost] = useState(false),
-    [signOut, setSignOut] = useState(true);
+    [signOut, setSignOut] = useState(true),
+    [startingOver, setStartingOver] = useState(false);
   if (status === "error")
     // Without this the player never learns why the account did not appear.
     return (
@@ -94,6 +102,26 @@ export function DeviceKeys({
         </button>
         <p className="play-hint">
           {tr("No recovery passkey yet? Keep playing on the device that created your explorer and add one under Profile there first.")}</p>
+        {onStartOver && (
+          startingOver ? (
+            <div className="play-task-actions">
+              <p className="play-hint">
+                {tr("Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.")}
+              </p>
+              <button className="primary-button" disabled={!!busy} onClick={() => void onStartOver().then((ok) => ok && setStartingOver(false))}>
+                {busy === "start-over" ? tr("Starting over…") : tr("Start with a new account")}
+              </button>
+              <button className="secondary-button" disabled={!!busy} onClick={() => setStartingOver(false)}>
+                {tr("Cancel")}
+              </button>
+            </div>
+          ) : (
+            <button className="secondary-button" disabled={!!busy} onClick={() => setStartingOver(true)}>
+              <ArrowClockwise size={20} />
+              {tr("Lost that device? Start with a new account here")}
+            </button>
+          )
+        )}
       </section>
     );
   if (status !== "ready") return null;
@@ -105,18 +133,30 @@ export function DeviceKeys({
       className="play-native account-devices"
       aria-label={tr("Devices and recovery")}
     >
+      {onExportWallet && (
+        <WalletWords
+          accountId={accountId}
+          hasWords={hasWalletWords(keys)}
+          busy={busy}
+          onExport={onExportWallet}
+        />
+      )}
       <div className="play-section-heading">
         <h2>
           <DeviceMobile size={22} /> {" "}{tr("Devices")}</h2>
       </div>
       <p className="play-hint">
-        {tr("These keys can act for your explorer account")}{" "}<small>{accountId}</small>{tr(". Each one stays on its own device; QuestLayer never holds them.")}</p>
+        {onExportWallet
+          ? tr("Keys that can act for this account. Each one stays on its own device; QuestLayer never holds them.")
+          : <>{tr("These keys can act for your explorer account")}{" "}<small>{accountId}</small>{tr(". Each one stays on its own device; QuestLayer never holds them.")}</>}</p>
       <ul className="session-list device-list">
         {rows.map((row) => (
           <li key={row.publicKey}>
             <strong>
               {row.kind === "recovery" ? (
                 <Fingerprint size={16} />
+              ) : row.wallet ? (
+                <Key size={16} />
               ) : (
                 <DeviceMobile size={16} />
               )}{" "}

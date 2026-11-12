@@ -1,9 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  ArrowDown,
   ArrowsClockwise,
   CheckCircle,
   Clock,
   Flame,
+  Vault,
   WarningCircle,
 } from "@phosphor-icons/react";
 import { api } from "./api";
@@ -11,23 +13,21 @@ import {
   CONTRIBUTION_CHOICES,
   contributionBps,
   fuelStatus,
-  isVaultV2,
-  previewFuel,
-  quoteContribution,
-  quotePartialExit,
   summarizeFuel,
-  weightedGold,
   type FuelPosition,
-  type FuelSummary,
 } from "./city-fuel";
-import { NativeStaking, type VaultSnapshot } from "./NativeStaking";
+import type { VaultSnapshot } from "./NativeStaking";
 import { StakeToday } from "./StakeToday";
-import { StakeStory, TierLadder, type StakerStep } from "./StakeEarn";
+import { StakeStory, StakeWallet, TierLadder, type StakerStep } from "./StakeEarn";
 import { STAKER_SUGGEST_NEAR, takeStakePrefill } from "./LockedChip";
+import { qgoldOfNear } from "./qgold-display";
 import { parseTestNear, type VaultRequest } from "./native-vault-quote";
 import type { Player } from "./types";
 import "./fuel-the-city.css";
+import "./fuel-stake.css";
 import { tr } from "./i18n";
+import { FundsHelp } from "./FundsHelp";
+import { GAS_HEADROOM, readNearBalance as readBalance, readQgoldCover, nearText, type QgoldCover } from "./funds-help";
 
 type StakerGates = { minNear: string; suggestNear: string; priceEur: number | null; access: { step: string; staker: boolean } };
 
@@ -49,20 +49,75 @@ type CityStaking = {
 
 const fmt = (n: number, max = 0) =>
   new Intl.NumberFormat("en-US", { maximumFractionDigits: max }).format(n);
-const fmtNear = (yocto: string) => fmt(Number(BigInt(yocto) / 10n ** 21n) / 1000, 3);
-const tierName = (t: number) => (t === 1 ? tr("Free") : tr("Tier {0}", { 0: t }));
+const nearOf = (yocto: unknown) => {
+  try {
+    return Number(BigInt(String(yocto ?? "0")) / 10n ** 21n) / 1000;
+  } catch {
+    return 0;
+  }
+};
+const big = (v: unknown) => {
+  try {
+    return BigInt(String(v ?? "0"));
+  } catch {
+    return 0n;
+  }
+};
+const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 type Outcome =
-  | { kind: "idle"; where?: undefined }
-  | { kind: "pending" | "done" | "failed"; text: string; where?: "adjust" };
+  | { kind: "idle" }
+  | { kind: "pending" | "done" | "failed"; text: string };
 
-/** Profile → Fuel the prize pool. Staking as a choice with a pool meter, not an APY table. The pool is global (docs/GLOBAL-TREASURY.md). */
+/** Where the explorer's one stake stands, read from their vault positions. */
+export type StakePhase =
+  | { kind: "none" }
+  | { kind: "setup"; position: FuelPosition }
+  | { kind: "empty"; position: FuelPosition }
+  | { kind: "busy"; position: FuelPosition }
+  | { kind: "staked"; position: FuelPosition }
+  | { kind: "returning"; position: FuelPosition }
+  | { kind: "ready"; position: FuelPosition };
+
+/**
+ * One stake per explorer (owner request, 11 Nov 2026): stake once, then the
+ * only move left is taking it back out. The first position that holds money
+ * wins; an empty, finished vault is reused for a new stake.
+ */
+export function stakePhase(positions: FuelPosition[]): StakePhase {
+  const live = positions.filter((p) => p.state !== "failed");
+  const withMoney = live.find((p) => {
+    const s = p.position;
+    return s && (big(s.principal) > 0n || big(s.owner_credit) > 0n || big(s.owner_pending) > 0n || s.stage !== "idle");
+  });
+  if (withMoney) {
+    const s = withMoney.position!;
+    if (big(s.owner_credit) > 0n && big(s.owner_pending) === 0n && s.stage === "idle")
+      return { kind: "ready", position: withMoney };
+    if (s.exit_requested || s.stage === "unlocking" || s.stage === "awaiting_cash" || big(s.owner_pending) > 0n)
+      return { kind: "returning", position: withMoney };
+    if (s.stage !== "idle") return { kind: "busy", position: withMoney };
+    return { kind: "staked", position: withMoney };
+  }
+  const empty = live.find((p) => p.position && !p.position.exit_requested);
+  if (empty) return { kind: "empty", position: empty };
+  const setup = live.find((p) => !p.position);
+  if (setup) return { kind: "setup", position: setup };
+  return { kind: "none" };
+}
+
+/**
+ * Profile → Stake. The layout shows at once; numbers fill in as the chain
+ * answers. One stake, one button: "Stake 2 NEAR" sets up the personal vault
+ * when needed and stakes in the same tap. Afterwards the only action is
+ * withdrawing. The pool is global (docs/GLOBAL-TREASURY.md).
+ */
 export function FuelTheCity({
   player,
-  account,
-  managed,
-  cityName,
-  onConnect,
+  account: explorerAccount,
+  managed: explorerManaged,
+  explorerStatus,
+  onLinkWallet,
   onTransaction,
 }: {
   player: Player;
@@ -70,39 +125,74 @@ export function FuelTheCity({
   account: string;
   /** True when the account is the invisible one, so nothing pops up. */
   managed: boolean;
+  /** Why the explorer account is not ready yet (play-first, creating, needs-recovery, ...). */
+  explorerStatus?: string;
   cityName?: string;
   onConnect: () => void;
+  /** Links a NEAR wallet the player already has (wallet picker + signed message). */
+  onLinkWallet?: () => Promise<void> | void;
   onTransaction: (r: VaultRequest) => Promise<boolean>;
 }) {
+  // Stake from the explorer account by default, or from a linked NEAR wallet.
+  const payOptions = [...new Set([explorerAccount, ...player.wallets.map((w) => w.account_id)].filter(Boolean))];
+  const [chosen, setChosen] = useState("");
+  const account = chosen && payOptions.includes(chosen) ? chosen : payOptions[0] || "";
+  const managed = explorerManaged && account === explorerAccount;
+  const [helpOpen, setHelpOpen] = useState(false);
+  // A wallet linked from the help dialog becomes the one that pays.
+  const knownWallets = useRef(player.wallets.map((w) => w.account_id).join());
+  useEffect(() => {
+    const ids = player.wallets.map((w) => w.account_id);
+    const before = knownWallets.current.split(",");
+    const added = ids.find((id) => !before.includes(id) && id !== explorerAccount);
+    knownWallets.current = ids.join();
+    if (added) {
+      setChosen(added);
+      setHelpOpen(false);
+    }
+  }, [player.wallets, explorerAccount]);
   const [vaults, setVaults] = useState<VaultSnapshot | null>(null),
     [city, setCity] = useState<CityStaking | null>(null),
     [readError, setReadError] = useState(""),
     [amount, setAmount] = useState(() => takeStakePrefill() || STAKER_SUGGEST_NEAR),
     [gates, setGates] = useState<StakerGates | null>(null),
     [contribution, setContribution] = useState(50),
-    [understood, setUnderstood] = useState(false),
+    [confirmExit, setConfirmExit] = useState(false),
+    [balance, setBalance] = useState<bigint | null>(null),
+    [qgold, setQgold] = useState<QgoldCover | null>(null),
     [outcome, setOutcome] = useState<Outcome>({ kind: "idle" });
+  const accountRef = useRef(account);
+  accountRef.current = account;
 
-  async function refresh() {
+  async function readVaults(): Promise<VaultSnapshot | null> {
     try {
-      const [v, c] = await Promise.all([
-        api<VaultSnapshot>(
-          "/native/vaults" + (account ? "?account=" + encodeURIComponent(account) : ""),
-        ),
-        api<CityStaking>("/native/economy").catch(() => null),
-      ]);
+      const v = await api<VaultSnapshot>(
+        "/native/vaults" + (accountRef.current ? "?account=" + encodeURIComponent(accountRef.current) : ""),
+      );
       setVaults(v);
-      setCity(c);
       setReadError("");
+      return v;
     } catch (e) {
       setReadError((e as Error).message);
+      return null;
     }
   }
+  // Each read fills its own part: the slow prize pool total never holds up the stake button.
+  // QGOLD that could be swapped to cover a shortfall, read when the help opens.
   useEffect(() => {
-    void refresh();
+    if (helpOpen && account) void readQgoldCover(account).then(setQgold);
+  }, [helpOpen, account]);
+  useEffect(() => {
+    void readVaults();
+    setBalance(null);
+    if (account) void readBalance(account).then(setBalance);
   }, [account]);
   useEffect(() => {
     let live = true;
+    api<CityStaking>("/native/economy").then(
+      (c) => live && setCity(c),
+      () => undefined,
+    );
     api<StakerGates>("/staker/gates").then(
       (g) => live && setGates(g),
       () => undefined,
@@ -124,64 +214,147 @@ export function FuelTheCity({
     weightedStake: city?.staking?.data?.totals?.weightedStake,
     stakers: city?.staking?.data?.stakers,
   });
-  const active = positions.find(
-    (p) => p.position && p.position.stage === "idle" && !p.position.exit_requested,
-  );
-  const setupPending = positions.find((p) => !p.position);
-  const fixedContribution = active ? contributionBps(active) / 100 : null;
-  const adjustable = active && isVaultV2(active) ? active : null;
-  const withdrawable = positions.find(
-    (p) =>
-      p.position &&
-      String(p.position.owner_credit) !== "0" &&
-      String(p.position.owner_pending) === "0",
-  );
-  const pct = fixedContribution ?? contribution;
-  let amountError = "";
-  let amountNear = 0;
+  const phase = stakePhase(positions);
+  const fixedPct =
+    phase.kind !== "none"
+      ? contributionBps(phase.position) / 100
+      : null;
+  const pct = fixedPct ?? contribution;
+  const busy = outcome.kind === "pending";
+  const loading = !vaults && !readError;
+  const notConfigured = vaults?.status === "not-configured";
+  const stakeNear = Number(amount) || Number(STAKER_SUGGEST_NEAR);
+  const eur = eurHint(stakeNear, gates?.priceEur);
+  const setupNear = vaults?.config ? nearOf(vaults.config.setup_deposit) : null;
+  let stakeYocto = 0n;
   try {
-    amountNear = Number(BigInt(parseTestNear(amount)) / 10n ** 21n) / 1000;
-  } catch (e) {
-    amountError = (e as Error).message;
+    stakeYocto = BigInt(parseTestNear(amount));
+  } catch {
+    stakeYocto = 0n;
   }
-  const preview = previewFuel(summary, amountError ? 0 : amountNear, pct);
 
-  async function send(
-    request: Omit<VaultRequest, "accountId">,
-    pending: string,
-    done: string,
-    where?: "adjust",
-  ): Promise<boolean> {
-    setOutcome({ kind: "pending", text: pending, where });
-    try {
-      const ok = await onTransaction({ ...request, accountId: account });
-      setOutcome(
-        ok
-          ? { kind: "done", text: done, where }
-          : {
-              kind: "failed",
-              text: tr("It didn't go through. Nothing was taken; try again."),
-              where,
-            },
-      );
-      await refresh();
-      return ok;
-    } catch (e) {
-      setOutcome({ kind: "failed", text: (e as Error).message, where });
-      return false;
+  async function sign(request: Omit<VaultRequest, "accountId">): Promise<boolean> {
+    return onTransaction({ ...request, accountId: account });
+  }
+
+  /** Waits until the factory shows the vault as ready (create registers it in the same transaction). */
+  async function waitForVault(match: (p: FuelPosition) => boolean, tries = 20): Promise<FuelPosition | null> {
+    for (let i = 0; i < tries; i++) {
+      const snap = await readVaults();
+      const p = ((snap?.positions || []) as FuelPosition[]).find(match);
+      if (p?.position) return p;
+      if (p?.state === "failed") return null;
+      if (p?.state === "created") return p;
+      await wait(3000);
     }
+    return null;
+  }
+
+  /** One tap: set up the vault when there is none, then stake. */
+  async function stake() {
+    if (!account || short) return setHelpOpen(true);
+    let deposit: string;
+    try {
+      deposit = parseTestNear(amount);
+    } catch (e) {
+      setOutcome({ kind: "failed", text: (e as Error).message });
+      return;
+    }
+    const fail = (text = tr("It didn't go through. Nothing was taken; try again.")) => {
+      setOutcome({ kind: "failed", text });
+      void readVaults();
+      void readBalance(account).then(setBalance);
+    };
+    try {
+      // Sign straight from the tap: the confirmation window only opens while the
+      // browser still counts the tap, so no slow read sits before a signature.
+      const snap = vaults?.config ? vaults : await readVaults();
+      if (!snap?.config) return fail(tr("Staking can't be read right now."));
+      let now = stakePhase((snap.positions || []) as FuelPosition[]);
+      const setUp = now.kind === "none" || now.kind === "setup";
+      if (now.kind === "none") {
+        setOutcome({ kind: "pending", text: tr("Step 1 of 2 · setting up your vault…") });
+        const known = new Set(snap.positions.map((p) => p.id));
+        const ok = await sign({
+          action: "create",
+          poolId: snap.pools[0]?.id,
+          contributionBps: contribution * 100,
+          setupDeposit: snap.config.setup_deposit,
+        });
+        // A sent setup whose confirmation timed out still shows its new vault.
+        const p = await waitForVault((x) => !known.has(x.id), ok ? 20 : 4);
+        if (!p && !ok) return fail(tr("It didn't finish. If it was sent, your vault shows here in a minute."));
+        if (!p) return fail(tr("Your vault is still being set up. Check again in a minute."));
+        now = p.position ? { kind: "empty", position: p } : { kind: "setup", position: p };
+      }
+      if (now.kind === "setup") {
+        setOutcome({ kind: "pending", text: tr("Step 1 of 2 · finishing your vault…") });
+        const ok = await sign({ action: "register", vaultId: now.position.account_id, positionId: now.position.id });
+        if (!ok) return fail();
+        const id = now.position.id;
+        const p = await waitForVault((x) => x.id === id && x.state !== "registering");
+        if (!p?.position) return fail(tr("Your vault is still being set up. Check again in a minute."));
+        now = { kind: "empty", position: p };
+      }
+      if (now.kind !== "empty") {
+        setOutcome({ kind: "idle" });
+        return;
+      }
+      if (setUp) {
+        // The stake is its own tap, so its confirmation window may open.
+        setOutcome({ kind: "done", text: tr("Vault ready. Tap Stake {0} QGOLD again.", { 0: qgoldOfNear(amount) }) });
+        return;
+      }
+      setOutcome({ kind: "pending", text: tr("Staking {0} QGOLD…", { 0: qgoldOfNear(amount) }) });
+      const vaultId = now.position.account_id;
+      const ok = await sign({ action: "deposit", vaultId, amount: deposit });
+      if (!ok) {
+        // A sent stake whose confirmation timed out still shows in the vault.
+        const after = await waitForVault((x) => x.account_id === vaultId && nearOf(x.position?.principal) > 0, 4);
+        if (!after) return fail(tr("It didn't finish. If it was sent, your stake shows here in a minute."));
+      }
+      setOutcome({ kind: "done", text: tr("Staked. It counts after about two epochs; then you are a Staker.") });
+      await readVaults();
+    } catch (e) {
+      fail((e as Error).message);
+    }
+  }
+
+  async function run(request: Omit<VaultRequest, "accountId">, pending: string, done: string) {
+    setOutcome({ kind: "pending", text: pending });
+    const before = phase.kind;
+    let ok = false;
+    try {
+      ok = await sign(request);
+    } catch (e) {
+      setOutcome({ kind: "failed", text: (e as Error).message });
+    }
+    setConfirmExit(false);
+    // The vault list can lag the chain by a few seconds: read until the step shows,
+    // so a sent withdrawal never leaves the Withdraw button standing.
+    for (let i = 0; i < 8; i++) {
+      const snap = await readVaults();
+      if (snap && stakePhase((snap.positions || []) as FuelPosition[]).kind !== before) {
+        ok = true;
+        break;
+      }
+      if (!ok && i >= 3) break;
+      await wait(3000);
+    }
+    setOutcome((o) =>
+      ok
+        ? { kind: "done", text: done }
+        : o.kind === "failed"
+          ? o
+          : { kind: "failed", text: tr("It didn't finish. If it was sent, it shows here in a minute.") },
+    );
+    if (account) void readBalance(account).then(setBalance);
   }
 
   // Where the explorer stands on Free → Staker → Tier 2 → Tier 3.
   const stakerMin = Number(gates?.minNear || STAKER_SUGGEST_NEAR) || 2;
   const ladderStep: StakerStep =
-    summary.tier >= 3
-      ? "tier3"
-      : summary.tier === 2
-        ? "tier2"
-        : gates?.access.staker
-          ? "staker"
-          : "none";
+    summary.tier >= 3 ? "tier3" : summary.tier === 2 ? "tier2" : gates?.access.staker ? "staker" : "none";
   const ladderProgress =
     ladderStep === "none"
       ? summary.myStakeNear / stakerMin
@@ -193,437 +366,254 @@ export function FuelTheCity({
     ladderStep === "none"
       ? summary.myStakeNear > 0
         ? tr("Your stake counts after about two epochs (1–2 days). Then you are a Staker.")
-        : tr("Stake {0} NEAR to become a Staker.", { 0: stakerMin })
+        : tr("Stake {0} QGOLD to become a Staker.", { 0: qgoldOfNear(stakerMin) })
       : summary.next
-        ? tr("{0} GOLD more fuel opens Tier {1} places.", { 0: fmt(summary.next.missingGold), 1: summary.next.tier })
+        ? tr("{0} QGOLD more fuel opens Tier {1} places.", { 0: qgoldOfNear(summary.next.missingGold / 1000), 1: summary.next.tier })
         : tr("Every place on the map is open to you.");
-  const busy = outcome.kind === "pending";
 
+  const principal = "position" in phase ? nearOf(phase.position.position?.principal) : 0;
+  const credit = "position" in phase ? nearOf(phase.position.position?.owner_credit) : 0;
+  const status = "position" in phase && phase.position.position ? fuelStatus(phase.position) : null;
+  const canStake = phase.kind === "none" || phase.kind === "setup" || phase.kind === "empty";
+  // What one tap costs from here: the vault setup the first time, the stake, a little gas.
+  const needYocto =
+    (phase.kind === "none" && vaults?.config ? big(vaults.config.setup_deposit) : 0n) + stakeYocto + GAS_HEADROOM;
+  const short = canStake && account && balance !== null && balance < needYocto;
   return (
     <section className="fuel" aria-labelledby="fuel-title">
-      {active ? (
-        <details className="stake-story-more">
-          <summary>{tr("How staking works")}</summary>
-          <StakeStory sharePct={pct} />
-        </details>
-      ) : (
-        <StakeStory sharePct={pct} />
-      )}
+      <h2 id="fuel-title" className="sr-only">{tr("Stake")}</h2>
+      <StakeWallet refreshKey={`${player.id}:${player.gold_u}:${player.xp}`} staked={!canStake && !loading} />
 
-      {readError && !vaults && (
-        <div className="fuel-state fuel-failed" role="alert">
-          <WarningCircle size={20} aria-hidden="true" />
-          <span>{tr("Staking can't be read right now.")}{" "}{readError}</span>
-          <button className="secondary-button" onClick={() => void refresh()}>
-            {tr("Try again")}</button>
-        </div>
-      )}
-      {!vaults && !readError && <p role="status">{tr("Reading the prize pool fuel…")}</p>}
-      {vaults?.status === "not-configured" && (
-        <p className="fuel-state">
-          {tr("Fueling isn't open on this server yet. You can keep exploring for free.")}</p>
-      )}
-
-      {vaults?.config && (
-        <>
-          <TierLadder
-            step={ladderStep}
-            progress={ladderProgress}
-            next={ladderNext}
-            numbers={[
-              [tr("Staked"), `${fmt(summary.myStakeNear, 3)} NEAR`],
-              [tr("Your share"), summary.share === null ? "–" : `${fmt(summary.share * 100, 1)} %`],
-              [tr("Explorers"), summary.stakers ?? "–"],
-            ]}
-          />
-
-          {positions.length > 0 && (
-            <ul className="fuel-positions" aria-label={tr("Your stakes")}>
-              {positions.map((p) => {
-                const st = fuelStatus(p);
-                return (
-                  <li key={p.account_id}>
-                    <span className={`fuel-chip fuel-${st.tone}`}>
-                      {st.tone === "failed" ? (
-                        <WarningCircle size={14} aria-hidden="true" />
-                      ) : st.tone === "active" || st.tone === "ready" ? (
-                        <CheckCircle size={14} aria-hidden="true" />
-                      ) : (
-                        <Clock size={14} aria-hidden="true" />
-                      )}
-                      {st.label}
-                    </span>
-                    <span>
-                      {contributionBps(p) / 100} {" "}{tr("% of yield to the prize pool ·")}{" "}
-                      {fmt(weightedGold(p))} {" "}{tr("GOLD fuel")}</span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-
-          <StakeToday />
-
-          <div className="fuel-action">
-            <h2>{active ? tr("Add fuel") : tr("Start fueling")}</h2>
-            {!account ? (
-              <>
-                <p>{tr("Your explorer account is still being prepared.")}</p>
-                <button className="secondary-button" onClick={onConnect}>
-                  {tr("Activate my account")}</button>
-              </>
-            ) : (
-              <>
-                {fixedContribution === null ? (
-                  <div className="fuel-choice" role="radiogroup" aria-label={tr("How much yield fuels the prize pool")}>
-                    {CONTRIBUTION_CHOICES.map((c) => (
-                      <button
-                        key={c.pct}
-                        role="radio"
-                        aria-checked={contribution === c.pct}
-                        disabled={busy}
-                        onClick={() => setContribution(c.pct)}
-                      >
-                        <b>{c.label}</b>
-                        <span>{c.pct} %</span>
-                        <small>{c.hint}</small>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="fuel-fixed">
-                    {tr("This stake gives")}{" "}<b>{fixedContribution} %</b> {" "}{tr("of its yield to the prize pool.")}{" "}
-                    {adjustable
-                      ? tr("You can change it below.")
-                      : tr("To change it, exit and start a new one.")}
-                  </p>
-                )}
-                {active && (
-                  <label className="fuel-amount">
-                    <span>{tr("Amount · test NEAR")}</span>
-                    <input
-                      inputMode="decimal"
-                      value={amount}
-                      disabled={busy}
-                      aria-invalid={!!amountError}
-                      onChange={(e) => setAmount(e.target.value)}
-                    />
-                  </label>
-                )}
-                {active && amountError && (
-                  <p className="fuel-error" role="alert">
-                    {amountError}
-                  </p>
-                )}
-                {active && !amountError && (
-                  <p className="fuel-suggest">
-                    {gates && !gates.access.staker
-                      ? tr("{0} NEAR{1} makes you a Staker after two epochs: the Keeper's inner vault and patron chapters open step by step with your level.", { 0: gates.suggestNear, 1: eurHint(Number(gates.suggestNear), gates.priceEur) ? ` (${eurHint(Number(gates.suggestNear), gates.priceEur)})` : "" })
-                      : eurHint(amountNear, gates?.priceEur)
-                        ? tr("{0} NEAR is about {1} at today's mainnet price.", { 0: amount, 1: eurHint(amountNear, gates?.priceEur)!.slice(1) })
-                        : null}
-                  </p>
-                )}
-                {active && !amountError && (
-                  <p className="fuel-preview">
-                    +{fmt(preview.addedGold)} {" "}{tr("GOLD fuel →")}{" "}
-                    {preview.tierAfter === 1 ? tr("Free") : tr("Tier {0}", { 0: preview.tierAfter })}
-                    {preview.tierAfter > summary.tier ? " unlocked" : ""}{tr(". It counts after about two pool epochs (1–2 days).")}</p>
-                )}
-                {!active && !setupPending && (
-                  <label className="fuel-consent">
-                    <input
-                      type="checkbox"
-                      checked={understood}
-                      disabled={busy}
-                      onChange={(e) => setUnderstood(e.target.checked)}
-                    />
-                    <span>
-                      {tr("I understand the one-time setup of")}{" "}
-                      {fmt(Number(BigInt(vaults.config.setup_deposit) / 10n ** 21n) / 1000, 3)}{" "}
-                      {tr("test NEAR is not withdrawable, and this is a test-network pilot.")}</span>
-                  </label>
-                )}
+      <TierLadder
+        step={ladderStep}
+        progress={ladderProgress}
+        next={ladderNext}
+        loading={loading || !gates}
+        numbers={[
+          [tr("Staked"), `${qgoldOfNear(summary.myStakeNear)} QGOLD`],
+          [tr("Your share"), summary.share === null ? "–" : `${fmt(summary.share * 100, 1)} %`],
+          [tr("Explorers"), summary.stakers ?? "–"],
+        ]}
+      >
+        <div className="fuel-ratio">
+          <span className="fuel-ratio-label">
+            <Flame size={16} weight="duotone" aria-hidden="true" /> {tr("Yield to the prize pool")}
+          </span>
+          {fixedPct !== null ? (
+            <b className="fuel-ratio-fixed">{fixedPct} %</b>
+          ) : (
+            <div className="fuel-ratio-choice" role="radiogroup" aria-label={tr("How much yield fuels the prize pool")}>
+              {CONTRIBUTION_CHOICES.map((c) => (
                 <button
-                  className="primary-button"
-                  disabled={
-                    busy ||
-                    (active
-                      ? !!amountError
-                      : !!setupPending
-                        ? setupPending.state !== "created"
-                        : !understood ||
-                          vaults.config.created >= vaults.config.capacity)
-                  }
-                  onClick={() =>
-                    active
-                      ? void send(
-                          {
-                            action: "deposit",
-                            vaultId: active.account_id,
-                            amount: parseTestNear(amount),
-                          },
-                          tr("Adding your fuel…"),
-                          tr("Fuel added. It starts counting after about two pool epochs."),
-                        )
-                      : setupPending
-                        ? void send(
-                            {
-                              action: "register",
-                              vaultId: setupPending.account_id,
-                              positionId: setupPending.id,
-                            },
-                            tr("Finishing setup…"),
-                            tr("Setup finished. Now add your first fuel."),
-                          )
-                        : void send(
-                            {
-                              action: "create",
-                              poolId: vaults.pools[0]?.id,
-                              contributionBps: contribution * 100,
-                              setupDeposit: vaults.config.setup_deposit,
-                            },
-                            tr("Setting up your stake…"),
-                            tr("Your stake is set up. Now add your first fuel."),
-                          )
-                  }
+                  key={c.pct}
+                  type="button"
+                  role="radio"
+                  aria-checked={contribution === c.pct}
+                  title={c.hint}
+                  disabled={busy || !canStake}
+                  onClick={() => setContribution(c.pct)}
                 >
-                  {busy
-                    ? outcome.text
-                    : active
-                      ? tr("Add {0}fuel", { 0: amountError ? "" : `${amount} test NEAR ` })
-                      : setupPending
-                        ? tr("Finish setup")
-                        : tr("Set up my stake")}
-                  <Flame size={20} />
+                  {c.pct} %
                 </button>
-                <p className="fuel-paid">
-                  {managed
-                    ? tr("Paid from your balance, no popup. ")
-                    : tr("Paid from your balance; your NEAR wallet asks you to approve. ")}
-                  {tr("The network fee is tiny and comes from your balance too. Withdraw any time; it takes about 1–7 days.")}</p>
-              </>
-            )}
-            {withdrawable && (
-              <div className="fuel-state fuel-ready">
-                <CheckCircle size={20} aria-hidden="true" />
-                <span>
-                  {fmtNear(String(withdrawable.position!.owner_credit))} {" "}{tr("test NEAR is back and ready to withdraw.")}</span>
-                <button
-                  className="secondary-button"
-                  disabled={busy}
-                  onClick={() =>
-                    void send(
-                      { action: "withdraw", vaultId: withdrawable.account_id },
-                      "Withdrawing…",
-                      tr("Withdrawn to your balance."),
-                    )
-                  }
-                >
-                  {tr("Withdraw")}</button>
-              </div>
-            )}
-            {outcome.kind === "done" && !outcome.where && (
-              <p className="fuel-state fuel-ready" role="status">
-                <CheckCircle size={20} aria-hidden="true" /> {outcome.text}
-              </p>
-            )}
-            {outcome.kind === "failed" && !outcome.where && (
-              <p className="fuel-state fuel-failed" role="alert">
-                <WarningCircle size={20} aria-hidden="true" /> {outcome.text}
-              </p>
-            )}
-          </div>
-        </>
-      )}
-
-      {vaults?.config && adjustable && account && (
-        <FuelAdjust
-          position={adjustable}
-          summary={summary}
-          busy={busy}
-          outcome={outcome}
-          send={(r, p, d) => send(r, p, d, "adjust")}
-        />
-      )}
-
-      <details className="play-details fuel-advanced">
-        <summary>
-          <ArrowsClockwise size={18} aria-hidden="true" /> {" "}{tr("Manage stakes and withdrawals")}</summary>
-        <NativeStaking
-          player={player}
-          onConnect={onConnect}
-          onTransaction={onTransaction}
-        />
-      </details>
-    </section>
-  );
-}
-
-type Send = (
-  request: Omit<VaultRequest, "accountId">,
-  pending: string,
-  done: string,
-) => Promise<boolean>;
-
-/**
- * Vault v2 only: take part of the stake out, or change the city's share of
- * future yield. Both quote first; the vault settles earned gain at the old
- * rate, so nothing already earned is re-priced.
- */
-function FuelAdjust({
-  position,
-  summary,
-  busy,
-  outcome,
-  send,
-}: {
-  position: FuelPosition;
-  summary: FuelSummary;
-  busy: boolean;
-  outcome: Outcome;
-  send: Send;
-}) {
-  const [takeOut, setTakeOut] = useState(""),
-    [share, setShare] = useState<number | null>(null);
-  let amountYocto = "",
-    amountError = "";
-  if (takeOut)
-    try {
-      amountYocto = parseTestNear(takeOut);
-    } catch (e) {
-      amountError = (e as Error).message.replace("Stake", "Take out");
-    }
-  const exitQuote = amountYocto ? quotePartialExit(position, amountYocto, summary) : null;
-  const shareQuote = share === null ? null : quoteContribution(position, share * 100, summary);
-  const current = contributionBps(position) / 100;
-  const pending = position.position?.pending_contribution_bps;
-  return (
-    <div className="fuel-action fuel-adjust">
-      <h2>{tr("Change your stake")}</h2>
-
-      <section aria-labelledby="fuel-partial-title" className="fuel-adjust-part">
-        <h3 id="fuel-partial-title">{tr("Take some out")}</h3>
-        <p>
-          {tr("You have")}{" "}{fmtNear(String(position.position?.principal ?? "0"))} {" "}{tr("test NEAR staked. The rest keeps fueling the prize pool.")}</p>
-        <label className="fuel-amount">
-          <span>{tr("Amount · test NEAR")}</span>
-          <input
-            inputMode="decimal"
-            value={takeOut}
-            placeholder="0.5"
-            disabled={busy}
-            aria-invalid={!!amountError || exitQuote?.ok === false}
-            onChange={(e) => setTakeOut(e.target.value)}
-          />
-        </label>
-        {amountError && (
-          <p className="fuel-error" role="alert">
-            {amountError}
-          </p>
-        )}
-        {exitQuote && !exitQuote.ok && (
-          <p className="fuel-error" role="alert">
-            {exitQuote.reason}
-          </p>
-        )}
-        {exitQuote?.ok && (
-          <p className="fuel-preview" data-testid="partial-quote">
-            {tr("You get back about")}{" "}{fmt(exitQuote.receiveNear, 3)} {" "}{tr("test NEAR")}{exitQuote.cityFeeNear > 0
-              ? tr("; {0} test NEAR of yield already earned goes to the prize pool at today's {1} %", { 0: fmt(exitQuote.cityFeeNear, 3), 1: current })
-              : ""}
-            . {fmt(exitQuote.remainingNear, 3)} {" "}{tr("test NEAR stays staked →")}{" "}
-            {fmt(exitQuote.goldAfter)} {" "}{tr("GOLD fuel,")}{" "}{tierName(exitQuote.tierAfter)}{tr(". It arrives after about 1–7 days of unstaking.")}</p>
-        )}
-        <button
-          className="secondary-button"
-          disabled={busy || !exitQuote?.ok}
-          onClick={() =>
-            void send(
-              { action: "partial", vaultId: position.account_id, amount: amountYocto },
-              tr("Taking part of your stake out…"),
-              tr("Requested. Your test NEAR is unstaking; withdraw it here when it's back."),
-            ).then((ok) => ok && setTakeOut(""))
-          }
-        >
-          {busy ? tr("Working…") : tr("Take {0}out", { 0: exitQuote?.ok ? takeOut + " test NEAR " : "" })}
-        </button>
-      </section>
-
-      <section aria-labelledby="fuel-share-title" className="fuel-adjust-part">
-        <h3 id="fuel-share-title">{tr("Prize pool share of your yield")}</h3>
-        <p>
-          {tr("Now")}{" "}<b>{current} %</b>
-          {typeof pending === "number"
-            ? tr(", switching to {0} % once earned yield settles", { 0: pending / 100 })
-            : ""}
-          .
-        </p>
-        <div className="fuel-choice" role="radiogroup" aria-label={tr("New prize pool share")}>
-          {[{ pct: 0, label: tr("None"), hint: tr("Keep all yield") }, ...CONTRIBUTION_CHOICES].map(
-            (c) => (
-              <button
-                key={c.pct}
-                role="radio"
-                aria-checked={share === c.pct}
-                disabled={busy}
-                onClick={() => setShare(c.pct)}
-              >
-                <b>{c.label}</b>
-                <span>{c.pct} %</span>
-                <small>{c.hint}</small>
-              </button>
-            ),
+              ))}
+            </div>
           )}
         </div>
-        {shareQuote && !shareQuote.ok && (
-          <p className="fuel-error" role="alert">
-            {shareQuote.reason}
+      </TierLadder>
+
+      <div className="fuel-action" aria-live="polite">
+        {notConfigured ? (
+          <p className="fuel-state">{tr("Fueling isn't open on this server yet. You can keep exploring for free.")}</p>
+        ) : canStake ? (
+          <>
+            <button
+              className="primary-button fuel-stake-button"
+              // Visible at once, tappable once the vault read says there is no stake yet.
+              disabled={busy || loading || (!!vaults?.config && vaults.config.created >= vaults.config.capacity && phase.kind === "none")}
+              onClick={() => void stake()}
+            >
+              {busy && outcome.kind === "pending" ? outcome.text : tr("Stake {0} QGOLD", { 0: qgoldOfNear(amount) })}
+              {eur && !busy ? <small>{eur}</small> : null}
+              <Flame size={20} aria-hidden="true" />
+            </button>
+            {account && account !== explorerAccount && (
+              <p className="fuel-payfrom">{tr("Paying from {0}", { 0: account })}</p>
+            )}
+            {(short || !account) && (
+              <button type="button" className="fuel-why" onClick={() => setHelpOpen(true)}>
+                <WarningCircle size={18} aria-hidden="true" />
+                {!account
+                  ? tr("Your account isn't ready to stake yet. What can I do?")
+                  : tr("Not enough to stake yet. What can I do?")}
+              </button>
+            )}
+            <p className="fuel-paid">
+              {tr("Withdraw anytime (1–7 days).")}{" "}
+              {phase.kind === "none" && setupNear !== null
+                ? tr("First time: {0} QGOLD vault setup, not returned.", { 0: qgoldOfNear(setupNear) })
+                : null}
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="fuel-mine">
+              <div>
+                <span>{phase.kind === "ready" ? tr("Back and ready") : tr("Your stake")}</span>
+                <b>{`${qgoldOfNear(phase.kind === "ready" ? credit : principal)} QGOLD`}</b>
+              </div>
+              {status && (
+                <span className={`fuel-chip fuel-${status.tone}`}>
+                  {status.tone === "failed" ? (
+                    <WarningCircle size={14} aria-hidden="true" />
+                  ) : status.tone === "active" || status.tone === "ready" ? (
+                    <CheckCircle size={14} aria-hidden="true" />
+                  ) : (
+                    <Clock size={14} aria-hidden="true" />
+                  )}
+                  {status.label}
+                </span>
+              )}
+            </div>
+            {phase.kind === "staked" &&
+              (confirmExit ? (
+                <div className="fuel-confirm">
+                  <p>
+                    {tr("Your whole stake starts coming back now. It stops counting toward your tier at once and arrives after about 1–7 days (4 epochs).")}
+                  </p>
+                  <div className="fuel-confirm-buttons">
+                    <button className="secondary-button" disabled={busy} onClick={() => setConfirmExit(false)}>
+                      {tr("Keep staking")}
+                    </button>
+                    <button
+                      className="primary-button"
+                      disabled={busy}
+                      onClick={() =>
+                        void run(
+                          { action: "exit", vaultId: phase.position.account_id },
+                          tr("Requesting your withdrawal…"),
+                          tr("Withdrawal requested. It shows here when it's back."),
+                        )
+                      }
+                    >
+                      {busy && outcome.kind === "pending" ? outcome.text : tr("Withdraw {0} QGOLD", { 0: qgoldOfNear(principal) })}
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <button className="secondary-button" disabled={busy} onClick={() => setConfirmExit(true)}>
+                  <ArrowDown size={18} aria-hidden="true" /> {tr("Withdraw")}
+                </button>
+              ))}
+            {phase.kind === "busy" && <p className="fuel-paid">{tr("The pool is confirming your last step. This takes a moment.")}</p>}
+            {phase.kind === "returning" && (
+              <p className="fuel-paid">
+                {phase.position.position?.stage === "unlocking"
+                  ? tr("Unstaking: it unlocks at epoch {0} (now {1}). The game moves it back for you; then withdraw it here.", {
+                      0: String(phase.position.position?.unlock_epoch),
+                      1: String(phase.position.position?.epoch),
+                    })
+                  : tr("Your stake is on its way back. The game moves it along for you; then withdraw it here.")}
+              </p>
+            )}
+            {phase.kind === "ready" && (
+              <button
+                className="primary-button"
+                disabled={busy}
+                onClick={() =>
+                  void run(
+                    { action: "withdraw", vaultId: phase.position.account_id },
+                    tr("Withdrawing…"),
+                    tr("Withdrawn to your balance."),
+                  )
+                }
+              >
+                <ArrowDown size={20} aria-hidden="true" />
+                {busy && outcome.kind === "pending" ? outcome.text : tr("Withdraw {0} QGOLD to my balance", { 0: qgoldOfNear(credit) })}
+              </button>
+            )}
+            {(phase.kind === "returning" || phase.kind === "busy") && (
+              <button className="secondary-button" disabled={busy} onClick={() => void readVaults()}>
+                <ArrowsClockwise size={18} aria-hidden="true" /> {tr("Check again")}
+              </button>
+            )}
+          </>
+        )}
+        {readError && !vaults && (
+          <div className="fuel-state fuel-failed" role="alert">
+            <WarningCircle size={20} aria-hidden="true" />
+            <span>
+              {tr("Staking can't be read right now.")} {readError}
+            </span>
+            <button className="secondary-button" onClick={() => void readVaults()}>
+              {tr("Try again")}
+            </button>
+          </div>
+        )}
+        {outcome.kind === "done" && (
+          <p className="fuel-state fuel-ready" role="status">
+            <CheckCircle size={20} aria-hidden="true" /> {outcome.text}
           </p>
         )}
-        {shareQuote?.ok && (
-          <p className="fuel-preview" data-testid="share-quote">
-            {shareQuote.settlesFirst
-              ? tr("Yield already earned settles at {0} % first; {1} % applies when that settlement arrives (about 1–7 days).", { 0: shareQuote.oldPct, 1: shareQuote.newPct })
-              : tr("{0} % applies right away, to yield earned from now on.", { 0: shareQuote.newPct })}{" "}
-            → {fmt(shareQuote.goldAfter)} {" "}{tr("GOLD fuel,")}{" "}{tierName(shareQuote.tierAfter)}.
+        {outcome.kind === "failed" && (
+          <p className="fuel-state fuel-failed" role="alert">
+            <WarningCircle size={20} aria-hidden="true" /> {outcome.text}
           </p>
         )}
-        <button
-          className="secondary-button"
-          disabled={busy || !shareQuote?.ok}
-          onClick={() =>
-            void send(
-              {
-                action: "contribution",
-                vaultId: position.account_id,
-                contributionBps: share! * 100,
-              },
-              tr("Changing the prize pool share…"),
-              shareQuote?.ok && shareQuote.settlesFirst
-                ? tr("Requested. The new share applies once earned yield settles.")
-                : tr("Prize pool share changed."),
-            ).then((ok) => ok && setShare(null))
-          }
-        >
-          {busy ? tr("Working…") : tr("Change share")}
-        </button>
-      </section>
-      {outcome.where === "adjust" && outcome.kind === "pending" && (
-        <p className="fuel-state" role="status">
-          <Clock size={20} aria-hidden="true" /> {outcome.text}
-        </p>
+      </div>
+
+      <details className="stake-story-more">
+        <summary>{tr("How staking works")}</summary>
+        <StakeStory sharePct={pct} />
+      </details>
+
+      {!canStake && <StakeToday />}
+
+      {helpOpen && (
+        <FundsHelp
+          title={tr("Why you can't stake yet")}
+          funds={{ account, have: balance, need: needYocto, qgold }}
+          explorerAccount={explorerAccount}
+          explorerStatus={explorerStatus}
+          onRecheck={() => void readBalance(account).then(setBalance)}
+          onLinkWallet={onLinkWallet}
+          onClose={() => setHelpOpen(false)}
+        />
       )}
-      {outcome.where === "adjust" && outcome.kind === "done" && (
-        <p className="fuel-state fuel-ready" role="status">
-          <CheckCircle size={20} aria-hidden="true" /> {outcome.text}
-        </p>
+
+      {"position" in phase && phase.position.position && (
+        // Shown once there is a stake: where the NEAR sits, in plain words.
+        <details className="play-details fuel-advanced">
+          <summary>
+            <Vault size={18} aria-hidden="true" /> {tr("Your vault")}
+          </summary>
+          <dl className="fuel-vault">
+            <div>
+              <dt>{tr("Vault")}</dt>
+              <dd>
+                <a href={`https://testnet.nearblocks.io/address/${phase.position.account_id}`} target="_blank" rel="noreferrer">
+                  {phase.position.account_id}
+                </a>
+              </dd>
+            </div>
+            <div>
+              <dt>{tr("Owner")}</dt>
+              <dd>{phase.position.position.beneficiary || account}</dd>
+            </div>
+            <div>
+              <dt>{tr("Validator")}</dt>
+              <dd>{phase.position.position.pool}</dd>
+            </div>
+            <div>
+              <dt>{tr("Staked")}</dt>
+              <dd>{fmt(principal, 3)} NEAR</dd>
+            </div>
+            <div>
+              <dt>{tr("Yield to the prize pool")}</dt>
+              <dd>{pct} %</dd>
+            </div>
+          </dl>
+        </details>
       )}
-      {outcome.where === "adjust" && outcome.kind === "failed" && (
-        <p className="fuel-state fuel-failed" role="alert">
-          <WarningCircle size={20} aria-hidden="true" /> {outcome.text}
-        </p>
-      )}
-    </div>
+    </section>
   );
 }

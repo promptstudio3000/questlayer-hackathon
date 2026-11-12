@@ -11,15 +11,15 @@ import {
   CheckCircle,
   CheckSquareOffset,
   Coins,
-  Fire,
+  Percent,
   Plant,
   ShieldCheck,
   SlidersHorizontal,
-  TrendUp,
-  Vault,
   Warning,
 } from "@phosphor-icons/react";
 import TreasuryVoteCard, { closesIn, type VoteView } from "./TreasuryVoteCard";
+import QgoldExchange from "./QgoldExchange";
+import { FAQ_ICONS, FaqList, GLOSSARY, InfoTip, Pots, Projection, STAKING_APR, Term, YieldLoop, type Faq, type Pot } from "./TreasuryExplain";
 import "./economy.css";
 import "./treasury.css";
 import "../public-polish.css";
@@ -31,11 +31,11 @@ type Mix = {
   network: string;
   account: string;
   vault: string | null;
-  policy: { maxProtocolBps: number; maxUtilBps: number; maxMoveBps: number; driftBps?: number };
+  policy: { maxProtocolBps: number; maxUtilBps: number; maxMoveBps: number; driftBps?: number; target?: Targets };
   total: string;
   buckets: Bucket[];
   exposure: { protocol: string; value: string; bps: number; overCap: boolean }[];
-  holdings: { id: string; label: string; bucket: string; value: string; market: { utilizationBps: number; supplyAprPercent: number | null } | null }[];
+  holdings: { id: string; label: string; bucket: string; value: string; vault?: string; market: { utilizationBps: number; supplyAprPercent: number | null } | null }[];
   prices: { nearUsdE8: string; stale: { id: string }[] };
   next: { action: string; reason: string | null };
 };
@@ -53,7 +53,9 @@ type Ledger = {
   auraRoyalties?: null | { bps: number; swept: string };
 };
 type Qgold = {
+  network?: string;
   status: string;
+  exitPaths?: { id: "near_instant" | "near_queue" | "lst"; label: string; available: boolean }[];
   fees: { id: string; label: string; bps: number; to: string | null }[];
   rules: { buyFeeBps: number; sellFeeBps: number; ladder: number[] };
   vault: null | {
@@ -69,9 +71,9 @@ type Qgold = {
     buyPrice: string;
     sellPrice: string;
     paused: boolean;
-    exit: { instantUsed24h: string; instantCap24h: string; queuePending: string; queueCount: number };
+    exit: { instantUsed24h: string; instantCap24h: string; accountCap24h?: string | null; queuePending: string; queueCount: number; safeWindowMs?: number | null };
   };
-  pool: { status: string; near?: string; qgold?: string; price?: string; premiumBps?: number | null };
+  pool: { status: string; near?: string; qgold?: string; price?: string; premiumBps?: number | null; swapUrl?: string | null };
   keeper: null | { buybackSpent: string; ladder: { multiple: number; price: string }[] };
   chart: { at: string; rate: string; price: string | null }[];
 };
@@ -100,6 +102,13 @@ function useJson<T>(url: string): Load<T> {
 }
 
 const BUCKET_NAMES = { staked: "Staked with validators", lst: "Liquid staking tokens", stable: "Stablecoins on Rhea Lend", near: "NEAR reserve" } as const;
+const BUCKET_INFO = {
+  staked: GLOSSARY.validator,
+  lst: GLOSSARY.lst,
+  stable: `${GLOSSARY.stable} ${GLOSSARY.rhea}`,
+  near: GLOSSARY.reserve,
+} as const;
+const protocolInfo = (p: string) => (p.startsWith("Validator") ? GLOSSARY.validator : p === "Rhea Lend" ? GLOSSARY.rhea : p === "NEAR" ? GLOSSARY.reserve : GLOSSARY.lst);
 const BUCKET_SHORT = { staked: "Staked", lst: "Liquid staking", stable: "Stablecoins", near: "NEAR" } as const;
 const BUCKET_TONE = { staked: "tr-c1", lst: "tr-c4", stable: "tr-c2", near: "tr-c3" } as const;
 /** Buckets worth a row: anything held or targeted (liquid staking is 0 / 0 since 11 Nov). */
@@ -156,10 +165,13 @@ function Legend({ items }: { items: { tone: string; label: string }[] }) {
   );
 }
 
-function Tile({ label, value, unit, note }: { label: string; value: string; unit?: string; note?: React.ReactNode }) {
+function Tile({ label, value, unit, note, info }: { label: string; value: string; unit?: string; note?: React.ReactNode; info?: React.ReactNode }) {
   return (
     <div className="tr-tile">
-      <span className="tr-tile-label">{label}</span>
+      <span className="tr-tile-label">
+        {label}
+        {info ? <InfoTip label={`About ${label.toLowerCase()}`}>{info}</InfoTip> : null}
+      </span>
       <span className="tr-tile-value">
         {value} {unit ? <small>{unit}</small> : null}
       </span>
@@ -173,12 +185,12 @@ function Tile({ label, value, unit, note }: { label: string; value: string; unit
 
 const FLOW_NODES = [
   { id: "fees", x: 20, y: 20, w: 170, label: "Fees", sub: "trades 2 % · tasks 10 % · vault 1 %" },
-  { id: "treasury", x: 265, y: 20, w: 190, label: "Treasury", sub: "50 % LST · 40 % stables · 10 % NEAR" },
+  { id: "treasury", x: 265, y: 20, w: 190, label: "Treasury", sub: "staked NEAR · stablecoins" },
   { id: "insurance", x: 530, y: 20, w: 150, label: "Insurance fund", sub: "10 % of fees" },
   { id: "yield", x: 265, y: 130, w: 190, label: "Daily yield", sub: "staking + lending interest" },
   { id: "budget", x: 265, y: 240, w: 190, label: "Daily map budget", sub: "coins, zones, pioneer cells" },
   { id: "players", x: 20, y: 350, w: 170, label: "Players", sub: "walk, collect, win zones" },
-  { id: "vault", x: 265, y: 350, w: 190, label: "QGOLD vault", sub: "backing R = NEAR ÷ supply" },
+  { id: "vault", x: 265, y: 350, w: 190, label: "QGOLD vault", sub: "NEAR behind every QGOLD" },
   { id: "market", x: 530, y: 350, w: 150, label: "Rhea pool", sub: "QGOLD ⇄ NEAR" },
 ] as const;
 type FlowId = (typeof FLOW_NODES)[number]["id"];
@@ -189,12 +201,12 @@ const FLOW_EDGES: { from: FlowId; to: FlowId; label: string; d: string }[] = [
   { from: "yield", to: "budget", label: "skimmed daily", d: "M360 186 V240" },
   { from: "budget", to: "vault", label: "NEAR behind each coin", d: "M360 296 V350" },
   { from: "vault", to: "players", label: "mints", d: "M265 378 H190" },
-  { from: "players", to: "vault", label: "spend burns, R rises", d: "M105 406 V440 H330 V406" },
-  { from: "vault", to: "market", label: "≈ R", d: "M455 378 H530" },
+  { from: "players", to: "vault", label: "spending burns, backing rises", d: "M105 406 V440 H330 V406" },
+  { from: "vault", to: "market", label: "≈ backing", d: "M455 378 H530" },
   { from: "players", to: "fees", label: "trades and tasks", d: "M60 350 V76" },
 ];
 
-function MoneyFlow({ active, onPick }: { active: FlowId | null; onPick: (id: FlowId | null) => void }) {
+function MoneyFlow({ active, onPick, subs = {} }: { active: FlowId | null; onPick: (id: FlowId | null) => void; subs?: Partial<Record<FlowId, string>> }) {
   return (
     <svg className="tr-flow" viewBox="0 0 700 460" role="img" aria-label="How money moves between the treasury, the daily map budget, players and the QGOLD vault">
       <defs>
@@ -238,7 +250,7 @@ function MoneyFlow({ active, onPick }: { active: FlowId | null; onPick: (id: Flo
           tabIndex={0}
           role="button"
           aria-pressed={active === n.id}
-          aria-label={`${n.label}: ${n.sub}`}
+          aria-label={`${n.label}: ${subs[n.id] ?? n.sub}`}
           onClick={() => onPick(active === n.id ? null : n.id)}
           onKeyDown={(ev) => {
             if (ev.key === "Enter" || ev.key === " ") {
@@ -252,7 +264,7 @@ function MoneyFlow({ active, onPick }: { active: FlowId | null; onPick: (id: Flo
             {n.label}
           </text>
           <text x={n.x + 12} y={n.y + 43} className="tr-node-sub">
-            {n.sub}
+            {subs[n.id] ?? n.sub}
           </text>
         </g>
       ))}
@@ -264,13 +276,13 @@ const FLOW_ORDER: FlowId[] = ["fees", "treasury", "insurance", "yield", "budget"
 
 const FLOW_COPY: Record<FlowId, string> = {
   fees: "Every fee is paid on top of a trade or a task and lands in the treasury: 2 % of a player-to-player trade, 10 % of a paid task or paid content, 1 % when buying from or selling to the QGOLD vault. Sends and play are free.",
-  treasury: "The treasury holds about half in liquid staking tokens (stNEAR, LiNEAR), 40 % in stablecoins lent on Rhea Lend and 10 % in NEAR. No more than 40 % sits with any one protocol, and a daily run moves at most a quarter of it toward the target.",
+  treasury: "The treasury is held in the mix explorers vote on each week: NEAR staked with validators, which earns the yield, and a share of stablecoins (USDC and USDT) lent on Rhea Lend, which keeps part of it steady when the NEAR price moves. No more than 40 % sits with any one validator or protocol, and a daily run moves at most a quarter of it toward the target.",
   insurance: "A tenth of every fee goes to the insurance fund, kept apart from the treasury. It exists for a protocol failure, never for paying rewards.",
-  yield: "Staking rewards and lending interest are the only money the map spends. The principal stays put: only the growth is harvested each morning.",
+  yield: "Validator staking rewards (and any lending interest) are the only money the map spends. The principal stays put: only the growth is harvested each morning.",
   budget: "The daily budget is spread over the whole map, cell by cell, by a public formula: community votes, recent player demand, a random draw, the area's potential and staking. Unclaimed money rolls into the next days.",
   players: "Players earn QGOLD by walking to coins and winning zones; a payout round mints it to their own NEAR account within minutes. QXP (experience) is soulbound; QGOLD can be traded, sent or spent in the game.",
-  vault: "Every QGOLD is fully backed by NEAR in the vault. R is the NEAR behind one QGOLD. Minting brings its own NEAR, so it never lowers R; spending in the game burns QGOLD and leaves its NEAR behind, so R rises for everyone.",
-  market: "The Rhea pool lets anyone swap QGOLD and NEAR. A keeper sells only small, pre-committed amounts above R and buys back below it, so the market price stays near the backing.",
+  vault: "Every QGOLD is backed by NEAR locked in the vault; the NEAR behind one QGOLD is its backing. Minting brings its own NEAR, so it never lowers the backing; spending in the game burns QGOLD and leaves its NEAR behind, so the backing per QGOLD rises for everyone.",
+  market: "The Rhea pool lets anyone swap QGOLD and NEAR. A keeper bot sells only small, pre-announced amounts above the backing per QGOLD and buys back below it, so the market price stays near the backing.",
 };
 
 // ---------------------------------------------------------------------------
@@ -334,7 +346,9 @@ function ExposureBars({ mix }: { mix: Mix }) {
     <div className="tr-bars" role="list" aria-label="Share of the treasury per protocol">
       {mix.exposure.map((e) => (
         <div key={e.protocol} className="tr-bar-row" role="listitem">
-          <span>{e.protocol}</span>
+          <span>
+            <Term tip={protocolInfo(e.protocol)}>{e.protocol}</Term>
+          </span>
           <span className="tr-bar-track">
             <span className={`tr-bar-fill ${e.overCap ? "tr-warn-fill" : "tr-c1"}`} style={{ width: `${Math.min(100, e.bps / 100)}%` }} />
             <span className="tr-bar-cap" style={{ left: `${cap / 100}%` }} title={`cap ${pct(cap)}`} />
@@ -658,16 +672,16 @@ function PriceLadder({ q }: { q: Qgold }) {
   const R = rateNear(v.rate);
   const marks = [
     { name: "Sell to vault", v: rateNear(v.sellPrice), tone: "tr-c3" },
-    { name: "R (backing)", v: R, tone: "tr-c2" },
+    { name: "Backing per QGOLD", v: R, tone: "tr-c2" },
     { name: "Buy from vault", v: rateNear(v.buyPrice), tone: "tr-c3" },
     ...(q.pool.price ? [{ name: "Rhea pool", v: rateNear(q.pool.price), tone: "tr-c1" }] : []),
-    ...(q.keeper?.ladder ?? []).map((l) => ({ name: `Keeper ask ${l.multiple}×R`, v: rateNear(l.price), tone: "tr-c4" })),
+    ...(q.keeper?.ladder ?? []).map((l) => ({ name: `Keeper offer at ${l.multiple}× backing`, v: rateNear(l.price), tone: "tr-c4" })),
   ].sort((a, b) => a.v - b.v);
   const lo = R * 0.97,
     hi = Math.max(...marks.map((m) => m.v)) * 1.01;
   const x = (n: number) => 4 + (92 * (n - lo)) / (hi - lo);
   return (
-    <div className="tr-ladder" role="list" aria-label="QGOLD prices around the backing rate R">
+    <div className="tr-ladder" role="list" aria-label="QGOLD prices around the backing per QGOLD">
       <div className="tr-ladder-axis" aria-hidden="true">
         {marks.map((m) => (
           <span key={m.name} className={`tr-ladder-dot ${m.tone}`} style={{ left: `${x(m.v)}%` }} />
@@ -677,7 +691,7 @@ function PriceLadder({ q }: { q: Qgold }) {
         {marks.map((m) => (
           <li key={m.name} role="listitem">
             <span className={`tr-swatch ${m.tone}`} aria-hidden="true" />
-            {m.name} <b>{m.v.toFixed(6)}</b> NEAR <small>({m.v >= R ? "+" : ""}{(((m.v - R) / R) * 100).toFixed(1)} % vs R)</small>
+            {m.name} <b>{m.v.toFixed(6)}</b> NEAR <small>({m.v >= R ? "+" : ""}{(((m.v - R) / R) * 100).toFixed(1)} % vs backing)</small>
           </li>
         ))}
       </ul>
@@ -759,11 +773,14 @@ function Slider({ label, value, min, max, step, unit, onChange }: { label: strin
   );
 }
 
-function Simulator({ mix, q }: { mix: Mix | null; q: Qgold | null }) {
+function Simulator({ mix, q, stakingApr }: { mix: Mix | null; q: Qgold | null; stakingApr: number }) {
   const startTreasury = mix ? Math.max(1, Math.round(toNear(mix.total))) : 2;
-  const stableApr = mix?.holdings.find((h) => h.bucket === "stable" && h.market?.supplyAprPercent)?.market?.supplyAprPercent ?? null;
-  const [k, setK] = useState<Knobs>({ treasury: startTreasury, lst: 50, stable: 40, lstApr: 4.5, stableApr: stableApr && stableApr > 1 ? stableApr : 12, fees: 0.02, burn: 0.2, days: 180 });
-  useEffect(() => setK((o) => ({ ...o, treasury: startTreasury })), [startTreasury]);
+  const stableApr = mix?.holdings.find((h) => h.bucket === "stable" && h.market?.supplyAprPercent != null)?.market?.supplyAprPercent ?? 0;
+  const share = (b: string[]) => (mix ? Math.round(mix.buckets.filter((x) => b.includes(x.bucket)).reduce((n, x) => n + x.currentBps, 0) / 500) * 5 : 0);
+  const startStake = mix ? share(["staked", "lst"]) : 90;
+  const startStable = mix ? Math.min(100 - startStake, share(["stable"])) : 10;
+  const [k, setK] = useState<Knobs>({ treasury: startTreasury, lst: startStake, stable: startStable, lstApr: stakingApr, stableApr, fees: 0.02, burn: 0.2, days: 365 });
+  useEffect(() => setK((o) => ({ ...o, treasury: startTreasury, lst: startStake, stable: startStable })), [startTreasury, startStake, startStable]);
   const set = (key: keyof Knobs) => (n: number) =>
     setK((o) => {
       const next = { ...o, [key]: n };
@@ -799,10 +816,10 @@ function Simulator({ mix, q }: { mix: Mix | null; q: Qgold | null }) {
     <div className="tr-sim">
       <div className="tr-sim-knobs">
         <Slider label="Treasury" value={k.treasury} min={1} max={5000} step={1} unit="NEAR" onChange={set("treasury")} />
-        <Slider label="Liquid staking share" value={k.lst} min={0} max={100} step={5} unit="%" onChange={set("lst")} />
+        <Slider label="Staked share" value={k.lst} min={0} max={100} step={5} unit="%" onChange={set("lst")} />
         <Slider label="Stablecoin share" value={k.stable} min={0} max={100} step={5} unit="%" onChange={set("stable")} />
         <Slider label="Staking yield" value={k.lstApr} min={0} max={10} step={0.1} unit="% a year" onChange={set("lstApr")} />
-        <Slider label="Lending yield" value={k.stableApr} min={0} max={20} step={0.5} unit="% a year" onChange={set("stableApr")} />
+        <Slider label="Stablecoin lending yield" value={k.stableApr} min={0} max={20} step={0.5} unit="% a year" onChange={set("stableApr")} />
         <Slider label="Fees per day" value={k.fees} min={0} max={5} step={0.01} unit="NEAR" onChange={set("fees")} />
         <Slider label="QGOLD spent in game per day" value={k.burn} min={0} max={2} step={0.05} unit="% of supply" onChange={set("burn")} />
         <Slider label="Horizon" value={k.days} min={30} max={730} step={10} unit="days" onChange={set("days")} />
@@ -811,7 +828,7 @@ function Simulator({ mix, q }: { mix: Mix | null; q: Qgold | null }) {
         <Tile label="Blended yield" value={apr.toFixed(2)} unit="% a year" note={`NEAR reserve ${100 - k.lst - k.stable} % earns nothing`} />
         <Tile label="To the map per day" value={num(days[0].yieldToMap, 4)} unit="NEAR" note={`${num(last.yieldToMap, 4)} on day ${last.day}`} />
         <Tile label={`Sent to the map in ${k.days} days`} value={num(last.cumulativeYield, 3)} unit="NEAR" note="principal is never spent" />
-        <Tile label={`R after ${k.days} days`} value={last.rate.toFixed(6)} unit="NEAR" note={`${(((last.rate - days[0].rate) / (days[0].rate || 1)) * 100).toFixed(1)} % from burns`} />
+        <Tile label={`Backing per QGOLD after ${k.days} days`} value={last.rate.toFixed(6)} unit="NEAR" note={`${(((last.rate - days[0].rate) / (days[0].rate || 1)) * 100).toFixed(1)} % from burns`} />
       </div>
       <h3>Money to the map and to insurance, cumulative</h3>
       <LineChart
@@ -823,11 +840,11 @@ function Simulator({ mix, q }: { mix: Mix | null; q: Qgold | null }) {
           { key: "insurance", tone: "tr-c3", name: "Insurance fund" },
         ]}
       />
-      <h3>QGOLD backing rate R</h3>
-      <LineChart points={ratePoints as never} label="Modelled backing rate R over time" unit="NEAR" series={[{ key: "rate", tone: "tr-c1", name: "R" }]} />
+      <h3>Backing per QGOLD</h3>
+      <LineChart points={ratePoints as never} label="Modelled backing per QGOLD over time" unit="NEAR" series={[{ key: "rate", tone: "tr-c1", name: "Backing per QGOLD" }]} />
       <p className="eco-small eco-muted">
-        A model, not a promise: yields move, and testnet lending pays close to nothing. It follows the published rules: only yield is spent, principal stays, every QGOLD is minted
-        with its NEAR, and spending burns QGOLD so R can only stay or rise. QGOLD is a game currency, not an investment.
+        A model, not a promise: yields move, and testnet stablecoin lending pays close to nothing. It follows the published rules: only yield is spent, principal stays, every QGOLD is minted
+        with its NEAR, and spending burns QGOLD so the backing per QGOLD can only stay or rise. QGOLD is a game currency, not an investment.
       </p>
     </div>
   );
@@ -848,7 +865,7 @@ const CHECK_LABELS: Record<string, string> = {
 
 const SAFETY = [
   "Nobody, including the team, can withdraw backing from the QGOLD vault. There is no admin withdraw.",
-  "You can only ever redeem the QGOLD you hold, at R minus 1 %.",
+  "You can only ever redeem the QGOLD you hold, at its backing minus 1 %.",
   "Instant exits are capped at about 5 % of the vault per 24 hours, and per account; the rest waits in a fair queue.",
   "A guardian can only pause. Upgrades need several signers and a 48 hour wait.",
   "No paid chance anywhere: randomness in the game is free or earned.",
@@ -899,17 +916,13 @@ function tabFromHash(): TabId {
   return (TABS.find((t) => t.id === h)?.id ?? HASH_TAB[h] ?? "overview") as TabId;
 }
 
-const TLDR = [
-  { Icon: Vault, title: "The treasury is never spent", text: "Most of it is NEAR staked with validators, a little sits in stablecoins, in the mix explorers vote on each week." },
-  { Icon: Plant, title: "Only yield is spent", text: "Staking rewards (and lending interest) become the daily map budget. Principal stays put." },
-  { Icon: Coins, title: "Coins become QGOLD", text: "Every collected coin is minted to the player's own NEAR account, backed by NEAR in the vault." },
-  { Icon: Fire, title: "Spending burns QGOLD", text: "So the NEAR behind each remaining QGOLD (the rate R) can only stay or rise." },
-];
-
-function Section({ id, title, lead, children }: { id: string; title: string; lead?: React.ReactNode; children: React.ReactNode }) {
+function Section({ id, title, lead, info, children }: { id: string; title: string; lead?: React.ReactNode; info?: React.ReactNode; children: React.ReactNode }) {
   return (
     <section className="tr-card" aria-labelledby={id}>
-      <h2 id={id}>{title}</h2>
+      <h2 id={id}>
+        {title}
+        {info ? <InfoTip label={`About ${title.toLowerCase()}`}>{info}</InfoTip> : null}
+      </h2>
       {lead ? <p className="tr-lead">{lead}</p> : null}
       {children}
     </section>
@@ -951,10 +964,16 @@ function DaoFacts({ d }: { d: Dao }) {
           <b>Explorers vote</b> each week on the mix. The recommended option gets one automatic vote, so it wins when nobody votes.
         </li>
         <li>
-          <b>The keeper files</b> the day's run each morning.
+          <b>
+            The <Term tip={GLOSSARY.keeper}>keeper</Term> files
+          </b>{" "}
+          the day's run each morning.
         </li>
         <li>
-          <b>Two council keys approve</b> it after checking it against the adopted mix and the safety limits. Only then does the run happen.
+          <b>
+            Two <Term tip={GLOSSARY.council}>council</Term> keys approve
+          </b>{" "}
+          it after checking it against the adopted mix and the safety limits. Only then does the run happen.
         </li>
       </ol>
       {d.decisions?.length ? (
@@ -970,7 +989,7 @@ function DaoFacts({ d }: { d: Dao }) {
         </details>
       ) : null}
       <p className="eco-small eco-muted">
-        A Sputnik DAO on NEAR:{" "}
+        A <Term tip={GLOSSARY.dao}>Sputnik DAO</Term> on NEAR:{" "}
         <a href={explorer(d.dao)} rel="noreferrer" target="_blank">
           {d.dao}
         </a>
@@ -1023,7 +1042,154 @@ export default function TreasuryPage() {
     d = dao.data?.exists ? dao.data : null;
   const network = m?.network ?? l?.network;
   const rChart = (q?.chart ?? []).map((p) => ({ x: Date.parse(p.at), xLabel: p.at.slice(5, 16).replace("T", " "), rate: rateNear(p.rate), price: p.price ? rateNear(p.price) : NaN }));
-  const usd = m ? toNear(m.total) * (Number(m.prices.nearUsdE8) / 1e8) : null;
+  const nearUsd = m ? Number(m.prices.nearUsdE8) / 1e8 : null;
+  const explorerBase = network === "mainnet" ? "https://nearblocks.io" : "https://testnet.nearblocks.io";
+  const stakingApr = STAKING_APR[network ?? "testnet"] ?? STAKING_APR.testnet;
+  // Blended yearly rate of what the treasury holds today: staked NEAR at the
+  // validator rate, stablecoins at Rhea's live lending rate, the rest earns nothing
+  // (testnet liquid staking prices are frozen).
+  const apr = m && toNear(m.total) > 0
+    ? m.holdings.reduce((sum, h) => {
+        const rate = h.bucket === "staked" ? stakingApr : h.bucket === "stable" ? (h.market?.supplyAprPercent ?? 0) : h.bucket === "lst" && network === "mainnet" ? stakingApr : 0;
+        return sum + toNear(h.value) * rate;
+      }, 0) / toNear(m.total)
+    : null;
+  const perDay = m && apr != null ? (toNear(m.total) * apr) / 100 / 365 : null;
+  const target = d?.adopted?.targets ?? m?.policy.target ?? null;
+  const stakedNow = m ? m.buckets.filter((b) => b.bucket === "staked" || b.bucket === "lst").reduce((n, b) => n + b.currentBps, 0) : null;
+  const stableNow = m ? (m.buckets.find((b) => b.bucket === "stable")?.currentBps ?? 0) : null;
+  const flowSubs: Partial<Record<FlowId, string>> = target
+    ? { treasury: `${(((target.staked ?? 0) + target.lst) / 100).toLocaleString("en-GB")} % staked · ${(target.stable / 100).toLocaleString("en-GB")} % stables` }
+    : {};
+  const pots: Pot[] = [
+    {
+      id: "treasury",
+      name: "Treasury",
+      role: "earns the yield, never spent",
+      yocto: m?.total ?? null,
+      url: m ? `${explorerBase}/address/${m.account}` : null,
+      tone: "tr-c1",
+      info: "The game's savings, mostly NEAR staked with validators plus a small share of stablecoins, in the mix explorers vote on. Only its yield is paid out. The link opens the operator account; its staking vaults are listed under Safety.",
+    },
+    {
+      id: "pool",
+      name: "Prize pool",
+      role: "pays coins and zone prizes",
+      yocto: l?.treasury.liquid ?? l?.treasury.funded ?? null,
+      url: l?.rewardsContract?.explorerUrl ?? null,
+      tone: "tr-c2",
+      info: "The rewards contract. It holds what the map pays out each day. On testnet sponsors filled it; the treasury's daily yield tops it up.",
+    },
+    {
+      id: "vault",
+      name: "QGOLD vault",
+      role: "backs every QGOLD",
+      yocto: v?.backing ?? null,
+      url: v?.explorerUrl ?? null,
+      tone: "tr-c3",
+      info: "Holds the NEAR behind every QGOLD in circulation. It has no admin withdraw: only QGOLD holders can take NEAR out, by selling their own QGOLD back.",
+    },
+  ];
+  const faq: Faq[] = [
+    {
+      Icon: FAQ_ICONS.Vault,
+      q: "What is the treasury?",
+      a: (
+        <p>
+          The game's shared savings{m ? `: ${shortNear(m.total, 1)} NEAR right now` : ""}, held mostly as NEAR staked with validators. It is never spent. Only the yield it earns is.
+        </p>
+      ),
+    },
+    {
+      Icon: FAQ_ICONS.Plant,
+      q: "So what pays for the coins on the map?",
+      a: (
+        <p>
+          The staking yield{perDay != null ? `, about ${num(perDay, 3)} NEAR a day today` : ""}. Every morning it becomes that day's map budget: coins, zone prizes and pioneer cells all over the map.
+        </p>
+      ),
+    },
+    {
+      Icon: FAQ_ICONS.Coins,
+      q: "What backs QGOLD?",
+      a: (
+        <>
+          <p>
+            NEAR. Every QGOLD is minted together with its NEAR, which stays locked in the QGOLD vault{v ? ` (${shortNear(v.backing, 2)} NEAR now)` : ""}. The backing per QGOLD is vault NEAR ÷ QGOLD supply{v ? `, now ${rateNear(v.rate).toFixed(6)} NEAR` : ""}.
+          </p>
+          <p>
+            The NEAR for new QGOLD comes from the treasury's yield, and the treasury itself is held in the mix explorers vote on: staked NEAR plus a share of stablecoins
+            {target ? ` (target ${(((target.staked ?? 0) + target.lst) / 100).toLocaleString("en-GB")} % staked, ${(target.stable / 100).toLocaleString("en-GB")} % stablecoins)` : ""}.
+          </p>
+        </>
+      ),
+    },
+    {
+      Icon: FAQ_ICONS.Scales,
+      q: "Why does the treasury hold stablecoins at all?",
+      a: (
+        <p>
+          Staked NEAR earns the yield. Stablecoins (USDC and USDT, lent on Rhea) keep part of the treasury steady in dollars when the NEAR price falls, so the map budget can still be paid. Explorers vote each week on the split
+          {stakedNow != null && stableNow != null ? `; today it is ${pct(stakedNow)} staked and ${pct(stableNow)} stablecoins` : ""}.
+        </p>
+      ),
+    },
+    {
+      Icon: FAQ_ICONS.Fire,
+      q: "Why does spending QGOLD make the rest worth more?",
+      a: <p>Spending in the game burns the QGOLD but leaves its NEAR in the vault. Fewer QGOLD now share the same NEAR, so the backing per QGOLD goes up for everyone who holds it.</p>,
+    },
+    {
+      Icon: FAQ_ICONS.ArrowsLeftRight,
+      q: "Can I swap QGOLD back to NEAR?",
+      a: (
+        <p>
+          Yes, any time, at its backing minus a 1 % fee, with the swap card at the top of this page. Instant exits are capped per day
+          {v ? ` (${shortNear(v.exit.instantCap24h, 2)} NEAR for everyone together)` : ""} so a bad day cannot drain the vault; anything above waits in a fair queue for up to 48 hours and stays yours.
+        </p>
+      ),
+    },
+    {
+      Icon: FAQ_ICONS.UsersThree,
+      q: "Who decides how the treasury is held?",
+      a: (
+        <p>
+          Explorers at level {d?.rule.minLevel ?? 3}+ who played this week vote on the weekly mix in the{" "}
+          <button type="button" className="tr-inline-link" onClick={() => setTab("vote", true)}>
+            Vote tab
+          </button>
+          . Each morning the keeper files the day's run and {d?.approvals ?? 2} of {d?.council?.length ?? 3} council keys approve it after checking it against the voted mix and the safety limits.
+        </p>
+      ),
+    },
+    {
+      Icon: FAQ_ICONS.MagnifyingGlass,
+      q: "How can I check all of this myself?",
+      a: (
+        <ul className="tr-proof">
+          {pots.map((p) =>
+            p.url ? (
+              <li key={p.id}>
+                <a href={p.url} target="_blank" rel="noreferrer">
+                  {p.name} on the NEAR explorer ↗
+                </a>
+              </li>
+            ) : null,
+          )}
+          {d ? (
+            <li>
+              <a href={`${explorerBase}/address/${d.dao}`} target="_blank" rel="noreferrer">
+                Treasury DAO {d.dao} ↗
+              </a>
+            </li>
+          ) : null}
+          <li>
+            <a href="/economy">Prize pool ledger: every day and payout with its transaction</a>
+          </li>
+        </ul>
+      ),
+    },
+  ];
 
   return (
     <main className="eco tr">
@@ -1045,46 +1211,42 @@ export default function TreasuryPage() {
           <h1>Treasury</h1>
           {network ? <span className="tr-chip">{network === "mainnet" ? "NEAR mainnet" : "NEAR testnet"}</span> : null}
         </div>
-        <p className="tr-hero-sub">The game's shared money. It is never spent: only its yield pays for the coins on the map.</p>
-        <div className="tr-hero-card">
-          <span className="tr-hero-label">Held in the treasury</span>
-          <span className="tr-hero-value">
-            {m ? shortNear(m.total, 3) : pendingValue(mix)} <small>NEAR</small>
-          </span>
-          <span className="tr-hero-note">{usd != null ? `≈ ${num(usd)} USD` : pendingNote(mix)}</span>
-          {m ? (
-            <>
-              <span className="tr-strip tr-strip-big" aria-hidden="true">
-                {shown(m).map((b) => (
-                  <span key={b.bucket} className={BUCKET_TONE[b.bucket]} style={{ flexGrow: Math.max(1, b.currentBps) }} />
-                ))}
-              </span>
-              <ul className="tr-hero-legend">
-                {shown(m).map((b) => (
-                  <li key={b.bucket}>
-                    <i className={BUCKET_TONE[b.bucket]} aria-hidden="true" /> {BUCKET_SHORT[b.bucket]} <b>{pct(b.currentBps)}</b>
-                  </li>
-                ))}
-              </ul>
-            </>
-          ) : null}
-        </div>
-        <div className="tr-stats">
-          <div className="tr-stat">
-            <Coins size={20} weight="duotone" aria-hidden="true" />
-            <span>QGOLD backing</span>
-            <b>{v ? `${shortNear(v.backing, 3)} NEAR` : q ? "—" : pendingValue(qgold)}</b>
+        <p className="tr-hero-sub">The game's shared money, all of it on chain. The treasury is never spent: only its yield pays for the coins on the map.</p>
+        <div className="tr-hero-grid">
+          <div className="tr-hero-main">
+            <div className="tr-hero-card">
+              <Pots pots={pots} usdPerNear={nearUsd} network={network ?? null} />
+            </div>
+            <div className="tr-stats">
+              <div className="tr-stat">
+                <Percent size={20} weight="duotone" aria-hidden="true" />
+                <span>
+                  Treasury earns
+                  <InfoTip label="How is this rate worked out?">
+                    An estimate from what the treasury holds today: staked NEAR at about {num(stakingApr, 1)} % a year (the validator rate after the pool's fee), stablecoins at Rhea's live lending rate, the rest at 0.
+                  </InfoTip>
+                </span>
+                <b>{apr != null ? `≈ ${num(apr, 1)} % a year` : pendingValue(mix)}</b>
+              </div>
+              <div className="tr-stat">
+                <Plant size={20} weight="duotone" aria-hidden="true" />
+                <span>
+                  Yield per day
+                  <InfoTip label="What is the daily yield?">The NEAR the treasury earns in a day at that rate. This is what goes to the map as coins and zone prizes; the treasury itself stays.</InfoTip>
+                </span>
+                <b>{perDay != null ? `${num(perDay, 3)} NEAR` : pendingValue(mix)}</b>
+              </div>
+              <div className="tr-stat">
+                <Coins size={20} weight="duotone" aria-hidden="true" />
+                <span>
+                  1 QGOLD is backed by
+                  <InfoTip label="What is the backing per QGOLD?">{GLOSSARY.backing}</InfoTip>
+                </span>
+                <b>{v ? `${rateNear(v.rate).toFixed(6)} NEAR` : q ? "—" : pendingValue(qgold)}</b>
+              </div>
+            </div>
           </div>
-          <div className="tr-stat">
-            <TrendUp size={20} weight="duotone" aria-hidden="true" />
-            <span>NEAR per QGOLD (R)</span>
-            <b>{v ? rateNear(v.rate).toFixed(6) : q ? "—" : pendingValue(qgold)}</b>
-          </div>
-          <div className="tr-stat">
-            <Plant size={20} weight="duotone" aria-hidden="true" />
-            <span>Yield earned</span>
-            <b>{l?.realizedYield.paid ? `${shortNear(l.realizedYield.paid, 6)} NEAR` : l ? "—" : pendingValue(ledger)}</b>
-          </div>
+          {q?.vault ? <QgoldExchange data={{ ...q, network: network ?? undefined }} compact /> : null}
         </div>
       </section>
 
@@ -1109,21 +1271,24 @@ export default function TreasuryPage() {
       <div id="tr-panel" role="tabpanel" aria-labelledby={`tr-tab-${tab}`} className="tr-panel">
         {tab === "overview" ? (
           <>
-            <ul className="tr-tldr" aria-label="In short">
-              {TLDR.map(({ Icon, title, text }) => (
-                <li key={title}>
-                  <span className="tr-tldr-icon" aria-hidden="true">
-                    <Icon size={22} weight="duotone" />
-                  </span>
-                  <span>
-                    <b>{title}</b>
-                    <small>{text}</small>
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <YieldLoop />
             {d ? <VoteTeaser d={d} onOpen={() => setTab("vote", true)} /> : null}
-            <Section id="tr-mix" title="Treasury mix" lead="Outer ring: how it is held now. Inner ring: the target explorers voted for.">
+            {m && apr != null ? (
+              <Section
+                id="tr-growth"
+                title="Where the treasury is heading"
+                lead="At today's yield, if nothing else changes."
+                info="The treasury itself stays the same; the green band is the yield it earns, which is paid out to players as map coins day by day."
+              >
+                <Projection totalYocto={m.total} aprPercent={apr} earnedYocto={l?.realizedYield.paid ?? null} />
+              </Section>
+            ) : null}
+            <Section
+              id="tr-mix"
+              title="Treasury mix"
+              lead="Outer ring: how it is held now. Inner ring: the target explorers voted for."
+              info="Staked NEAR earns the yield. Stablecoins keep part of the treasury steady in dollars. The daily run moves the treasury toward the voted target, at most a quarter at a time."
+            >
               {mix.error ? <p className="eco-muted">Not available on this host right now: {mix.error}</p> : null}
               {m ? (
                 <div className="tr-two">
@@ -1136,7 +1301,10 @@ export default function TreasuryPage() {
                         <li key={b.bucket}>
                           <i className={BUCKET_TONE[b.bucket]} aria-hidden="true" />
                           <span>
-                            <b>{BUCKET_NAMES[b.bucket]}</b>
+                            <b>
+                              {BUCKET_NAMES[b.bucket]}
+                              <InfoTip label={`What is ${BUCKET_NAMES[b.bucket].toLowerCase()}?`}>{BUCKET_INFO[b.bucket]}</InfoTip>
+                            </b>
                             <small>
                               {shortNear(b.current, 3)} NEAR · target {pct(b.policyBps)}
                             </small>
@@ -1159,16 +1327,24 @@ export default function TreasuryPage() {
                 <p className="eco-muted">Reading the chain…</p>
               ) : null}
             </Section>
-            <Section id="tr-history" title="Treasury history" lead="The treasury day by day, and where it was held. Staked NEAR counts from the day the staking vaults opened.">
+            <Section
+              id="tr-history"
+              title="Treasury history"
+              lead="The treasury day by day since 1 November, and where it was held."
+              info="One bar per day. The jump on 11 November is when 93 test NEAR were staked with a validator through the treasury's staking vault."
+            >
               {hist.error ? <p className="eco-muted">Not available on this host right now.</p> : hist.data ? <HistoryChart history={hist.data} /> : <p className="eco-muted">Reading…</p>}
             </Section>
+            <Section id="tr-faq" title="How it works">
+              <FaqList items={faq} />
+            </Section>
             {day.data ? (
-              <Section id="tr-today" title="Today on the map" lead={`What the yield put on the map on ${day.data.day}.`}>
+              <Section id="tr-today" title="Today on the map" lead={`What the daily budget put on the map on ${day.data.day}.`}>
                 <div className="tr-tiles tr-tiles-small">
-                  <Tile label="Coins" value={num(day.data.coinsU / 1e6, 2)} unit="QGOLD" />
-                  <Tile label="Zone prizes" value={num(day.data.zonesU / 1e6, 2)} unit="QGOLD" />
-                  <Tile label="Pioneer reserve" value={num(day.data.pioneerU / 1e6, 2)} unit="QGOLD" />
-                  <Tile label="Cells funded" value={num(day.data.summary.funded)} note={`of ${num(day.data.summary.cells)}`} />
+                  <Tile label="Coins" value={num(day.data.coinsU / 1e6, 2)} unit="QGOLD" info="All coins on the map today together. Walking to one mints its share to the finder's own NEAR account." />
+                  <Tile label="Zone prizes" value={num(day.data.zonesU / 1e6, 2)} unit="QGOLD" info="Prizes for winning zones today, all zones together." />
+                  <Tile label="Pioneer reserve" value={num(day.data.pioneerU / 1e6, 2)} unit="QGOLD" info="5 % kept for cells nobody visited in 30 days; a pioneer who goes there gets double." />
+                  <Tile label="Cells funded" value={num(day.data.summary.funded)} note={`of ${num(day.data.summary.cells)}`} info="The map is split into hexagonal cells. A funded cell has at least one coin or prize today." />
                 </div>
                 <button type="button" className="tr-link" onClick={() => setTab("flow", true)}>
                   How the budget is split <CaretRight size={16} aria-hidden="true" />
@@ -1199,7 +1375,7 @@ export default function TreasuryPage() {
         {tab === "flow" ? (
           <>
             <Section id="tr-flow" title="How the money moves" lead="Tap a box to follow its flows.">
-              <MoneyFlow active={flow} onPick={setFlow} />
+              <MoneyFlow active={flow} onPick={setFlow} subs={flowSubs} />
               <ol className="tr-flow-list" aria-label="Money flow, step by step">
                 {FLOW_ORDER.map((id) => {
                   const n = FLOW_NODES.find((x) => x.id === id)!;
@@ -1208,7 +1384,7 @@ export default function TreasuryPage() {
                     <li key={id}>
                       <button type="button" className={flow === id ? "tr-step tr-step-on" : "tr-step"} aria-pressed={flow === id} onClick={() => setFlow(flow === id ? null : id)}>
                         <b>{n.label}</b>
-                        <small>{n.sub}</small>
+                        <small>{flowSubs[id] ?? n.sub}</small>
                       </button>
                       {out.length ? <span className="tr-step-out">{out.map((e) => `${e.label} → ${FLOW_NODES.find((x) => x.id === e.to)!.label}`).join(" · ")}</span> : null}
                     </li>
@@ -1236,31 +1412,36 @@ export default function TreasuryPage() {
 
         {tab === "qgold" ? (
           <>
-            <Section id="tr-qgold" title="QGOLD backing" lead="Every QGOLD is backed by NEAR in the vault. R is the NEAR behind one QGOLD.">
+            <Section id="tr-qgold" title="QGOLD backing" lead="Every QGOLD is backed by NEAR in the vault. The backing per QGOLD is the NEAR behind one QGOLD." info={GLOSSARY.backing}>
               {qgold.error ? <p className="eco-muted">Not available right now: {qgold.error}</p> : null}
               {v ? (
                 <>
                   <div className="tr-tiles tr-tiles-small">
-                    <Tile label="R now" value={rateNear(v.rate).toFixed(6)} unit="NEAR" note={v.rPeak ? `peak ${rateNear(v.rPeak).toFixed(6)}` : null} />
+                    <Tile label="Backing per QGOLD" info={GLOSSARY.backing} value={rateNear(v.rate).toFixed(6)} unit="NEAR" note={v.rPeak ? `peak ${rateNear(v.rPeak).toFixed(6)}` : null} />
                     <Tile label="In circulation" value={num(toUnits(v.supply, 6), 0)} unit="QGOLD" />
                     <Tile label="Burned in game" value={num(toUnits(v.burned, 6), 2)} unit="QGOLD" />
-                    <Tile label="Pool liquidity" value={q?.pool.near ? shortNear(q.pool.near, 3) : "—"} unit="NEAR" note={q?.pool.premiumBps != null ? `pool ${pct(q.pool.premiumBps)} over R` : null} />
+                    <Tile label="Pool liquidity" value={q?.pool.near ? shortNear(q.pool.near, 3) : "—"} unit="NEAR" note={q?.pool.premiumBps != null ? `pool price ${pct(q.pool.premiumBps)} over the backing` : null} />
                   </div>
                   {rChart.length > 1 ? (
                     <>
-                      <h3>R and the pool price over time</h3>
+                      <h3>Backing per QGOLD and the Rhea pool price over time</h3>
                       <LineChart
                         points={rChart as never}
-                        label="Backing rate R and Rhea pool price over time"
+                        label="Backing per QGOLD and Rhea pool price over time"
                         unit="NEAR"
                         series={[
-                          { key: "rate", tone: "tr-c2", name: "R (backing)" },
+                          { key: "rate", tone: "tr-c2", name: "Backing per QGOLD" },
                           { key: "price", tone: "tr-c1", name: "Rhea pool price" },
                         ]}
                       />
                     </>
                   ) : null}
-                  <h3>Prices around R</h3>
+                  <h3>
+                    Prices around the backing
+                    <InfoTip label="What are these prices?">
+                      The vault always buys QGOLD back at the backing minus 1 % and sells it at the backing plus 1 %. The Rhea pool price floats in between or above. {GLOSSARY.keeper}
+                    </InfoTip>
+                  </h3>
                   <PriceLadder q={q!} />
                   <h3>Exit capacity today</h3>
                   <Meter used={toNear(v.exit.instantUsed24h)} cap={toNear(v.exit.instantCap24h)} label="Instant exits used in the last 24 h" />
@@ -1303,7 +1484,7 @@ export default function TreasuryPage() {
 
         {tab === "model" ? (
           <Section id="tr-model" title="Model the treasury" lead="Move the sliders to see how the mix, yields, fees and in-game spending shape the map budget and the backing rate. Starts from today's live numbers.">
-            <Simulator mix={m} q={q} />
+            <Simulator mix={m} q={q} stakingApr={stakingApr} />
           </Section>
         ) : null}
 
@@ -1323,12 +1504,12 @@ export default function TreasuryPage() {
               <Section id="tr-exposure" title="Exposure per protocol">
                 <ExposureBars mix={m} />
                 <p className="eco-small eco-muted">
-                  The line marks the {pct(m.policy.maxProtocolBps)} cap. Nothing new goes to a lending market that is {pct(m.policy.maxUtilBps)} lent out or more, and each daily run moves at most{" "}
+                  The line marks the {pct(m.policy.maxProtocolBps)} cap. Nothing new goes to a lending market that is {pct(m.policy.maxUtilBps)} lent out or more <InfoTip label="What is utilization?">{GLOSSARY.utilization}</InfoTip>, and each daily run moves at most{" "}
                   {pct(m.policy.maxMoveBps)}.
                 </p>
                 {l?.stnear.status === "observed" ? (
                   <p className="eco-small eco-muted">
-                    stNEAR: {shortNear(l.stnear.value, 4)} NEAR against {shortNear(l.stnear.principal, 4)} principal, growth {shortNear(l.stnear.growth, 6)} NEAR
+                    <Term tip={GLOSSARY.lst}>stNEAR</Term>: {shortNear(l.stnear.value, 4)} NEAR against {shortNear(l.stnear.principal, 4)} principal, growth {shortNear(l.stnear.growth, 6)} NEAR
                     {l.stnear.yieldStatus === "price-flat" ? " (the testnet staking price is flat, so no growth yet)." : "."}
                   </p>
                 ) : null}
@@ -1337,7 +1518,7 @@ export default function TreasuryPage() {
             <Section id="tr-audit" title="Prize pool checks">
               <div className="tr-tiles tr-tiles-small">
                 <Tile label="Prize pool funded" value={l?.treasury.funded ? shortNear(l.treasury.funded, 4) : l ? "—" : pendingValue(ledger)} unit="NEAR" note={l?.treasury.awarded ? `${shortNear(l.treasury.awarded)} paid out` : null} />
-                <Tile label="Insurance fund" value={v ? shortNear(v.insurance, 4) : q ? "—" : pendingValue(qgold)} unit="NEAR" note="10 % of fees, kept apart" />
+                <Tile label="Insurance fund" info={GLOSSARY.insurance} value={v ? shortNear(v.insurance, 4) : q ? "—" : pendingValue(qgold)} unit="NEAR" note="10 % of fees, kept apart" />
               </div>
               {l?.audit.checks ? (
                 <ul className="tr-checks">

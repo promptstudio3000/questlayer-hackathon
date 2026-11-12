@@ -27,7 +27,7 @@ import {
 } from "@phosphor-icons/react";
 import { ArrowLeft, ArrowRight } from "./dir-icons";
 import { api, GOLD } from "./api";
-import { parseNearPrice } from "./native-amounts";
+import { parseQgoldPrice } from "./qgold-display";
 import { Character } from "./Character";
 import { GameObjectArt } from "./game-object-art";
 import { Character3D } from "./Character3D";
@@ -239,10 +239,10 @@ export function Inventory({
 
   const priceDraft = useFormDraft({
     playerId: player.id,
-    form: "demo-aura-listing",
+    form: "aura-listing-qgold-b",
     realm: `demo:${selectedKey || "none"}`,
     fields: PRICE_DRAFT_FIELDS,
-    initial: { price: "0.05" },
+    initial: { price: "50M" },
   });
   const price = priceDraft.values.price;
   const setPrice = (value: string) => priceDraft.setField("price", value);
@@ -444,12 +444,12 @@ export function Inventory({
       return;
     if (!selected || selected.type === "wearable" || locked) return;
     if (selected.type === "aura" && selected.item.native_claim_state === "issued") return;
-    // Aura trades settle on NEAR, so the price is in test NEAR (yocto).
+    // Typed in QGOLD (the game unit, src/qgold-display.ts); the trade itself settles in NEAR yocto.
     let amount: string;
     try {
-      amount = parseNearPrice(price.replace(",", "."));
+      amount = parseQgoldPrice(price);
     } catch {
-      setListingError(tr("Choose a price between 0.001 and 1,000 test NEAR."));
+      setListingError(tr("Choose a price between 1M and 1,000B QGOLD."));
       return;
     }
     setListingPending(true);
@@ -1116,26 +1116,20 @@ export function Inventory({
                       void listItem();
                     }}
                   >
-                    <p>
-                      {selected.type === "aura"
-                        ? tr("Selling secures this Aura on NEAR and lists it on the market. You get test NEAR when another explorer buys it.")
-                        : tr("Your Aura goes on the market. You get test NEAR when another explorer buys it.")}</p>
                     <label htmlFor="inventory-list-price">
-                      {tr("Price in test NEAR")}</label>
+                      {tr("Price in QGOLD")}</label>
                     <div className="inventory-price-input">
                       <Coins size={22} aria-hidden="true" />
                       <input
                         id="inventory-list-price"
-                        inputMode="decimal"
-                        maxLength={32}
+                        inputMode="numeric"
+                        maxLength={16}
                         required
                         value={price}
                         disabled={locked}
                         onChange={(event) => setPrice(event.target.value)}
                       />
                     </div>
-                    <p className="inventory-sale-note">
-                      {tr("Every trade settles on NEAR, and History links the proof. Find your listing in Shop → Market.")}</p>
                     {priceDraft.hasDraft && (
                       <button
                         className="inventory-secondary"

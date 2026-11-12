@@ -5,13 +5,13 @@
     {
       "id": "lore-fair-power",
       "prompt": "What makes your explorer stronger against monsters?",
-      "choices": ["Your level and your own skill", "The rarest Aura you own", "How much GOLD you hold", "How many items you equip"],
+      "choices": ["Your level and your own skill", "The rarest Aura you own", "How much QGOLD you hold", "How many items you equip"],
       "answer": 0
     },
     {
       "id": "lore-set-bonus",
       "prompt": "What does a complete Aura set bonus change?",
-      "choices": ["Only how your explorer looks", "Your chance to win a duel", "The XP you earn", "The GOLD a chest pays"],
+      "choices": ["Only how your explorer looks", "Your chance to win a duel", "The XP you earn", "The QGOLD a chest pays"],
       "answer": 0
     },
     {
@@ -41,7 +41,7 @@
     {
       "id": "lore-loss",
       "prompt": "What do you lose when a monster beats you?",
-      "choices": ["Nothing, you just wait before trying again", "Half of your GOLD", "Your equipped Aura", "One level"],
+      "choices": ["Nothing, you just wait before trying again", "Half of your QGOLD", "Your equipped Aura", "One level"],
       "answer": 0
     },
     {
