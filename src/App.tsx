@@ -3898,6 +3898,7 @@ export default function App() {
         <div className="topbar-right">
           {player && (
             <>
+              <span id="hud-sky-slot" className="hud-sky-slot" />
               <div className="hud-bubble">
                 <button
                   className="profile-pill"

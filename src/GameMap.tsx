@@ -36,6 +36,7 @@ import type { ActorView } from "./actor-types";
 import type { ActorsLayer } from "./actors-layer";
 import type { MapRewardsLayer } from "./map-rewards-layer";
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { api } from "./api";
 import { distanceLabel } from "./app-bits";
 import * as maplibregl from "maplibre-gl";
@@ -1839,7 +1840,10 @@ export function GameMap(props: GameMapProps) {
         className={`game-map maplibregl-map sky-${sky.phase}${props.globe ? " globe-view" : ""}`}
         aria-label={tr("Real OpenStreetMap world")}
       />
-      {!props.globe && (
+      {/* Day/night sits in the header next to the avatar (slot rendered by
+          App), not in a row of its own over the map. */}
+      {!props.globe && (() => {
+        const chip = (
         <div
           className={`map-sky-chip sky-${sky.phase}`}
           role="status"
@@ -1861,7 +1865,10 @@ export function GameMap(props: GameMapProps) {
             </span>
           )}
         </div>
-      )}
+        );
+        const slot = document.getElementById("hud-sky-slot");
+        return slot ? createPortal(chip, slot) : chip;
+      })()}
       {!props.globe && guidePoints.length > 1 && !props.focusZone && (
         <div className="map-guide-key" role="note" title={tr("Straight-line direction, not a walking route")}>
           <img src={mapKitUrl("navigation/arrow-forward.png")} width="24" height="24" alt="" aria-hidden />

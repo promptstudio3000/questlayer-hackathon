@@ -362,3 +362,19 @@
 .app-shell[data-target] .map-kit-checkpoint.next {
   filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px var(--action));
 }
+
+/* Header: no bar and no blur over the map, only the floating buttons. */
+.app-shell[data-screen] .topbar { background: none; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0; box-shadow: none; pointer-events: none; }
+.app-shell[data-screen] .topbar .topbar-right > *, .app-shell[data-screen] .topbar .hud-left { pointer-events: auto; }
+/* Day/night next to the avatar instead of its own row. */
+.hud-sky-slot { display: inline-flex; flex: none; }
+.app-shell[data-screen] .hud-sky-slot .map-sky-chip { position: static; height: 36px; padding: 0 10px; border-radius: 18px; max-width: none; }
+.app-shell[data-screen] .hud-sky-slot .map-sky-chip > span:not(.map-wave-hint) { display: none; }
+@media (max-width: 480px) { .app-shell[data-screen] .hud-sky-slot .map-wave-hint { display: none; } }
+/* Direction guide at the very top: centred between the header buttons on
+   wide screens, right under them on a phone. */
+.app-shell[data-screen] .map-guide-key { top: calc(env(safe-area-inset-top) + 10px); bottom: auto; left: 50%; right: auto; transform: translateX(-50%); z-index: 19; }
+@media (max-width: 760px) {
+  .app-shell[data-screen] .map-guide-key { top: calc(env(safe-area-inset-top) + 66px); left: 12px; transform: none; max-width: calc(100% - 24px); }
+  .app-shell[data-screen] .zone-presence { top: calc(70px + env(safe-area-inset-top)); }
+}
