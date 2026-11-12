@@ -30,3 +30,5 @@
 @keyframes pip-swing { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
 @keyframes pip-hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 html[data-motion="reduce"] .tour-helper, html[data-motion="reduce"] .pip, html[data-motion="reduce"] .pip-lantern { animation: none; }
+/* The map tools menu opens over the right-hand side: Pip steps aside while it is open. */
+html:has(.map-actions.open) .tour-helper { visibility: hidden; opacity: 0; pointer-events: none; }
