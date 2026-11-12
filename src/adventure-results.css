@@ -71,42 +71,6 @@
   font-size: 14px;
   line-height: 1.45;
 }
-.adventure-result-stage {
-  display: flex;
-  align-items: center;
-  flex-direction: column;
-  padding: 20px 16px 16px;
-  border: 1px solid var(--control-border);
-  border-radius: 8px;
-  background: var(--surface-soft);
-  text-align: center;
-}
-.adventure-result-stage .character-composition {
-  margin: 16px 0 24px;
-}
-.adventure-result-stage p {
-  margin: 8px 0 0;
-  font-size: 14px;
-  color: var(--ink-secondary);
-}
-.adventure-result-stage span {
-  font-size: 14px;
-}
-.adventure-result-stage .aura-art {
-  margin: 0 0 12px;
-}
-.adventure-result-no-item {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-}
-.adventure-result-no-item svg {
-  flex-shrink: 0;
-}
-.adventure-result-award {
-  padding: 12px 0;
-  border-bottom: 1px solid var(--control-border);
-}
 .adventure-result-list {
   list-style: none;
   padding: 0;

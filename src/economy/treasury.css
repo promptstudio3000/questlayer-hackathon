@@ -471,32 +471,6 @@
 }
 
 /* Treasury DAO (docs/TREASURY-DAO.md) */
-.tr-dao-poll ul {
-  list-style: none;
-  padding: 0;
-  margin: 0 0 1rem;
-}
-.tr-dao-poll li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 3rem;
-  gap: 0.25rem 0.75rem;
-  align-items: center;
-  padding: 0.35rem 0;
-}
-.tr-dao-poll li > span:first-child {
-  grid-column: 1 / -1;
-}
-.tr-dao-bar {
-  display: block;
-  height: 0.5rem;
-  min-width: 2px;
-  border-radius: 999px;
-  background: currentColor;
-  opacity: 0.55;
-}
-.tr-dao-poll li b {
-  text-align: right;
-}
 .tr-dao-log {
   padding-left: 1.2rem;
   overflow-wrap: anywhere;
@@ -524,9 +498,7 @@
 .tr .tr-hero-card .tr-c1 { --c: #ff8cff; }
 .tr .tr-hero-card .tr-c2 { --c: #7ff0c8; }
 .tr .tr-hero-card .tr-c3 { --c: #fef87d; }
-.tr .tr-hero-legend { display: flex; flex-wrap: wrap; gap: 4px 14px; list-style: none; margin: 4px 0 0; padding: 0; font-size: 14px; }
-.tr .tr-hero-legend i, .tr .tr-buckets i, .tr .tr-legend-inline i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
-.tr .tr-hero-legend b { font-weight: 500; }
+.tr .tr-buckets i, .tr .tr-legend-inline i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: var(--c); }
 .tr .tr-stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 10px 0 0; }
 .tr .tr-stat { display: flex; flex-direction: column; gap: 2px; padding: 12px; border-radius: 14px; background: var(--surface-soft); min-width: 0; }
 .tr .tr-stat svg { color: var(--action); }
@@ -557,11 +529,6 @@
 .tr .tr-card .tr-lead { margin: 0 0 12px; font-size: 15px; color: var(--ink-secondary); }
 
 /* Overview: TL;DR as icon rows. */
-.tr .tr-tldr { list-style: none; margin: 12px 0; padding: 0; display: grid; gap: 8px; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
-.tr .tr-tldr li { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 14px; background: var(--surface-raised); border: 1px solid var(--decorative-border); }
-.tr .tr-tldr-icon { flex: 0 0 auto; display: grid; place-items: center; width: 40px; height: 40px; border-radius: 12px; background: var(--surface-soft); color: var(--action); }
-.tr .tr-tldr b { display: block; font-weight: 500; }
-.tr .tr-tldr small { display: block; font-size: 14px; color: var(--ink-secondary); line-height: 1.4; }
 .tr .tr-teaser {
   display: flex; align-items: center; gap: 12px; width: 100%; margin: 4px 0 8px; padding: 14px;
   border-radius: 16px; border: 1px solid var(--action); background: var(--surface-soft); color: var(--ink); text-align: left; cursor: pointer;
@@ -627,7 +594,6 @@
 .tr .tr-hero-card small { color: inherit; }
 .tr .tr-stat svg { align-self: flex-start; }
 .tr :is(.tr-rules, .tr-vote-gate, .tr-tldr) svg { align-self: flex-start; }
-.tr .tr-tldr { grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); }
 .tr .tr-history-head { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 4px 12px; margin-bottom: 4px; font-size: 15px; }
 .tr .tr-history-head b { font-weight: 500; }
 .tr .tr-up { color: var(--success); }

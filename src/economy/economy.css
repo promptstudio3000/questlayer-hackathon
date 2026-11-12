@@ -306,57 +306,6 @@ html.eco-root body {
 .qg-key-p::before {
   background: var(--eco-mint);
 }
-.qg-trade {
-  display: grid;
-  gap: 10px;
-  max-width: 420px;
-  padding: 12px;
-  border: 1px solid var(--eco-line);
-  border-radius: 8px;
-}
-.qg-tabs {
-  display: flex;
-  gap: 6px;
-}
-.qg-tabs button,
-.qg-go {
-  min-height: 44px;
-  padding: 0 16px;
-  border: 1px solid var(--eco-line);
-  border-radius: 8px;
-  background: transparent;
-  color: var(--eco-text);
-  font: inherit;
-  cursor: pointer;
-}
-.qg-tabs button.on,
-.qg-go {
-  background: var(--eco-accent);
-  border-color: var(--eco-accent);
-  color: #1a0335;
-  font-weight: 600;
-}
-.qg-go:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-.qg-field {
-  display: grid;
-  gap: 4px;
-}
-.qg-field input,
-.qg-field select {
-  min-height: 44px;
-  padding: 0 10px;
-  border: 1px solid var(--eco-line);
-  border-radius: 8px;
-  background: var(--eco-bg);
-  color: var(--eco-text);
-  font: inherit;
-}
-.qg-quote {
-  margin: 0;
-}
 .qg-paths li.qg-off {
   opacity: 0.6;
 }
@@ -490,11 +439,7 @@ html.eco-root body {
   max-width: none;
   vertical-align: -0.2em;
 }
-@media (min-width: 720px) {
-  .tr .tr-tiles-head {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-  }
-}
+
 @media (max-width: 560px) {
   .eco-tldr {
     flex-direction: column;
