@@ -1358,7 +1358,6 @@
  "Game outfit": "Tenue de jeu",
  "Practice stake": "Stake d'entraînement",
  "Premium gear": "Équipement premium",
- "Premium gear for GOLD": "Équipement premium contre du GOLD",
  "Preparing a suggestion…": "Préparation d'une suggestion…",
  "Preparing the map…": "Préparation de la carte…",
  "Preparing your 3D look…": "Préparation de ton look 3D…",
@@ -1796,7 +1795,6 @@
  "Spam": "Spam",
  "Sparkle finds": "Trouvailles scintillantes",
  "Spend roll tickets at the wisp: Inventory, Secured tab.": "Utilise tes tickets de tirage auprès du feu follet : Inventaire, onglet Sécurisé.",
- "Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.": "Dépenser brûle du GOLD : il quitte le jeu pour toujours, donc chaque GOLD restant est un peu mieux couvert.",
  "Sponsor a task": "Sponsoriser une tâche",
  "Sponsor review ends": "Fin de la revue du sponsor",
  "Sponsor:": "Sponsor :",
@@ -2089,7 +2087,6 @@
  "Total funded:": "Total financé :",
  "Trace its rune path": "Trace son chemin de runes",
  "Trader": "Marchand",
- "Traders on the map sell one premium Aura a day for GOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "Les marchands de la carte vendent une Aura premium par jour contre du GOLD. Elle arrive dans ta garde-robe et tu peux la sécuriser sur NEAR comme toute autre Aura.",
  "Trades through Intents need the explorer's device key.": "Les échanges via Intents nécessitent la clé de l'appareil de l'explorateur.",
  "Trading account": "Compte d'échange",
  "Trading is paused. You can still cancel your listings and withdraw your balance.": "Les échanges sont en pause. Tu peux toujours annuler tes annonces et retirer ton solde.",
@@ -2132,7 +2129,6 @@
  "Unclaimed rewards.": "Récompenses non réclamées.",
  "Uncommon": "Peu commune",
  "Unfollow": "Ne plus suivre",
- "Unlock emote {0} for {1} GOLD": "Débloquer l'emote {0} pour {1} GOLD",
  "Unlock for": "Débloquer pour",
  "Unlock this quest below to start it.": "Débloque cette quête ci-dessous pour la commencer.",
  "Unlocked": "Débloqué",
@@ -3245,5 +3241,10 @@
  "Real places outdoors.": "De vrais lieux en extérieur.",
  "Shared voxel world.": "Monde voxel partagé.",
  "Price in QGOLD": "Prix en QGOLD",
- "Choose a price between 1,000 and 1,000M QGOLD.": "Choisis un prix entre 1 000 et 1 000M QGOLD."
+ "Choose a price between 1,000 and 1,000M QGOLD.": "Choisis un prix entre 1 000 et 1 000M QGOLD.",
+ "{0} QGOLD": "{0} QGOLD",
+ "Unlock emote {0} for {1} QGOLD": "Débloquer l'emote {0} pour {1} QGOLD",
+ "Spending burns QGOLD: it leaves the game for good, so every QGOLD left is backed a little better.": "Dépenser brûle du QGOLD : il quitte le jeu pour toujours, donc chaque QGOLD restant est un peu mieux couvert.",
+ "Traders on the map sell one premium Aura a day for QGOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "Les marchands de la carte vendent une Aura premium par jour contre du QGOLD. Elle arrive dans ta garde-robe et tu peux la sécuriser sur NEAR comme toute autre Aura.",
+ "Premium gear for QGOLD": "Équipement premium contre du QGOLD"
 }

@@ -1358,7 +1358,6 @@
  "Game outfit": "Игровой наряд",
  "Practice stake": "Тренировочный стейк",
  "Premium gear": "Премиум-снаряжение",
- "Premium gear for GOLD": "Премиум-снаряжение за GOLD",
  "Preparing a suggestion…": "Готовим предложение…",
  "Preparing the map…": "Готовим карту…",
  "Preparing your 3D look…": "Готовим твой 3D-облик…",
@@ -1796,7 +1795,6 @@
  "Spam": "Спам",
  "Sparkle finds": "Искрящиеся находки",
  "Spend roll tickets at the wisp: Inventory, Secured tab.": "Трать билеты на броски у огонька: Инвентарь, вкладка «Закреплённые».",
- "Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.": "Траты сжигают GOLD: он навсегда уходит из игры, поэтому каждый оставшийся GOLD обеспечен чуть лучше.",
  "Sponsor a task": "Спонсировать задание",
  "Sponsor review ends": "Проверка спонсора заканчивается",
  "Sponsor:": "Спонсор:",
@@ -2089,7 +2087,6 @@
  "Total funded:": "Всего профинансировано:",
  "Trace its rune path": "Пройди его рунный путь",
  "Trader": "Торговец",
- "Traders on the map sell one premium Aura a day for GOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "Торговцы на карте продают одну премиум-Ауру в день за GOLD. Она попадает в твой гардероб, и её можно закрепить в NEAR, как любую другую Ауру.",
  "Trades through Intents need the explorer's device key.": "Для сделок через Intents нужен ключ устройства исследователя.",
  "Trading account": "Торговый аккаунт",
  "Trading is paused. You can still cancel your listings and withdraw your balance.": "Торговля приостановлена. Ты всё ещё можешь отменить свои лоты и вывести баланс.",
@@ -2132,7 +2129,6 @@
  "Unclaimed rewards.": "Несобранные награды.",
  "Uncommon": "Необычная",
  "Unfollow": "Отписаться",
- "Unlock emote {0} for {1} GOLD": "Открыть эмоцию {0} за {1} GOLD",
  "Unlock for": "Открыть за",
  "Unlock this quest below to start it.": "Разблокируй этот квест ниже, чтобы начать.",
  "Unlocked": "Разблокировано",
@@ -3245,5 +3241,10 @@
  "Real places outdoors.": "Реальные места на улице.",
  "Shared voxel world.": "Общий воксельный мир.",
  "Price in QGOLD": "Цена в QGOLD",
- "Choose a price between 1,000 and 1,000M QGOLD.": "Выбери цену от 1 000 до 1 000M QGOLD."
+ "Choose a price between 1,000 and 1,000M QGOLD.": "Выбери цену от 1 000 до 1 000M QGOLD.",
+ "{0} QGOLD": "{0} QGOLD",
+ "Unlock emote {0} for {1} QGOLD": "Открыть эмоцию {0} за {1} QGOLD",
+ "Spending burns QGOLD: it leaves the game for good, so every QGOLD left is backed a little better.": "Траты сжигают QGOLD: он навсегда уходит из игры, поэтому каждый оставшийся QGOLD обеспечен чуть лучше.",
+ "Traders on the map sell one premium Aura a day for QGOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "Торговцы на карте продают одну премиум-Ауру в день за QGOLD. Она попадает в твой гардероб, и её можно закрепить в NEAR, как любую другую Ауру.",
+ "Premium gear for QGOLD": "Премиум-снаряжение за QGOLD"
 }

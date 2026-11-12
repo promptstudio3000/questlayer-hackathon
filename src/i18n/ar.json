@@ -1358,7 +1358,6 @@
  "Game outfit": "زي اللعبة",
  "Practice stake": "تخزين تدريبي",
  "Premium gear": "عتاد مميز",
- "Premium gear for GOLD": "عتاد مميز مقابل GOLD",
  "Preparing a suggestion…": "جارٍ تحضير اقتراح…",
  "Preparing the map…": "جارٍ تحضير الخريطة…",
  "Preparing your 3D look…": "جارٍ تحضير مظهرك 3D…",
@@ -1796,7 +1795,6 @@
  "Spam": "رسائل مزعجة",
  "Sparkle finds": "لقى متلألئة",
  "Spend roll tickets at the wisp: Inventory, Secured tab.": "استخدم تذاكر السحب عند الشعلة: المخزون، تبويب المؤمَّنة.",
- "Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.": "الإنفاق يحرق GOLD: يغادر اللعبة إلى الأبد، فيصبح كل GOLD متبقٍ مغطى أكثر قليلًا.",
  "Sponsor a task": "ارعَ مهمة",
  "Sponsor review ends": "تنتهي مراجعة الراعي",
  "Sponsor:": "الراعي:",
@@ -2089,7 +2087,6 @@
  "Total funded:": "إجمالي التمويل:",
  "Trace its rune path": "تتبّع مسار رموزه",
  "Trader": "التاجر",
- "Traders on the map sell one premium Aura a day for GOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "يبيع التجار على الخريطة هالة مميزة واحدة يوميًا مقابل GOLD. تصل إلى خزانتك ويمكنك تأمينها على NEAR مثل أي هالة أخرى.",
  "Trades through Intents need the explorer's device key.": "تحتاج الصفقات عبر Intents إلى مفتاح جهاز المستكشف.",
  "Trading account": "حساب التداول",
  "Trading is paused. You can still cancel your listings and withdraw your balance.": "التداول متوقف مؤقتًا. ما زال بإمكانك إلغاء عروضك وسحب رصيدك.",
@@ -2132,7 +2129,6 @@
  "Unclaimed rewards.": "مكافآت غير مُطالب بها.",
  "Uncommon": "غير شائعة",
  "Unfollow": "إلغاء المتابعة",
- "Unlock emote {0} for {1} GOLD": "افتح التعبير {0} مقابل {1} GOLD",
  "Unlock for": "افتح مقابل",
  "Unlock this quest below to start it.": "افتح هذه المهمة أدناه لتبدأها.",
  "Unlocked": "مفتوح",
@@ -3245,5 +3241,10 @@
  "Real places outdoors.": "أماكن حقيقية في الخارج.",
  "Shared voxel world.": "عالم فوكسل مشترك.",
  "Price in QGOLD": "السعر بـ QGOLD",
- "Choose a price between 1,000 and 1,000M QGOLD.": "اختر سعراً بين 1,000 و 1,000M QGOLD."
+ "Choose a price between 1,000 and 1,000M QGOLD.": "اختر سعراً بين 1,000 و 1,000M QGOLD.",
+ "{0} QGOLD": "{0} QGOLD",
+ "Unlock emote {0} for {1} QGOLD": "افتح التعبير {0} مقابل {1} QGOLD",
+ "Spending burns QGOLD: it leaves the game for good, so every QGOLD left is backed a little better.": "الإنفاق يحرق QGOLD: يغادر اللعبة إلى الأبد، فيصبح كل QGOLD متبقٍ مغطى أكثر قليلًا.",
+ "Traders on the map sell one premium Aura a day for QGOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "يبيع التجار على الخريطة هالة مميزة واحدة يوميًا مقابل QGOLD. تصل إلى خزانتك ويمكنك تأمينها على NEAR مثل أي هالة أخرى.",
+ "Premium gear for QGOLD": "عتاد مميز مقابل QGOLD"
 }

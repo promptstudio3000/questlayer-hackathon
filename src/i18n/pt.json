@@ -1358,7 +1358,6 @@
  "Game outfit": "Visual do jogo",
  "Practice stake": "Stake de prática",
  "Premium gear": "Equipamento premium",
- "Premium gear for GOLD": "Equipamento premium por GOLD",
  "Preparing a suggestion…": "Preparando uma sugestão…",
  "Preparing the map…": "Preparando o mapa…",
  "Preparing your 3D look…": "Preparando seu visual 3D…",
@@ -1796,7 +1795,6 @@
  "Spam": "Spam",
  "Sparkle finds": "Achados brilhantes",
  "Spend roll tickets at the wisp: Inventory, Secured tab.": "Use tickets de sorteio no fogo-fátuo: Inventário, aba Protegido.",
- "Spending burns GOLD: it leaves the game for good, so every GOLD left is backed a little better.": "Gastar queima GOLD: ele sai do jogo para sempre, então cada GOLD restante fica um pouco mais lastreado.",
  "Sponsor a task": "Patrocine uma tarefa",
  "Sponsor review ends": "Fim da revisão do patrocinador",
  "Sponsor:": "Patrocinador:",
@@ -2089,7 +2087,6 @@
  "Total funded:": "Total financiado:",
  "Trace its rune path": "Trace o caminho das runas",
  "Trader": "Comerciante",
- "Traders on the map sell one premium Aura a day for GOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "Comerciantes no mapa vendem uma Aura premium por dia por GOLD. Ela vai para o seu guarda-roupa e você pode protegê-la na NEAR como qualquer outra Aura.",
  "Trades through Intents need the explorer's device key.": "Negociar com Intents requer a chave do dispositivo do explorador.",
  "Trading account": "Conta de negociação",
  "Trading is paused. You can still cancel your listings and withdraw your balance.": "A negociação está pausada. Você ainda pode cancelar seus anúncios e sacar seu saldo.",
@@ -2132,7 +2129,6 @@
  "Unclaimed rewards.": "Recompensas não resgatadas.",
  "Uncommon": "Incomum",
  "Unfollow": "Deixar de seguir",
- "Unlock emote {0} for {1} GOLD": "Desbloquear emote {0} por {1} GOLD",
  "Unlock for": "Desbloquear por",
  "Unlock this quest below to start it.": "Desbloqueie esta missão abaixo para começar.",
  "Unlocked": "Desbloqueado",
@@ -3245,5 +3241,10 @@
  "Real places outdoors.": "Lugares reais ao ar livre.",
  "Shared voxel world.": "Mundo voxel compartilhado.",
  "Price in QGOLD": "Preço em QGOLD",
- "Choose a price between 1,000 and 1,000M QGOLD.": "Escolha um preço entre 1.000 e 1.000M QGOLD."
+ "Choose a price between 1,000 and 1,000M QGOLD.": "Escolha um preço entre 1.000 e 1.000M QGOLD.",
+ "{0} QGOLD": "{0} QGOLD",
+ "Unlock emote {0} for {1} QGOLD": "Desbloquear emote {0} por {1} QGOLD",
+ "Spending burns QGOLD: it leaves the game for good, so every QGOLD left is backed a little better.": "Gastar queima QGOLD: ele sai do jogo para sempre, então cada QGOLD restante fica um pouco mais lastreado.",
+ "Traders on the map sell one premium Aura a day for QGOLD. It lands in your wardrobe and you can secure it on NEAR like any other Aura.": "Comerciantes no mapa vendem uma Aura premium por dia por QGOLD. Ela vai para o seu guarda-roupa e você pode protegê-la na NEAR como qualquer outra Aura.",
+ "Premium gear for QGOLD": "Equipamento premium por QGOLD"
 }
