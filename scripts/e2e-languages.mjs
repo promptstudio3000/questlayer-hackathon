@@ -166,7 +166,12 @@ async function check(page, lang, dir, shot, report, keepDialog = false) {
   await page.waitForTimeout(700);
   if (!keepDialog) await dismissOverlays(page);
   const file = `${String(report.screens.length + 1).padStart(2, "0")}-${shot}.png`;
-  await page.screenshot({ path: join(dir, file) });
+  // Chromium sometimes refuses one capture ("Unable to capture screenshot");
+  // the screenshot is evidence only, so retry once after a frame.
+  await page.screenshot({ path: join(dir, file) }).catch(async () => {
+    await page.waitForTimeout(500);
+    await page.screenshot({ path: join(dir, file) });
+  });
   const layout = await page.evaluate(layoutProblems);
   const english = lang === "en" ? [] : await page.evaluate(untranslated, DICTS[lang]);
   report.screens.push({ screen: shot, file, layout, english });
