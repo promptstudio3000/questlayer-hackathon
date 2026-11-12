@@ -24,7 +24,7 @@ coach steps aside. At the end the card lists every transaction of the run with a
 | --- | --- | --- |
 | Start, náměstí Republiky | coin, street find, place visit, zone chest, wear the Aura, secure it | ledger `coin`/`find`/`quest`/`chest` actions (or the history feed), an equipped Aura or `equip_aura`, a minted award or `redeem_aura` |
 | Characters | Ráda's errand, a landmark clue | ledger `errand`, `clue` |
-| Monsters | beat a Lickquidator, use the roll ticket | ledger `monster`/`boss`, `start_roll` |
+| Monsters | beat a Lickquidator; beat a Pocket Wisp (hidden at a sparkle) for a roll ticket; roll it (Inventory › Secured on NEAR › Roll at the wisp) | ledger `monster`/`boss`, `monster_rewards` kind `roll`, `start_roll` |
 | Trade | sell an Aura, trade with Vojtěch through Intents, buy an emote | a listing or `nft_transfer_call` to the market, a call on the Intents verifier, a QGOLD burn |
 | Community | map note, shout, topic, task with a reward | a note, `shout`/`topic` burns, a posted task (QGOLD escrow) |
 | People | wave at Pip, send Pip a message | a wave, an inbox `set` on NEAR Social |

@@ -10,7 +10,8 @@ const provider = createNearProvider();
 assert.equal((await provider.viewNodeStatus()).chain_id, "testnet");
 const marketId =
     process.env.NEAR_MARKET_ACCOUNT || "questlayer-market-20261031.testnet",
-  nftContractId = `nfts.${operator.accountId}`;
+  // The Test Layer (scripts/deploy-testlayer.mjs) names its own collectibles.
+  nftContractId = process.env.COLLECTIBLES_ACCOUNT || `nfts.${operator.accountId}`;
 assert.ok(marketId.endsWith(".testnet"));
 let accountInfo;
 try {

@@ -25,7 +25,7 @@ export type TourState = {
   finished?: boolean;
   done?: number;
   total?: number;
-  current?: { id: string; chapter: string; say: string; next: string; target: TourTarget } | null;
+  current?: { id: string; chapter: string; say: string; hint?: string; next: string; target: TourTarget } | null;
   last?: { id: string; next: string } | null;
   transactions?: { count: number; kinds: number; list: TourTx[] };
 };
@@ -184,6 +184,7 @@ export default function TourHelper({
         <div className="tour-body">
           {fresh && state.last && <p className="tour-sub tour-happened">{say(state.last.next)}</p>}
           <p className="tour-line">{say(step.say)}</p>
+          {step.hint && <p className="tour-sub">{say(step.hint)}</p>}
           {spot && distance !== null && distance > 15 && (
             <p className="tour-where">
               <ArrowUp size={16} weight="bold" style={{ transform: `rotate(${turn ?? 0}deg)` }} aria-hidden="true" />

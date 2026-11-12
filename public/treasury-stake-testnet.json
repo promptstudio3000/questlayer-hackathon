@@ -39,10 +39,35 @@
       "label": "Remove the last access key of stake-20261111.questlayer-dev-20261101.testnet (keyless vault)",
       "transaction": "5vn8ZR3bAATk4pQjtKX2rvPxrhv6rjkRhrd4RbsVdcnV",
       "explorer": "https://testnet.nearblocks.io/txns/5vn8ZR3bAATk4pQjtKX2rvPxrhv6rjkRhrd4RbsVdcnV"
+    },
+    {
+      "label": "Approve stake-20261111-b.questlayer-dev-20261101.testnet as a yield source of questlayer-rewards-20261101b.testnet",
+      "transaction": "8uX2AbVo3dLQGo2gL1UHYpRsSnemYS3WbXCgXxGntgkG",
+      "at": "2026-11-12T13:19:29.613Z"
+    },
+    {
+      "label": "Approve stake-20261111-c.questlayer-dev-20261101.testnet as a yield source of questlayer-rewards-20261101b.testnet",
+      "transaction": "98rapEzNeNM342SdjVqYw7TzyFZT2M1tW3FA5cMHxvjy",
+      "at": "2026-11-12T13:19:34.164Z"
+    },
+    {
+      "label": "Approve stake-20261111-d.questlayer-dev-20261101.testnet as a yield source of questlayer-rewards-20261101b.testnet",
+      "transaction": "E7tRmZVJA4j2YVYgcTPRyBUHYhR9t1JS25cc8ku8zBqK",
+      "at": "2026-11-12T13:19:37.756Z"
+    },
+    {
+      "label": "Stake 20.000000 NEAR through stake-20261111-c.questlayer-dev-20261101.testnet",
+      "transaction": "H2QBcSRbEC2SN6HqhaJje6khiDzpaPCwX5eZs8W9Jj5D",
+      "at": "2026-11-12T13:19:42.706Z"
+    },
+    {
+      "label": "Stake 20.000000 NEAR through stake-20261111-d.questlayer-dev-20261101.testnet",
+      "transaction": "EG3mNyBGHEFXf8fLXUzwbwUouRfVmA864DDVJ1azVCq8",
+      "at": "2026-11-12T13:19:47.594Z"
     }
   ],
   "verifiedAt": "2026-11-11T13:50:00Z",
-  "verified": "Read-only RPC: vault code hash 4bnUo5Bn\u2026, 0 access keys, stage idle, principal 93 NEAR staked with stakely_v2, all five transactions SuccessValue.",
+  "verified": "Read-only RPC: vault code hash 4bnUo5Bn…, 0 access keys, stage idle, principal 93 NEAR staked with stakely_v2, all five transactions SuccessValue.",
   "vaults": [
     {
       "accountId": "stake-20261111.questlayer-dev-20261101.testnet",
@@ -67,7 +92,15 @@
       "pool": "stakely_v2.pool.f863973.m0",
       "plannedStake": "20 NEAR",
       "plannedEpoch": 5439
-    }
+    },
+    "stake-20261111-b.questlayer-dev-20261101.testnet",
+    "stake-20261111-c.questlayer-dev-20261101.testnet",
+    "stake-20261111-d.questlayer-dev-20261101.testnet"
   ],
-  "note": "Vaults -b/-c/-d were created, approved and made keyless on 11 Nov 18:4x UTC (faucet +80 NEAR from 8 helper accounts); each is staked one epoch apart so harvests alternate. Their setup transaction hashes are in the operator's local record."
+  "note": "Vaults -b/-c/-d were created, approved and made keyless on 11 Nov 18:4x UTC (faucet +80 NEAR from 8 helper accounts); each is staked one epoch apart so harvests alternate. Their setup transaction hashes are in the operator's local record.",
+  "updatedAt": "2026-11-12T13:19:47.643Z",
+  "deposits": {
+    "stake-20261111-c.questlayer-dev-20261101.testnet": "20000000000000000000000000",
+    "stake-20261111-d.questlayer-dev-20261101.testnet": "20000000000000000000000000"
+  }
 }
