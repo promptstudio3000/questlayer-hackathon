@@ -405,7 +405,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "actor-dialog",
     status: "live",
     updated: "2026-11-11",
-    sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs"],
+    sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/come-back.ts", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs"],
     blocks: [
       { h: "Who walks the map" },
       {
@@ -438,6 +438,7 @@ export const CHAPTERS: Chapter[] = [
           "Formats: quiz, rhythm, rune path, memory and stance duel. An encounter shows today's formats as icon buttons with a short name (Riddles, Rhythm, Rune path, Rune song, Duel); picking one starts it. Traders and keepers open their counter right away, with no Continue step. Power = level (capped at 20) + skill; Auras never change odds.",
           "A new format can show a short example first (local, no request, no reward). Timed challenges never open help automatically. Touch and keyboard both work.",
           "A loss means a 1 h cooldown; one defeat per monster per day. No wagering of any kind.",
+          "A monster or NPC with nothing for you says so and when to come back: after a lost try, the cooldown end; after a win, its first active minute tomorrow (same hours and day/night phase); a beaten weekly boss, next Monday. The server sends the time (`comeBack` on the encounter); the NPC chat stays open.",
           "Rewards: XP, element shards (max 12 a day) and roll tickets from lurkers.",
           "The weekly boss has 1,200 shared HP; each player lands one hit every 10 minutes. Three or more hits on a defeated boss earn the Bossbane Aura once.",
         ],
