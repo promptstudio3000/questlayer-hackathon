@@ -99,6 +99,8 @@ type Props = {
   money?: CreatorMoneyBridge;
   /** "Go" on a quest with a place: show it on the map and point the way. */
   onGo?: (target: QuestMapTarget) => void;
+  /** Keeps a saved rating on chain as well; runs in the background. */
+  onRate?: (questId: string, stars: number) => void;
   /**
    * Community screen tab hosting this component. "quests" shows quest browsing
    * and started quests; "creators" shows creators and your own creations.
@@ -342,6 +344,7 @@ function CreatorCommunitySession({
   position,
   money,
   onGo,
+  onRate,
   section: screenSection,
 }: Props) {
   const client = useMemo(
@@ -796,6 +799,7 @@ function CreatorCommunitySession({
                 position={position}
                 client={client}
                 onGo={onGo}
+                onRate={onRate}
               />
             )}
             {view.page === "mine" && (
@@ -1352,6 +1356,7 @@ function QuestDetail({
   position,
   client,
   onGo,
+  onRate,
 }: {
   playerId: string;
   data: Loaded;
@@ -1363,6 +1368,8 @@ function QuestDetail({
   position?: Point;
   client: CreatorClient;
   onGo?: (target: QuestMapTarget) => void;
+  /** Keeps a saved rating on chain as well; runs in the background. */
+  onRate?: (questId: string, stars: number) => void;
 }) {
   const quest = data.quest,
     part = data.participation;
@@ -1493,7 +1500,7 @@ function QuestDetail({
           <CreatorSupport questId={quest.id} ownQuest={!!own} money={money} onAccess={setUnlocked} />
         </details>
       )}
-      {questId && <QuestFeedback client={client} questId={questId} onRated={setRating} />}
+      {questId && <QuestFeedback client={client} questId={questId} onRated={setRating} onStars={onRate && ((stars) => onRate(questId, stars))} />}
       {reportTarget && (
         <details className="qd-fold creator-safety-tools">
           <summary>{tr("Quest safety")}</summary>

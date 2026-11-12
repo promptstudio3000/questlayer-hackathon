@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { openDatabase, createPlayer } from "../server/database.mjs";
 import { createCreatorServices } from "../server/creators/services.mjs";
-import { QUEST_PHOTO, questFeedbackSummary } from "../server/creators/feedback.mjs";
+import { QUEST_PHOTO, questFeedbackSummary, createRatingAnchor } from "../server/creators/feedback.mjs";
 
 const NOW = Date.parse("2026-11-12T09:00:00Z");
 const POLICY = { version: "test-only-200xp", xpCommitment: 200 };
@@ -127,4 +127,44 @@ test("a quest draft carries only an uploaded header photo", (t) => {
       () => f.life.createDraft({ actor: f.author, operationId: f.op(), questId: "bad", draft: { title: "Bad", description: "x", photo: bad } }),
       { code: "CREATOR_INPUT" },
     );
+});
+
+test("a rating becomes a record under the explorer's own account", async (t) => {
+  const f = fixture(t);
+  f.publish("river", { title: "River", description: "Walk." });
+  f.start(f.viewer);
+  const ACCOUNT = "viewer.testnet";
+  const chain = {};
+  const social = {
+    contractId: "v1.social08.testnet",
+    storage: async () => ({ publishEnabled: true, deposit: "1" }),
+    reader: { view: async () => chain },
+  };
+  const anchor = createRatingAnchor(f.db, social, { clock: () => NOW, registry: "creators.testnet" });
+  // Nothing to keep before the explorer rated.
+  await assert.rejects(anchor.prepare(f.viewer, ACCOUNT, { questId: "river" }), { code: "CREATOR_NOT_FOUND" });
+  f.feedback.rate({ actor: f.viewer, operationId: f.op(), questId: "river", stars: 4 });
+  const quote = await anchor.prepare(f.viewer, ACCOUNT, { questId: "river" });
+  assert.equal(quote.methodName, "set");
+  assert.deepEqual(quote.args.data[ACCOUNT].questlayer.ratings.river, quote.record);
+  assert.deepEqual(
+    { ...quote.record, mutation_id: "" },
+    { schema: "questlayer.rating/1", quest_id: "river", registry: "creators.testnet", stars: "4", updated_at: String(NOW), mutation_id: "" },
+  );
+  const mutationId = quote.record.mutation_id;
+  // Not on chain yet.
+  assert.equal((await anchor.confirm(f.viewer, ACCOUNT, { questId: "river", mutationId })).confirmed, false);
+  assert.equal(f.feedback.read(f.viewer, "river").rating.anchored, false);
+  chain[ACCOUNT] = { questlayer: { ratings: { river: quote.record } } };
+  assert.equal((await anchor.confirm(f.viewer, ACCOUNT, { questId: "river", mutationId })).confirmed, true);
+  assert.equal(f.feedback.read(f.viewer, "river").rating.anchored, true);
+  // Changing the stars makes the old record stale until the next write.
+  f.feedback.rate({ actor: f.viewer, operationId: f.op(), questId: "river", stars: 2 });
+  assert.equal(f.feedback.read(f.viewer, "river").rating.anchored, false);
+  assert.equal((await anchor.confirm(f.viewer, ACCOUNT, { questId: "river", mutationId })).confirmed, false);
+  // A host without public records refuses instead of pretending.
+  await assert.rejects(
+    createRatingAnchor(f.db, null).prepare(f.viewer, ACCOUNT, { questId: "river" }),
+    { code: "CREATOR_ANCHOR_DISABLED" },
+  );
 });

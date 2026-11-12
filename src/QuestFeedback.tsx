@@ -17,11 +17,14 @@ export function QuestFeedback({
   client,
   questId,
   onRated,
+  onStars,
 }: {
   client: CreatorClient;
   questId: string;
   /** Lets the page above update its header stars without a reload. */
   onRated?: (rating: Feedback["rating"]) => void;
+  /** Called once the explorer's stars are saved (keeps them on chain too). */
+  onStars?: (stars: number) => void;
 }) {
   const [data, setData] = useState<Feedback | null>(null);
   const [error, setError] = useState("");
@@ -81,7 +84,7 @@ export function QuestFeedback({
                 aria-checked={rating.mine === n}
                 aria-label={tr("{0} of 5 stars", { 0: n })}
                 disabled={busy}
-                onClick={() => void run("/rating", "PUT", { stars: n })}
+                onClick={() => void run("/rating", "PUT", { stars: n }).then((ok) => ok && onStars?.(n))}
               >
                 <Star size={28} weight={rating.mine && n <= rating.mine ? "fill" : "regular"} aria-hidden="true" />
               </button>

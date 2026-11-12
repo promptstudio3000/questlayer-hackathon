@@ -1973,6 +1973,24 @@ export default function App() {
   // "Go" on a Community quest: the map shows its start with the direction
   // guide and a chip that leads back to the quest (answer, rate, discuss).
   const [communityGoal, setCommunityGoal] = useState<QuestMapTarget | null>(null);
+  // A saved rating also becomes a record under the explorer's own account
+  // (src/quest-rating-record.ts). Only the invisible account does it, so no
+  // wallet ever pops up; a failure leaves the rating in the game untouched.
+  const ratingRecords = useRef<Promise<unknown>>(Promise.resolve());
+  function keepQuestRating(questId: string, stars: number) {
+    const account = recordAccount?.managed ? recordAccount.accountId : "";
+    const playerId = player?.id;
+    if (!account || !playerId) return;
+    ratingRecords.current = ratingRecords.current.then(async () => {
+      try {
+        const { signer, accountId } = await signerForAccount(account);
+        const { publishRatingRecord } = await import("./quest-rating-record");
+        await publishRatingRecord({ call: api, signer, accountId, playerId, questId, stars });
+      } catch {
+        // The stars stay saved in the game; the next change tries again.
+      }
+    });
+  }
   function goToCreatorQuest(target: QuestMapTarget) {
     const start = target.points[0];
     if (!start) return;
@@ -5062,6 +5080,7 @@ export default function App() {
                 view={creatorView}
                 onViewChange={setCreatorView}
                 onGo={goToCreatorQuest}
+                onRate={keepQuestRating}
                 onPlayerChange={me}
                 position={position}
                 money={{
