@@ -6,7 +6,18 @@
 # never replaces a different existing key and does not start anything.
 set -Eeuo pipefail
 cd "$(dirname "$0")/.."
+# DEPLOY_HOST=local runs on the VPS itself, as root (the release runner).
 HOST_TARGET="${DEPLOY_HOST:-root@72.61.188.39}"
+if [[ "$HOST_TARGET" == local ]]; then
+  [[ "$(id -u)" == 0 ]] || { echo "DEPLOY_HOST=local needs root on the VPS." >&2; exit 1; }
+  on_host() { bash -c "$1"; }
+  copy_to() { install -m 600 "$1" "$2"; }
+  py_host() { python3 - "$@"; }
+else
+  on_host() { ssh -o BatchMode=yes "$HOST_TARGET" "$1"; }
+  copy_to() { scp -q "$1" "$HOST_TARGET:$2"; }
+  py_host() { ssh -o BatchMode=yes "$HOST_TARGET" python3 - "$@"; }
+fi
 SRC=.data/testlayer/work/.data
 # source name in the work tree -> name the server looks for in its state dir
 PAIRS=(
@@ -26,15 +37,15 @@ for req in award-attestor.pem player-factory-testnet.json relayer-testnet.json; 
 done
 FACTORY_ACCOUNT="$(python3 -c 'import json,sys;d=json.load(open(sys.argv[1]));assert d["network"]=="testnet";print(d["accountId"])' "$SRC/player-factory-testnet.json")"
 STAGE=/opt/ps3000/apps/questlayer-testlayer/key-staging
-ssh -o BatchMode=yes "$HOST_TARGET" "install -d -m 700 /opt/ps3000/apps/questlayer-testlayer $STAGE"
+on_host "install -d -m 700 /opt/ps3000/apps/questlayer-testlayer $STAGE"
 NAMES=()
 for pair in "${PAIRS[@]}"; do
   from="${pair%%:*}"; to="${pair##*:}"
   [[ -f "$SRC/$from" ]] || continue
-  scp -q "$SRC/$from" "$HOST_TARGET:$STAGE/$to"
+  copy_to "$SRC/$from" "$STAGE/$to"
   NAMES+=("$to")
 done
-ssh -o BatchMode=yes "$HOST_TARGET" python3 - "$FACTORY_ACCOUNT" "${NAMES[@]}" <<'PY'
+py_host "$FACTORY_ACCOUNT" "${NAMES[@]}" <<'PY'
 import json, os, pathlib, sys
 factory = sys.argv[1]; names = sys.argv[2:]
 root = pathlib.Path('/opt/ps3000/apps/questlayer-testlayer'); stage = root / 'key-staging'
