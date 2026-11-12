@@ -2808,7 +2808,6 @@
  "You · open your profile": "Vy · otevřít profil",
  "Accept": "Přijmout",
  "Ask to message": "Požádat o zprávy",
- "Ask {0} first. They decide whether you may write. If you both wave at each other, you can write right away.": "Nejdřív požádej {0}. Rozhodne, jestli mu můžeš psát. Když si navzájem zamáváte, můžeš psát hned.",
  "Conversations": "Konverzace",
  "Encrypted on your device and stored on NEAR. Nobody else can read it, not even QuestLayer.": "Zašifrováno ve tvém zařízení a uloženo na NEAR. Nikdo jiný to nepřečte, ani QuestLayer.",
  "End-to-end encrypted. Only you and the other explorer can read a message.": "Šifrováno od začátku do konce. Zprávu přečteš jen ty a druhý průzkumník.",
@@ -3235,5 +3234,17 @@
  "Live on the map within about 1.5 km": "Živě na mapě do zhruba 1,5 km",
  "While the game is open on your screen, explorers within about 1.5 km see your name, look and position on their map. Your profile never shows where you are. Players you blocked never see you, and you never see them.": "Když máš hru otevřenou na obrazovce, hráči do zhruba 1,5 km vidí na mapě tvé jméno, vzhled a polohu. Tvůj profil nikdy neukazuje, kde jsi. Hráči, které jsi zablokoval(a), tě nikdy neuvidí a ty je taky ne.",
  "Stop showing me to nearby explorers": "Přestat mě ukazovat hráčům v okolí",
- "Visible nearby · {0} near": "Vidí tě okolí · {0} poblíž"
+ "Visible nearby · {0} near": "Vidí tě okolí · {0} poblíž",
+ "Link this device": "Propojit toto zařízení",
+ "Messages open with your explorer account, which you get with your first find or quest.": "Zprávy se otevřou s tvým účtem průzkumníka, který dostaneš s prvním nálezem nebo úkolem.",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "Toto zařízení ještě není propojené s tvým účtem průzkumníka, takže nemůže posílat ani číst zprávy. Přidej ho svým záložním passkey.",
+ "Your explorer account is being set up. Messages open in a moment.": "Tvůj účet průzkumníka se připravuje. Zprávy se otevřou za chvíli.",
+ "Your explorer account is not available on this device, so messages are off here.": "Tvůj účet průzkumníka není na tomto zařízení dostupný, proto jsou tu zprávy vypnuté.",
+ "A new explorer account is being made on this device.": "Na tomto zařízení se vytváří nový účet průzkumníka.",
+ "Ask {0} first. They decide whether you may write. When you are within 1 km of each other, you can write right away.": "Nejdřív požádej hráče {0}. Rozhodne, jestli mu smíš psát. Když jste od sebe do 1 km, můžeš psát hned.",
+ "Lost that device? Start with a new account here": "Ztratil jsi to zařízení? Začni tady s novým účtem",
+ "Start with a new account": "Začít s novým účtem",
+ "Starting over…": "Začínám znovu…",
+ "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "Jen na testovací síti. Tvůj průzkumník, XP, nálezy a předměty zůstanou. Na tomto zařízení vznikne nový NEAR účet; QGOLD a tokeny na starém účtu tam zůstanou a hra ho přestane používat.",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "Toto zařízení ještě není propojené s tvým účtem průzkumníka, takže nemůže posílat ani číst zprávy. Přidej ho záložním passkey, nebo tady začni s novým účtem."
 }

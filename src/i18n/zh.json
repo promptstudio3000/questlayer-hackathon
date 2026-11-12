@@ -2808,7 +2808,6 @@
  "You · open your profile": "你 · 打开个人资料",
  "Accept": "接受",
  "Ask to message": "请求私信",
- "Ask {0} first. They decide whether you may write. If you both wave at each other, you can write right away.": "请先询问{0}。由对方决定你是否可以发消息。如果你们互相挥手，就可以马上发消息。",
  "Conversations": "对话",
  "Encrypted on your device and stored on NEAR. Nobody else can read it, not even QuestLayer.": "在你的设备上加密并存储在 NEAR 上。其他人都无法阅读，包括 QuestLayer。",
  "End-to-end encrypted. Only you and the other explorer can read a message.": "端到端加密。只有你和对方能阅读消息。",
@@ -3235,5 +3234,17 @@
  "Live on the map within about 1.5 km": "在约 1.5 公里内的地图上实时显示",
  "While the game is open on your screen, explorers within about 1.5 km see your name, look and position on their map. Your profile never shows where you are. Players you blocked never see you, and you never see them.": "游戏在屏幕上打开时，约 1.5 公里内的探险者可以在地图上看到你的名字、外观和位置。你的个人资料从不显示你在哪里。你屏蔽的玩家永远看不到你，你也看不到他们。",
  "Stop showing me to nearby explorers": "停止向附近的探险者显示我",
- "Visible nearby · {0} near": "附近可见 · 附近 {0} 人"
+ "Visible nearby · {0} near": "附近可见 · 附近 {0} 人",
+ "Link this device": "关联此设备",
+ "Messages open with your explorer account, which you get with your first find or quest.": "消息需要探索者账户，完成第一次发现或任务即可获得。",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "此设备尚未关联你的探索者账户，因此无法收发消息。请用恢复通行密钥添加它。",
+ "Your explorer account is being set up. Messages open in a moment.": "你的探索者账户正在准备中，消息很快就能使用。",
+ "Your explorer account is not available on this device, so messages are off here.": "此设备上无法使用你的探索者账户，因此这里的消息已关闭。",
+ "A new explorer account is being made on this device.": "正在此设备上创建新的探索者账户。",
+ "Ask {0} first. They decide whether you may write. When you are within 1 km of each other, you can write right away.": "请先询问{0}。由对方决定你是否可以写信。你们相距 1 公里以内时，可以直接写。",
+ "Lost that device? Start with a new account here": "丢失了那台设备？在这里用新账户开始",
+ "Start with a new account": "用新账户开始",
+ "Starting over…": "正在重新开始…",
+ "Test network only. Your explorer, XP, finds and items stay. A new NEAR account is made on this device; QGOLD and tokens on the old account stay there and the game stops using it.": "仅限测试网。你的探索者、XP、发现和物品都会保留。此设备上会创建一个新的 NEAR 账户；旧账户中的 QGOLD 和代币留在那里，游戏不再使用它。",
+ "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey or start with a new account here.": "此设备尚未关联你的探索者账户，因此无法收发消息。请用恢复通行密钥添加它，或在这里用新账户开始。"
 }
