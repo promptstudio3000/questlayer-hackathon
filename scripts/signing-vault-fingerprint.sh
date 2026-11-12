@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 if command -v sha256sum >/dev/null; then sum() { sha256sum "$@"; }; else sum() { shasum -a 256 "$@"; }; fi
 {
   find src/signing-vault -type f
-  printf '%s\n' server/signing-vault.mjs scripts/install-signing-vault-vps.sh \
+  printf '%s\n' server/signing-vault.mjs scripts/install-signing-vault-vps.sh scripts/vps-install-signing-vault-release.sh \
     public/native-qgold-vault-testnet.json public/native-qgold-escrow-testnet.json \
     public/native-claims-testnet.json public/native-npc-games-testnet.json \
     public/native-intents-testnet.json

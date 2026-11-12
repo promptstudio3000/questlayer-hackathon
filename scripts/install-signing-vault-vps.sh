@@ -58,66 +58,13 @@ cp src/signing-vault/policy.ts "$STAGE/src/signing-vault/"
 printf 'SIGNING_VAULT_PUBLIC_CONFIG=%s\nPORT=%s\n' "$CONFIG" "$PORT" > "$STAGE/signer.env"
 bash scripts/signing-vault-fingerprint.sh > "$STAGE/inputs.sha256"
 
+# SIGNING_VAULT_STAGE_DIR=<dir>: only build the release into <dir> (the VPS
+# release runner builds as its unprivileged user and installs as root).
+if [[ -n "${SIGNING_VAULT_STAGE_DIR:-}" ]]; then
+  cp -R "$STAGE"/. "$SIGNING_VAULT_STAGE_DIR"/
+  exit 0
+fi
 RELEASE="$(date -u +%Y%m%dT%H%M%SZ)"
 ssh -o BatchMode=yes "$HOST_TARGET" "install -d -m 755 $ROOT/releases/$RELEASE"
 tar -C "$STAGE" -czf - . | ssh -o BatchMode=yes "$HOST_TARGET" "tar -C $ROOT/releases/$RELEASE -xzf -"
-ssh -o BatchMode=yes "$HOST_TARGET" bash -s -- "$ROOT" "$RELEASE" "$VAULT_HOST" "$PORT" <<'REMOTE'
-set -Eeuo pipefail
-ROOT="$1"; RELEASE="$2"; VAULT_HOST="$3"; PORT="$4"
-chmod -R a+rX "$ROOT/releases/$RELEASE"
-ln -sfn "$ROOT/releases/$RELEASE" "$ROOT/current"
-cat > /etc/systemd/system/questlayer-signer.service <<UNIT
-[Unit]
-Description=QuestLayer independent signing vault (static, testnet)
-After=network-online.target
-Wants=network-online.target
-
-[Service]
-Type=simple
-DynamicUser=yes
-WorkingDirectory=$ROOT/current
-EnvironmentFile=$ROOT/current/signer.env
-ExecStart=/usr/local/bin/node server/signing-vault.mjs
-Restart=on-failure
-RestartSec=3
-NoNewPrivileges=yes
-ProtectSystem=strict
-ProtectHome=yes
-PrivateTmp=yes
-PrivateDevices=yes
-MemoryMax=128M
-CPUQuota=25%
-
-[Install]
-WantedBy=multi-user.target
-UNIT
-systemctl daemon-reload
-systemctl enable --now questlayer-signer.service
-systemctl restart questlayer-signer.service
-CADDY=/opt/ps3000/config/caddy/questlayer-signer.caddy
-if [[ ! -f "$CADDY" ]]; then
-  cat > "$CADDY" <<SITE
-$VAULT_HOST {
-    import ps3000_traffic
-    encode zstd gzip
-    reverse_proxy 127.0.0.1:$PORT
-    header {
-        -Server
-        Strict-Transport-Security "max-age=31536000; includeSubDomains"
-    }
-}
-SITE
-  caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile >/dev/null
-  systemctl reload caddy
-fi
-# Node needs a few seconds to start under load; wait up to 30 s for the port.
-for _ in $(seq 30); do
-  curl -fsS -H "Host: $VAULT_HOST" "http://127.0.0.1:$PORT/vault-config.json" >/dev/null 2>&1 && break
-  sleep 1
-done
-systemctl is-active questlayer-signer.service
-curl -fsS -H "Host: $VAULT_HOST" "http://127.0.0.1:$PORT/vault-config.json" >/dev/null
-# Keep the three newest vault releases.
-ls -1dt "$ROOT"/releases/* | tail -n +4 | xargs -r rm -rf
-echo "{\"signingVault\": \"https://$VAULT_HOST\", \"release\": \"$RELEASE\"}"
-REMOTE
+ssh -o BatchMode=yes "$HOST_TARGET" bash -s -- "$ROOT" "$RELEASE" "$VAULT_HOST" "$PORT" < scripts/vps-install-signing-vault-release.sh

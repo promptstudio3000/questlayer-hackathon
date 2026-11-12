@@ -1,0 +1,249 @@
+{
+  "_doc": "VPS release runner allowlist (docs/VPS-RELEASE-RUNNER.md). Installed from main only. execute: the flag the runner adds after a read-only plan run, or null for scripts that act directly. wasm: an upgrade must name its reviewed wasm and sha256. contracts: build contracts/target reproducibly first. env: the only variables an operation may set.",
+  "scripts": {
+    "scripts/upgrade-collectibles-editions-testnet.mjs": {
+      "execute": "--execute",
+      "wasm": true,
+      "contracts": true,
+      "env": [
+        "COLLECTIBLES_ACCOUNT"
+      ]
+    },
+    "scripts/upgrade-collectibles-testnet.mjs": {
+      "execute": null,
+      "wasm": true,
+      "contracts": true,
+      "env": []
+    },
+    "scripts/upgrade-award-claims-testnet.mjs": {
+      "execute": null,
+      "wasm": true,
+      "contracts": true,
+      "env": [
+        "CLAIM_API_URL"
+      ]
+    },
+    "scripts/upgrade-market-v2-testnet.mjs": {
+      "execute": null,
+      "wasm": true,
+      "contracts": true,
+      "env": [
+        "NEAR_MARKET_ACCOUNT"
+      ]
+    },
+    "scripts/upgrade-rewards-testnet.mjs": {
+      "execute": null,
+      "wasm": true,
+      "contracts": true,
+      "env": []
+    },
+    "scripts/upgrade-rewards-v2-testnet.mjs": {
+      "execute": null,
+      "wasm": true,
+      "contracts": true,
+      "env": []
+    },
+    "scripts/upgrade-rewards-m4-testnet.mjs": {
+      "execute": "--execute",
+      "wasm": true,
+      "contracts": true,
+      "env": [
+        "QUESTLAYER_API_URL"
+      ]
+    },
+    "scripts/upgrade-yield-vault-testnet.mjs": {
+      "execute": "--execute",
+      "wasm": true,
+      "contracts": true,
+      "env": []
+    },
+    "scripts/deploy-testlayer.mjs": {
+      "execute": "--execute",
+      "contracts": true,
+      "env": [
+        "TESTLAYER_WORK"
+      ]
+    },
+    "scripts/deploy-badges-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": [
+        "APP_ORIGIN",
+        "BADGES_CLAIM_SIGNER_PUBLIC_KEY",
+        "NEAR_BADGES_ACCOUNT"
+      ]
+    },
+    "scripts/deploy-creators-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": [
+        "NEAR_CREATORS_ACCOUNT"
+      ]
+    },
+    "scripts/deploy-ledger-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": [
+        "LEDGER_UPGRADE",
+        "NEAR_LEDGER_ACCOUNT",
+        "NEAR_QGOLD_ACCOUNT"
+      ]
+    },
+    "scripts/deploy-market-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": [
+        "NEAR_MARKET_ACCOUNT"
+      ]
+    },
+    "scripts/deploy-native-funding-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": [
+        "NEAR_REWARDS_ACCOUNT",
+        "NEAR_VAULT_ACCOUNT",
+        "NEAR_VAULT_FACTORY_ACCOUNT",
+        "VAULT_DEPOSIT_YOCTO"
+      ]
+    },
+    "scripts/deploy-npc-games-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": [
+        "NEAR_NPC_GAMES_ACCOUNT"
+      ]
+    },
+    "scripts/deploy-player-factory-testnet.mjs": {
+      "execute": null,
+      "contracts": false,
+      "env": [
+        "PLAYER_FACTORY_ACCOUNT",
+        "RELAYER_ACCOUNT"
+      ]
+    },
+    "scripts/deploy-qgold-escrow-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": [
+        "NEAR_QGOLD_ESCROW_ACCOUNT",
+        "NEAR_QGOLD_ESCROW_PUBLISHER"
+      ]
+    },
+    "scripts/deploy-qgold-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": [
+        "NEAR_QGOLD_VAULT_ACCOUNT"
+      ]
+    },
+    "scripts/deploy-tasks-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": []
+    },
+    "scripts/deploy-yield-vault-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": [
+        "NEAR_YIELD_VAULT_ACCOUNT",
+        "YIELD_TREASURY_ACCOUNT"
+      ]
+    },
+    "scripts/intents-verifier-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": [
+        "INTENTS_VERIFIER_ACCOUNT",
+        "INTENTS_WNEAR"
+      ]
+    },
+    "scripts/treasury-stake-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": [
+        "TREASURY_STAKE_POOL",
+        "TREASURY_STAKE_VAULT"
+      ]
+    },
+    "scripts/treasury-dao-testnet.mjs": {
+      "execute": "--execute",
+      "contracts": false,
+      "env": [
+        "TREASURY_DAO_API",
+        "TREASURY_DAO_DEPOSIT_NEAR",
+        "TREASURY_DAO_ID"
+      ]
+    },
+    "scripts/treasury-workers-setup-testnet.mjs": {
+      "execute": "--execute",
+      "contracts": false,
+      "env": []
+    },
+    "scripts/treasury-mix-testnet.mjs": {
+      "execute": null,
+      "contracts": false,
+      "env": [
+        "NEAR_REWARDS_ACCOUNT"
+      ]
+    },
+    "scripts/stnear-treasury-testnet.mjs": {
+      "execute": null,
+      "contracts": false,
+      "env": [
+        "NEAR_REWARDS_ACCOUNT",
+        "STNEAR_TREASURY_ACCOUNT"
+      ]
+    },
+    "scripts/faucet-to-treasury-testnet.mjs": {
+      "execute": null,
+      "contracts": false,
+      "env": [
+        "NEAR_REWARDS_ACCOUNT"
+      ]
+    },
+    "scripts/intents-fees-testnet.mjs": {
+      "execute": null,
+      "contracts": false,
+      "env": [
+        "NEAR_REWARDS_ACCOUNT"
+      ]
+    },
+    "scripts/qgold-rhea-pool-testnet.mjs": {
+      "execute": null,
+      "contracts": false,
+      "env": [
+        "QGOLD_RHEA_DEX"
+      ]
+    },
+    "scripts/qgold-keeper-testnet.mjs": {
+      "execute": null,
+      "contracts": false,
+      "env": []
+    },
+    "scripts/topup-rewards-storage.mjs": {
+      "execute": null,
+      "contracts": false,
+      "env": [
+        "TOPUP_EXTRA_DAYS"
+      ]
+    },
+    "scripts/collectibles-royalty-testnet.mjs": {
+      "execute": "--execute",
+      "contracts": false,
+      "env": [
+        "MINTBASE_MARKET",
+        "NEAR_REWARDS_ACCOUNT"
+      ]
+    },
+    "scripts/npc-trader-testnet.mjs": {
+      "execute": null,
+      "contracts": false,
+      "env": []
+    }
+  },
+  "keyDirs": {
+    "questlayer-hackathon": "/var/lib/questlayer-hackathon",
+    "questlayer-testlayer": "/var/lib/questlayer-testlayer",
+    "questlayer-treasury": "/var/lib/questlayer-treasury/.data"
+  }
+}

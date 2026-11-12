@@ -2,6 +2,7 @@ import { createLayerStore } from "./layer/store.mjs";
 import { createLayerRoutes } from "./layer/routes.mjs";
 import { LAYER_REGISTRY, publicLayer } from "./layer/layers.mjs";
 import { defaultDatabasePath } from "./state-path.mjs";
+import { readReleaseStatus } from "./release-status.mjs";
 import {
   cellProof,
   mapRewardsDay,
@@ -1514,6 +1515,10 @@ async function api(req, res, url) {
     assert(n <= 600, "Please try again shortly.", 429);
   }
   if (await creatorRuntime.handle(req, res)) return;
+  if (req.method === "GET" && path.startsWith("/api/release/")) {
+    const r = readReleaseStatus(path, { network: NETWORK });
+    return respond(res, r.body, r.status);
+  }
   if (path === "/api/health")
     return respond(res, {
       status: "ok",
