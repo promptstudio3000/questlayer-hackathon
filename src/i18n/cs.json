@@ -3262,5 +3262,15 @@
  "Nothing for you today. Come back {0} for new tasks.": "Dnes pro tebe nic nemám. Přijď {0} pro nové úkoly.",
  "It has nothing for you today. Come back {0} to win something.": "Dnes pro tebe nic nemá. Přijď {0} a něco vyhraješ.",
  "Come back later": "Přijď později",
- "You can still ask me anything.": "Zeptat se mě můžeš pořád."
+ "You can still ask me anything.": "Zeptat se mě můžeš pořád.",
+ "Hi, I'm Pip. Want the tour?": "Ahoj, jsem Pip. Chceš prohlídku?",
+ "Again": "Znovu",
+ "Every quest, encounter and trade, step by step.": "Všechny questy, setkání a obchody, krok za krokem.",
+ "Fold the tour": "Sbalit prohlídku",
+ "Open the tour": "Otevřít prohlídku",
+ "Start the tour": "Začít prohlídku",
+ "Tour done: {0} transactions on NEAR.": "Prohlídka hotová: {0} transakcí na NEAR.",
+ "Tour": "Prohlídka",
+ "confirming": "potvrzuje se",
+ "{0} waved back: “{1}”": "{0} ti zamával zpátky: „{1}“"
 }

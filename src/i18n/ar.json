@@ -3262,5 +3262,15 @@
  "Nothing for you today. Come back {0} for new tasks.": "لا شيء لك اليوم. عد {0} لمهام جديدة.",
  "It has nothing for you today. Come back {0} to win something.": "ليس لديه شيء لك اليوم. عد {0} لتربح شيئًا.",
  "Come back later": "عد لاحقًا",
- "You can still ask me anything.": "لا يزال بإمكانك أن تسألني أي شيء."
+ "You can still ask me anything.": "لا يزال بإمكانك أن تسألني أي شيء.",
+ "Hi, I'm Pip. Want the tour?": "مرحبًا، أنا بيب. هل تريد الجولة؟",
+ "Again": "مرة أخرى",
+ "Every quest, encounter and trade, step by step.": "كل مهمة ولقاء وصفقة، خطوة بخطوة.",
+ "Fold the tour": "طي الجولة",
+ "Open the tour": "فتح الجولة",
+ "Start the tour": "ابدأ الجولة",
+ "Tour done: {0} transactions on NEAR.": "انتهت الجولة: {0} معاملة على NEAR.",
+ "Tour": "الجولة",
+ "confirming": "قيد التأكيد",
+ "{0} waved back: “{1}”": "لوّح {0} لك بالمقابل: «{1}»"
 }

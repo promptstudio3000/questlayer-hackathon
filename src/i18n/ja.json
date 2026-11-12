@@ -3262,5 +3262,15 @@
  "Nothing for you today. Come back {0} for new tasks.": "今日はあなたへの用事はありません。新しい仕事は{0}に来てね。",
  "It has nothing for you today. Come back {0} to win something.": "今日はあなたに渡すものがありません。{0}に来れば何か手に入ります。",
  "Come back later": "また後で来てね",
- "You can still ask me anything.": "質問ならいつでもどうぞ。"
+ "You can still ask me anything.": "質問ならいつでもどうぞ。",
+ "Hi, I'm Pip. Want the tour?": "やあ、ピップだよ。ツアーに行く？",
+ "Again": "もう一度",
+ "Every quest, encounter and trade, step by step.": "すべてのクエスト、出会い、取引をひとつずつ。",
+ "Fold the tour": "ツアーをたたむ",
+ "Open the tour": "ツアーを開く",
+ "Start the tour": "ツアーを始める",
+ "Tour done: {0} transactions on NEAR.": "ツアー完了：NEAR で {0} 件の取引。",
+ "Tour": "ツアー",
+ "confirming": "確認中",
+ "{0} waved back: “{1}”": "{0}が手を振り返した：「{1}」"
 }

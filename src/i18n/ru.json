@@ -3262,5 +3262,15 @@
  "Nothing for you today. Come back {0} for new tasks.": "Сегодня для тебя ничего нет. Приходи {0} за новыми заданиями.",
  "It has nothing for you today. Come back {0} to win something.": "Сегодня у него ничего для тебя нет. Приходи {0}, чтобы что-то выиграть.",
  "Come back later": "Приходи позже",
- "You can still ask me anything.": "Спросить меня можно о чём угодно."
+ "You can still ask me anything.": "Спросить меня можно о чём угодно.",
+ "Hi, I'm Pip. Want the tour?": "Привет, я Пип. Хочешь экскурсию?",
+ "Again": "Ещё раз",
+ "Every quest, encounter and trade, step by step.": "Все задания, встречи и сделки, шаг за шагом.",
+ "Fold the tour": "Свернуть экскурсию",
+ "Open the tour": "Открыть экскурсию",
+ "Start the tour": "Начать экскурсию",
+ "Tour done: {0} transactions on NEAR.": "Экскурсия окончена: {0} транзакций в NEAR.",
+ "Tour": "Экскурсия",
+ "confirming": "подтверждается",
+ "{0} waved back: “{1}”": "{0} помахал в ответ: «{1}»"
 }

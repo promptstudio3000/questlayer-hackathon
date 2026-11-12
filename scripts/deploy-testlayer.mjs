@@ -10,7 +10,9 @@
 //   node scripts/deploy-testlayer.mjs            plan only (signs nothing)
 //   node scripts/deploy-testlayer.mjs --execute  run every step not done yet
 //
-// Run on the Mac (the operator key lives in .data/near-operator.json). Steps:
+// Run where the operator key is (NEAR_OPERATOR_PATH, default .data/near-operator.json;
+// the VPS runner since 12 Nov). Needs a git checkout with node_modules and the
+// reproducible contracts/target builds. TESTLAYER_WORK moves the work tree. Steps:
 //   0. work tree .data/testlayer/work (git worktree at HEAD) with its own .data/
 //      holding only a copy of the operator key; every key the scripts create
 //      (award signer, minters, recorder, publisher, factory, relayer) stays
@@ -44,10 +46,11 @@ import { Account, JsonRpcProvider, KeyPairSigner } from "near-api-js";
 
 const execute = process.argv.includes("--execute");
 const repo = resolve(import.meta.dirname, "..");
-const work = resolve(repo, ".data/testlayer/work");
+const work = resolve(process.env.TESTLAYER_WORK || resolve(repo, ".data/testlayer/work"));
+const operatorPath = resolve(process.env.NEAR_OPERATOR_PATH || resolve(repo, ".data/near-operator.json"));
 const TAG = process.env.TESTLAYER_TAG || "tl1112";
 const ORIGIN = process.env.TESTLAYER_ORIGIN || "https://test.questlayer.promptstudio3000.com";
-const operator = JSON.parse(readFileSync(resolve(repo, ".data/near-operator.json"), "utf8"));
+const operator = JSON.parse(readFileSync(operatorPath, "utf8"));
 if (operator.network !== "testnet" || !operator.accountId.endsWith(".testnet"))
   throw new Error("The Test Layer is testnet only.");
 const op = operator.accountId;
@@ -84,6 +87,8 @@ const STEPS = [
   { name: "creators", script: "deploy-creators-testnet.mjs" },
 ];
 const SHARED = ["native-intents"]; // records the Test Layer reuses as they are
+// Build facts, not contract ids: the slice checks the collectibles build's edition list.
+const KEEP = ["native-editions-testnet.json"];
 
 const log = (o) => console.log(JSON.stringify(o));
 log({ plan: execute ? "execute" : "plan only", tag: TAG, origin: ORIGIN, work, accounts: ACCOUNTS, steps: STEPS.map((s) => s.name), shared: SHARED });
@@ -94,13 +99,13 @@ if (!existsSync(work)) {
   mkdirSync(resolve(work, ".."), { recursive: true, mode: 0o700 });
   execFileSync("git", ["worktree", "add", "--detach", work, "HEAD"], { cwd: repo, stdio: "inherit" });
   for (const f of readdirSync(resolve(work, "public")))
-    if (/-testnet\.json$/.test(f) || f === "testnet-deployment.json") rmSync(resolve(work, "public", f));
+    if ((/-testnet\.json$/.test(f) || f === "testnet-deployment.json") && !KEEP.includes(f)) rmSync(resolve(work, "public", f));
   log({ step: "work tree ready, real testnet records removed", work });
 }
 mkdirSync(resolve(work, ".data"), { recursive: true, mode: 0o700 });
 const opCopy = resolve(work, ".data/near-operator.json");
 if (!existsSync(opCopy)) {
-  copyFileSync(resolve(repo, ".data/near-operator.json"), opCopy);
+  copyFileSync(operatorPath, opCopy);
   chmodSync(opCopy, 0o600);
 }
 // The reproducible contract builds of this checkout (contracts/wasm-sha256.json pins them).
@@ -136,7 +141,7 @@ for (const s of STEPS) {
 const written = [];
 for (const f of readdirSync(resolve(work, "public"))) {
   const m = f.match(/^(.+)-testnet\.json$/);
-  if (!m && f !== "testnet-deployment.json") continue;
+  if ((!m && f !== "testnet-deployment.json") || KEEP.includes(f)) continue;
   const to = f === "testnet-deployment.json" ? "testlayer-deployment.json" : `${m[1]}-testlayer.json`;
   copyFileSync(resolve(work, "public", f), resolve(repo, "public", to));
   written.push(to);
