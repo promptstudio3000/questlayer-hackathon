@@ -33,7 +33,10 @@ export function DeviceKeys({
   error = null,
   onRetry,
   onStartOver,
+  part,
 }: {
+  /** Settings shows the save steps under Account ("main") and the device list under Advanced. */
+  part?: "main" | "advanced";
   status: InvisibleAccountStatus;
   accountId: string | null;
   error?: string | null;
@@ -52,6 +55,7 @@ export function DeviceKeys({
     [lost, setLost] = useState(false),
     [signOut, setSignOut] = useState(true),
     [startingOver, setStartingOver] = useState(false);
+  if (part === "advanced" && status !== "ready") return null;
   if (status === "error")
     // Without this the player never learns why the account did not appear.
     return (
@@ -128,11 +132,27 @@ export function DeviceKeys({
   const rows = deviceRows(keys, localPublicKey),
     recovery = hasRecoveryPasskey(keys),
     others = rows.filter((r) => !r.current && r.kind === "device");
-  return (
-    <section
-      className="play-native account-devices"
-      aria-label={tr("Devices and recovery")}
-    >
+  const saveSteps = (
+    <>
+      {!recovery ? (
+        <div className="session-review">
+          <p>
+            <ShieldCheck size={18} /> {" "}{tr("Add a passkey to bring this explorer to a new phone, even if this one is lost.")}</p>
+          <button
+            className="secondary-button"
+            disabled={!!busy}
+            onClick={() => void onSetupRecovery()}
+          >
+            <Fingerprint size={20} />
+            {busy === "recovery-setup"
+              ? tr("Saving your recovery passkey…")
+              : tr("Create a recovery passkey")}
+          </button>
+        </div>
+      ) : (
+        <p className="play-hint">
+          <Key size={16} /> {" "}{tr("On a new device choose “Restore with a recovery passkey” on the welcome screen.")}</p>
+      )}
       {onExportWallet && (
         <WalletWords
           accountId={accountId}
@@ -141,6 +161,10 @@ export function DeviceKeys({
           onExport={onExportWallet}
         />
       )}
+    </>
+  );
+  const deviceList = (
+    <>
       <div className="play-section-heading">
         <h2>
           <DeviceMobile size={22} /> {" "}{tr("Devices")}</h2>
@@ -195,25 +219,6 @@ export function DeviceKeys({
           </li>
         ))}
       </ul>
-      {!recovery ? (
-        <div className="session-review">
-          <p>
-            <ShieldCheck size={18} /> {" "}{tr("Add a recovery passkey so you can bring this explorer to a new phone or laptop, even if this device is lost. Your password manager keeps the passkey; QuestLayer only learns its public key.")}</p>
-          <button
-            className="secondary-button"
-            disabled={!!busy}
-            onClick={() => void onSetupRecovery()}
-          >
-            <Fingerprint size={20} />
-            {busy === "recovery-setup"
-              ? tr("Saving your recovery passkey…")
-              : tr("Create a recovery passkey")}
-          </button>
-        </div>
-      ) : (
-        <p className="play-hint">
-          <Key size={16} /> {" "}{tr("On a new device choose “Restore with a recovery passkey” on the welcome screen.")}</p>
-      )}
       <details
         className="native-extras"
         open={lost}
@@ -257,6 +262,15 @@ export function DeviceKeys({
           </>
         )}
       </details>
+    </>
+  );
+  return (
+    <section
+      className={part === "main" ? "play-native account-save" : "play-native account-devices"}
+      aria-label={tr("Devices and recovery")}
+    >
+      {part !== "advanced" && saveSteps}
+      {part !== "main" && deviceList}
     </section>
   );
 }

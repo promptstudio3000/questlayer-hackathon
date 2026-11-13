@@ -632,7 +632,7 @@ function uiJourneys(device) {
         await page.getByText(/2 NEAR/).first().waitFor({ timeout: 15_000 });
         await shot(page, "staker-step");
         note("staking tab names the 2 NEAR step");
-        await page.getByRole("tab", { name: "Settings" }).first().click();
+        await openMapSettings(page);
         // Picking a language reloads the app in it (src/i18n.ts setLang).
         await page.locator("select.language-select").selectOption("cs");
         await page.waitForURL(/[?&]lang=cs/, { timeout: 15_000 });

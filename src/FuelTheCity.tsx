@@ -133,8 +133,6 @@ export function FuelTheCity({
   managed: boolean;
   /** Why the explorer account is not ready yet (play-first, creating, needs-recovery, ...). */
   explorerStatus?: string;
-  cityName?: string;
-  onConnect: () => void;
   /** Links a NEAR wallet the player already has (wallet picker + signed message). */
   onLinkWallet?: () => Promise<void> | void;
   onTransaction: (r: VaultRequest) => Promise<boolean>;

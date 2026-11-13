@@ -13,7 +13,7 @@ A newcomer is walked through six steps by a coach card at the top of the Explore
 
 Logic: `src/first-session.ts` (pure, tested in `tests/first-session.test.mjs`), UI: `src/FirstSession.tsx`.
 Proven steps are mirrored into a per-player local mark so the 80-entry history window cannot un-tick them.
-The coach can be hidden (×) and brought back from Settings → "Show first steps again".
+The coach can be hidden (×) and brought back with the helper switch in Settings (the gear): "First-time tips", or "Pip, your guide" where the tour runs.
 
 ## Grounded hints
 
@@ -24,7 +24,7 @@ called, so hints cost nothing and every number comes from game data. Aura and se
 
 ## Feedback settings
 
-Settings → "Sound, vibration and motion" (`src/feedback.ts`, stored per browser):
+Settings → Game: Sound, Vibration and Reduce motion (`src/feedback.ts`, stored per browser):
 
 - Vibration (default on): short patterns for coin, finished step, chest reward and error.
 - Sound (default off): synthesized Web Audio tones, no audio files.

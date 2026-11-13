@@ -6,6 +6,7 @@ import { nearbyAction, type NearbyActor } from "./nearby-action";
 import type { Coin } from "./types";
 import { WorldSwitcher, type GameLayerConfig } from "./WorldSwitcher";
 import type { TourTarget } from "./TourHelper";
+import type { SettingsMap } from "./SettingsScreen";
 import { questDisplayTitle } from "./quest-copy";
 import { mapObjective, canOfferNearbyAction } from "./map-objective";
 import { EmptyState } from "./EmptyState";
@@ -30,7 +31,7 @@ import {
   AutoSocialProfile,
   ChainLink,
   CreatorCommunity,
-  TreasuryVote,
+  TreasuryVoteDialog,
   MapNotes,
   PlayerCard,
   Inbox,
@@ -47,6 +48,7 @@ import {
   TodaysPot,
   PotRow,
   MapSettings,
+  SettingsScreen,
   MapActions,
   InfoTip,
   SecureAndShare,
@@ -186,10 +188,8 @@ import {
 } from "react";
 import {
   Compass,
-  Cube,
   Backpack,
   Storefront,
-  ChartDonut,
   Wallet,
   MapPin,
   ChatsCircle,
@@ -212,11 +212,9 @@ import {
   ClipboardText,
   MapPinPlus,
   PaperPlane,
-  SignOut,
   ShieldCheck,
   Key,
   Eye,
-  EyeSlash,
   Flag,
   TrendUp,
   Lightning,
@@ -231,16 +229,10 @@ import {
   ArrowClockwise,
   WifiSlash,
   Flame,
-  Vibrate,
-  SpeakerHigh,
-  PersonSimpleRun,
-  BookOpen,
   MagnifyingGlass,
   ArrowsOut,
   ArrowsIn,
   SlidersHorizontal,
-  GameController,
-  Lifebuoy,
   Code,
 } from "@phosphor-icons/react";
 import { ArrowRight, ArrowLeft } from "./dir-icons";
@@ -253,8 +245,6 @@ import {
   PROFILE_TABS,
   ProfileHero,
   ProfileTile,
-  SettingsSwitch,
-  LanguageSetting,
   communityTabOf,
   creatorSection,
   profileTabOf,
@@ -300,8 +290,6 @@ import {
   cue,
   loadFeedbackPreferences,
   prefersReducedMotion,
-  previewSound,
-  setFeedbackPreferences,
   subscribeFeedback,
   type FeedbackPreferences,
 } from "./feedback";
@@ -458,6 +446,7 @@ export default function App() {
     [virtualLayer, setVirtualLayer] = useState<PublicLayer | null>(null),
     // Test Layer or QuestLayer World (docs/TEST-LAYER.md).
     [gameLayer, setGameLayer] = useState<GameLayerConfig | null>(null),
+    [pipHidden, setPipHidden] = useState(false),
     [tourRunning, setTourRunning] = useState(false);
   useEffect(() => {
     void api<{ layer?: { layers?: PublicLayer[] } | null; gameLayer?: GameLayerConfig | null }>("/config")
@@ -584,11 +573,18 @@ export default function App() {
   function openAccountDevices() {
     setCardPlayer(null);
     chooseProfileTab("settings");
+    openSettingsPart("#settings-account-title");
+  }
+  /** Scrolls Settings to one of its parts, unfolding Advanced when it is inside. */
+  function openSettingsPart(selector: string, tries = 10) {
     setTimeout(() => {
-      const el = document.getElementById("account-devices") as HTMLDetailsElement | null;
-      if (!el) return;
-      el.open = true;
-      el.scrollIntoView({ block: "start", behavior: "smooth" });
+      // The Settings chunk may still be loading on the first open.
+      const part = mainPanel.current?.querySelector<HTMLElement>(`.settings-screen ${selector}`);
+      if (!part) return void (tries > 0 && openSettingsPart(selector, tries - 1));
+      for (let el: HTMLElement | null = part; el; el = el.parentElement)
+        if (el instanceof HTMLDetailsElement) el.open = true;
+      part.scrollIntoView({ block: "start", behavior: "auto" });
+      (part.querySelector<HTMLElement>("summary") ?? part).focus({ preventScroll: true });
     }, 300);
   }
   function messageOffReason(): { text: string; action?: { label: string; run: () => void } } {
@@ -605,7 +601,7 @@ export default function App() {
     if (status === "error" || status === "unavailable")
       return {
         text: tr("Your explorer account is not available on this device, so messages are off here."),
-        action: { label: tr("Account and devices"), run: openAccountDevices },
+        action: { label: tr("Account"), run: openAccountDevices },
       };
     return { text: tr("Your explorer account is being set up. Messages open in a moment.") };
   }
@@ -614,7 +610,13 @@ export default function App() {
     setTab("inventory");
   }
   const profileTab = profileTabOf(tab, profileView);
-  const showProfileTabs = tab === "settings" || tab === "fuel" || tab === "wallet";
+  // Settings is its own sheet behind the gear, not a Profile tab (13 Nov 2026).
+  const settingsOpen = tab === "settings" && profileView === "settings";
+  const showProfileTabs = (tab === "settings" && !settingsOpen) || tab === "fuel" || tab === "wallet";
+  useEffect(() => {
+    if (!settingsOpen || !gameLayer?.tour) return;
+    void api<{ hidden?: boolean }>("/tour").then((t) => setPipHidden(!!t.hidden)).catch(() => {});
+  }, [settingsOpen, gameLayer?.tour]);
   // Earnings merged into Stake (owner request, 12 Nov 2026); old links land there.
   useEffect(() => {
     if (tab === "wallet") setTab("fuel");
@@ -1105,9 +1107,9 @@ export default function App() {
     else if (t.kind === "coin") goToStreetFind(t.coin);
     else notify(t.text, true);
   }
-  // `missing` runs when nobody like that is out nearby (e.g. the tour's keeper outside reviewed cities).
-  const actorMissing = useRef<(() => void) | undefined>(undefined);
-  function showActor(match: ActorFocusMatch, missing?: () => void) {
+  // `missing`: with nobody like that out nearby, open Game economy (the tour's keeper outside reviewed cities).
+  const actorMissing = useRef(false);
+  function showActor(match: ActorFocusMatch, missing = false) {
     actorMissing.current = missing;
     setOverview(false);
     setSheetExpanded(false);
@@ -3844,7 +3846,7 @@ export default function App() {
       if (t.role === "companion") setCardPlayer(TOUR_COMPANION);
       else if (TOUR_ACTORS[t.role]) {
         setTab("explore");
-        showActor({ kinds: TOUR_ACTORS[t.role] }, t.role === "keeper" ? () => { setTab("fund"); setSheetExpanded(true); } : undefined);
+        showActor({ kinds: TOUR_ACTORS[t.role] }, t.role === "keeper");
       }
       else { setTab("community"); setSheetExpanded(true); }
     } else if (t.kind === "screen" && t.screen === "treasury") {
@@ -3888,42 +3890,102 @@ export default function App() {
   const objectiveKey = [objective, selected?.id, selectedQuestId, nativeObjective.reference?.kind, nativeObjective.reference?.index, nativeObjective.reference?.dayId, nativeObjective.view.status, adventureResults.unread?.id, coachStep || "done", recommended?.id, recommendedFind?.coin.id].join(":");
   const showNearby = !!near && canOfferNearbyAction(objective, coachStep, dismissedObjective === objectiveKey, !!zoneQuest && (selectedQuestId === zoneQuest.id || startedQuestKey === `${player?.id}:${world?.id}:${zoneQuest.id}`), near.kind === "quest" && near.quest.id === zoneQuest?.id);
   const compactHidden = tab === "explore" && !sheetExpanded && (showNearby || objective === "empty" || dismissedObjective === objectiveKey);
+  // One helper switch in Settings: Pip where the tour runs, and with it the
+  // older first-time tips, so "off" means no hints at all (Lubos, 13 Nov 2026).
+  function chooseGuide(on: boolean) {
+    learning.enable(on);
+    if (on && !gameLayer?.tour) {
+      setDismissedObjective("");
+      firstSession.show();
+    }
+    if (!gameLayer?.tour) return;
+    setPipHidden(!on);
+    void api("/tour", { action: on ? "show" : "hide" })
+      .then(() => window.dispatchEvent(new Event("questlayer:tour-refresh")))
+      .catch(() => setPipHidden(on));
+  }
+  // Map controls are the first part of Settings; each one returns to the map.
+  const backToMap = () => {
+    setTab("explore");
+    setSheetExpanded(false);
+  };
+  const settingsMap: SettingsMap = {
+    demo: arena && !nativePlay,
+    status:
+      nativePlay && arena
+        ? tr("Turn on location")
+        : arena
+          ? tr("City demo")
+          : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`,
+    modeLabel: arena || nativePlay ? tr("Use GPS") : tr("Demo"),
+    modeAria: arena || nativePlay ? tr("Use GPS, my location") : tr("Demo, back to city demo"),
+    onModeSwitch: () => {
+      backToMap();
+      void (arena || nativePlay ? locate() : returnToArena());
+    },
+    onLocate: () => {
+      backToMap();
+      setFollow(true);
+      setOverview(false);
+      setGlobe(false);
+      if (!arena || nativePlay) void locate();
+      else setPosition((p) => ({ ...p }));
+    },
+    rotate: mapRotate,
+    onRotate: chooseMapRotate,
+    onFull: () => {
+      backToMap();
+      setMapFull((v) => !v);
+      // The camera re-centres the explorer in the bigger view.
+      requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
+    },
+    overview,
+    onOverview: () => {
+      backToMap();
+      setOverview((v) => !v);
+      setGlobe(false);
+      setFollow(false);
+      setSelected(null);
+    },
+    globe,
+    onGlobe: () => {
+      backToMap();
+      if (!globe) setSelected(null);
+      setGlobe((v) => !v);
+      setOverview(false);
+      setFollow(true);
+    },
+  };
   const title =
     tab === "explore"
       ? nativePlay
         ? tr("Nearby walks")
         : tr("Nearby")
-      : showProfileTabs
-        ? tr("Profile")
+      : tab === "settings" || tab === "fuel" || tab === "wallet"
+        ? settingsOpen
+          ? tr("Settings")
+          : tr("Profile")
         : showCommunityTabs
           ? tr("Community")
           : nav.find((n) => n.id === tab)?.label ||
         {
-          messages: tr("Map notes"),
           shop: tr("Inventory"),
-          places: tr("Community"),
-          bounties: tr("Community tasks"),
-          community: tr("Community"),
-          settings: tr("Settings"),
           fund: tr("Game economy"),
           funding: tr("How rewards are funded"),
-          fuel: tr("Fuel the prize pool"),
           layer: virtualLayer?.name ?? tr("Layer"),
           expeditions: tr("Nearby walks"),
           inventory: tr("Inventory"),
           market: tr("Inventory"),
-          wallet: tr("Wallet"),
         }[tab] ||
         "QuestLayer";
   const nearbyHome = tab === "explore" && !detailZone && !nativePlay;
   // One stake form in three places: Profile → Stake, Game economy and the Gate Keeper's dialog.
+  const explorerId = invisible.status === "ready" ? invisible.accountId || "" : "";
   const stakeProps = player && {
     player,
-    account: invisible.status === "ready" && invisible.accountId ? invisible.accountId : player.wallets[0]?.account_id || "",
-    managed: invisible.status === "ready" && !!invisible.accountId,
+    account: explorerId || player.wallets[0]?.account_id || "",
+    managed: !!explorerId,
     explorerStatus: invisible.status,
-    cityName: world?.cityName,
-    onConnect: activateExplorer,
     onLinkWallet: () => connectNear(),
     onTransaction: operateNativeVault,
   };
@@ -4054,10 +4116,10 @@ export default function App() {
           actorFocus={actorFocus}
           pointTarget={pointTarget}
           onActorFocus={(text, found) => {
-            const missing = actorMissing.current;
-            actorMissing.current = undefined;
-            if (!found && missing) missing();
-            else notify(text, !found);
+            if (!found && actorMissing.current) {
+              setTab("fund");
+              setSheetExpanded(true);
+            } else notify(text, !found);
           }}
           marketPins={MAP_DIALOG_PINS && !!player && !arena && !nativePlay}
           onMarketPin={() => {
@@ -4128,7 +4190,7 @@ export default function App() {
               <div className="hud-bubble">
                 <button
                   className="profile-pill"
-                  onClick={() => setTab("settings")}
+                  onClick={() => chooseProfileTab("character")}
                 >
                   <span className="sr-only">{tr("Profile")}</span>
                   {hudProgress ? (
@@ -4185,55 +4247,7 @@ export default function App() {
                   <span>QGOLD</span>
                 </button>
               </div>
-              <MapSettings
-                demo={arena && !nativePlay}
-                status={
-                  nativePlay
-                    ? arena
-                      ? tr("Turn on location")
-                      : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
-                    : arena
-                      ? tr("City demo")
-                      : `GPS ±${fix ? Math.round(fix.accuracy) : "…"} m`
-                }
-                modeLabel={arena || nativePlay ? tr("Use GPS") : tr("Demo")}
-                modeAria={arena || nativePlay ? tr("Use GPS, my location") : tr("Demo, back to city demo")}
-                onModeSwitch={() => void (arena || nativePlay ? locate() : returnToArena())}
-                onLocate={() => {
-                  setFollow(true);
-                  setOverview(false);
-                  setGlobe(false);
-                  if (!arena || nativePlay) void locate();
-                  else setPosition((p) => ({ ...p }));
-                }}
-                rotate={mapRotate}
-                onRotate={chooseMapRotate}
-                fullAvailable={tab === "explore"}
-                onFull={() => {
-                  setSheetExpanded(false);
-                  setMapFull((v) => !v);
-                  // The camera re-centres the explorer in the bigger view.
-                  requestAnimationFrame(() => window.dispatchEvent(new Event("resize")));
-                }}
-                overview={overview}
-                onOverview={() => {
-                  setOverview((v) => !v);
-                  setGlobe(false);
-                  setFollow(false);
-                  setSelected(null);
-                }}
-                globe={globe}
-                onGlobe={() => {
-                  if (!globe) {
-                    setTab("explore");
-                    setSheetExpanded(false);
-                    setSelected(null);
-                  }
-                  setGlobe((v) => !v);
-                  setOverview(false);
-                  setFollow(true);
-                }}
-              />
+              <MapSettings demo={arena && !nativePlay} open={settingsOpen} onOpen={() => chooseProfileTab("settings")} />
             </>
           )}
         </div>
@@ -4362,8 +4376,8 @@ export default function App() {
               <button
                 className="panel-back"
                 onClick={() => setTab("settings")}
-                aria-label={tr("Back to profile")}
-                title={tr("Back to profile")}
+                aria-label={tr("Back")}
+                title={tr("Back")}
               >
                 <ArrowLeft size={20} aria-hidden="true" />
               </button>
@@ -4822,16 +4836,9 @@ export default function App() {
                 onWithdraw={withdrawNativeReward}
                 onWallet={(showReceipts = false) => {
                   if (!showReceipts) return setTab("fuel");
-                  // Receipts live in Settings now (owner request, 12 Nov 2026).
+                  // Receipts live in Settings → Advanced (owner request, 12 Nov 2026).
                   chooseProfileTab("settings");
-                  requestAnimationFrame(() => {
-                    const details =
-                      mainPanel.current?.querySelector<HTMLDetailsElement>(".settings-receipts");
-                    if (!details) return;
-                    details.open = true;
-                    details.querySelector("summary")?.focus({ preventScroll: true });
-                    details.scrollIntoView({ block: "start", behavior: "auto" });
-                  });
+                  openSettingsPart(".settings-receipts");
                 }}
                 onFocus={(kind, index) => {
                   setNativePlay(true);
@@ -4911,117 +4918,40 @@ export default function App() {
               />
             </ScreenTabPanel>
           )}
-          {tab === "settings" && profileView === "settings" && (
-            <ScreenTabPanel idBase="profile" value="settings">
-              <section
-                className="settings-group"
-                aria-labelledby="settings-game-title"
-              >
-                <h2 id="settings-game-title"><GameController size={20} aria-hidden="true" />{tr("Game")}</h2>
-                <div className="settings-row-with-tip">
-                  <SettingsSwitch
-                    icon={sharePosition ? Eye : EyeSlash}
-                    label={tr("Show me to nearby explorers")}
-                    hint={tr("Live on the map within about 1.5 km")}
-                    checked={sharePosition}
-                    onChange={changeSharePosition}
-                  />
-                  <InfoTip label={tr("Location sharing")}>{tr("While the game is open on your screen, explorers within about 1.5 km see your name, look and position on their map. Your profile never shows where you are. Players you blocked never see you, and you never see them.")}</InfoTip>
-                </div>
-                <LanguageSetting />
-                <SettingsSwitch
-                  icon={Cube}
-                  label={tr("3D character")}
-                  checked={map3D}
-                  onChange={() => toggleMap3D()}
-                />
-                <SettingsSwitch
-                  icon={Vibrate}
-                  label={tr("Vibration")}
-                  checked={feedback.haptics}
-                  onChange={(on) => {
-                    setFeedbackPreferences({ haptics: on });
-                    if (on) cue("step");
-                  }}
-                />
-                <SettingsSwitch
-                  icon={SpeakerHigh}
-                  label={tr("Sound")}
-                  checked={feedback.sound}
-                  onChange={(on) => {
-                    setFeedbackPreferences({ sound: on });
-                    if (on) previewSound();
-                  }}
-                />
-                <SettingsSwitch
-                  icon={PersonSimpleRun}
-                  label={tr("Reduce motion")}
-                  checked={feedback.motion === "reduce"}
-                  onChange={(on) =>
-                    setFeedbackPreferences({ motion: on ? "reduce" : "system" })
-                  }
-                />
-              </section>
-              <section
-                className="settings-group"
-                aria-labelledby="settings-help-title"
-              >
-                <h2 id="settings-help-title"><Lifebuoy size={20} aria-hidden="true" />{tr("Help")}</h2>
-                <button type="button" className="settings-row" onClick={() => setManualIntro(player.id)}>
-                  <BookOpen size={22} aria-hidden="true" /><span>{tr("How to play")}</span><ArrowRight size={18} aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="settings-row"
-                  onClick={() => setShowNpc(true)}
-                >
-                  <Question size={22} aria-hidden="true" />
-                  <span>{tr("Help & guide")}</span>
-                  <ArrowRight size={18} aria-hidden="true" />
-                </button>
-                <button
-                  type="button"
-                  className="settings-row"
-                  onClick={() => setTab("fund")}
-                >
-                  <ChartDonut size={22} aria-hidden="true" />
-                  <span>
-                    {tr("Game economy")}
-                  </span>
-                  <ArrowRight size={18} aria-hidden="true" />
-                </button>
-                <SettingsSwitch icon={Question} label={tr("First-time tips")} checked={learning.state.enabled} onChange={learning.enable} />
-                {(!firstSession.visible || (objective === "coach" && dismissedObjective === objectiveKey)) && (
-                  <button
-                    type="button"
-                    className="settings-row"
-                    onClick={() => {
-                      setDismissedObjective("");
-                      learning.enable(true);
-                      firstSession.show();
-                      setTab("explore");
-                      setSheetExpanded(false);
-                    }}
-                  >
-                    <Compass size={22} aria-hidden="true" />
-                    <span>{tr("Show first steps again")}</span>
-                    <ArrowRight size={18} aria-hidden="true" />
-                  </button>
-                )}
-              </section>
-              <details id="account-devices" className="settings-group screen-details">
-                <summary><UserCircle size={20} aria-hidden="true" />{tr("Account and devices")}</summary>
-                <ChainSettings accountId={invisible.accountId} />
-                <div className="settings-pad">
-                  <AccountSessions
-                    player={player}
-                    onConnect={connectNear}
-                    onConnectEthereum={() => connectEthereum()}
-                    onSecure={() => void attachPasskey()}
-                    onRevoke={revokeGameSessions}
-                    busy={busy}
-                  />
+          {settingsOpen && (
+            <SettingsScreen
+              map={settingsMap}
+              map3D={map3D}
+              onMap3D={() => toggleMap3D()}
+              guide={{
+                pip: !!gameLayer?.tour,
+                // Off also while the first-steps card is dismissed or finished,
+                // so switching it on brings the card back.
+                on: gameLayer?.tour
+                  ? !pipHidden
+                  : learning.state.enabled && firstSession.visible && !(objective === "coach" && dismissedObjective === objectiveKey),
+                onChange: chooseGuide,
+              }}
+              sharePosition={sharePosition}
+              onSharePosition={changeSharePosition}
+              feedback={feedback}
+              onHowToPlay={() => setManualIntro(player.id)}
+              onAsk={() => setShowNpc(true)}
+              onEconomy={() => setTab("fund")}
+              account={
+                <>
+                  {invisible.status !== "ready" && (
+                    <AccountSessions
+                      part="main"
+                      player={player}
+                      onConnect={connectNear}
+                      onSecure={() => void attachPasskey()}
+                      onRevoke={revokeGameSessions}
+                      busy={busy}
+                    />
+                  )}
                   <DeviceKeys
+                    part="main"
                     status={invisible.status}
                     accountId={invisible.accountId}
                     keys={invisible.keys}
@@ -5035,54 +4965,75 @@ export default function App() {
                     error={invisible.error}
                     onRetry={() => void invisible.ensure()}
                   />
-                </div>
-              </details>
-              <SettingsReceipts
-                key={player.id}
-                playerId={player.id}
-                linkedAccounts={player.wallets.map((wallet) => wallet.account_id)}
-                onConfirmed={async () => {
-                  await Promise.allSettled([
-                    refreshNative(true),
-                    nativeGame.refresh(),
-                  ]);
-                }}
-              />
-              <button className="settings-row" onClick={() => void action("logout", async () => {
-                await api("/logout", {}); setPlayer(null); setWorld(null);
-              })}><SignOut /><span>{tr("Sign out")}</span></button>
-                            {/* The public pages are reference reading: one quiet row at the bottom. */}
-              <nav className="settings-links" aria-label={tr("How it works")}>
-                {[["/how-it-works", tr("How it works")], ["/wiki", tr("Wiki")], ["/economy", tr("Economy")], ["/treasury", tr("Treasury")]].map(([href, label]) => (
-                  <a key={href} href={href}>{label}</a>
-                ))}
-              </nav>
-              {/* Owner-only switches and notes, kept out of the way (Lubos, 10 Nov 2026). */}
-              <details className="advanced-settings settings-developer">
-                <summary><Code size={16} aria-hidden="true" />{tr("Developer")}</summary>
-                <p className="fine-print">{tr("Reward ledger")}</p>
-                <div className="settings-pad">
-                  <div
-                    className="play-mode-switch"
-                    role="group"
-                    aria-label={tr("Reward ledger")}
-                  >
-                    <button
-                      aria-pressed={!nativePlay}
-                      onClick={() => chooseLedger(false)}
-                    >
-                      {tr("Map coins (QGOLD)")}</button>
-                    <button
-                      aria-pressed={nativePlay}
-                      onClick={() => chooseLedger(true)}
-                    >
-                      {tr("Test network")}</button>
+                </>
+              }
+              advanced={
+                <>
+                  <div id="account-devices" className="settings-pad">
+                    <AccountSessions
+                      part={invisible.status === "ready" ? undefined : "advanced"}
+                      player={player}
+                      onConnect={connectNear}
+                      onConnectEthereum={() => connectEthereum()}
+                      onSecure={() => void attachPasskey()}
+                      onRevoke={revokeGameSessions}
+                      busy={busy}
+                    />
+                    <DeviceKeys
+                      part="advanced"
+                      status={invisible.status}
+                      accountId={invisible.accountId}
+                      keys={invisible.keys}
+                      localPublicKey={invisible.publicKey}
+                      busy={busy}
+                      onSetupRecovery={setupRecoveryPasskey}
+                      onRevoke={revokeDevice}
+                      onRestore={restoreThisDevice}
+                    />
                   </div>
-                  <p className="fine-print">
-                    {tr("Map coins pay QGOLD to your NEAR account each night. The test network ledger plays the Plzeň NEAR days instead. Test tokens have no monetary value.")}</p>
-                </div>
-              </details>
-            </ScreenTabPanel>
+                  <ChainSettings accountId={invisible.accountId} />
+                  <SettingsReceipts
+                    key={player.id}
+                    playerId={player.id}
+                    linkedAccounts={player.wallets.map((wallet) => wallet.account_id)}
+                    onConfirmed={async () => {
+                      await Promise.allSettled([
+                        refreshNative(true),
+                        nativeGame.refresh(),
+                      ]);
+                    }}
+                  />
+                  {/* Owner-only switches and notes, kept out of the way (Lubos, 10 Nov 2026). */}
+                  <details className="advanced-settings settings-developer">
+                    <summary><Code size={16} aria-hidden="true" />{tr("Developer")}</summary>
+                    <p className="fine-print">{tr("Reward ledger")}</p>
+                    <div className="settings-pad">
+                      <div
+                        className="play-mode-switch"
+                        role="group"
+                        aria-label={tr("Reward ledger")}
+                      >
+                        <button
+                          aria-pressed={!nativePlay}
+                          onClick={() => chooseLedger(false)}
+                        >
+                          {tr("Map coins (QGOLD)")}</button>
+                        <button
+                          aria-pressed={nativePlay}
+                          onClick={() => chooseLedger(true)}
+                        >
+                          {tr("Test network")}</button>
+                      </div>
+                      <p className="fine-print">
+                        {tr("Map coins pay QGOLD to your NEAR account each night. The test network ledger plays the Plzeň NEAR days instead. Test tokens have no monetary value.")}</p>
+                    </div>
+                  </details>
+                </>
+              }
+              onSignOut={() => void action("logout", async () => {
+                await api("/logout", {}); setPlayer(null); setWorld(null);
+              })}
+            />
           )}
           {tab === "funding" && (
             <RewardFundingPage
@@ -5092,7 +5043,7 @@ export default function App() {
             />
           )}
           {/* Opens "Convert QGOLD to gas" by itself when the explorer's gas runs low. */}
-          {invisible.status === "ready" && invisible.accountId && (
+          {explorerId && (
             <GasWatch refreshKey={`${player.id}:${player.gold_u}:${tab}`} />
           )}
           {tab === "fuel" && (
@@ -5117,12 +5068,8 @@ export default function App() {
                 onPlayerChange={me}
                 position={position}
                 money={{
-                  accountId:
-                    invisible.status === "ready" && invisible.accountId
-                      ? invisible.accountId
-                      : player.wallets[0]?.account_id || "",
-                  managed:
-                    invisible.status === "ready" && !!invisible.accountId,
+                  accountId: explorerId || player.wallets[0]?.account_id || "",
+                  managed: !!explorerId,
                   pay: operateCreatorPayment,
                 }}
                 onCapabilityChange={(enabled) => {
@@ -5471,17 +5418,13 @@ export default function App() {
         </div>
       )}
       {treasuryVoteOpen && player && (
-        <Dialog label={tr("Treasury vote")} onClose={() => setTreasuryVoteOpen(false)}>
-          <div className="tour-vote-dialog">
-            <TreasuryVote
-              key={`treasury-${player.id}`}
-              account={invisible.status === "ready" ? invisible.accountId || null : null}
-              vote={voteTreasury}
-              notify={notify}
-              empty={<p className="bonus-vote-note">{tr("No treasury vote is open on this layer right now.")}</p>}
-            />
-          </div>
-        </Dialog>
+        <TreasuryVoteDialog
+          key={`treasury-${player.id}`}
+          account={explorerId || null}
+          vote={voteTreasury}
+          notify={notify}
+          onClose={() => setTreasuryVoteOpen(false)}
+        />
       )}
       {lockedZoneDialog && player && !walletChoices && (
         <LockedZoneDialog zone={lockedZoneDialog} onClose={() => setLockedZoneDialog(null)} />
