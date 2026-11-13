@@ -1677,6 +1677,16 @@ export function GameMap(props: GameMapProps) {
   useEffect(() => {
     const m = map.current;
     if (!m || !ready || props.globe || !props.creatorPlaces?.length) return;
+    // Quests that start on (nearly) the same spot fan out side by side, so
+    // every pin stays readable and tappable.
+    const groups: CreatorMapPlace[][] = [];
+    for (const place of props.creatorPlaces) {
+      const group = groups.find((g) => metersBetween(g[0], place) < 40);
+      if (group) group.push(place);
+      else groups.push([place]);
+    }
+    const fan = new Map<string, number>();
+    for (const g of groups) g.forEach((place, i) => fan.set(place.questId, (i - (g.length - 1) / 2) * 68));
     const markers = props.creatorPlaces.map((place) => {
       const node = document.createElement("button");
       const label = `${place.title} · ${CREATOR_PIN_NAME[place.template]}${place.creator ? ` · ${place.creator}` : ""}`;
@@ -1704,7 +1714,7 @@ export function GameMap(props: GameMapProps) {
         e.stopPropagation();
         latest.current.onCreatorPlace?.(place.questId);
       });
-      return new maplibregl.Marker({ element: node, anchor: "bottom" })
+      return new maplibregl.Marker({ element: node, anchor: "bottom", offset: [fan.get(place.questId) || 0, 0] })
         .setLngLat([place.lng, place.lat])
         .addTo(m);
     });
