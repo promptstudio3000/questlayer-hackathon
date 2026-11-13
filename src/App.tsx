@@ -843,12 +843,16 @@ export default function App() {
   const mainPanel = useRef<HTMLElement>(null);
   const returnToLayer = useRef(false);
   const contentScreen = tab !== "explore" || sheetExpanded;
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
   useEffect(() => {
     if (!contentScreen || !player) return;
     const previous = document.activeElement as HTMLElement | null;
     const frame = requestAnimationFrame(() => mainPanel.current?.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true }));
     const escape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented || document.querySelector("dialog[open]")) return;
+      // MetaLayer is a game screen, not a panel: Escape there closes its own
+      // sheets and never drops the explorer back to the GPS map.
+      if (event.key !== "Escape" || event.defaultPrevented || document.querySelector("dialog[open]") || tabRef.current === "layer") return;
       event.preventDefault();
       setTab("explore");
       setSheetExpanded(false);
