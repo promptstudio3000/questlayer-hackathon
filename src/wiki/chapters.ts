@@ -626,7 +626,7 @@ export const CHAPTERS: Chapter[] = [
           "**Shouts** are short paid bubbles for up to 7 days; a **topic** becomes free for good once 6 different players wrote in it (see Fees and spending). The game checks your QGOLD before anything is paid: if it does not cover the price, you see **Not enough QGOLD in your account** and nothing is taken.",
           "**Keep on NEAR Social** saves a message as your own public record in one tap; the game covers the small storage cost the first time.",
           "**Community places** are free recommendations: nearest first within 10 km, each as a card with a large coloured picture of its kind (view, nature, history, art, food & drink, hidden gem, walk & play) and its distance, kind chips to filter and sorting. Three reports from different players hide a place until a moderator looks. No links, contacts or private addresses; no QGOLD or XP moves.",
-          "Demo maps and the real GPS map keep separate messages and places. The test world seeds chat messages around náměstí Republiky and in towns 15–85 km away (Rokycany, Klatovy, Domažlice, Prague), so the distance filter has something to show.",
+          "Demo maps and the real GPS map keep separate messages and places. The test world seeds chat messages around náměstí Republiky and in towns 15–85 km away (Rokycany, Klatovy, Domažlice, Prague), so the distance filter has something to show. Seeded messages fade like a player's: \"right now\" chatter after 1 day, tips after 1 week, and seeded shouts after their 7 days; the seed never brings them back.",
         ],
       },
       { h: "Quests, tasks and creators" },
