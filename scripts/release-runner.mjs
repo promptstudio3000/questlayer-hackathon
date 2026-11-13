@@ -169,12 +169,16 @@ function switchTo(release, state) {
   state.deploy = { ...state.deploy, live: release, pinned: release, switchedAt: now() };
 }
 
-function build(sha, target = APP, dir = worktree("deploy", sha)) {
+// phase(name) is called before each long step so a deploy job's status shows where it is.
+function build(sha, target = APP, dir = worktree("deploy", sha), phase = () => {}) {
   try {
     const log = [];
+    phase("npm ci");
     log.push(must(asUser(["npm", "ci", "--no-audit", "--no-fund"], { cwd: dir }), "npm ci"));
+    phase("npm run check");
     log.push(must(asUser(["npm", "run", "check"], { cwd: dir, timeout: 45 * 60_000 }), "npm run check"));
     // The client pins its manifests at build time (vite.config.ts): rebuild for the target.
+    if (Object.keys(target.buildEnv).length) phase("target build");
     if (Object.keys(target.buildEnv).length)
       log.push(must(asUser(["npm", "run", "build"], { cwd: dir, env: target.buildEnv, timeout: 20 * 60_000 }), "target build"));
     writeFileSync(join(dir, "build-id.txt"), `${sha}\n`);
@@ -307,10 +311,17 @@ function runOp(id, deploySha) {
       // Install keys and runtime.env first: the activation refuses a target without its keys.
       result.installedKeys = op.installKeys.map((item) => installKey(keyInstallTarget(item, allowlist())));
       if (op.runtimeEnv) result.runtimeEnv = writeRuntimeEnv(op.runtimeEnv);
+      save();
       const target = targetOf(op.deployTarget);
-      const built = build(sha, target, dir);
+      const phase = (step) => {
+        result.steps.push({ step, startedAt: now() });
+        save();
+      };
+      const built = build(sha, target, dir, phase);
       try {
+        phase("activate");
         activate(built, target);
+        phase("signing vault");
         result.deploy = { target: op.deployTarget, release: built.release, log: built.log, signingVault: signingVault(dir, target) };
       } finally {
         rmSync(built.archive, { force: true });
