@@ -3167,13 +3167,5 @@
   "Pip, your guide": "Пип, твой проводник",
   "Restore your account on this device: Settings → Account.": "Восстанови аккаунт на этом устройстве: Настройки → Аккаунт.",
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Сначала сохрани passkey или свои 12 слов. Без них этот исследователь не сможет вернуться.",
-  "Shows your next step on the map": "Показывает твой следующий шаг на карте",
-  "Account and devices": "Аккаунт и устройства",
-  "Add a recovery passkey so you can bring this explorer to a new phone or laptop, even if this device is lost. Your password manager keeps the passkey; QuestLayer only learns its public key.": "Добавь резервный ключ доступа, чтобы перенести этого исследователя на новый телефон или ноутбук, даже если это устройство потеряется. Ключ хранит твой менеджер паролей; QuestLayer узнаёт только его открытый ключ.",
-  "Back to profile": "Назад в профиль",
-  "Help & guide": "Помощь и гид",
-  "Show first steps again": "Снова показать первые шаги",
-  "Map settings": "Настройки карты",
-  "Live on the map within about 1.5 km": "В реальном времени на карте в радиусе около 1,5 км",
-  "Restore your account on this device: Profile → Account and devices.": "Восстанови аккаунт на этом устройстве: Профиль → Аккаунт и устройства."
+  "Shows your next step on the map": "Показывает твой следующий шаг на карте"
 }

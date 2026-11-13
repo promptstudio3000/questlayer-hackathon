@@ -3167,13 +3167,5 @@
   "Pip, your guide": "पिप, आपका गाइड",
   "Restore your account on this device: Settings → Account.": "इस डिवाइस पर अपना खाता वापस लाएँ: सेटिंग्स → खाता।",
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "पहले पासकी या अपने 12 शब्द सहेजें। इनके बिना यह एक्सप्लोरर वापस नहीं आ सकता।",
-  "Shows your next step on the map": "नक्शे पर आपका अगला कदम दिखाता है",
-  "Account and devices": "अकाउंट और डिवाइस",
-  "Add a recovery passkey so you can bring this explorer to a new phone or laptop, even if this device is lost. Your password manager keeps the passkey; QuestLayer only learns its public key.": "एक रिकवरी पासकी जोड़ो ताकि तुम इस खोजी को नए फ़ोन या लैपटॉप पर ला सको, चाहे यह डिवाइस खो जाए। पासकी तुम्हारा पासवर्ड मैनेजर रखता है; QuestLayer को सिर्फ़ उसकी पब्लिक की पता चलती है।",
-  "Back to profile": "प्रोफ़ाइल पर वापस",
-  "Help & guide": "मदद और गाइड",
-  "Show first steps again": "पहले कदम फिर से दिखाओ",
-  "Map settings": "मैप सेटिंग्स",
-  "Live on the map within about 1.5 km": "लगभग 1.5 km के भीतर मैप पर लाइव",
-  "Restore your account on this device: Profile → Account and devices.": "इस डिवाइस पर अपना खाता पुनर्स्थापित करें: प्रोफ़ाइल → खाता और डिवाइस।"
+  "Shows your next step on the map": "नक्शे पर आपका अगला कदम दिखाता है"
 }

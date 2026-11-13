@@ -3167,13 +3167,5 @@
   "Pip, your guide": "案内役のピップ",
   "Restore your account on this device: Settings → Account.": "この端末でアカウントを復元：設定 → アカウント。",
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "先にパスキーか12個の単語を保存してください。ないとこの探検家は戻せません。",
-  "Shows your next step on the map": "次の一歩をマップに表示します",
-  "Account and devices": "アカウントとデバイス",
-  "Add a recovery passkey so you can bring this explorer to a new phone or laptop, even if this device is lost. Your password manager keeps the passkey; QuestLayer only learns its public key.": "復旧用パスキーを追加すれば、このデバイスを失くしても新しいスマホやパソコンでこの探検者を使えます。パスキーはパスワードマネージャーに保存され、QuestLayerが知るのは公開鍵だけです。",
-  "Back to profile": "プロフィールに戻る",
-  "Help & guide": "ヘルプとガイド",
-  "Show first steps again": "はじめのステップを再表示",
-  "Map settings": "マップ設定",
-  "Live on the map within about 1.5 km": "約1.5 km以内の地図にライブ表示",
-  "Restore your account on this device: Profile → Account and devices.": "この端末でアカウントを復元：プロフィール → アカウントと端末。"
+  "Shows your next step on the map": "次の一歩をマップに表示します"
 }
