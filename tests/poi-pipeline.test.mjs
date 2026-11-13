@@ -41,11 +41,12 @@ async function build(extra = {}) {
   const outPath = join(dir, "poi-test.sqlite");
   const w4 = extra.w4 || (await stubW4());
   const manifest = await buildPoiDatabase({
-    inputs: { ...inputs, ...extra, w4: undefined },
+    inputs: { ...inputs, ...extra, w4: undefined, tileDeg: undefined },
     outPath,
     version: "cz-test",
     regions: ["cz"],
     w4,
+    ...(extra.tileDeg ? { tileDeg: extra.tileDeg } : {}),
   });
   const db = new DatabaseSync(outPath, { readOnly: true });
   const rows = Object.fromEntries(
@@ -137,6 +138,20 @@ test("the same inputs build a byte-identical file", async () => {
   b.db.close();
   assert.equal(a.manifest.sha256, b.manifest.sha256);
   assert.equal(a.manifest.bytes, readFileSync(b.outPath).length);
+});
+
+test("tiny tiles build the same places as one tile", async () => {
+  // 0.0005 deg tiles cut the fixture town into many tiles, so snaps, Overture
+  // folds and exclusion areas all cross tile edges.
+  const whole = await build({ tileDeg: 10 }),
+    tiled = await build({ tileDeg: 0.0005 });
+  const dump = (db, table, key) =>
+    JSON.stringify(db.prepare(`SELECT * FROM ${table} ORDER BY ${key}`).all());
+  for (const [table, key] of [["poi", "id"], ["partition", "h3r5"], ["path_cell", "h3r7"]])
+    assert.equal(dump(tiled.db, table, key), dump(whole.db, table, key), table);
+  assert.deepEqual(tiled.manifest.counts, whole.manifest.counts);
+  whole.db.close();
+  tiled.db.close();
 });
 
 test("operator closures survive a re-import", async () => {
