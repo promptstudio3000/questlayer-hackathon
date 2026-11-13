@@ -39,6 +39,35 @@ CREATE INDEX IF NOT EXISTS npc_lore_answers_player ON npc_lore_answers(player_id
 `,
 });
 
+// Where the places named in the shared memory are: reviewed seed coordinates
+// and Wikipedia GeoSearch points. A player tip that names a known place gets
+// its spot too, so an NPC can tell how far each place it knows is.
+export const NPC_LORE_PLACES_SCHEMA = registerModuleSchema({
+  name: "npc-lore-places",
+  version: 1,
+  sql: `
+CREATE TABLE IF NOT EXISTS npc_lore_places(place_key TEXT NOT NULL,name_key TEXT NOT NULL,name TEXT NOT NULL,lat REAL NOT NULL CHECK(lat BETWEEN -90 AND 90),lng REAL NOT NULL CHECK(lng BETWEEN -180 AND 180),source TEXT NOT NULL CHECK(source IN('seed','web')),updated_at INTEGER NOT NULL,PRIMARY KEY(place_key,name_key))
+`,
+});
+
+/** Name key of a place: lower case, no accents, no punctuation. */
+export const placeNameKey = (name) =>
+  String(name || "")
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .trim()
+    .slice(0, 80);
+
+const metres = (a, b) => {
+  const r = Math.PI / 180,
+    dLat = (b.lat - a.lat) * r,
+    dLng = (b.lng - a.lng) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLng / 2) ** 2;
+  return Math.round(12_742_000 * Math.asin(Math.min(1, Math.sqrt(h))));
+};
+
 const whole = (env, name, fallback, max) => {
   const raw = env[name];
   if (raw === undefined || raw === "") return fallback;
@@ -230,7 +259,8 @@ export function loadLoreSeeds(dir = SEED_DIR) {
     for (const e of data.entries || []) {
       if (!LORE_TOPIC_IDS.includes(e.topic) || typeof e.text !== "string" || e.text.length > 180 || typeof e.place !== "string")
         throw Error(`Lore seed ${file}: invalid entry ${JSON.stringify(e).slice(0, 80)}`);
-      out.push({ placeKey: data.place, topic: e.topic, place: e.place, text: e.text });
+      const spot = Number.isFinite(e.lat) && Number.isFinite(e.lng) && Math.abs(e.lat) <= 90 && Math.abs(e.lng) <= 180 ? { lat: e.lat, lng: e.lng } : null;
+      out.push({ placeKey: data.place, topic: e.topic, place: e.place, text: e.text, ...(spot ? { spot } : {}) });
     }
   }
   return out;
@@ -249,8 +279,17 @@ const TEMPLATE = {
 
 export function createLoreService(db, { env = process.env, provider = null, clock = Date.now, seeds = loadLoreSeeds(), web = null } = {}) {
   ensureModuleVersion(db, NPC_LORE_SCHEMA);
+  ensureModuleVersion(db, NPC_LORE_PLACES_SCHEMA);
   const limits = loreLimits(env);
   const q = (sql) => db.prepare(sql);
+  function putSpot(placeKey, name, at, source, now) {
+    const key = placeNameKey(name);
+    if (key.length < 2 || !Number.isFinite(at?.lat) || !Number.isFinite(at?.lng) || Math.abs(at.lat) > 90 || Math.abs(at.lng) > 180) return;
+    // A reviewed seed spot is never moved by a web result.
+    q(
+      `INSERT INTO npc_lore_places(place_key,name_key,name,lat,lng,source,updated_at) VALUES (?,?,?,?,?,?,?) ON CONFLICT(place_key,name_key) DO UPDATE SET name=excluded.name,lat=excluded.lat,lng=excluded.lng,source=excluded.source,updated_at=excluded.updated_at WHERE npc_lore_places.source='web' OR excluded.source='seed'`,
+    ).run(placeKey, key, String(name).slice(0, 60), at.lat, at.lng, source, now);
+  }
   const contributor = (player) => hash(`npc-lore:${player}`).slice(0, 32);
   {
     const now = clock();
@@ -258,6 +297,7 @@ export function createLoreService(db, { env = process.env, provider = null, cloc
       "INSERT OR IGNORE INTO npc_lore(id,place_key,topic,place,text,source,state,contributor,confirmations,ref,created_at,updated_at,expires_at) VALUES (?,?,?,?,?,'seed','accepted',NULL,0,?,?,?,NULL)",
     );
     for (const s of seeds) insert.run(id("lore"), s.placeKey, s.topic, s.place, s.text, `seed:${s.placeKey}:${hash(s.text).slice(0, 16)}`, now, now);
+    for (const s of seeds) if (s.spot) putSpot(s.placeKey, s.place, s.spot, "seed", now);
   }
 
   const live = (placeKey, topic = null) =>
@@ -417,7 +457,11 @@ export function createLoreService(db, { env = process.env, provider = null, cloc
           const upsert = q(
             "INSERT INTO npc_lore(id,place_key,topic,place,text,source,state,contributor,confirmations,ref,created_at,updated_at,expires_at) VALUES (?,?,'sights',?,?,'web','accepted',NULL,0,?,?,?,?) ON CONFLICT(ref) DO UPDATE SET text=excluded.text,updated_at=excluded.updated_at,expires_at=excluded.expires_at",
           );
-          for (const f of found) if (!screenTip(f.text)) upsert.run(id("lore"), placeKey, f.place.slice(0, 60), f.text, `${f.ref}@${placeKey}`, now, now, now + WEB_TTL_MS);
+          for (const f of found)
+            if (!screenTip(f.text)) {
+              upsert.run(id("lore"), placeKey, f.place.slice(0, 60), f.text, `${f.ref}@${placeKey}`, now, now, now + WEB_TTL_MS);
+              if (f.spot) putSpot(placeKey, f.place.slice(0, 60), f.spot, "web", now);
+            }
         });
         return found.length;
       })
@@ -425,10 +469,44 @@ export function createLoreService(db, { env = process.env, provider = null, cloc
       .finally(() => inflight.delete(placeKey));
   }
 
+  /**
+   * Places this NPC knows from the shared memory of its place, nearest first,
+   * with the distance from the NPC when the spot is known. No contributor.
+   */
+  function places({ world, actor, max = 12 }) {
+    const placeKey = placeKeyFor(world, actor);
+    const spots = new Map(q("SELECT name_key,lat,lng FROM npc_lore_places WHERE place_key=?").all(placeKey).map((r) => [r.name_key, r]));
+    const from = Number.isFinite(actor?.lat) && Number.isFinite(actor?.lng) ? actor : null;
+    const byName = new Map();
+    for (const r of live(placeKey)) {
+      const key = placeNameKey(r.place);
+      if (key.length < 2) continue;
+      const known = byName.get(key);
+      if (known) {
+        if (!known.topics.includes(r.topic)) known.topics.push(r.topic);
+        known.confirmations += r.confirmations;
+        continue;
+      }
+      const spot = spots.get(key);
+      byName.set(key, {
+        name: String(r.place).slice(0, 60),
+        topics: [r.topic],
+        tip: r.text,
+        confirmations: r.confirmations,
+        ...(spot ? { lat: spot.lat, lng: spot.lng, ...(from ? { distanceM: metres(from, spot) } : {}) } : {}),
+      });
+    }
+    return [...byName.values()]
+      .sort((a, b) => (a.distanceM ?? Infinity) - (b.distanceM ?? Infinity) || b.confirmations - a.confirmations || (a.name < b.name ? -1 : 1))
+      .slice(0, max)
+      .map(({ confirmations, topics, ...p }) => ({ ...p, topic: topics[0] }));
+  }
+
   return {
     limits,
     status,
     facts,
+    places,
     answer,
     refreshWeb,
     placeKeyFor,
