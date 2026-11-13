@@ -25,6 +25,11 @@ export function Dialog({
   const ref = useRef<HTMLDialogElement>(null);
   const close = useRef(onClose);
   close.current = onClose;
+  const pressedBackdrop = useRef(false);
+  const outside = (e: { clientX: number; clientY: number }) => {
+    const box = ref.current?.getBoundingClientRect();
+    return !!box && (e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom);
+  };
   const focusFallback = useRef(fallbackFocus);
   focusFallback.current = fallbackFocus;
   useEffect(
@@ -80,11 +85,17 @@ export function Dialog({
         e.preventDefault();
         onClose();
       }}
+      // Close only on a real tap on the backdrop: the press must start and end
+      // outside the dialog box. A click whose target is the <dialog> itself also
+      // fires when a text selection drag inside an input ends on the dialog's
+      // padding, or when a native <select> picks an option; neither may close it.
+      onPointerDown={(e) => {
+        pressedBackdrop.current = e.target === ref.current && outside(e);
+      }}
       onClick={(e) => {
-        const dialog = ref.current;
-        if (!dialog || e.target !== dialog) return;
-        const box = dialog.getBoundingClientRect();
-        if (!presentation || e.clientX < box.left || e.clientX > box.right || e.clientY < box.top || e.clientY > box.bottom) onClose();
+        const fromBackdrop = pressedBackdrop.current;
+        pressedBackdrop.current = false;
+        if (fromBackdrop && e.target === ref.current && outside(e)) onClose();
       }}
     >
       {presentation === "encounter" && <div className="dialog-dismiss-bar">
