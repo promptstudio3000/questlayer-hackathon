@@ -62,6 +62,7 @@ const KEYS = join(HOME, "keys");
 const WORK = join(HOME, "work");
 const NODE = process.execPath;
 // Files the runner installs from main; a change on main updates the runner.
+const LEAN = { NODE_OPTIONS: "--max-old-space-size=2048", TEST_CONCURRENCY: "2" };
 const RUNNER_FILES = [
   "scripts/release-runner.mjs",
   "scripts/lib/release-runner.mjs",
@@ -176,11 +177,12 @@ function build(sha, target = APP, dir = worktree("deploy", sha), phase = () => {
     phase("npm ci");
     log.push(must(asUser(["npm", "ci", "--no-audit", "--no-fund"], { cwd: dir }), "npm ci"));
     phase("npm run check");
-    log.push(must(asUser(["npm", "run", "check"], { cwd: dir, timeout: 45 * 60_000 }), "npm run check"));
+    // The VPS is shared (about 3-4 GB free): cap each node heap and run fewer test files at once.
+    log.push(must(asUser(["npm", "run", "check"], { cwd: dir, env: LEAN, timeout: 45 * 60_000 }), "npm run check"));
     // The client pins its manifests at build time (vite.config.ts): rebuild for the target.
     if (Object.keys(target.buildEnv).length) phase("target build");
     if (Object.keys(target.buildEnv).length)
-      log.push(must(asUser(["npm", "run", "build"], { cwd: dir, env: target.buildEnv, timeout: 20 * 60_000 }), "target build"));
+      log.push(must(asUser(["npm", "run", "build"], { cwd: dir, env: { ...LEAN, ...target.buildEnv }, timeout: 20 * 60_000 }), "target build"));
     writeFileSync(join(dir, "build-id.txt"), `${sha}\n`);
     const files = RELEASE_FILES.map((f) => (f === "deploy/questlayer-hackathon.service" ? `deploy/${target.name}.service` : f)).filter((f) => existsSync(join(dir, f)));
     const pub = readdirSync(join(dir, "public")).filter((f) => f.endsWith(".json")).map((f) => `public/${f}`);
