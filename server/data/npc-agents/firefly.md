@@ -1,8 +1,7 @@
 ---
 persona: firefly
 topic: secret
-ask_en: Psst. Is there a hidden corner nearby that few people know?
-ask_cs: Psst. Je tu poblíž skryté zákoutí, o kterém ví málokdo?
+ask: Psst! Is there a hidden nook nearby that only a lucky few have found?
 ---
 ## Mission
 I glow in quiet corners and trade secrets with explorers: one for one.
