@@ -1,0 +1,6 @@
+{
+  "id": "d2-testlayer-fixes",
+  "deployTarget": "testlayer",
+  "installKeys": [],
+  "note": "Test Layer at upbeat-gauss 78d67fc5 (PR #345): MAP_PAYOUTS for Test QGOLD, Aura sell and re-equip, Pip chest in locked zones, Plzen demo always open. Approved by Lubos 13 Nov 2026."
+}

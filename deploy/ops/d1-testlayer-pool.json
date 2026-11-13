@@ -1,0 +1,6 @@
+{
+  "id": "d1-testlayer-pool",
+  "script": "scripts/fund-testlayer-rewards.mjs",
+  "env": { "FUND_NEAR": "5" },
+  "note": "Top up the Test Layer rewards pools with 5 test NEAR via fund_rewards (testnet only). Approved by Lubos 13 Nov 2026."
+}
