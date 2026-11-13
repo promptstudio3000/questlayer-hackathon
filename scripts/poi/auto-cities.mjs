@@ -47,7 +47,7 @@ export const WALK_HIGHWAYS = new Set([
   "living_street",
 ]);
 const PARK_LEISURE = new Set(["park", "garden"]);
-const CLOSED = new Set(["private", "no", "customers", "permit"]);
+const CLOSED = new Set(["private", "no", "customers", "permit", "staff", "employees", "members", "residents", "students", "military", "official", "restricted"]);
 const SECTOR_COUNT = 6;
 
 const round4 = (n) => Math.round(n * 1e4) / 1e4;
