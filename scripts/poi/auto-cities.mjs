@@ -34,6 +34,7 @@ import { booleanPointInPolygon, point, polygon } from "@turf/turf";
 import { readJsonLines } from "./lib/ndjson.mjs";
 import { buildCityPack } from "../../server/spatial/city-pack-builder.mjs";
 import { AUTO_CITY_INDEX_SCHEMA } from "../../server/spatial/auto-cities.mjs";
+import { DEMO_CITIES, DEMO_CITY_HALF_KM } from "./demo-cities.mjs";
 
 export const AUTO_CITY_BUILDER_VERSION = 1;
 export const AUTO_MIN_POPULATION = 15000;
@@ -98,6 +99,7 @@ export function selectAutoCities(
     countries = ["CZ"],
     minPopulation = AUTO_MIN_POPULATION,
     reviewed = [],
+    pinned = [],
   } = {},
 ) {
   const wanted = new Set(countries.map((c) => c.toUpperCase())),
@@ -105,6 +107,37 @@ export function selectAutoCities(
     used = new Set(reviewedIds),
     cities = [],
     skipped = [];
+  // Demo cities (demo-cities.mjs) come first with their own clip box; they
+  // need no GeoNames row. A reviewed city still wins.
+  for (const p of pinned) {
+    const skip = (reason) =>
+      skipped.push({ geonameid: null, name: p.name, id: p.cityId, reason });
+    if (reviewedIds.has(p.cityId)) {
+      skip("reviewed-city-wins");
+      continue;
+    }
+    if (reviewed.some((c) => inBox([p.center.lng, p.center.lat], c.coverage))) {
+      skip("inside-reviewed-city");
+      continue;
+    }
+    if (used.has(p.cityId)) {
+      skip("duplicate-id");
+      continue;
+    }
+    used.add(p.cityId);
+    cities.push({
+      id: p.cityId,
+      name: p.name,
+      geonameid: null,
+      population: p.population,
+      timezone: p.timezone,
+      center: { lat: p.center.lat, lng: p.center.lng },
+      coverage: [...p.bbox],
+      halfKm: DEMO_CITY_HALF_KM,
+      demo: true,
+      sourceKind: p.sourceKind,
+    });
+  }
   const sorted = rows
     .filter(
       (r) =>
@@ -425,6 +458,7 @@ export async function buildAutoCityPacks({
   sampleDays = 7,
   firstDay = new Date().toISOString().slice(0, 10),
   zonesFor = null,
+  pinned = [],
   log = () => {},
 }) {
   if (!/^[a-z0-9][a-z0-9.-]{0,80}$/.test(version || ""))
@@ -433,6 +467,7 @@ export async function buildAutoCityPacks({
     countries,
     minPopulation,
     reviewed,
+    pinned,
   });
   log(`auto cities: ${cities.length} selected, ${skipped.length} skipped`);
   const bins = await binFeatures(cities, sources, {
@@ -443,7 +478,7 @@ export async function buildAutoCityPacks({
     days = Array.from({ length: sampleDays }, (_, i) => shiftDay(firstDay, i));
   for (const city of cities) {
     const input = bins.get(city.id),
-      half = halfSizeKm(city.population);
+      half = city.halfKm ?? halfSizeKm(city.population);
     const built = buildCityPack({
       id: city.id,
       name: city.name,
@@ -457,8 +492,13 @@ export async function buildAutoCityPacks({
       pathQueryLimit: AUTO_PATH_LIMIT,
       centralRadiusM: Math.round(Math.min(1200, half * 350)),
       fieldReview: "auto",
-      source:
-        "OpenStreetMap contributors (Geofabrik extract, QuestLayer World worker)",
+      source: `OpenStreetMap contributors (${
+        city.demo
+          ? { bbbike: "BBBike", osmfr: "openstreetmap.fr", geofabrik: "Geofabrik" }[
+              city.sourceKind
+            ] || "OSM"
+          : "Geofabrik"
+      } extract, QuestLayer World worker)`,
     });
     const safe = applyExclusions(built.pack, input.exclusions);
     const pack = {
@@ -467,6 +507,7 @@ export async function buildAutoCityPacks({
       funded: false,
       geonameid: city.geonameid,
       population: city.population,
+      ...(city.demo ? { demoCity: true } : {}),
       builder: `questlayer-auto-city/${AUTO_CITY_BUILDER_VERSION}`,
       pathCoverage: "auto-bounded-snapshot",
     };
@@ -645,6 +686,10 @@ export async function runAutoCities({
     readFileSync(`${workDir}/current.manifest.json`, "utf8"),
   );
   const regionIds = regions || manifest.regions || ["cz"];
+  // Demo city regions ("city-<id>") are pinned; the rest are countries.
+  const demoById = new Map(DEMO_CITIES.map((c) => [c.id, c])),
+    pinned = regionIds.filter((r) => demoById.has(r)).map((r) => demoById.get(r)),
+    countryIds = regionIds.filter((r) => !demoById.has(r));
   const rows = readCityRows(`${workDir}/current.sqlite`, DatabaseSync);
   // Reviewed cities and the zone sampler come from the server code itself.
   const { CITY_REGISTRY, buildCityZones } =
@@ -667,7 +712,8 @@ export async function runAutoCities({
       exclusions: stream("exclusions"),
     },
     reviewed,
-    countries: countries || regionIds.map((r) => r.toUpperCase()),
+    countries: countries || countryIds.map((r) => r.toUpperCase()),
+    pinned,
     minPopulation,
     version,
     importedAt: manifest.builtAt || new Date().toISOString(),

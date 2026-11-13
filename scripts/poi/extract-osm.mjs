@@ -110,3 +110,30 @@ export function extractOsm({
   }
   return outputs;
 }
+
+/**
+ * Cuts a demo city clip ([west, south, east, north]) out of a larger extract.
+ * "smart" keeps whole ways and multipolygons that cross the edge, so parks
+ * and paths on the border are not broken. Streams; memory stays small.
+ */
+export function clipOsm({ pbf, out, bbox, osmium = "osmium" }) {
+  const part = `${out}.part.osm.pbf`;
+  execFileSync(
+    osmium,
+    [
+      "extract",
+      "-b",
+      bbox.join(","),
+      "-s",
+      "smart",
+      pbf,
+      "-o",
+      part,
+      "--overwrite",
+      "--no-progress",
+    ],
+    { stdio: "inherit" },
+  );
+  renameSync(part, out);
+  return out;
+}
