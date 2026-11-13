@@ -1091,9 +1091,9 @@ export default function App() {
     else if (t.kind === "coin") goToStreetFind(t.coin);
     else notify(t.text, true);
   }
-  // `missing` runs when nobody like that is out nearby (e.g. the tour's keeper outside reviewed cities).
-  const actorMissing = useRef<(() => void) | undefined>(undefined);
-  function showActor(match: ActorFocusMatch, missing?: () => void) {
+  // `missing`: with nobody like that out nearby, open Game economy (the tour's keeper outside reviewed cities).
+  const actorMissing = useRef(false);
+  function showActor(match: ActorFocusMatch, missing = false) {
     actorMissing.current = missing;
     setOverview(false);
     setSheetExpanded(false);
@@ -3830,7 +3830,7 @@ export default function App() {
       if (t.role === "companion") setCardPlayer(TOUR_COMPANION);
       else if (TOUR_ACTORS[t.role]) {
         setTab("explore");
-        showActor({ kinds: TOUR_ACTORS[t.role] }, t.role === "keeper" ? () => { setTab("fund"); setSheetExpanded(true); } : undefined);
+        showActor({ kinds: TOUR_ACTORS[t.role] }, t.role === "keeper");
       }
       else { setTab("community"); setSheetExpanded(true); }
     } else if (t.kind === "screen" && t.screen === "treasury") {
@@ -3885,31 +3885,23 @@ export default function App() {
           ? tr("Community")
           : nav.find((n) => n.id === tab)?.label ||
         {
-          messages: tr("Map notes"),
           shop: tr("Inventory"),
-          places: tr("Community"),
-          bounties: tr("Community tasks"),
-          community: tr("Community"),
-          settings: tr("Settings"),
           fund: tr("Game economy"),
           funding: tr("How rewards are funded"),
-          fuel: tr("Fuel the prize pool"),
           layer: virtualLayer?.name ?? tr("Layer"),
           expeditions: tr("Nearby walks"),
           inventory: tr("Inventory"),
           market: tr("Inventory"),
-          wallet: tr("Wallet"),
         }[tab] ||
         "QuestLayer";
   const nearbyHome = tab === "explore" && !detailZone && !nativePlay;
   // One stake form in three places: Profile → Stake, Game economy and the Gate Keeper's dialog.
+  const explorerId = invisible.status === "ready" ? invisible.accountId || "" : "";
   const stakeProps = player && {
     player,
-    account: invisible.status === "ready" && invisible.accountId ? invisible.accountId : player.wallets[0]?.account_id || "",
-    managed: invisible.status === "ready" && !!invisible.accountId,
+    account: explorerId || player.wallets[0]?.account_id || "",
+    managed: !!explorerId,
     explorerStatus: invisible.status,
-    cityName: world?.cityName,
-    onConnect: activateExplorer,
     onLinkWallet: () => connectNear(),
     onTransaction: operateNativeVault,
   };
@@ -4040,10 +4032,10 @@ export default function App() {
           actorFocus={actorFocus}
           pointTarget={pointTarget}
           onActorFocus={(text, found) => {
-            const missing = actorMissing.current;
-            actorMissing.current = undefined;
-            if (!found && missing) missing();
-            else notify(text, !found);
+            if (!found && actorMissing.current) {
+              setTab("fund");
+              setSheetExpanded(true);
+            } else notify(text, !found);
           }}
           marketPins={MAP_DIALOG_PINS && !!player && !arena && !nativePlay}
           onMarketPin={() => {
@@ -4345,7 +4337,6 @@ export default function App() {
                 className="panel-back"
                 onClick={() => setTab("settings")}
                 aria-label={tr("Back to profile")}
-                title={tr("Back to profile")}
               >
                 <ArrowLeft size={20} aria-hidden="true" />
               </button>
@@ -5072,7 +5063,7 @@ export default function App() {
             />
           )}
           {/* Opens "Convert QGOLD to gas" by itself when the explorer's gas runs low. */}
-          {invisible.status === "ready" && invisible.accountId && (
+          {explorerId && (
             <GasWatch refreshKey={`${player.id}:${player.gold_u}:${tab}`} />
           )}
           {tab === "fuel" && (
@@ -5097,12 +5088,8 @@ export default function App() {
                 onPlayerChange={me}
                 position={position}
                 money={{
-                  accountId:
-                    invisible.status === "ready" && invisible.accountId
-                      ? invisible.accountId
-                      : player.wallets[0]?.account_id || "",
-                  managed:
-                    invisible.status === "ready" && !!invisible.accountId,
+                  accountId: explorerId || player.wallets[0]?.account_id || "",
+                  managed: !!explorerId,
                   pay: operateCreatorPayment,
                 }}
                 onCapabilityChange={(enabled) => {
@@ -5455,7 +5442,7 @@ export default function App() {
           <div className="tour-vote-dialog">
             <TreasuryVote
               key={`treasury-${player.id}`}
-              account={invisible.status === "ready" ? invisible.accountId || null : null}
+              account={explorerId || null}
               vote={voteTreasury}
               notify={notify}
               empty={<p className="bonus-vote-note">{tr("No treasury vote is open on this layer right now.")}</p>}
