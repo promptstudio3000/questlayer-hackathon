@@ -77,6 +77,10 @@ export type GameMapProps = {
   nextZoneId?: string | null;
   selectedQuestId?: string | null;
   guideRequest?: { questId: string; revision: number } | null;
+  /** Name of the quest or place the player chose to be guided to. */
+  guideLabel?: string;
+  /** Ends the guidance for good (the chip's X); without it the X only hides the line. */
+  onGuideStop?: () => void;
   insideZoneId?: string | null;
   nativeTarget?: (Point & { label: string }) | null;
   nativeTargetKind?: "coin" | "route" | "discovery";
@@ -1547,7 +1551,8 @@ export function GameMap(props: GameMapProps) {
   ]);
   const allGuidePoints = props.globe ? [] : mapGuidePoints({
     position: props.position, route: props.route, target: props.nativeTarget, selectedQuestId: props.selectedQuestId,
-    zone: props.focusZone || props.world?.zones.find((z) => z.id === props.nextZoneId),
+    // Only a quest the player started is guided to; a suggestion draws no line.
+    zone: props.focusZone,
     quests: props.world?.quests || [], now: objectContext.now, playerTier: props.playerTier,
   });
   // The guide's X hides the line until the guide points somewhere else.
@@ -1722,16 +1727,19 @@ export function GameMap(props: GameMapProps) {
         const slot = document.getElementById("hud-sky-slot");
         return slot ? createPortal(chip, slot) : chip;
       })()}
-      {!props.globe && guidePoints.length > 1 && !props.focusZone && (
+      {!props.globe && guidePoints.length > 1 && (
         <div className="map-guide-key" role="note" title={tr("Straight-line direction, not a walking route")}>
           <img src={mapKitUrl("navigation/arrow-forward.png")} width="24" height="24" alt="" aria-hidden />
-          <span>{tr("Direction guide")}</span>
+          <span>
+            <small>{tr("Guiding you to")}</small>
+            <strong>{props.nativeTarget?.label || props.guideLabel || tr("Direction guide")}</strong>
+          </span>
           <button
             type="button"
             className="map-guide-close"
-            aria-label={tr("Hide direction guide")}
-            title={tr("Hide direction guide")}
-            onClick={() => setHiddenGuide(guideTargetKey)}
+            aria-label={tr("Stop guiding")}
+            title={tr("Stop guiding")}
+            onClick={() => (props.onGuideStop ? props.onGuideStop() : setHiddenGuide(guideTargetKey))}
           >
             <X size={16} weight="bold" aria-hidden />
           </button>
