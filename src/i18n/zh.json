@@ -2637,7 +2637,6 @@
  "Direction guide": "方向指引",
  "Drag the stick, or use arrows or WASD": "拖动摇杆，或使用方向键或 WASD",
  "Every coin and prize on the map is backed by today's funded pot: realized staking yield and sponsors, checked against the books.": "地图上的每枚金币和奖品都由今天已注资的奖池支撑：已实现的质押收益和赞助，并已与账目核对。",
- "Guiding you to": "正在带你前往",
  "Hide pot details": "隐藏奖池详情",
  "Sends": "发送",
  "Show coins everywhere": "显示所有地方的金币",
@@ -3169,5 +3168,6 @@
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "请先保存通行密钥或你的 12 个单词。没有它们，这位探险家就无法找回。",
  "Shows your next step on the map": "在地图上显示你的下一步",
  "Welcome to": "欢迎来到",
- "{0} quests here. Tap to see them.": "这里有 {0} 个任务。点按查看。"
+ "{0} quests here. Tap to see them.": "这里有 {0} 个任务。点按查看。",
+ "Guiding you to": "正在带你前往"
 }

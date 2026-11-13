@@ -2637,7 +2637,6 @@
  "Direction guide": "Ukazatel směru",
  "Drag the stick, or use arrows or WASD": "Táhni páčku, nebo použij šipky či WASD",
  "Every coin and prize on the map is backed by today's funded pot: realized staking yield and sponsors, checked against the books.": "Každá mince a cena na mapě je krytá dnešním financovaným potem: skutečným výnosem ze stakingu a sponzory, ověřeno proti účetnictví.",
- "Guiding you to": "Vede tě k cíli",
  "Hide pot details": "Skrýt podrobnosti potu",
  "Sends": "Platby",
  "Show coins everywhere": "Ukázat mince všude",
@@ -3169,5 +3168,6 @@
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Nejdřív si ulož passkey nebo svých 12 slov. Bez nich se tento průzkumník nedá vrátit.",
  "Shows your next step on the map": "Ukazuje tvůj další krok na mapě",
  "Welcome to": "Vítej v zóně",
- "{0} quests here. Tap to see them.": "Čeká tu {0} úkolů. Klepni a uvidíš je."
+ "{0} quests here. Tap to see them.": "Čeká tu {0} úkolů. Klepni a uvidíš je.",
+ "Guiding you to": "Vede tě k cíli"
 }

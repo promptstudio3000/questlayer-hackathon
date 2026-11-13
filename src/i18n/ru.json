@@ -2637,7 +2637,6 @@
  "Direction guide": "Указатель направления",
  "Drag the stick, or use arrows or WASD": "Тяните джойстик или используйте стрелки либо WASD",
  "Every coin and prize on the map is backed by today's funded pot: realized staking yield and sponsors, checked against the books.": "Каждая монета и приз на карте обеспечены сегодняшним пополненным фондом: полученный доход от стейкинга и спонсоры, сверено с учётом.",
- "Guiding you to": "Ведём к цели",
  "Hide pot details": "Скрыть детали фонда",
  "Sends": "Переводы",
  "Show coins everywhere": "Показать монеты везде",
@@ -3169,5 +3168,6 @@
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Сначала сохрани passkey или свои 12 слов. Без них этот исследователь не сможет вернуться.",
  "Shows your next step on the map": "Показывает твой следующий шаг на карте",
  "Welcome to": "Добро пожаловать в",
- "{0} quests here. Tap to see them.": "Здесь {0} квестов. Нажмите, чтобы увидеть."
+ "{0} quests here. Tap to see them.": "Здесь {0} квестов. Нажмите, чтобы увидеть.",
+ "Guiding you to": "Ведём к цели"
 }

@@ -419,3 +419,20 @@ html[data-test-layer] .balance-pill::after { content: "TEST"; position: absolute
 @media (prefers-reduced-motion: no-preference) {
   .zone-presence-welcome > button { animation: nearby-in .32s ease-out, nearby-glow 1.8s ease-in-out .32s infinite; }
 }
+html[data-motion="reduce"] :is(.nearby-open, .nearby-open-art, .nearby-open > svg, .zone-presence-welcome > button) { animation: none; }
+
+/* ---- Settings drawer ------------------------------------------------------
+   Settings slides in from the right on every screen (Lubos, 13 Nov 2026): a
+   narrow panel with a strip of map left beside it; a tap on the strip closes it. */
+.app-shell .main-panel.settings-panel {
+  position: fixed; inset: 0 0 0 auto; z-index: 30; width: min(400px, calc(100vw - 44px)); max-width: none;
+  height: auto; max-height: none; margin: 0; padding: 8px 16px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 20px 0 0 20px; transform: none; translate: none; overflow-y: auto; overscroll-behavior: contain;
+  box-shadow: -8px 0 32px #1a033533; animation: settings-drawer-in 0.2s ease-out;
+}
+[dir="rtl"] .app-shell .main-panel.settings-panel { inset: 0 auto 0 0; border-radius: 0 20px 20px 0; animation-name: settings-drawer-in-rtl; }
+.app-shell:has(.main-panel.settings-panel) .sheet-backdrop { display: block; position: fixed; inset: 0; z-index: 29; background: #1a033566; }
+@keyframes settings-drawer-in { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes settings-drawer-in-rtl { from { transform: translateX(-100%); } to { transform: none; } }
+html[data-motion="reduce"] .app-shell .main-panel.settings-panel { animation: none; }
+@media (prefers-reduced-motion: reduce) { .app-shell .main-panel.settings-panel { animation: none; } }

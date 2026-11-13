@@ -2637,7 +2637,6 @@
  "Direction guide": "方向ガイド",
  "Drag the stick, or use arrows or WASD": "スティックをドラッグするか、矢印キーかWASDを使います",
  "Every coin and prize on the map is backed by today's funded pot: realized staking yield and sponsors, checked against the books.": "マップ上のコインと賞品はすべて今日の資金プールで裏付けられています。実現したステーキング利回りとスポンサーで、帳簿と照合済みです。",
- "Guiding you to": "案内中",
  "Hide pot details": "プールの詳細を隠す",
  "Sends": "送金",
  "Show coins everywhere": "すべての場所のコインを表示",
@@ -3169,5 +3168,6 @@
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "先にパスキーか12個の単語を保存してください。ないとこの探検家は戻せません。",
  "Shows your next step on the map": "次の一歩をマップに表示します",
  "Welcome to": "ようこそ",
- "{0} quests here. Tap to see them.": "ここにクエストが{0}件あります。タップして表示。"
+ "{0} quests here. Tap to see them.": "ここにクエストが{0}件あります。タップして表示。",
+ "Guiding you to": "案内中"
 }

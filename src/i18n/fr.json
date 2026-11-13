@@ -2637,7 +2637,6 @@
  "Direction guide": "Guide de direction",
  "Drag the stick, or use arrows or WASD": "Fais glisser le joystick ou utilise les flèches ou WASD",
  "Every coin and prize on the map is backed by today's funded pot: realized staking yield and sponsors, checked against the books.": "Chaque pièce et chaque prix sur la carte est couvert par la cagnotte financée du jour : rendement de staking réalisé et sponsors, vérifiés dans les comptes.",
- "Guiding you to": "Te guide vers",
  "Hide pot details": "Masquer le détail de la cagnotte",
  "Sends": "Envois",
  "Show coins everywhere": "Afficher les pièces partout",
@@ -3169,5 +3168,6 @@
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Enregistre d’abord une passkey ou tes 12 mots. Sans eux, cet explorateur ne peut pas revenir.",
  "Shows your next step on the map": "Montre ta prochaine étape sur la carte",
  "Welcome to": "Bienvenue à",
- "{0} quests here. Tap to see them.": "{0} quêtes ici. Touchez pour les voir."
+ "{0} quests here. Tap to see them.": "{0} quêtes ici. Touchez pour les voir.",
+ "Guiding you to": "Te guide vers"
 }
