@@ -1,4 +1,5 @@
 import { ArrowRight } from "./dir-icons";
+import { distanceLabel } from "./app-bits";
 import { useLearning } from "./useLearning";
 import { helpText } from "./activity-help";
 import { tr } from "./i18n";
@@ -6,9 +7,11 @@ import { ActorPortrait } from "./ActorPortrait";
 import { useFormDraft } from "./useFormDraft";
 import { ScreenTabs, type ScreenTab } from "./ScreenTabs";
 // Encounter sheet for a roaming NPC, built like a game dialog: a big portrait
-// with the NPC's line in a speech bubble, the actions the server computed
-// (they always work without AI) and a box to write to them. Everything else
-// (open tasks, the keeper's vault, the character profile) lives in tabs.
+// and three tabs, one job each. Talk is the conversation (the greeting and
+// the NPC's own question as chat messages), Tasks holds everything the NPC
+// offers and what the player is doing for it (the server computes those and
+// they always work without AI), and Profile tells who the character is and
+// which places it has heard of, with how far they are. The keeper adds Vault.
 import { NpcGear } from "./NpcGear";
 import { comeBackLine } from "./come-back";
 import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
@@ -19,7 +22,7 @@ import {
   DiceFive,
   IdentificationCard,
   ListChecks,
-  PaperPlaneRight,
+  MapPin,
   Scroll,
   Sparkle,
   Swap,
@@ -41,6 +44,7 @@ import {
   tradeUpComplete,
   type KeeperView,
   type NpcActiveLine,
+  type NpcPlace,
   type NpcReply,
   type NpcTrade,
 } from "./npc-client";
@@ -50,7 +54,7 @@ import { chainTradesReady, explorerTxUrl, fillOnChain, handOverOnChain, secureTr
 import { InnerVault, StakeTodayCard, seenCeremony, seenRank } from "./StakeToday";
 import "./npc-sheet.css";
 
-// Chat mode loads only when a player writes or answers (src/NpcChat.tsx).
+// The Talk tab's thread (src/NpcChat.tsx) loads with the first greeting.
 const NpcChat = lazy(() => import("./NpcChat"));
 const EMOTE: Record<string, string> = { wave: "👋", think: "🤔", laugh: "😄", shrug: "🤷", none: "" };
 const isTrade = (offer: ActorOffer) => offer.kind.startsWith("trade_");
@@ -78,17 +82,12 @@ function Portrait({ model, label, emote }: { model: string; label: string; emote
   );
 }
 
-const roomyDialog = () =>
-  typeof matchMedia === "function" && matchMedia("(min-width: 901px) and (min-height: 700px)").matches;
-
 export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onClose, onQuest, keeperPanel }: { keeperPanel?: ReactNode; onQuest?: (questId: string) => void; playerId: string; draftRealm: string; actorId: string; encounter: ActorEncounter; onClose: () => void }) {
   const t = npcStrings();
   const learning = useLearning(playerId);
   const [reply, setReply] = useState<NpcReply | null>(null);
   const draft = useFormDraft({playerId, form:`npc-message:${actorId}`, realm:draftRealm, fields:{message:300}, initial:{message:""}});
   const message = draft.values.message;
-  const latestMessage = useRef(message);
-  latestMessage.current = message;
   const setMessage = (value: string) => draft.setField("message", value);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -96,18 +95,13 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
   const [trades, setTrades] = useState<Record<string, NpcTrade>>({});
   const [vault, setVault] = useState<KeeperView | null>(null);
   const [tab, setTab] = useState<Tab>("talk");
-  const [chat, setChat] = useState<null | { mode: "mission" | "talk"; text?: string }>(null);
-  const [flow, setFlow] = useState<"greeting" | "choices" | "offer" | "accepted">("greeting");
   const [selectedOffer, setSelectedOffer] = useState<ActorOffer | null>(null);
   const flowHost = useRef<HTMLDivElement>(null);
-  // A desktop dialog has room for the services, so it opens with them shown;
-  // a phone keeps the short greeting and folds them under "Learn more".
-  const [detailsOpen, setDetailsOpen] = useState(roomyDialog);
   useEffect(() => {
-    if (flow === "greeting") return;
-    const frame = requestAnimationFrame(() => flowHost.current?.querySelector<HTMLElement>(".npc-story-step h3, .npc-continue")?.focus({ preventScroll: true }));
+    if (!selectedOffer) return;
+    const frame = requestAnimationFrame(() => flowHost.current?.querySelector<HTMLElement>(".npc-continue")?.focus({ preventScroll: true }));
     return () => cancelAnimationFrame(frame);
-  }, [flow]);
+  }, [selectedOffer]);
   const token = encounter.encounter;
   const run = async (task: () => Promise<void>) => {
     setBusy(true);
@@ -179,7 +173,6 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
       }
       setNotice(t.accepted(offer.label));
       setSelectedOffer(offer);
-      setFlow("accepted");
     });
   const turnIn = (line: NpcActiveLine) =>
     run(async () => {
@@ -189,19 +182,9 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
     });
   const handOver = (offerId: string) => run(() => settleTradeUp(offerId, trades[offerId]));
   const proofs = Object.values(trades).flatMap((x) => x.txHashes || (x.txHash ? [x.txHash] : []));
-  // Writing to an NPC switches the dialog to chat mode.
-  const send = (event: React.FormEvent) => {
-    event.preventDefault();
-    const text = message.trim();
-    const draftRevision = draft.revision;
-    if (!text) return;
-    setChat({ mode: "talk", text });
-    if (latestMessage.current.trim() === text) draft.discard(draftRevision);
-    setNotice("");
-  };
   const chatTalk = async (text: string) => {
     const r = await npcTalk(actorId, token, text);
-    setReply((old) => ({ ...r, npc: r.npc ?? old?.npc, mission: old?.mission }));
+    setReply((old) => ({ ...r, npc: r.npc ?? old?.npc, mission: old?.mission, lore: old?.lore, places: old?.places }));
     return r;
   };
   const chatAnswer = async (text: string) => {
@@ -210,20 +193,31 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
     if (r.xp > 0) learning.acknowledge("npc");
     return r;
   };
-  const mission = reply?.mission;
 
   const archetype = reply?.npc?.archetype || encounter.actor.archetype;
   const title = reply?.npc?.title || encounter.actor.title;
   const suggested = reply?.offer?.id;
   const active = reply?.active ?? [];
   const ready = active.filter((line) => line.steps.every((s) => s.done));
+  const offers = reply?.menu || [];
   const pendingHandOver = Object.entries(trades).filter(([, x]) => x.kind === "trade_up" && x.state === "issued");
+  const hasVault = !!(vault || keeperPanel);
   const tabs: ScreenTab<Tab>[] = [
     { id: "talk", label: t.tabTalk, icon: Sparkle },
-    { id: "tasks", label: t.tabTasks, icon: ListChecks, count: active.length || undefined },
-    ...(vault || keeperPanel ? [{ id: "vault" as Tab, label: t.tabVault, icon: Vault }] : []),
+    { id: "tasks", label: t.tabTasks, icon: ListChecks, count: offers.length + ready.length || undefined },
+    ...(hasVault ? [{ id: "vault" as Tab, label: t.tabVault, icon: Vault }] : []),
     { id: "about", label: t.tabAbout, icon: IdentificationCard },
   ];
+  // The first tab is the one with something to do: a reward to collect or a
+  // trader's counter goes to Tasks, the keeper to the vault, the rest talk.
+  const opened = useRef(false);
+  useEffect(() => {
+    if (!reply || opened.current) return;
+    opened.current = true;
+    if (ready.length || (archetype === "trader" && offers.length)) setTab("tasks");
+    else if (archetype === "keeper" && hasVault) setTab("vault");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reply, hasVault]);
 
   const offerMeta = (offer: ActorOffer) => {
     const terms = offer.terms as { xp?: number; aura?: boolean; patron?: boolean; pathLine?: number; pathOf?: number };
@@ -232,19 +226,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
     return t.reward(terms.xp, !!terms.aura) || t.offerTag[offer.kind] || "";
   };
 
-  const nextAcceptedStep = selectedOffer ? active.find(line => line.offerId === selectedOffer.id)?.steps.find(step => !step.done) : null;
-  const questOffers = (reply?.menu || []).filter((offer) => offer.kind === "quest" || offer.kind === "chapter");
-  // Offers already listed under "Choose a quest" are not repeated in the Talk tab.
-  const shownAbove = new Set(reply && (flow === "greeting" || flow === "choices") ? questOffers.slice(0, 2).map((offer) => offer.id) : []);
-  const moreOffers = (reply?.menu || []).filter((offer) => !shownAbove.has(offer.id));
-  const openServices = (next: Tab) => { setTab(next); setDetailsOpen(true); };
-  // Nothing to choose in the greeting (traders, keepers): their counter is
-  // open right away, without a Continue step.
-  const direct = !!reply && !questOffers.length && !active.length;
-  useEffect(() => { if (direct) openServices(vault || keeperPanel ? "vault" : "talk"); }, [direct]);
-  const offerSteps = selectedOffer && Array.isArray(selectedOffer.terms.steps)
-    ? selectedOffer.terms.steps.filter((step): step is { title: string } => !!step && typeof step === "object" && typeof step.title === "string")
-    : [];
+  const nextAcceptedStep = selectedOffer ? active.find((line) => line.offerId === selectedOffer.id)?.steps.find((step) => !step.done) : null;
   const turnInButton = (line: NpcActiveLine) => (
     <button type="button" className="npc-action turn-in" disabled={busy} onClick={() => turnIn(line)}>
       <span className="npc-action-icon">
@@ -253,6 +235,25 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
       <span className="npc-action-label">{line.label}</span>
       <small>{line.errand ? t.errandReport(line.xp, line.errand.clueBonusXp) : t.turnIn(line.xp, line.aura)}</small>
     </button>
+  );
+  const panel = (id: Tab, extra = "") => ({
+    className: `npc-panel${extra}`,
+    role: "tabpanel",
+    id: `npc-${actorId}-panel`,
+    "aria-labelledby": `npc-${actorId}-tab-${id}`,
+  });
+  const placeRow = (place: NpcPlace) => (
+    <li key={place.name} className="npc-place">
+      <MapPin weight="duotone" aria-hidden="true" />
+      <span className="npc-place-text">
+        <strong>{place.name}</strong>
+        <small>{place.tip}</small>
+      </span>
+      <span className="npc-place-meta">
+        <span className="npc-place-topic">{t.topic[place.topic] || place.topic}</span>
+        {Number.isFinite(place.distanceM) && <span className="npc-place-distance">{distanceLabel(place.distanceM!)}</span>}
+      </span>
+    </li>
   );
 
   return (
@@ -266,47 +267,71 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
           </div>
         </header>
 
-        {chat ? (
-          <Suspense fallback={<p className="npc-bubble">{t.thinking}</p>}>
-            <NpcChat name={name} mission={mission} start={chat} onTalk={chatTalk} onAnswer={chatAnswer} />
-          </Suspense>
-        ) : (
-          <p className="npc-bubble" aria-live="polite">
-            {flow === "accepted" ? notice : reply ? reply.say : t.thinking}
-          </p>
-        )}
-        {!chat && mission && !mission.answered && mission.left > 0 && flow !== "accepted" && (
-          <div className="npc-mission-ask">
-            <p>{mission.ask}</p>
-            <button type="button" className="primary-button" disabled={busy} onClick={() => setChat({ mode: "mission" })}>
-              {tr("Answer · +{0} XP", { 0: mission.xp })}
-            </button>
+        <ScreenTabs label={t.talkTo(name)} idBase={`npc-${actorId}`} tabs={tabs} value={tab} onChange={setTab} sticky={false} />
+
+        {error && (
+          <div className="npc-error" role="alert">
+            <p>{error}</p>
+            {!reply && (
+              <button className="secondary-button" disabled={busy} onClick={() => run(refresh)}>
+                {t.retry}
+              </button>
+            )}
           </div>
         )}
 
-        {reply && flow === "greeting" && (ready.length > 0 || active.length > 0) && <button className="primary-button npc-continue" disabled={busy} onClick={() => openServices("tasks")}>{tr("Your tasks")}<ArrowRight aria-hidden="true" /></button>}
-        {reply && (flow === "greeting" || flow === "choices") && questOffers.length > 0 && <section className="npc-story-step" aria-label={tr("Choose a quest")}>
-          {questOffers.slice(0, 2).map((offer) => <button key={offer.id} className="npc-choice" disabled={busy} onClick={() => accept(offer)}>
-            <span>{offer.label}</span><small>{offerMeta(offer)}</small><ArrowRight aria-hidden="true" />
-          </button>)}
-        </section>}
-        {flow === "accepted" && nextAcceptedStep && <p className="npc-next-step">{nextAcceptedStep.title}</p>}
-        {flow === "accepted" && <button className="primary-button npc-continue" onClick={() => { onClose(); if (nextAcceptedStep) onQuest?.(nextAcceptedStep.questId); }}>{tr("Back to map")}<ArrowRight aria-hidden="true" /></button>}
-        {notice && flow !== "accepted" && <p className="npc-notice" role="status">{notice}</p>}
-        {error && <div className="npc-error" role="alert"><p>{error}</p>
-          {!reply && <button className="secondary-button" disabled={busy} onClick={() => run(refresh)}>{t.retry}</button>}
-        </div>}
-        <details className="npc-more" open={detailsOpen} onToggle={(e) => setDetailsOpen(e.currentTarget.open)}>
-          <summary>{tr("More")}</summary>
-        <ScreenTabs label={t.talkTo(name)} idBase={`npc-${actorId}`} tabs={tabs} value={tab} onChange={setTab} sticky={false} />
+        {/* Talk stays mounted so the thread survives a look at another tab. */}
+          <div {...(tab === "talk" ? panel("talk") : { className: "npc-panel" })} hidden={tab !== "talk"}>
+            {reply ? (
+              <Suspense fallback={<p className="npc-bubble">{reply.say}</p>}>
+                <NpcChat
+                  name={name}
+                  greeting={reply.say}
+                  mission={reply.mission}
+                  text={message}
+                  onText={setMessage}
+                  onSent={() => draft.discard()}
+                  onTalk={chatTalk}
+                  onAnswer={chatAnswer}
+                />
+              </Suspense>
+            ) : (
+              <p className="npc-bubble" aria-live="polite">
+                {t.thinking}
+              </p>
+            )}
+            {reply && (offers.length > 0 || ready.length > 0) && (
+              <button type="button" className="npc-link" onClick={() => setTab("tasks")}>
+                {t.tasksWaiting(offers.length + ready.length)} →
+              </button>
+            )}
+          </div>
 
-        {tab === "talk" && (
-          <div className="npc-panel" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
+        {tab === "tasks" && (
+          <div {...panel("tasks")}>
+            {notice && (
+              <p className="npc-notice" role="status">
+                {notice}
+              </p>
+            )}
+            {selectedOffer && nextAcceptedStep && <p className="npc-next-step">{nextAcceptedStep.title}</p>}
+            {selectedOffer && (
+              <button
+                className="primary-button npc-continue"
+                onClick={() => {
+                  onClose();
+                  if (nextAcceptedStep) onQuest?.(nextAcceptedStep.questId);
+                }}
+              >
+                {tr("Back to map")}
+                <ArrowRight aria-hidden="true" />
+              </button>
+            )}
             <div className="npc-actions">
               {ready.map((line) => (
                 <div key={line.offerId}>{turnInButton(line)}</div>
               ))}
-              {moreOffers.map((offer) => (
+              {offers.map((offer) => (
                 <button
                   type="button"
                   key={offer.id}
@@ -340,24 +365,15 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
                 />
               ))}
               {archetype === "trader" && <NpcGear actorId={actorId} encounter={token} />}
-              {reply && !moreOffers.length && !shownAbove.size && !ready.length && !reply.locked?.length && archetype !== "trader" && (
+              {reply && !offers.length && !active.length && !reply.locked?.length && archetype !== "trader" && (
                 <p className="npc-empty" data-testid={encounter.comeBack ? "npc-come-back" : undefined}>
                   {encounter.comeBack ? `${comeBackLine(encounter.actor, encounter.comeBack)} ${tr("You can still ask me anything.")}` : t.noActions}
                 </p>
               )}
-              {active.length > ready.length && (
-                <button type="button" className="npc-link" onClick={() => setTab("tasks")}>
-                  {t.moreTasks(active.length - ready.length)} →
-                </button>
-              )}
             </div>
-          </div>
-        )}
-
-        {tab === "tasks" && (
-          <div className="npc-panel" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
-            {!active.length && <p className="npc-empty">{t.noTasks}</p>}
-            {active.map((line) => {
+            {/* Finished lines already have their turn-in button above. */}
+            {active.length > ready.length && <h3 className="npc-subhead">{tr("Your tasks")}</h3>}
+            {active.filter((line) => !ready.includes(line)).map((line) => {
               const done = line.steps.every((s) => s.done);
               return (
                 <div className={`npc-task${line.patron ? " patron" : ""}`} key={line.offerId}>
@@ -372,23 +388,26 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
                       </li>
                     ))}
                   </ul>
-                  <button type="button" className="npc-turnin" disabled={busy || !done} onClick={() => turnIn(line)}>
-                    {line.errand
-                      ? done
-                        ? t.errandReport(line.xp, line.errand.clueBonusXp)
-                        : t.errandNotReady
-                      : done
-                        ? t.turnIn(line.xp, line.aura)
-                        : t.notReady}
-                  </button>
+                  {!done && <p className="npc-fine">{line.errand ? t.errandNotReady : t.notReady}</p>}
                 </div>
               );
             })}
+            {proofs.length > 0 && (
+              <p className="npc-fine npc-proof">
+                {t.onChainProof}{" "}
+                {[...new Set(proofs)].map((hash, i) => (
+                  <a key={hash} href={explorerTxUrl(hash)} target="_blank" rel="noreferrer" data-tx={hash}>
+                    {i ? " · " : ""}
+                    {hash.slice(0, 6)}…
+                  </a>
+                ))}
+              </p>
+            )}
           </div>
         )}
 
-        {tab === "vault" && (vault || keeperPanel) && (
-          <div className="npc-panel npc-vault" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
+        {tab === "vault" && hasVault && (
+          <div {...panel("vault", " npc-vault")}>
             {vault?.stake && (
               <>
                 <StakeTodayCard
@@ -409,64 +428,40 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
                 <InnerVault card={vault!.stake!} />
               </>
             )}
-            {keeperPanel || (vault && (
-              <section aria-label={t.vaultBalance}>
-                <h3>{t.vaultBalance}</h3>
-                <ul className="npc-keeper">
-                  {vault.lines.map((line) => (
-                    <li key={line}>{line}</li>
-                  ))}
-                </ul>
-              </section>
-            ))}
+            {keeperPanel ||
+              (vault && (
+                <section aria-label={t.vaultBalance}>
+                  <h3>{t.vaultBalance}</h3>
+                  <ul className="npc-keeper">
+                    {vault.lines.map((line) => (
+                      <li key={line}>{line}</li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
           </div>
         )}
 
         {tab === "about" && (
-          <div className="npc-panel npc-about" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
-            <h3>{t.about}</h3>
-            {title && <p>{title}</p>}
-            {reply?.note && <p>{reply.note}</p>}
+          <div {...panel("about", " npc-about")}>
+            {title && <h3>{title}</h3>}
+            {reply?.lore?.backstory && <p>{reply.lore.backstory}</p>}
+            {!!reply?.lore?.likes.length && <p className="npc-likes">{t.likes(reply.lore.likes.join(", "))}</p>}
+            <h3 className="npc-subhead">{t.placesKnown}</h3>
+            {reply?.places?.length ? <ul className="npc-places">{reply.places.map(placeRow)}</ul> : <p className="npc-empty">{t.noPlaces}</p>}
             <p className="npc-fine">
               {reply?.source === "near-ai" ? t.privateVoice : reply?.source && reply.source !== "template" ? t.aiVoice : t.stdVoice}
+              {reply?.verification && (
+                <>
+                  {" · "}
+                  <a href={reply.verification.url} target="_blank" rel="noreferrer">
+                    {t.verifyReply}
+                  </a>
+                </>
+              )}
             </p>
-            {reply?.verification && (
-              <p className="npc-fine">
-                <a href={reply.verification.url} target="_blank" rel="noreferrer">
-                  {t.verifyReply}
-                </a>{" "}
-                <code>{reply.verification.chatId}</code>
-              </p>
-            )}
-            <p className="npc-fine">{t.aiNote}</p>
           </div>
         )}
-
-        {proofs.length > 0 && (
-          <p className="npc-fine npc-proof">
-            {t.onChainProof}{" "}
-            {[...new Set(proofs)].map((hash, i) => (
-              <a key={hash} href={explorerTxUrl(hash)} target="_blank" rel="noreferrer" data-tx={hash}>
-                {i ? " · " : ""}
-                {hash.slice(0, 6)}…
-              </a>
-            ))}
-          </p>
-        )}
-        {!chat && <form className="npc-chat" onSubmit={send}>
-          <input
-            value={message}
-            maxLength={300}
-            onChange={(e) => setMessage(e.target.value)}
-            placeholder={t.sayTo(name)}
-            aria-label={t.messageTo(name)}
-            enterKeyHint="send"
-          />
-          <button type="submit" disabled={busy || !message.trim()} aria-label={t.send}>
-            <PaperPlaneRight weight="fill" />
-          </button>
-        </form>}
-        </details>
       </div>
     </Dialog>
   );

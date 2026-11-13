@@ -9,3 +9,6 @@
 .npc-line.typing { letter-spacing: 2px; }
 .npc-thread-hint { margin: 0; font-size: 13px; color: var(--ink-secondary, #5b4a75); text-align: center; }
 @media (prefers-reduced-motion: no-preference) { .npc-line { animation: npc-pop 0.18s ease-out; } }
+.npc-line.ask { display: grid; gap: 8px; }
+.npc-ask-answer { justify-self: start; min-height: 40px; padding: 8px 14px; border: 0; border-radius: 999px; background: var(--action, #672eeb); color: #fff; font: inherit; font-size: 15px; font-weight: 700; cursor: pointer; }
+.npc-ask-answer:disabled { opacity: 0.6; }

@@ -47,12 +47,14 @@ export function createWikipediaSearch({ lang = "en", fetcher = fetch, timeoutMs 
       const pages = (geo?.query?.geosearch || []).slice(0, 12);
       if (!pages.length) return [];
       const ex = await get({ action: "query", prop: "extracts", exintro: 1, explaintext: 1, exsentences: 2, exlimit: 12, pageids: pages.map((p) => p.pageid).join("|") });
+      const at = new Map(pages.map((p) => [p.pageid, { lat: Number(p.lat), lng: Number(p.lon) }]));
       const out = [];
       for (const p of ex?.query?.pages || []) {
         const title = clean(String(p.title || "")).slice(0, 60);
         const text = firstSentence(String(p.extract || ""));
         if (title.length < 2 || text.length < 30 || /\b(may refer to|is a list)\b/i.test(text)) continue;
-        out.push({ ref: `wiki:${lang}:${p.pageid}`, place: title, text });
+        const spot = at.get(p.pageid);
+        out.push({ ref: `wiki:${lang}:${p.pageid}`, place: title, text, ...(spot && Number.isFinite(spot.lat) && Number.isFinite(spot.lng) ? { spot } : {}) });
         if (out.length >= MAX_RESULTS) break;
       }
       return out;

@@ -428,8 +428,9 @@ export const CHAPTERS: Chapter[] = [
       { h: "Encounters" },
       {
         list: [
-          "A greeting shows up to two current quest offers with a compact portrait; tapping one calls the real accept endpoint and, once confirmed, returns to the map guided to the first stop.",
-          "The full menu, active tasks, trader and keeper surfaces and the chat input sit under More (folded on a phone, open on desktop).",
+          "An encounter is a portrait and three tabs, one job each. **Talk** is the conversation: the greeting and the NPC's own question arrive as chat messages, **Answer** under the question turns your next message into the answer, anything else is ordinary chat.",
+          "**Tasks** holds everything the NPC offers (quests, errands, trades, rolls), rewards ready to collect and the tasks you are doing for it. Tapping an offer calls the real accept endpoint and, once confirmed, returns to the map guided to the first stop. A reward to collect or a trader's counter opens on Tasks, the keeper on Vault.",
+          "**Profile** tells who the character is (its story and what it likes) and lists up to 12 **places it knows** from the shared memory of the place, nearest first, with the distance from the NPC.",
           "Unsent NPC messages are kept as local drafts per explorer, world and actor; they never store tokens or prove anything.",
           "Nearby Open cues only open the encounter; the server still checks location, timing and availability.",
         ],
@@ -437,12 +438,13 @@ export const CHAPTERS: Chapter[] = [
       { h: "NPC missions and shared memory" },
       {
         list: [
-          "Every NPC has its own mission card and asks one question about the place: the best pub, where to eat, what is worth seeing, a hidden corner or the best view. **Answer** opens chat mode.",
+          "Every NPC has its own mission card and asks one question about the place in the Talk tab: the best pub, where to eat, what is worth seeing, a hidden corner or the best view.",
           "NEAR AI turns a useful answer into a short neutral tip for that city (or map cell in the World). Other explorers who ask the NPCs get the best tips back: \"explorers tell me…\". Nobody sees who said what.",
           "A new tip pays **30 XP**, confirming a known tip **10 XP**. At most **3 rewarded answers a day**, one per NPC, and the XP counts toward the daily location XP limit.",
           "Answers with links, contacts, personal details, insults or attempts to change the NPC's rules are refused before any AI sees them, and the tip is checked again afterwards. Without AI an answer waits unseen and pays nothing.",
           "Every NPC has its own voice: a personality card and its own lines for greetings, small talk, jokes and \"I don't know\". When the AI is off or busy the NPC still answers in character and points to explorers' tips when asked about places.",
-          "Plzeň starts with a hand-checked set of tips. An optional Wikipedia lookup (off unless the host turns it on) adds sights near an NPC; it sends only map coordinates, never what a player wrote.",
+          "Plzeň starts with a hand-checked set of tips with map positions. An optional Wikipedia lookup (off unless the host turns it on) adds sights near an NPC with their positions; it sends only map coordinates, never what a player wrote.",
+          "A tip that names a place with a known position shows its distance in the NPC's Profile; a place without one is listed without a distance.",
         ],
       },
       { h: "Monsters" },
@@ -700,7 +702,7 @@ export const CHAPTERS: Chapter[] = [
       { h: "First expedition" },
       { list: [
         "Enter from the world picker when the testnet host enables MetaLayer. Start on the public square. Everyone can build on its green areas; the central altar, crossings and walking floor stay protected.",
-        "Meet Keeper Nera beside the arrival path. Tap her or open the nearby action to accept the first expedition. Community also opens the board. Follow the cyan beam into Crystal Hollow and hold a pickaxe on ten natural diamond blocks. The server checks mining duration, reach, exposed sight line and exclusive extraction. Decorative crystals do not count as ore.",
+        "Meet Keeper Nera beside the arrival path. Tap her or open the nearby action to accept the first expedition. Community also opens the board. Follow the cyan beam into Crystal Hollow and dig ten natural diamond blocks with a click or tap. The server checks mining duration, reach, exposed sight line and exclusive extraction. Decorative crystals do not count as ore.",
         "The same resource block disappears for everyone. Natural diamonds renew after fifteen minutes, while dug stone corridors stay open. The backpack shows confirmed resources. Completion is saved once and survives reconnecting.",
         "The minimap shares every explorer's discoveries. The atlas loads only the chosen window, so a distant journey never shrinks the central square. Return to the square is an explicit jump and reveals no line between the two places.",
       ] },
@@ -725,7 +727,7 @@ export const CHAPTERS: Chapter[] = [
       ] },
       { h: "Controls and proof" },
       { list: [
-        "Use the same accessible stick as the city demonstration: forward, back and turns, with Run and Jump. Hold a mine block to extract it; choose Build to place on the square. Desktop right-click places a block. Modals keep movement keys for their own controls.",
+        "Use the same accessible stick as the city demonstration: forward, back and turns, with Run and Jump. Click or tap a mine block to dig it: the explorer turns to it and swings the pickaxe until it breaks, and walking away or dragging the view stops. Pressing and holding works too. Hard rock outside the mines says where to dig. Choose Build to place on the square. Desktop right-click places a block. Modals keep movement keys for their own controls.",
         "The first preview uses an Aavegotchi starter ghost and the equipped Aura. Full verified-original 3D outfits remain a renderer integration. Movement in MetaLayer never counts as real GPS evidence.",
         "Block edits, discoveries, extraction receipts and resource inventories are stored in the dedicated MetaLayer module. This preview issues no QuestLayer items, XP or money. The Actions and NEAR proofs panel (Settings → Advanced) separates locally saved actions from verified chain references and offers the existing platform account feed as separately labelled history.",
       ] },

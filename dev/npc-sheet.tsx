@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import NpcSheet from "../src/NpcSheet";
 import type { ActorEncounter } from "../src/actor-types";
 import "../src/style.css";
+import "../src/secondary-surfaces.css";
 
 const q = new URLSearchParams(location.search);
 const model = q.get("npc") || "pilgrim";
@@ -29,6 +30,14 @@ const reply = {
   source: "near-ai",
   note: undefined,
   mission: { topic: "pub", ask: "Tell me, friend: where is the best pub around here?", answered: false, xp: 30, left: 3 },
+  lore: { backstory: "A floating lantern spirit who has walked every street of this town for a hundred years.", likes: ["parks", "riverbanks", "old churches"] },
+  places: [
+    { name: "Republic Square", topic: "sights", tip: "The main square, with the cathedral in the middle.", distanceM: 40, lat: 49.7472, lng: 13.3776 },
+    { name: "U Salzmannů", topic: "pub", tip: "One of the oldest pubs in town, with a classic Czech beer hall feel.", distanceM: 210, lat: 49.7478, lng: 13.3794 },
+    { name: "Great Synagogue", topic: "sights", tip: "The second largest synagogue in Europe.", distanceM: 420, lat: 49.7467, lng: 13.3728 },
+    { name: "Na Spilce", topic: "food", tip: "Czech classics in the big beer hall inside the brewery.", distanceM: 760, lat: 49.7472, lng: 13.3879 },
+    { name: "Hidden courtyard", topic: "secret", tip: "A quiet courtyard behind the old town hall." },
+  ],
   npc: { id: "x", name: model === "pilgrim" ? "Ráda the Pilgrim" : model, title: "Wanderer with errands", archetype },
 };
 const realFetch = window.fetch;

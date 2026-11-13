@@ -124,6 +124,12 @@ export function createNpcService(
     memory.refreshWeb({ world, actor });
     return {
       npc: { id: actor.id, name: persona.name, title: persona.title || null, archetype: persona.archetype },
+      // Profile tab: who the character is and the places it has heard of.
+      lore: {
+        backstory: typeof persona.backstory === "string" ? persona.backstory : null,
+        likes: Array.isArray(persona.likes) ? persona.likes.filter((x) => typeof x === "string").slice(0, 4) : [],
+      },
+      places: memory.places({ world, actor }),
       say: reply.say,
       emote: reply.emote,
       menu,

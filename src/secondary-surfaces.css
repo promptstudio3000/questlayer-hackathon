@@ -88,9 +88,6 @@ dialog.game-dialog-encounter:has(> .npc-sheet) { background: var(--surface); col
 .game-dialog .npc-role { background: var(--surface-raised); color: var(--ink-secondary); font-size: 14px; }
 .game-dialog .npc-bubble { padding: 16px; background: var(--surface-raised); color: var(--ink); border: 1px solid var(--decorative-border); border-radius: 12px; line-height: 1.5; }
 .game-dialog .npc-bubble::before { display: none; }
-.game-dialog .npc-tabs { background: transparent; border-bottom: 1px solid var(--decorative-border); border-radius: 0; gap: 8px; padding: 0; }
-.game-dialog .npc-tabs button { min-height: 48px; border-radius: 0; font-size: 14px; color: var(--ink-secondary); background: transparent; }
-.game-dialog .npc-tabs button.active { color: var(--ink); box-shadow: inset 0 -3px 0 var(--action); }
 .game-dialog .npc-sheet .screen-tabs { margin: 0; padding: 0; gap: 8px; background: transparent; border: 0; border-bottom: 1px solid var(--decorative-border); border-radius: 0; }
 .game-dialog .npc-sheet .screen-tabs button { min-width: 48px; min-height: 48px; padding: 8px; border-radius: 0; color: var(--ink-secondary); background: transparent; box-shadow: none; font-size: 14px; }
 .game-dialog .npc-sheet .screen-tabs button[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 -3px 0 var(--action); }
