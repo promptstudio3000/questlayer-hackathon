@@ -23,6 +23,7 @@ type HandoffProps = {
   onClose: () => void;
   onQuest?: (questId: string) => void;
   format?: ChallengeFormat | null;
+  keeperPanel?: ReactNode;
 };
 
 // Optional slices: NPC talk (N1/N2) and monster challenges (M1/M2).
@@ -64,6 +65,7 @@ export function ActorSheet({
   onQuest,
   onShow,
   onClose,
+  keeperPanel,
 }: {
   actor: ActorView;
   playerId: string;
@@ -73,6 +75,8 @@ export function ActorSheet({
   /** Too far away: close the sheet and show this character on the map. */
   onShow?: () => void;
   onClose: () => void;
+  /** The stake form shown at a keeper (the same one as Profile → Stake). */
+  keeperPanel?: ReactNode;
 }) {
   const [state, setState] = useState<
     | { kind: "loading" }
@@ -142,7 +146,7 @@ export function ActorSheet({
   if (ready && handoff === "npc" && NpcSheet)
     return (
       <Suspense fallback={null}>
-        <NpcSheet playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} onQuest={onQuest} />
+        <NpcSheet playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} onQuest={onQuest} keeperPanel={keeperPanel} />
       </Suspense>
     );
   if (ready && handoff === "boss")
