@@ -590,6 +590,8 @@ async function runDevice(name, servers) {
     // where Playwright cannot route service-worker traffic; block it so the
     // stubs below see every request on every engine.
     const context = await browser.newContext({ ...profile, reducedMotion: "reduce", locale: "en-GB", serviceWorkers: "block" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
+    // Inside the vault frame: name each request it receives (method and id only), for a failure report.
+    await context.addInitScript(() => { if (window !== parent) addEventListener("message", (e) => { const d = e.data || {}; if (d.method) console.debug(`vault-in ${d.method} ${String(d.id).slice(0, 8)}`); }); });
     // Unrelated hosts (map tiles, fonts) stay offline; the journey is loopback only.
     await context.route((url) => !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname), (r) => r.abort());
     // ...except the map style, served blank so the map (and explorers on it) loads offline.
