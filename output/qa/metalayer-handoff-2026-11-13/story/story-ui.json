@@ -1,0 +1,55 @@
+{
+  "verifiedAt": "2026-11-13T09:59:31.417Z",
+  "status": "passed",
+  "checks": [
+    "story introduction",
+    "wrong clue retry",
+    "modal movement ownership",
+    "three normal HTTP signal actions",
+    "shared marker template",
+    "beacon finale",
+    "local vs NEAR receipts",
+    "reload persistence",
+    "enlarged proof form and retained input",
+    "shared HUD appearance",
+    "folded map and materials",
+    "left joystick",
+    "platform profile and world picker continuity"
+  ],
+  "fixtures": [
+    "completed extraction prerequisite and checkpoint positions",
+    "read-only verifier form capability only"
+  ],
+  "captures": [
+    "390-arrival.png",
+    "390-story-start.png",
+    "390-signal-wrong-choice.png",
+    "360-marker-world.png",
+    "360-marker-template.png",
+    "360-story-complete.png",
+    "360-journal.png",
+    "360-local-action-receipts.png",
+    "landscape-restored-square.png",
+    "desktop-restored-square.png",
+    "390-enlarged-proof-form-keyboard-space.png",
+    "390-proof-error-preserves-reference.png",
+    "390-return-from-platform-profile.png"
+  ],
+  "scans": [
+    {
+      "name": "story-start",
+      "violations": []
+    },
+    {
+      "name": "story-complete",
+      "violations": []
+    },
+    {
+      "name": "receipts",
+      "violations": []
+    }
+  ],
+  "errors": [],
+  "hardware": false,
+  "liveNearTransaction": false
+}

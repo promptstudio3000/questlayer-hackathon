@@ -1,0 +1,9 @@
+Node.js 24.21.0
+Source base 673e9fc77c56133955e01ae32b962ec2edfff3b6
+npm ci: passed
+npm run check: passed
+Application: 1827 passed, 0 failed
+Guard suite: 1664 tests, 1642 passed, 22 skipped, 0 failed
+Targeted post-rebase: 33 passed, 0 failed
+Languages: 11 x 13 screens, no reported layout or untranslated text problems
+See verification.json for per-run source bases and named fixtures.
