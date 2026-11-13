@@ -3129,7 +3129,6 @@
   "Block removed": "ब्लॉक हटाया गया",
   "Build a trail marker at the outlined site.": "चिह्नित जगह पर रोशन रास्ता-संकेत बनाएँ।",
   "Build it myself": "खुद बनाऊँगा",
-  "Build on the green areas of the public square.": "सार्वजनिक चौक के हरे हिस्सों पर निर्माण करें।",
   "Central square": "केंद्रीय चौक",
   "Chapter {0} of {1}": "अध्याय {0}, कुल {1}",
   "Check the shared marker": "साझा संकेत की जाँच करें",
@@ -3318,5 +3317,16 @@
   "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "MetaGold पाने के लिए सेटिंग्स → खाता में अपना खोजी सुरक्षित करें। तब तक इनाम इंतज़ार करेंगे।",
   "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "यह सुनहरी तिजोरी इस दुनिया का सिक्का MetaGold रखती है। कहानी के चरण इसी से भुगतान पाते हैं, और MetaGold से खरीदी ज़मीन का पैसा इसमें लौटता है।",
   "Your land": "आपकी ज़मीन",
-  "MetaXP": "MetaXP"
+  "MetaXP": "MetaXP",
+  "The purchase did not go through. Try again.": "ख़रीद पूरी नहीं हुई। फिर से कोशिश करें।",
+  "Open land. Buy it to build here.": "खाली ज़मीन। यहाँ बनाने के लिए इसे ख़रीदें।",
+  "This land is yours. Build anywhere on it.": "यह ज़मीन आपकी है। इस पर कहीं भी निर्माण करें।",
+  "Secure my account": "मेरा खाता सुरक्षित करें",
+  "You need {0} MetaGold": "आपको {0} MetaGold चाहिए",
+  "Checking who owns this land…": "देख रहे हैं कि यह ज़मीन किसकी है…",
+  "Build on the green areas of the public square or on your own land.": "सार्वजनिक चौक के हरे हिस्सों पर या अपनी ज़मीन पर निर्माण करें।",
+  "The purchase is on its way. Look again in a moment.": "ख़रीद रास्ते में है। थोड़ी देर में फिर देखें।",
+  "Buying…": "ख़रीद रहे हैं…",
+  "Buy land for {0} MetaGold": "{0} MetaGold में ज़मीन ख़रीदें",
+  "Another explorer owns this land.": "यह ज़मीन किसी दूसरे खोजी की है।"
 }

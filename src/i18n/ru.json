@@ -3129,7 +3129,6 @@
   "Block removed": "Блок удалён",
   "Build a trail marker at the outlined site.": "Построй световой указатель в отмеченном месте.",
   "Build it myself": "Построить самому",
-  "Build on the green areas of the public square.": "Стройте на зелёных участках общей площади.",
   "Central square": "Центральная площадь",
   "Chapter {0} of {1}": "Глава {0} из {1}",
   "Check the shared marker": "Проверить общий указатель",
@@ -3318,5 +3317,16 @@
   "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "Защити исследователя в Настройки → Аккаунт, чтобы получать MetaGold. Награды подождут.",
   "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "Это золотое хранилище хранит MetaGold, монету этого мира. Шаги истории оплачиваются из него, а земля, купленная за MetaGold, платит обратно в него.",
   "Your land": "Твоя земля",
-  "MetaXP": "MetaXP"
+  "MetaXP": "MetaXP",
+  "The purchase did not go through. Try again.": "Покупка не прошла. Попробуйте ещё раз.",
+  "Open land. Buy it to build here.": "Свободная земля. Купите её, чтобы строить здесь.",
+  "This land is yours. Build anywhere on it.": "Эта земля ваша. Стройте на ней где угодно.",
+  "Secure my account": "Защитить аккаунт",
+  "You need {0} MetaGold": "Нужно {0} MetaGold",
+  "Checking who owns this land…": "Проверяем, кому принадлежит эта земля…",
+  "Build on the green areas of the public square or on your own land.": "Стройте на зелёных участках общей площади или на своей земле.",
+  "The purchase is on its way. Look again in a moment.": "Покупка в пути. Загляните снова через минуту.",
+  "Buying…": "Покупаем…",
+  "Buy land for {0} MetaGold": "Купить землю за {0} MetaGold",
+  "Another explorer owns this land.": "Эта земля принадлежит другому исследователю."
 }

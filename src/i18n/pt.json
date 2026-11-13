@@ -3129,7 +3129,6 @@
   "Block removed": "Bloco removido",
   "Build a trail marker at the outlined site.": "Constrói um marcador luminoso no local assinalado.",
   "Build it myself": "Construir sozinho",
-  "Build on the green areas of the public square.": "Construa nas áreas verdes da praça pública.",
   "Central square": "Praça central",
   "Chapter {0} of {1}": "Capítulo {0} de {1}",
   "Check the shared marker": "Verificar o marcador partilhado",
@@ -3318,5 +3317,16 @@
   "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "Protege o teu explorador em Definições → Conta para receber MetaGold. As recompensas esperam até lá.",
   "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "Este cofre dourado guarda MetaGold, a moeda deste mundo. Os passos da história pagam a partir dele e a terra comprada com MetaGold paga de volta.",
   "Your land": "A tua terra",
-  "MetaXP": "MetaXP"
+  "MetaXP": "MetaXP",
+  "The purchase did not go through. Try again.": "A compra não foi concluída. Tente novamente.",
+  "Open land. Buy it to build here.": "Terreno livre. Compre-o para construir aqui.",
+  "This land is yours. Build anywhere on it.": "Este terreno é seu. Construa onde quiser nele.",
+  "Secure my account": "Proteger a minha conta",
+  "You need {0} MetaGold": "Precisa de {0} MetaGold",
+  "Checking who owns this land…": "A verificar de quem é este terreno…",
+  "Build on the green areas of the public square or on your own land.": "Construa nas áreas verdes da praça pública ou no seu próprio terreno.",
+  "The purchase is on its way. Look again in a moment.": "A compra está a caminho. Volte a ver daqui a pouco.",
+  "Buying…": "A comprar…",
+  "Buy land for {0} MetaGold": "Comprar terreno por {0} MetaGold",
+  "Another explorer owns this land.": "Este terreno pertence a outro explorador."
 }

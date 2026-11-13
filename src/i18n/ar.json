@@ -3129,7 +3129,6 @@
   "Block removed": "إزالة كتلة",
   "Build a trail marker at the outlined site.": "ابنِ علامة مضيئة في الموضع المحدد.",
   "Build it myself": "سأبنيها بنفسي",
-  "Build on the green areas of the public square.": "يمكن البناء على المساحات الخضراء في الساحة العامة.",
   "Central square": "الساحة المركزية",
   "Chapter {0} of {1}": "الفصل {0} من {1}",
   "Check the shared marker": "فحص العلامة المشتركة",
@@ -3318,5 +3317,16 @@
   "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "أمّن مستكشفك من الإعدادات ← الحساب لتستلم MetaGold. مكافآتك تنتظر حتى ذلك الحين.",
   "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "تحفظ هذه الخزنة الذهبية MetaGold، عملة هذا العالم. تُدفع خطوات القصة منها، وتعود إليها قيمة الأراضي المشتراة بـ MetaGold.",
   "Your land": "أرضك",
-  "MetaXP": "MetaXP"
+  "MetaXP": "MetaXP",
+  "The purchase did not go through. Try again.": "لم تتم عملية الشراء. حاول مرة أخرى.",
+  "Open land. Buy it to build here.": "أرض شاغرة. اشترِها لتبني هنا.",
+  "This land is yours. Build anywhere on it.": "هذه الأرض لك. ابنِ في أي مكان عليها.",
+  "Secure my account": "تأمين حسابي",
+  "You need {0} MetaGold": "تحتاج إلى {0} MetaGold",
+  "Checking who owns this land…": "جارٍ التحقق من مالك هذه الأرض…",
+  "Build on the green areas of the public square or on your own land.": "ابنِ على المساحات الخضراء في الساحة العامة أو على أرضك الخاصة.",
+  "The purchase is on its way. Look again in a moment.": "عملية الشراء في الطريق. تحقق مرة أخرى بعد قليل.",
+  "Buying…": "جارٍ الشراء…",
+  "Buy land for {0} MetaGold": "اشترِ الأرض مقابل {0} MetaGold",
+  "Another explorer owns this land.": "هذه الأرض يملكها مستكشف آخر."
 }

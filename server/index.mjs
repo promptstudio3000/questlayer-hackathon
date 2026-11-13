@@ -274,6 +274,9 @@ const layerRoutes = layerEnabled
       store: createLayerStore(db, {
         economy: {
           onRecord: (action) => metaLayerEconomy?.onRecord(action),
+          ownsLand: (actor, x0, z0) => metaLayerEconomy?.ownsLand(actor, x0, z0) ?? false,
+          syncParcel: (actor, x0, z0) =>
+            metaLayerEconomy ? metaLayerEconomy.syncParcel(actor, x0, z0) : { owned: false, owner: null },
           summary: (actor, layerId) =>
             metaLayerEconomy
               ? metaLayerEconomy.summary(actor, layerId)

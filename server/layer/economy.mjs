@@ -19,12 +19,15 @@ CREATE TABLE IF NOT EXISTS ml_payouts(
 );
 CREATE INDEX IF NOT EXISTS ml_payouts_due ON ml_payouts(status,next_at);
 CREATE INDEX IF NOT EXISTS ml_payouts_player ON ml_payouts(layer,player_id);
+CREATE TABLE IF NOT EXISTS ml_parcels(
+ x0 INTEGER NOT NULL,z0 INTEGER NOT NULL,owner TEXT NOT NULL,checked_at INTEGER NOT NULL,PRIMARY KEY(x0,z0)
+);
 ` });
 
 /**
  * What each story step earns (testnet placeholders for owner review). MetaGold
- * uses the QGOLD scale (1 NEAR = 1,000,000,000 units), so the whole Quiet
- * Beacon pays 95 MetaGold. Ordinary mining, building and walking earn nothing.
+ * uses the QGOLD scale (1 NEAR = 1,000,000,000 units). The Quiet Beacon
+ * pays 95 MetaGold and Nera's tour 5 more: 100, the price of one parcel. Ordinary mining, building and walking earn nothing.
  */
 export const METALAYER_REWARDS = Object.freeze({
   "expedition-complete": { metagold: 20, metaXp: 50, badge: "crystal-hollow" },
@@ -33,6 +36,7 @@ export const METALAYER_REWARDS = Object.freeze({
   "marker-checked": { metagold: 0, metaXp: 20, badge: null },
   "beacon-restored": { metagold: 60, metaXp: 100, badge: "quiet-beacon" },
   "place-found": { metagold: 0, metaXp: 5, badge: null },
+  "tour-complete": { metagold: 5, metaXp: 10, badge: null },
 });
 const RETRY_MS = { queued: 60_000, "over-daily-cap": 60 * 60_000, "treasury-empty": 60 * 60_000, failed: 5 * 60_000 };
 const BATCH = 20;
@@ -164,6 +168,7 @@ export function createMetaLayerEconomy(db, { chain = null, linkedAccount = () =>
         parcels: parcels.map((t) => t.token_id),
         treasury: { available: treasury.metagold_available, paidToday: treasury.paid_today, dailyCap: treasury.daily_cap, parcelPrice: treasury.parcel_price },
       };
+      if (account) rememberParcels(account, parcels);
       cache.set(key, { at: now(), pendingCount: pending.length, value });
       if (cache.size > 2000) cache.clear();
       return { ...base, ...value };
@@ -171,5 +176,35 @@ export function createMetaLayerEconomy(db, { chain = null, linkedAccount = () =>
       return { ...base, metagold: null, metaXp: null, badges: [], parcels: [], treasury: null, error: "NEAR is not answering right now." };
     }
   }
-  return { onRecord, tick, summary };
+  const PARCEL_ID = /^parcel:(-?\d+):(-?\d+)$/;
+  function rememberParcels(account, tokens) {
+    atomic(db, () => {
+      const at = now(), mine = new Set();
+      for (const t of tokens) {
+        const m = PARCEL_ID.exec(t.token_id || t);
+        if (!m) continue;
+        mine.add(`${m[1]}:${m[2]}`);
+        db.prepare("INSERT INTO ml_parcels VALUES(?,?,?,?) ON CONFLICT(x0,z0) DO UPDATE SET owner=excluded.owner,checked_at=excluded.checked_at").run(Number(m[1]), Number(m[2]), account, at);
+      }
+      for (const row of db.prepare("SELECT x0,z0 FROM ml_parcels WHERE owner=?").all(account))
+        if (!mine.has(`${row.x0}:${row.z0}`)) db.prepare("DELETE FROM ml_parcels WHERE x0=? AND z0=?").run(row.x0, row.z0);
+    });
+  }
+  /** Building rights on a parcel: the cached owner from the last chain read. */
+  function ownsLand(actor, x0, z0) {
+    const account = linkedAccount(actor.id);
+    return !!account && db.prepare("SELECT 1 FROM ml_parcels WHERE x0=? AND z0=? AND owner=?").get(x0, z0, account) !== undefined;
+  }
+  /** Reads one parcel's owner from the contract after a purchase or transfer. */
+  async function syncParcel(actor, x0, z0) {
+    if (!chain?.active) return { owned: false, owner: null };
+    if (!Number.isSafeInteger(x0) || !Number.isSafeInteger(z0) || x0 % 16 || z0 % 16) return { owned: false, owner: null };
+    const token = await chain.view("parcel", { x0, z0 });
+    const owner = token?.owner_id ?? null;
+    if (owner) db.prepare("INSERT INTO ml_parcels VALUES(?,?,?,?) ON CONFLICT(x0,z0) DO UPDATE SET owner=excluded.owner,checked_at=excluded.checked_at").run(x0, z0, owner, now());
+    else db.prepare("DELETE FROM ml_parcels WHERE x0=? AND z0=?").run(x0, z0);
+    cache.clear();
+    return { owned: !!owner && owner === linkedAccount(actor.id), owner: owner ? (owner === linkedAccount(actor.id) ? "you" : "someone") : null };
+  }
+  return { onRecord, tick, summary, ownsLand, syncParcel };
 }

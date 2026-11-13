@@ -48,7 +48,15 @@ Nera's **Meet the square** tour is independent of the five-chapter campaign: vis
 the treasury, Luma's workshop, Crystal Hollow and Spore Garden. Validated movement
 saves each personal visit once in `ml_actions` (`place-found`); rejected teleports
 and stale/invalid positions cannot create discoveries. These entries survive a
-restart and do not award money, XP or an item. Everyone still shares one atlas.
+restart. Visiting all four records one `tour-complete` step, which pays 5 MetaGold
+and 10 MetaXP once the MetaLayer contract is live, so the whole story pays 100
+MetaGold, the price of one parcel. Everyone still shares one atlas.
+
+The **Land and building** sheet shows the 16 × 16 parcel under the explorer. Open
+land has one **Buy land** button: the explorer's own account signs `buy_parcel`
+(0.02 NEAR storage deposit, unused part refunded), then `POST
+/layer/expedition/parcel` reads the owner from the contract into `ml_parcels`. The
+owner may build anywhere on the parcel; parcels touching the square stay public.
 
 The golden vault at -5.5, -5.5 is a visible **inactive MetaGold treasury**. Its status
 also opens from the backpack. It contains no funded coin drop and offers no

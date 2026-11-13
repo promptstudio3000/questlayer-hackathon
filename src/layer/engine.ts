@@ -97,6 +97,8 @@ export type EngineOptions = {
   facing?: { x: number; z: number };
   home?: LayerPlot;
   expedition?: boolean;
+  /** MetaLayer: true when the explorer owns the 16 × 16 parcel at x, z. */
+  ownLand?: (x: number, z: number) => boolean;
   demoActors?: boolean;
   onPlace?: (id: WorldPlaceId) => void;
   outfit: Outfit;
@@ -676,7 +678,8 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
       : { x: hit.x + hit.n[0], y: hit.y + hit.n[1], z: hit.z + hit.n[2] };
     let problem: Parameters<EngineOptions["onNotice"]>[0] | null = null;
     if (options.expedition) {
-      if (!inPlaza(t.x, t.z) || protectedPlaza(t.x, t.z)) problem = "own-plot";
+      const square = inPlaza(t.x, t.z) && !protectedPlaza(t.x, t.z);
+      if (!square && (inPlaza(t.x, t.z) || !options.ownLand?.(t.x, t.z))) problem = "own-plot";
     } else if (!options.home || !inPlot(options.home, t.x, t.z))
       problem = "own-plot";
     else if (t.y < MIN_Y || t.y >= HEIGHT) problem = "depth";
