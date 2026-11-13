@@ -36,7 +36,7 @@ test("world coins need payouts and can be turned off", testnetOnly, () => {
   assert.equal(worldCoinsEnabled({ MAP_PAYOUTS: "1", MAP_WORLD_COINS: "off" }), false);
 });
 
-test("a street cell outside Czechia gets backed coins from the unplaced budget", testnetOnly, async (t) => {
+test("a street cell outside Czechia gets backed coins from the day budget", testnetOnly, async (t) => {
   setPotentialSource(() => new Map());
   const before = process.env.MAP_PAYOUTS;
   process.env.MAP_PAYOUTS = "1";
@@ -59,9 +59,10 @@ test("a street cell outside Czechia gets backed coins from the unplaced budget",
   assert.equal(drop.day, plan.day);
   assert.equal(drop.pioneer, 0);
   assert.equal(drop.coins_u, coins.length * plan.summary.coinValueU);
-  // The drop is taken from the unplaced reserve.
+  // The drop is taken from the day's coin budget, at most 10 coins a cell.
+  assert.ok(coins.length <= 10);
   const left = Math.floor((plan.summary.unplacedU.coins - drop.coins_u) / plan.summary.coinValueU);
-  assert.equal(worldCoinCount(db, plan), Math.min(400, left));
+  assert.equal(worldCoinCount(db, plan), Math.min(10, left));
 });
 
 test("the unplaced reserve caps world coins", () => {

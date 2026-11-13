@@ -10,7 +10,7 @@ import {
 } from "./character-art";
 import { auraEdition } from "./aura-art-data.ts";
 import { loadCharacterModel } from "./character-model-client";
-import { DEMO_TICK_MS, moveMapMarker } from "./map-motion";
+import { DEMO_TICK_MS, moveMapMarker, metersBetween } from "./map-motion";
 import {
   gameObjectMarkup,
   rasterizeGameObject,
@@ -77,6 +77,10 @@ export type GameMapProps = {
   nextZoneId?: string | null;
   selectedQuestId?: string | null;
   guideRequest?: { questId: string; revision: number } | null;
+  /** Name of the quest or place the player chose to be guided to. */
+  guideLabel?: string;
+  /** Ends the guidance for good (the chip's X); without it the X only hides the line. */
+  onGuideStop?: () => void;
   insideZoneId?: string | null;
   nativeTarget?: (Point & { label: string }) | null;
   nativeTargetKind?: "coin" | "route" | "discovery";
@@ -158,6 +162,9 @@ export type CreatorMapPlace = {
   template: "visit" | "trail" | "chest";
   lat: number;
   lng: number;
+  /** The creator's own header photo; the pin shows it as a thumbnail. */
+  photo?: string;
+  creator?: string;
 };
 const CREATOR_PIN_NAME = {
   get visit() { return tr("Creator place"); },
@@ -173,6 +180,8 @@ function paintQuestPin(node: HTMLElement, kind: string, fallback: GameObjectOpti
     image.replaceWith(template.content);
   }, { once: true });
 }
+/** How much closer the follow camera sits while the explorer walks. */
+const WALK_ZOOM = 0.9;
 const COIN_TIER_SCALE = ["match", ["get", "tier"], "rare", 1.45, "medium", 1.2, 1];
 function phoneLayout() {
   return (
@@ -257,6 +266,9 @@ export function GameMap(props: GameMapProps) {
   const pawn = useRef<PawnScene | null>(null),
     heading = useRef(180);
   const wasOverview = useRef(props.overview);
+  // Walking camera: while the explorer moves, the follow camera sits closer
+  // behind them, and steps back a few seconds after they stop.
+  const walkCam = useRef({ base: 16.9, until: 0, last: null as Point | null, timer: 0 as unknown as ReturnType<typeof setTimeout>, follow: false });
   const latest = useRef(props);
   latest.current = props;
   const objectContext = {
@@ -444,6 +456,8 @@ export function GameMap(props: GameMapProps) {
     let settle: ReturnType<typeof setTimeout> | undefined;
     const ended = (e: { originalEvent?: unknown }) => {
       if (!e.originalEvent) return;
+      // The player's own zoom is the level the walking camera returns to.
+      walkCam.current.base = m.getZoom() - (Date.now() < walkCam.current.until ? WALK_ZOOM : 0);
       clearTimeout(settle);
       settle = setTimeout(() => {
         if (map.current !== m) return;
@@ -1248,11 +1262,32 @@ export function GameMap(props: GameMapProps) {
     const leavingOverview = wasOverview.current && !props.overview;
     wasOverview.current = props.overview;
     const demoGlide = props.arena && props.facing !== undefined;
-    if (props.active !== false && props.follow && !props.globe && !props.overview)
+    const following = props.active !== false && props.follow && !props.globe && !props.overview;
+    const cam = walkCam.current, m = map.current;
+    const stepped = cam.last ? metersBetween(cam.last, props.position) : 0;
+    cam.last = props.position;
+    cam.follow = following;
+    if (leavingOverview) cam.base = 16.9;
+    let walkZoom: number | undefined;
+    if (following && !leavingOverview && !prefersReducedMotion()) {
+      // GPS jitter under two metres is not a step; the demo pad moves in small ticks.
+      if (stepped > (props.arena ? 0.02 : 2) && stepped < 200) {
+        cam.until = Date.now() + 3500;
+        clearTimeout(cam.timer);
+        cam.timer = setTimeout(() => {
+          if (map.current === m && cam.follow && Math.abs(m.getZoom() - cam.base) > 0.02) m.easeTo({ zoom: cam.base, duration: 1400 });
+        }, 3600);
+      }
+      if (Date.now() < cam.until) {
+        const z = m.getZoom(), target = Math.min(19, cam.base + WALK_ZOOM);
+        if (Math.abs(target - z) > 0.01) walkZoom = z + (target - z) * (demoGlide ? 0.08 : 0.6);
+      }
+    }
+    if (following)
       map.current.easeTo({
         center: [props.position.lng, props.position.lat],
         ...(Number.isFinite(props.followBearing) ? { bearing: props.followBearing } : {}),
-        ...(leavingOverview ? { zoom: 16.9, pitch: 43 } : {}),
+        ...(leavingOverview ? { zoom: 16.9, pitch: 43 } : walkZoom !== undefined ? { zoom: walkZoom } : {}),
         offset: cameraOffset(),
         padding: { top: 0, bottom: 0, left: 0, right: 0 },
         duration: leavingOverview || prefersReducedMotion()
@@ -1547,7 +1582,8 @@ export function GameMap(props: GameMapProps) {
   ]);
   const allGuidePoints = props.globe ? [] : mapGuidePoints({
     position: props.position, route: props.route, target: props.nativeTarget, selectedQuestId: props.selectedQuestId,
-    zone: props.focusZone || props.world?.zones.find((z) => z.id === props.nextZoneId),
+    // Only a quest the player started is guided to; a suggestion draws no line.
+    zone: props.focusZone,
     quests: props.world?.quests || [], now: objectContext.now, playerTier: props.playerTier,
   });
   // The guide's X hides the line until the guide points somewhere else.
@@ -1641,18 +1677,44 @@ export function GameMap(props: GameMapProps) {
   useEffect(() => {
     const m = map.current;
     if (!m || !ready || props.globe || !props.creatorPlaces?.length) return;
+    // Quests that start on (nearly) the same spot fan out side by side, so
+    // every pin stays readable and tappable.
+    const groups: CreatorMapPlace[][] = [];
+    for (const place of props.creatorPlaces) {
+      const group = groups.find((g) => metersBetween(g[0], place) < 40);
+      if (group) group.push(place);
+      else groups.push([place]);
+    }
+    const fan = new Map<string, number>();
+    for (const g of groups) g.forEach((place, i) => fan.set(place.questId, (i - (g.length - 1) / 2) * 68));
     const markers = props.creatorPlaces.map((place) => {
       const node = document.createElement("button");
-      const label = `${place.title} · ${CREATOR_PIN_NAME[place.template]}`;
+      const label = `${place.title} · ${CREATOR_PIN_NAME[place.template]}${place.creator ? ` · ${place.creator}` : ""}`;
       node.className = "quest-map-pin game-object-map-pin creator-map-pin";
       node.setAttribute("aria-label", label);
       node.title = label;
-      paintQuestPin(node, place.template === "trail" ? "trail" : place.template === "chest" ? "chest" : "community", { kind: place.template === "trail" ? "route" : place.template === "chest" ? "chest" : "place" });
+      // A quest made by a player: a bigger round pin with the creator's photo
+      // (or the quest art), a pink rim and the title under it.
+      const face = document.createElement("span");
+      face.className = "creator-pin-face";
+      paintQuestPin(face, place.template === "trail" ? "trail" : place.template === "chest" ? "chest" : "community", { kind: place.template === "trail" ? "route" : place.template === "chest" ? "chest" : "place" });
+      if (place.photo) {
+        const img = document.createElement("img");
+        img.className = "creator-pin-photo";
+        img.alt = "";
+        img.loading = "lazy";
+        img.addEventListener("error", () => img.remove());
+        img.src = place.photo;
+        face.append(img);
+      }
+      const name = document.createElement("small");
+      name.textContent = place.title;
+      node.append(face, name);
       node.addEventListener("click", (e) => {
         e.stopPropagation();
         latest.current.onCreatorPlace?.(place.questId);
       });
-      return new maplibregl.Marker({ element: node, anchor: "bottom" })
+      return new maplibregl.Marker({ element: node, anchor: "bottom", offset: [fan.get(place.questId) || 0, 0] })
         .setLngLat([place.lng, place.lat])
         .addTo(m);
     });
@@ -1722,16 +1784,19 @@ export function GameMap(props: GameMapProps) {
         const slot = document.getElementById("hud-sky-slot");
         return slot ? createPortal(chip, slot) : chip;
       })()}
-      {!props.globe && guidePoints.length > 1 && !props.focusZone && (
+      {!props.globe && guidePoints.length > 1 && (
         <div className="map-guide-key" role="note" title={tr("Straight-line direction, not a walking route")}>
           <img src={mapKitUrl("navigation/arrow-forward.png")} width="24" height="24" alt="" aria-hidden />
-          <span>{tr("Direction guide")}</span>
+          <span>
+            <small>{tr("Guiding you to")}</small>
+            <strong>{props.nativeTarget?.label || props.guideLabel || tr("Direction guide")}</strong>
+          </span>
           <button
             type="button"
             className="map-guide-close"
-            aria-label={tr("Hide direction guide")}
-            title={tr("Hide direction guide")}
-            onClick={() => setHiddenGuide(guideTargetKey)}
+            aria-label={tr("Stop guiding")}
+            title={tr("Stop guiding")}
+            onClick={() => (props.onGuideStop ? props.onGuideStop() : setHiddenGuide(guideTargetKey))}
           >
             <X size={16} weight="bold" aria-hidden />
           </button>

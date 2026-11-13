@@ -1,0 +1,137 @@
+{
+  "experimental": true,
+  "label": "Self-deployed NEAR Intents verifier (testnet, experimental, not intents.near)",
+  "network": "testnet",
+  "verifierContract": "intents.questlayer-dev-20261101.testnet",
+  "nftContract": "nfts.questlayer-dev-20261101.testnet",
+  "wnear": "wrap.testnet",
+  "owner": "questlayer-dev-20261101.testnet",
+  "fee": 20000,
+  "source": {
+    "repository": "https://github.com/near/intents",
+    "tag": "defuse/v0.4.5",
+    "commit": "16d04f6ec4401263f8914638710260da50bb46b0",
+    "crate": "contracts/defuse",
+    "features": "contract",
+    "image": "sourcescan/cargo-near:0.22.0-rust-1.97.1",
+    "imageDigest": "sha256:7467038bdddc86484b73b416eeadce926ff59013e128e53dec5a19e1cb4b2234"
+  },
+  "wasmSha256": "1098ca2fecdfdb4dbc21e9fdfc513351816d85ed75f88144abb0c78a64ac1d60",
+  "verifiedAt": "2026-11-04T02:45:34.276Z",
+  "transactions": [
+    {
+      "label": "Create, deploy and init the experimental testnet verifier (atomic)",
+      "transaction": "AKuxeZGsc81sD3a8rd5pY4VtsG4uMxp2BQh69jMmTRqC"
+    },
+    {
+      "label": "Register the verifier with wNEAR storage",
+      "transaction": "8FyhMPcsVWxdXRyNUNueAmDjPhDHCtRYMKYkUD6QijHA"
+    },
+    {
+      "label": "Register intents key for questlayer-dev-20261101.testnet",
+      "transaction": "EqjYj6S9oCe8mGPZCK2VUPog3hD5c5Uso3BPxinAq7nd"
+    },
+    {
+      "label": "Register intents key for explorer.questlayer-dev-20261101.testnet",
+      "transaction": "DyfMCWvPXxhkGrcYXZtPsb1NGKMnHvuRQrEYb4wjJ1rL"
+    },
+    {
+      "label": "Deposit aura:polar:1 into the verifier",
+      "transaction": "868y6NyT2Em2ReyQbd4YEC1hT5XdyC3DsxSDEqNSt7Dt"
+    },
+    {
+      "label": "Register explorer.questlayer-dev-20261101.testnet with wNEAR",
+      "transaction": "A4CkGe9qANk3bPeyKnfaXRCcdGLtBhWLCGJyNE632fvq"
+    },
+    {
+      "label": "Wrap 0.01 NEAR",
+      "transaction": "9ygrLLQB3T7SHdf8vP1r1xPDKzbNrCJ71P7HLx2dpHnq"
+    },
+    {
+      "label": "Deposit 0.01 wNEAR into the verifier",
+      "transaction": "BCLCUJTMfcCpaWA6jgd25xSmG8yWVdeWyQ4boMvRfZgm"
+    },
+    {
+      "label": "Aura -> wNEAR via token_diff (execute_intents)",
+      "transaction": "5SbkcidCoeunaNAP36CEywxRZ1Fvbs8dXeLYoMGm6dyz"
+    },
+    {
+      "label": "Replay of the same intents is rejected",
+      "rejectedAsExpected": true,
+      "error": "Smart contract panicked: nonce was already used"
+    },
+    {
+      "label": "Aura <- wNEAR via transfer + transfer (fallback)",
+      "transaction": "4CzrSBYkoD1WrSSMsNyX2W9n6yCSBgjJEriodiKK9FFN"
+    },
+    {
+      "label": "Withdraw the Aura back to its owner (nft_withdraw intent)",
+      "transaction": "qsYNUKd5LmcFGnxQJssKo8c52Kvw6Kx6HixWY4MomDf"
+    },
+    {
+      "label": "Withdraw wNEAR as native NEAR (native_withdraw intent)",
+      "transaction": "9VmrJurTxhTR75Rzb7Fjeoe2enEszCqezyirhtNRnjhA"
+    },
+    {
+      "label": "Set the verifier fee to 2 % (paid to the treasury)",
+      "transaction": "46DcbPNvnHcJuEpZw2FREEWYdWsN1fVjEavRURgabos4"
+    }
+  ],
+  "proof": {
+    "provedAt": "2026-11-04T02:45:34.275Z",
+    "verifier": "intents.questlayer-dev-20261101.testnet",
+    "experimental": true,
+    "seller": "questlayer-dev-20261101.testnet",
+    "buyer": "explorer.questlayer-dev-20261101.testnet",
+    "token": "aura:polar:1",
+    "price": "10000000000000000000000",
+    "steps": [
+      {
+        "label": "Register intents key for questlayer-dev-20261101.testnet",
+        "transaction": "EqjYj6S9oCe8mGPZCK2VUPog3hD5c5Uso3BPxinAq7nd"
+      },
+      {
+        "label": "Register intents key for explorer.questlayer-dev-20261101.testnet",
+        "transaction": "DyfMCWvPXxhkGrcYXZtPsb1NGKMnHvuRQrEYb4wjJ1rL"
+      },
+      {
+        "label": "Deposit aura:polar:1 into the verifier",
+        "transaction": "868y6NyT2Em2ReyQbd4YEC1hT5XdyC3DsxSDEqNSt7Dt"
+      },
+      {
+        "label": "Register explorer.questlayer-dev-20261101.testnet with wNEAR",
+        "transaction": "A4CkGe9qANk3bPeyKnfaXRCcdGLtBhWLCGJyNE632fvq"
+      },
+      {
+        "label": "Wrap 0.01 NEAR",
+        "transaction": "9ygrLLQB3T7SHdf8vP1r1xPDKzbNrCJ71P7HLx2dpHnq"
+      },
+      {
+        "label": "Deposit 0.01 wNEAR into the verifier",
+        "transaction": "BCLCUJTMfcCpaWA6jgd25xSmG8yWVdeWyQ4boMvRfZgm"
+      },
+      {
+        "label": "Aura -> wNEAR via token_diff (execute_intents)",
+        "transaction": "5SbkcidCoeunaNAP36CEywxRZ1Fvbs8dXeLYoMGm6dyz"
+      },
+      {
+        "label": "Replay of the same intents is rejected",
+        "rejectedAsExpected": true,
+        "error": "Smart contract panicked: nonce was already used"
+      },
+      {
+        "label": "Aura <- wNEAR via transfer + transfer (fallback)",
+        "transaction": "4CzrSBYkoD1WrSSMsNyX2W9n6yCSBgjJEriodiKK9FFN"
+      },
+      {
+        "label": "Withdraw the Aura back to its owner (nft_withdraw intent)",
+        "transaction": "qsYNUKd5LmcFGnxQJssKo8c52Kvw6Kx6HixWY4MomDf"
+      },
+      {
+        "label": "Withdraw wNEAR as native NEAR (native_withdraw intent)",
+        "transaction": "9VmrJurTxhTR75Rzb7Fjeoe2enEszCqezyirhtNRnjhA"
+      }
+    ]
+  },
+  "feeCollector": "questlayer-dev-20261101.testnet"
+}

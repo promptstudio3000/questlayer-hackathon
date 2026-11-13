@@ -1,0 +1,87 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-12T15:49:52.177Z",
+  "contractId": "questlayer-escrow-tl1112.testnet",
+  "tokenId": "questlayer-qgold-vault-tl1112.testnet",
+  "publisherId": "questlayer-escrow-pub-tl1112.testnet",
+  "moderatorId": "questlayer-escrow-pub-tl1112.testnet",
+  "ownerId": "questlayer-dev-20261101.testnet",
+  "guardianId": "questlayer-dev-20261101.testnet",
+  "treasuryId": "questlayer-dev-20261101.testnet",
+  "publisherKey": "ed25519:E6B2k4gABucbZJgykcUid9B1rKnZrohEZUfX4snThUU2",
+  "publisherMethods": [
+    "approve_task",
+    "cancel_task",
+    "open_dispute",
+    "resolve_dispute",
+    "confirm_visit",
+    "release_secret",
+    "dispute_secret",
+    "resolve_secret",
+    "confirm_transfer",
+    "release_transfer",
+    "confirm_transfer_gps",
+    "refund_transfer",
+    "decline_transfer",
+    "withdraw_for"
+  ],
+  "codeHash": "Cc1qhL3h8ifLxMo7f6pRCDha6Mktv74uNC7FkgW16dKj",
+  "wasmSha256": "ac68d5750d96fae0e087be5881f3fd9f394aba07fdd659b3a4abcadab5b76876",
+  "accessKeys": 0,
+  "feeBps": 1000,
+  "smoke": {
+    "id": "smoke-1794498577672",
+    "stats": {
+      "total_held": "0",
+      "escrowed": "0",
+      "credits": "0",
+      "pending_withdrawals": "0",
+      "deposited": "10000",
+      "withdrawn": "10000",
+      "fees_collected": "0",
+      "task_count": 0,
+      "secret_count": 0,
+      "transfer_count": 1,
+      "open_escrows": 0,
+      "conserved": true
+    }
+  },
+  "transactions": [
+    {
+      "label": "Deploy and initialize the QGOLD escrow",
+      "transaction": "978CWTUUe8niCQo2rKoE2hxDUsfay24mfNC7fPjU6WaP"
+    },
+    {
+      "label": "Register questlayer-escrow-tl1112.testnet on QGOLD",
+      "transaction": "3siNxGtMv9rNjcVQfVUC7kLkYeoRByEmJeaN8QXbhfru"
+    },
+    {
+      "label": "Register questlayer-escrow-pub-tl1112.testnet on QGOLD",
+      "transaction": "7Kt5D47MD5AR2Wovni8k1TFbXCUwEHojMND7aqNhDzgT"
+    },
+    {
+      "label": "Add the escrow publisher key (function-call only)",
+      "transaction": "HjW69ENJa731iuBbWnFjnttjzZi419xXKC1ug6Y6EbHw"
+    },
+    {
+      "label": "Delete escrow access key ed25519:6ZXCmMJRRM8RLiaXSyZ1LFXUkPKtgphLdkD8m5QXckge",
+      "transaction": "DYbEJimjdsZzguw5r28PnpZSpcANZ1g1ZV4GjnmxSXPn"
+    },
+    {
+      "label": "Smoke: operator storage deposit on the escrow",
+      "transaction": "AUSG5bC9ciFhbwUr7fENc2TiJfPM5n87LbFaCs2KBurU"
+    },
+    {
+      "label": "Smoke: fund a both_confirm transfer",
+      "transaction": "B6wRpufrhzpSk7dWZD6noijbiwD44TUJs6iihHjycQUq"
+    },
+    {
+      "label": "Smoke: publisher releases the transfer",
+      "transaction": "F7qz11oMRcqPt3PamGcKAgWWxqHV9sCjkpYx4a4n1DV"
+    },
+    {
+      "label": "Smoke: publisher pushes the payout",
+      "transaction": "Hungbb3KeTv65Sdb6qTyP5J8gx5USF4EPRpGzwXdRudr"
+    }
+  ]
+}

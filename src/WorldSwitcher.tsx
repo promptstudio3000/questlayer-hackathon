@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { BookOpen, CaretDown, GlobeHemisphereWest, Cube, Flask, Question, Vault } from "@phosphor-icons/react";
 import { BrandLogo } from "./Ghost";
 import { tr } from "./i18n";
-import { REALMS } from "./realms";
+import { APP_NAME, REALMS } from "./realms";
 import "./world-switcher.css";
 
 export type GameLayerConfig = {
@@ -12,6 +12,7 @@ export type GameLayerConfig = {
   tour?: boolean;
   testLayerUrl: string | null;
   worldUrl: string | null;
+  defaultTest?: boolean;
 };
 
 export function WorldSwitcher({
@@ -26,7 +27,7 @@ export function WorldSwitcher({
   /** Display name of the virtual voxel layer (docs/LAYER.md). */
   layerName: string;
   onChoose: (virtual: boolean) => void;
-  /** Test Layer or QuestLayer World (docs/TEST-LAYER.md), from /api/config. */
+  /** Test Layer or the real game, GotchiGO (docs/TEST-LAYER.md), from /api/config. */
   gameLayer?: GameLayerConfig | null;
 }) {
   const test = !!gameLayer?.test;
@@ -34,7 +35,7 @@ export function WorldSwitcher({
   // The other server: the Test Layer from World (testnet only), World from the Test Layer.
   const other = test
     ? gameLayer?.worldUrl
-      ? { url: gameLayer.worldUrl, name: REALMS.questlayer.name, text: tr("The real game.") }
+      ? { url: gameLayer.worldUrl + "?world=1", name: REALMS.questlayer.name, text: tr("The real game.") }
       : null
     : gameLayer?.testLayerUrl
       ? { url: gameLayer.testLayerUrl, name: tr("Test Layer"), text: tr("Test coins, not real money.") }
@@ -93,7 +94,7 @@ export function WorldSwitcher({
       >
         <BrandLogo />
         <span className="world-switcher-name">
-          {REALMS.questlayer.name.toUpperCase()}
+          {APP_NAME.toUpperCase()}
           <small>
             {virtual ? layerName : outdoorName}
           </small>

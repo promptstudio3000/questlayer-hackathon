@@ -8,7 +8,6 @@ import {
   Sparkle,
   Flag,
   Flame,
-  GearSix,
   PencilSimpleLine,
   Scroll,
   Storefront,
@@ -27,11 +26,11 @@ import { lang, LANGS, setLang, tr, type Lang } from "./i18n";
 
 export type ProfileTab = "character" | "stake" | "settings";
 // Badges live inside Character; Stake holds staking and earnings behind one
-// switch (owner request, 10 Nov 2026).
+// switch (owner request, 10 Nov 2026). Settings is its own sheet behind the
+// gear (13 Nov 2026); "settings" stays a view so links into it keep working.
 export const PROFILE_TABS: readonly ScreenTab<ProfileTab>[] = [
   { id: "character", get label() { return tr("Character"); }, icon: UserCircle },
   { id: "stake", get label() { return tr("Stake"); }, icon: Flame },
-  { id: "settings", get label() { return tr("Settings"); }, icon: GearSix },
 ];
 /** Profile sub-tab for the current app tab ("fuel" and "wallet" keep their routes). */
 export function profileTabOf(tab: string, view: ProfileView): ProfileTab {

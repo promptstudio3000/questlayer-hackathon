@@ -25,6 +25,8 @@ import { parseTestNear, type VaultRequest } from "./native-vault-quote";
 import type { Player } from "./types";
 import "./fuel-the-city.css";
 import "./fuel-stake.css";
+import "./game-economy.css";
+import { TIER_NEAR } from "./tier-stake";
 import { tr } from "./i18n";
 import { FundsHelp } from "./FundsHelp";
 import { GAS_HEADROOM, readNearBalance as readBalance, readQgoldCover, nearText, type QgoldCover } from "./funds-help";
@@ -64,6 +66,9 @@ const big = (v: unknown) => {
   }
 };
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+const STAKE_TARGETS = ["staker", "tier2", "tier3"] as const;
+type StakeTarget = (typeof STAKE_TARGETS)[number];
 
 type Outcome =
   | { kind: "idle" }
@@ -119,6 +124,7 @@ export function FuelTheCity({
   explorerStatus,
   onLinkWallet,
   onTransaction,
+  guide,
 }: {
   player: Player;
   /** The account that signs: the invisible account when ready, else the first linked one. */
@@ -127,11 +133,11 @@ export function FuelTheCity({
   managed: boolean;
   /** Why the explorer account is not ready yet (play-first, creating, needs-recovery, ...). */
   explorerStatus?: string;
-  cityName?: string;
-  onConnect: () => void;
   /** Links a NEAR wallet the player already has (wallet picker + signed message). */
   onLinkWallet?: () => Promise<void> | void;
   onTransaction: (r: VaultRequest) => Promise<boolean>;
+  /** In the Game economy dialog: the same form, without the vault's technical details. */
+  guide?: boolean;
 }) {
   // Stake from the explorer account by default, or from a linked NEAR wallet.
   const payOptions = [...new Set([explorerAccount, ...player.wallets.map((w) => w.account_id)].filter(Boolean))];
@@ -154,7 +160,10 @@ export function FuelTheCity({
   const [vaults, setVaults] = useState<VaultSnapshot | null>(null),
     [city, setCity] = useState<CityStaking | null>(null),
     [readError, setReadError] = useState(""),
-    [amount, setAmount] = useState(() => takeStakePrefill() || STAKER_SUGGEST_NEAR),
+    [prefill] = useState(takeStakePrefill),
+    [amount, setAmount] = useState(prefill || STAKER_SUGGEST_NEAR),
+    // The tier the explorer aims for; a prefilled amount (locked chip) has none.
+    [target, setTarget] = useState<StakeTarget | null>(prefill ? null : "staker"),
     [gates, setGates] = useState<StakerGates | null>(null),
     [contribution, setContribution] = useState(50),
     [confirmExit, setConfirmExit] = useState(false),
@@ -200,7 +209,10 @@ export function FuelTheCity({
     // A locked chip tapped while this sheet is open prefills it too.
     const onOpen = () => {
       const near = takeStakePrefill();
-      if (near) setAmount(near);
+      if (near) {
+        setAmount(near);
+        setTarget(null);
+      }
     };
     window.addEventListener("questlayer:open-stake", onOpen);
     return () => {
@@ -209,6 +221,18 @@ export function FuelTheCity({
     };
   }, []);
 
+  // Tier 2 and 3 count the stake times the yield share, so a smaller share needs a bigger stake.
+  const targetNear = (t: StakeTarget, sharePct: number) =>
+    t === "staker" ? gates?.minNear || STAKER_SUGGEST_NEAR : String(Math.ceil((TIER_NEAR[t] * 100) / sharePct));
+  // Picking Tier 2 or 3 sends the whole yield to the prize pool: the smallest stake that reaches it.
+  const choose = (t: StakeTarget | null, sharePct: number) => {
+    setTarget(t);
+    setContribution(sharePct);
+    if (t) setAmount(targetNear(t, sharePct));
+  };
+  useEffect(() => {
+    if (target === "staker" && gates?.minNear) setAmount(gates.minNear);
+  }, [gates?.minNear]);
   const positions = (vaults?.positions || []) as FuelPosition[];
   const summary = summarizeFuel(positions, {
     weightedStake: city?.staking?.data?.totals?.weightedStake,
@@ -411,7 +435,7 @@ export function FuelTheCity({
                   aria-checked={contribution === c.pct}
                   title={c.hint}
                   disabled={busy || !canStake}
-                  onClick={() => setContribution(c.pct)}
+                  onClick={() => choose(target, c.pct)}
                 >
                   {c.pct} %
                 </button>
@@ -426,6 +450,14 @@ export function FuelTheCity({
           <p className="fuel-state">{tr("Fueling isn't open on this server yet. You can keep exploring for free.")}</p>
         ) : canStake ? (
           <>
+            <div className="fuel-tiers" role="radiogroup" aria-label={tr("Choose your tier")}>
+              {STAKE_TARGETS.map((t) => (
+                <button key={t} type="button" role="radio" aria-checked={target === t} disabled={busy} onClick={() => choose(t, t === "staker" ? contribution : 100)}>
+                  <b>{t === "staker" ? tr("Staker") : tr("Tier {0}", { 0: t.slice(4) })}</b>
+                  <span>{qgoldOfNear(targetNear(t, target === t ? contribution : 100))}</span>
+                </button>
+              ))}
+            </div>
             <button
               className="primary-button fuel-stake-button"
               // Visible at once, tappable once the vault read says there is no stake yet.
@@ -561,7 +593,7 @@ export function FuelTheCity({
         )}
       </div>
 
-      <details className="stake-story-more">
+      <details className="stake-story-more" hidden={guide}>
         <summary>{tr("How staking works")}</summary>
         <StakeStory sharePct={pct} />
       </details>
@@ -580,7 +612,7 @@ export function FuelTheCity({
         />
       )}
 
-      {"position" in phase && phase.position.position && (
+      {!guide && "position" in phase && phase.position.position && (
         // Shown once there is a stake: where the NEAR sits, in plain words.
         <details className="play-details fuel-advanced">
           <summary>

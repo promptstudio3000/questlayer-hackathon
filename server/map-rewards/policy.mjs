@@ -10,11 +10,15 @@ export const ZONE_PULL_M = 300;
 export const COIN_SPACING_NEAR_ZONE_M = 60;
 export const MAX_COINS_PER_CELL = 400;
 
-// Coin values (map-rewards-v2): every coin on the map is backed and worth the
-// same. The day's coin budget is split into equal shares, CELL_COINS per cell
-// (a pioneer cell's coins count twice), so one coin = budget / shares. A cell
-// with fewer paths places fewer coins and the rest stays in the treasury.
-export const CELL_COINS = MAX_COINS_PER_CELL;
+// Coin values (map-rewards-v2, 13 Nov 2026): every coin on the map is backed
+// and worth the same. A day's coin budget is priced for COIN_TARGET coins
+// (MAP_COIN_TARGET), so one coin = budget / target. An opened street cell gets
+// CELL_COINS coins (the owner's "about 10 per city"), the Plzeň city demo
+// ARENA_COINS, and placement stops once the day's budget is placed: a coin
+// on the map is always covered. Unplaced budget stays in the treasury.
+export const CELL_COINS = 10;
+export const ARENA_COINS = 50;
+export const COIN_TARGET = 200;
 // Coin tiers are only drawing sizes now: "small" is a normal coin, "medium" a
 // pioneer coin worth two shares.
 export const COIN_TIER = "small";

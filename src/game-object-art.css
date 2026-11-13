@@ -121,7 +121,7 @@
   text-align: center;
   pointer-events: none;
 }
-.zone-totem-marker.phase-closed > .zone-map-pin,
+.zone-totem-marker.tier-1.phase-closed > .zone-map-pin,
 .zone-totem-marker.phase-done > .zone-map-pin {
   opacity: 0.75;
 }

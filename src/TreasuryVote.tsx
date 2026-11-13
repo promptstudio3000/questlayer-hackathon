@@ -3,11 +3,13 @@
 // DAO, a Sputnik DAO on NEAR. The vote is signed by the explorer account, so
 // there is no wallet popup. Server: server/native/treasury-dao.mjs,
 // docs/TREASURY-DAO.md. Hidden on hosts without the DAO.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Bank, CheckCircle, Star } from "@phosphor-icons/react";
 import { api, ApiError } from "./api";
 import { tr } from "./i18n";
 import { closesLabel } from "./CommunityBonusVote";
+import { Dialog } from "./Dialog";
+import { NEAR_NETWORK, onNearNetwork } from "./near-network.ts";
 
 export type DaoOption = {
   proposalId: number;
@@ -46,12 +48,15 @@ export function TreasuryVote({
   account,
   vote,
   notify,
+  empty = null,
 }: {
   /** The player's explorer account, or null while it is not ready. */
   account: string | null;
   /** Signs act_proposal(VoteApprove) on the DAO with the explorer account. */
   vote: (dao: string, proposalId: number) => Promise<boolean>;
   notify?: (message: string, error?: boolean) => void;
+  /** Shown instead of nothing when this host has no vote open (the tour's vote dialog). */
+  empty?: ReactNode;
 }) {
   const [view, setView] = useState<DaoView | null>(null);
   const [hidden, setHidden] = useState(false);
@@ -69,9 +74,10 @@ export function TreasuryVote({
     void load();
   }, [load]);
 
-  if (hidden || !view?.exists) return null;
+  if (hidden || (view && !view.exists)) return empty;
+  if (!view) return null;
   const polls = [view.weeklyMix, ...(view.extras || [])].filter((p): p is DaoPoll => !!p);
-  if (!polls.length) return null;
+  if (!polls.length) return empty;
   const member = !!view.me?.member;
 
   async function cast(p: DaoPoll, o: DaoOption) {
@@ -153,7 +159,7 @@ export function TreasuryVote({
         );
       })}
       <p className="bonus-vote-note">
-        <a href="/treasury#dao">{tr("See the treasury DAO")}</a>
+        <a href="/treasury#dao">{tr("Treasury")}</a>
       </p>
     </details>
   );
@@ -165,4 +171,25 @@ function mark(p: DaoPoll, poll: string, proposalId: number): DaoPoll {
     ...p,
     options: p.options.map((o) => (o.proposalId === proposalId ? { ...o, mine: true, approvals: o.approvals + 1 } : o)),
   };
+}
+
+/** The tour's vote step opens the treasury vote right here: no NPC to walk to.
+ *  `sign` signs one transaction with the explorer account (sponsored, no popup). */
+export function TreasuryVoteDialog({ onClose, sign, ...props }: Omit<Parameters<typeof TreasuryVote>[0], "empty" | "vote"> & { onClose: () => void; sign: (tx: (accountId: string) => object) => Promise<boolean> }) {
+  const vote = (dao: string, id: number) => {
+    if (!onNearNetwork(dao)) return Promise.reject(Error(tr("The treasury vote is on another network.")));
+    return sign((signerId) => ({
+      network: NEAR_NETWORK,
+      signerId,
+      receiverId: dao,
+      actions: [{ type: "FunctionCall", params: { methodName: "act_proposal", args: { id, action: "VoteApprove", proposal: "Vote" }, gas: "50000000000000", deposit: "0" } }],
+    }));
+  };
+  return (
+    <Dialog label={tr("Treasury vote")} onClose={onClose}>
+      <div className="tour-vote-dialog">
+        <TreasuryVote {...props} vote={vote} empty={<p className="bonus-vote-note">{tr("No treasury vote is open on this layer right now.")}</p>} />
+      </div>
+    </Dialog>
+  );
 }
