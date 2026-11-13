@@ -3167,5 +3167,7 @@
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "पहले पासकी या अपने 12 शब्द सहेजें। इनके बिना यह एक्सप्लोरर वापस नहीं आ सकता।",
   "Shows your next step on the map": "नक्शे पर आपका अगला कदम दिखाता है",
   "Back to GotchiGO": "GotchiGO पर वापस",
-  "Moving here never counts as GPS movement in GotchiGO.": "यहाँ चलना GotchiGO में कभी GPS चाल नहीं गिना जाता।"
+  "Moving here never counts as GPS movement in GotchiGO.": "यहाँ चलना GotchiGO में कभी GPS चाल नहीं गिना जाता।",
+  "Welcome to": "स्वागत है",
+  "{0} quests here. Tap to see them.": "यहाँ {0} क्वेस्ट हैं। देखने के लिए टैप करें।"
 }

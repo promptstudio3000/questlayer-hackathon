@@ -3167,5 +3167,7 @@
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Sichere zuerst einen Passkey oder deine 12 Wörter. Ohne sie kommt dieser Entdecker nicht zurück.",
   "Shows your next step on the map": "Zeigt deinen nächsten Schritt auf der Karte",
   "Back to GotchiGO": "Zurück zu GotchiGO",
-  "Moving here never counts as GPS movement in GotchiGO.": "Bewegung hier zählt in GotchiGO nie als GPS-Bewegung."
+  "Moving here never counts as GPS movement in GotchiGO.": "Bewegung hier zählt in GotchiGO nie als GPS-Bewegung.",
+  "Welcome to": "Willkommen in",
+  "{0} quests here. Tap to see them.": "{0} Quests hier. Tippe, um sie zu sehen."
 }

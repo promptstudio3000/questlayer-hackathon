@@ -21,6 +21,8 @@ export function creatorMapPlaces(
         template: q.place.template,
         lat: first.lat,
         lng: first.lng,
+        ...(q.photo ? { photo: q.photo } : {}),
+        creator: q.creator?.displayName,
       },
     ];
   });

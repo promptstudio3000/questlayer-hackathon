@@ -3167,5 +3167,7 @@
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "احفظ مفتاح مرور أو كلماتك الـ12 أولاً. بدونها لا يمكن لهذا المستكشف أن يعود.",
   "Shows your next step on the map": "يعرض خطوتك التالية على الخريطة",
   "Back to GotchiGO": "العودة إلى GotchiGO",
-  "Moving here never counts as GPS movement in GotchiGO.": "الحركة هنا لا تُحتسب أبدًا حركةً بنظام GPS في GotchiGO."
+  "Moving here never counts as GPS movement in GotchiGO.": "الحركة هنا لا تُحتسب أبدًا حركةً بنظام GPS في GotchiGO.",
+  "Welcome to": "مرحبًا بك في",
+  "{0} quests here. Tap to see them.": "{0} مهام هنا. اضغط لعرضها."
 }

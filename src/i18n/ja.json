@@ -3167,5 +3167,7 @@
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "先にパスキーか12個の単語を保存してください。ないとこの探検家は戻せません。",
   "Shows your next step on the map": "次の一歩をマップに表示します",
   "Back to GotchiGO": "GotchiGOに戻る",
-  "Moving here never counts as GPS movement in GotchiGO.": "ここでの移動はGotchiGOのGPS移動としては数えられません。"
+  "Moving here never counts as GPS movement in GotchiGO.": "ここでの移動はGotchiGOのGPS移動としては数えられません。",
+  "Welcome to": "ようこそ",
+  "{0} quests here. Tap to see them.": "ここにクエストが{0}件あります。タップして表示。"
 }

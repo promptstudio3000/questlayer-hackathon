@@ -3167,5 +3167,7 @@
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Nejdřív si ulož passkey nebo svých 12 slov. Bez nich se tento průzkumník nedá vrátit.",
   "Shows your next step on the map": "Ukazuje tvůj další krok na mapě",
   "Back to GotchiGO": "Zpět do GotchiGO",
-  "Moving here never counts as GPS movement in GotchiGO.": "Pohyb tady se v GotchiGO nikdy nepočítá jako pohyb podle GPS."
+  "Moving here never counts as GPS movement in GotchiGO.": "Pohyb tady se v GotchiGO nikdy nepočítá jako pohyb podle GPS.",
+  "Welcome to": "Vítej v zóně",
+  "{0} quests here. Tap to see them.": "Čeká tu {0} úkolů. Klepni a uvidíš je."
 }
