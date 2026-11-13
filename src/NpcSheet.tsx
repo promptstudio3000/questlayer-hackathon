@@ -11,7 +11,7 @@ import { ScreenTabs, type ScreenTab } from "./ScreenTabs";
 // (open tasks, the keeper's vault, the character profile) lives in tabs.
 import { NpcGear } from "./NpcGear";
 import { comeBackLine } from "./come-back";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   BookOpen,
   CheckCircle,
@@ -34,6 +34,7 @@ import {
   keeperView,
   npcAccept,
   npcGreet,
+  npcMission,
   npcTalk,
   npcTurnIn,
   tradeAccept,
@@ -49,6 +50,8 @@ import { chainTradesReady, explorerTxUrl, fillOnChain, handOverOnChain, secureTr
 import { InnerVault, StakeTodayCard, seenCeremony, seenRank } from "./StakeToday";
 import "./npc-sheet.css";
 
+// Chat mode loads only when a player writes or answers (src/NpcChat.tsx).
+const NpcChat = lazy(() => import("./NpcChat"));
 const EMOTE: Record<string, string> = { wave: "👋", think: "🤔", laugh: "😄", shrug: "🤷", none: "" };
 const isTrade = (offer: ActorOffer) => offer.kind.startsWith("trade_");
 const ICON: Record<string, ReactNode> = {
@@ -93,6 +96,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
   const [trades, setTrades] = useState<Record<string, NpcTrade>>({});
   const [vault, setVault] = useState<KeeperView | null>(null);
   const [tab, setTab] = useState<Tab>("talk");
+  const [chat, setChat] = useState<null | { mode: "mission" | "talk"; text?: string }>(null);
   const [flow, setFlow] = useState<"greeting" | "choices" | "offer" | "accepted">("greeting");
   const [selectedOffer, setSelectedOffer] = useState<ActorOffer | null>(null);
   const flowHost = useRef<HTMLDivElement>(null);
@@ -185,18 +189,28 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
     });
   const handOver = (offerId: string) => run(() => settleTradeUp(offerId, trades[offerId]));
   const proofs = Object.values(trades).flatMap((x) => x.txHashes || (x.txHash ? [x.txHash] : []));
+  // Writing to an NPC switches the dialog to chat mode.
   const send = (event: React.FormEvent) => {
     event.preventDefault();
     const text = message.trim();
     const draftRevision = draft.revision;
     if (!text) return;
-    run(async () => {
-      const r = await npcTalk(actorId, token, text);
-      setReply((old) => ({ ...r, npc: r.npc ?? old?.npc }));
-      if (latestMessage.current.trim() === text) draft.discard(draftRevision);
-      setNotice("");
-    });
+    setChat({ mode: "talk", text });
+    if (latestMessage.current.trim() === text) draft.discard(draftRevision);
+    setNotice("");
   };
+  const chatTalk = async (text: string) => {
+    const r = await npcTalk(actorId, token, text);
+    setReply((old) => ({ ...r, npc: r.npc ?? old?.npc, mission: old?.mission }));
+    return r;
+  };
+  const chatAnswer = async (text: string) => {
+    const r = await npcMission(actorId, token, text);
+    setReply((old) => (old ? { ...old, mission: r.mission } : old));
+    if (r.xp > 0) learning.acknowledge("npc");
+    return r;
+  };
+  const mission = reply?.mission;
 
   const archetype = reply?.npc?.archetype || encounter.actor.archetype;
   const title = reply?.npc?.title || encounter.actor.title;
@@ -252,9 +266,23 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
           </div>
         </header>
 
-        <p className="npc-bubble" aria-live="polite">
-          {flow === "accepted" ? notice : reply ? reply.say : t.thinking}
-        </p>
+        {chat ? (
+          <Suspense fallback={<p className="npc-bubble">{t.thinking}</p>}>
+            <NpcChat name={name} mission={mission} start={chat} onTalk={chatTalk} onAnswer={chatAnswer} />
+          </Suspense>
+        ) : (
+          <p className="npc-bubble" aria-live="polite">
+            {flow === "accepted" ? notice : reply ? reply.say : t.thinking}
+          </p>
+        )}
+        {!chat && mission && !mission.answered && mission.left > 0 && flow !== "accepted" && (
+          <div className="npc-mission-ask">
+            <p>{mission.ask}</p>
+            <button type="button" className="primary-button" disabled={busy} onClick={() => setChat({ mode: "mission" })}>
+              {tr("Answer · +{0} XP", { 0: mission.xp })}
+            </button>
+          </div>
+        )}
 
         {reply && flow === "greeting" && (ready.length > 0 || active.length > 0) && <button className="primary-button npc-continue" disabled={busy} onClick={() => openServices("tasks")}>{tr("Your tasks")}<ArrowRight aria-hidden="true" /></button>}
         {reply && (flow === "greeting" || flow === "choices") && questOffers.length > 0 && <section className="npc-story-step" aria-label={tr("Choose a quest")}>
@@ -425,7 +453,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
             ))}
           </p>
         )}
-        <form className="npc-chat" onSubmit={send}>
+        {!chat && <form className="npc-chat" onSubmit={send}>
           <input
             value={message}
             maxLength={300}
@@ -437,7 +465,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
           <button type="submit" disabled={busy || !message.trim()} aria-label={t.send}>
             <PaperPlaneRight weight="fill" />
           </button>
-        </form>
+        </form>}
         </details>
       </div>
     </Dialog>

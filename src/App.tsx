@@ -447,7 +447,8 @@ export default function App() {
     // Test Layer or QuestLayer World (docs/TEST-LAYER.md).
     [gameLayer, setGameLayer] = useState<GameLayerConfig | null>(null),
     [pipHidden, setPipHidden] = useState(false),
-    [tourRunning, setTourRunning] = useState(false);
+    [tourRunning, setTourRunning] = useState(false),
+    [inventoryFocus, setInventoryFocus] = useState<{ mode: "wear" | "sell"; revision: number } | null>(null);
   useEffect(() => {
     void api<{ layer?: { layers?: PublicLayer[] } | null; gameLayer?: GameLayerConfig | null }>("/config")
       .then((c) => {
@@ -1115,6 +1116,8 @@ export default function App() {
   }
   // `missing`: with nobody like that out nearby, open Game economy (the tour's keeper outside reviewed cities).
   const actorMissing = useRef(false);
+  // Kinds to try next when the first choice is not out (the tour's monster step).
+  const actorFallback = useRef<string[] | null>(null);
   function showActor(match: ActorFocusMatch, missing = false) {
     actorMissing.current = missing;
     setOverview(false);
@@ -1162,16 +1165,18 @@ export default function App() {
     playerReads.current.invalidate();
     setPlayer((current) => (current?.id === next.id ? next : current));
   }
-  // Auras from chests, levels and Wisp rolls are secured on NEAR on their own:
-  // the explorer account signs silently and the relayer pays. An Aura the
-  // player is wearing waits until it is taken off, so their look never changes
-  // under them. One at a time, with a back-off per Aura so a full edition or a
-  // spent daily relay budget never loops. localStorage
-  // questlayer-auto-secure=0 turns it off on this device.
+  // Auras from chests, levels and Wisp rolls are secured on their own: the
+  // explorer account signs silently and the relayer pays. The explorer's own
+  // record on the collection (needed to wear a secured Aura) is made the same
+  // way, once. An Aura the player is wearing is secured too and put straight
+  // back on, so their look does not change. One step at a time, with a
+  // back-off per Aura so a full edition or a spent daily relay budget never
+  // loops. localStorage questlayer-auto-secure=0 turns it off on this device.
   const autoSecure = useRef({
     running: false,
     retryAt: new Map<string, number>(),
     levelsAt: 0,
+    avatarAt: 0,
   });
   const [autoSecureTick, setAutoSecureTick] = useState(0);
   useEffect(() => {
@@ -1180,6 +1185,15 @@ export default function App() {
   }, []);
   const autoSecureSigner = invisible.signer;
   const autoSecureClaims = !!nativeWardrobe?.claimsEnabled;
+  const autoSecureAccount = nativeWardrobe?.accounts.find(
+    (a) => a.accountId === autoSecureSigner?.accountId,
+  );
+  // Only once the explorer has an Aura to wear: the record costs the relayer storage.
+  const autoSecureAvatar =
+    autoSecureClaims &&
+    !!autoSecureAccount &&
+    !autoSecureAccount.starterMinted &&
+    (autoSecureAccount.items.length > 0 || !!player?.inventory.some((i) => i.kind === "aura"));
   useEffect(() => {
     let off = false;
     try {
@@ -1190,11 +1204,11 @@ export default function App() {
     if (off || state.running || !player || !managed) return;
     if (!player.wallets.some((w) => w.account_id === managed.accountId)) return;
     const now = Date.now();
+    const avatar = autoSecureAvatar && state.avatarAt <= now;
     const item = autoSecureClaims
       ? player.inventory.find(
           (i) =>
             i.kind === "aura" &&
-            !i.equipped &&
             i.native_claim_state !== "minted" &&
             (!i.native_claim_state ||
               i.native_claim_receiver === managed.accountId) &&
@@ -1202,16 +1216,25 @@ export default function App() {
         )
       : undefined;
     const levels = state.levelsAt <= now;
-    if (!item && !levels) return;
+    if (!avatar && !item && !levels) return;
     state.running = true;
     void (async () => {
       let secured = 0;
       try {
-        if (item) {
+        if (avatar) {
+          state.avatarAt = Date.now() + 5 * 60_000;
+          try {
+            await sendNativeWardrobe("mint_avatar", managed, managed.accountId);
+          } catch {
+            // Tried again after the back-off.
+          }
+        } else if (item) {
+          const worn = !!item.equipped && (item.slot === "above" || item.slot === "below") ? item.slot : null;
           try {
             if (await secureAuraOnChain(item, managed, managed.accountId)) {
               secured++;
               state.retryAt.delete(item.id);
+              if (worn) await wearSecured(item.id, worn, managed).catch(() => {});
             } else state.retryAt.set(item.id, Date.now() + 2 * 60_000);
           } catch {
             state.retryAt.set(item.id, Date.now() + 15 * 60_000);
@@ -1231,10 +1254,7 @@ export default function App() {
             // Level rewards need the native rewards ledger; try again later.
           }
         }
-        if (secured) {
-          await refreshNative(true).catch(() => {});
-          notify(tr("Your Aura is secured."));
-        }
+        if (secured) await refreshNative(true).catch(() => {});
       } finally {
         state.running = false;
         await me().catch(() => {});
@@ -1242,7 +1262,20 @@ export default function App() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [player, autoSecureSigner, autoSecureClaims, autoSecureTick]);
+  }, [player, autoSecureSigner, autoSecureClaims, autoSecureAvatar, autoSecureTick]);
+  // Puts a just-secured Aura back on: it was worn when it was secured.
+  async function wearSecured(itemId: string, slot: "above" | "below", signer: NativeSigner) {
+    const claim = await api<{ claim: NativeAuraClaim }>("/native/claims/confirm", { itemId });
+    const tokenId = claim.claim.token_id;
+    if (!tokenId) return;
+    const data = await refreshNative(true);
+    const account = data.accounts.find((a) => a.accountId === signer.accountId);
+    const token = account?.items.find((i) => i.tokenId === tokenId);
+    if (!account?.starterOwned || !token) return;
+    if (!(await sendNativeWardrobe("equip_aura", signer, signer.accountId, token, slot))) return;
+    const r = await api<{ player: Player }>("/native/outfit", { enabled: true, accountId: signer.accountId });
+    updateOwnedPlayer(r.player);
+  }
   async function action<T>(
     name: string,
     fn: () => Promise<T>,
@@ -3345,6 +3378,59 @@ export default function App() {
       notify(tr("Your Aura is back in your practice collection."));
     });
   }
+  // The contract call behind "Secure my explorer" and wearing a secured Aura.
+  // Quiet: the automatic securing below calls it with no dialog or toast.
+  async function sendNativeWardrobe(
+    method: "mint_avatar" | "equip_aura" | "unequip_aura",
+    signer: NativeSigner,
+    accountId: string,
+    item?: NativeItem,
+    slot?: "above" | "below",
+  ): Promise<boolean> {
+    const contractId = nativeWardrobe?.contractId;
+    if (!onNearNetwork(contractId))
+      throw Error(
+        "Your secured collection could not load. Try again in a moment.",
+      );
+    await signer.send(
+      {
+        network: NEAR_NETWORK,
+        signerId: accountId,
+        receiverId: contractId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: method,
+              args:
+                method === "mint_avatar"
+                  ? {}
+                  : method === "unequip_aura"
+                    ? { slot }
+                    : { token_id: item!.tokenId, slot },
+              gas: "100000000000000",
+              deposit:
+                method === "mint_avatar" ? (5n * 10n ** 22n).toString() : "0",
+            },
+          },
+        ],
+      },
+      { playerId: player!.id },
+    );
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const data = await refreshNative(true),
+        state = data.accounts.find((a) => a.accountId === accountId);
+      const confirmed =
+        method === "mint_avatar"
+          ? !!state?.starterOwned
+          : method === "unequip_aura"
+            ? state?.equipment[slot!] === null
+            : state?.equipment[slot!] === item!.tokenId;
+      if (confirmed) return true;
+      await new Promise((resolve) => setTimeout(resolve, 800));
+    }
+    return false;
+  }
   async function nativeTransaction(
     method: "mint_avatar" | "equip_aura" | "unequip_aura",
     account: string,
@@ -3358,50 +3444,7 @@ export default function App() {
         !player?.wallets.some((w) => w.account_id === accountId)
       )
         throw Error("Choose the linked account that owns this Aura.");
-      const contractId = nativeWardrobe?.contractId;
-      if (!onNearNetwork(contractId))
-        throw Error(
-          "Your secured collection could not load. Try again in a moment.",
-        );
-      await signer.send(
-        {
-          network: NEAR_NETWORK,
-          signerId: accountId,
-          receiverId: contractId,
-          actions: [
-            {
-              type: "FunctionCall",
-              params: {
-                methodName: method,
-                args:
-                  method === "mint_avatar"
-                    ? {}
-                    : method === "unequip_aura"
-                      ? { slot }
-                      : { token_id: item!.tokenId, slot },
-                gas: "100000000000000",
-                deposit:
-                  method === "mint_avatar" ? (5n * 10n ** 22n).toString() : "0",
-              },
-            },
-          ],
-        },
-        { playerId: player!.id },
-      );
-      let confirmed = false;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const data = await refreshNative(true),
-          state = data.accounts.find((a) => a.accountId === accountId);
-        confirmed =
-          method === "mint_avatar"
-            ? !!state?.starterOwned
-            : method === "unequip_aura"
-              ? state?.equipment[slot!] === null
-              : state?.equipment[slot!] === item!.tokenId;
-        if (confirmed) break;
-        await new Promise((resolve) => setTimeout(resolve, 800));
-      }
-      if (!confirmed)
+      if (!(await sendNativeWardrobe(method, signer, accountId, item, slot)))
         throw Error(
           "Sent. Confirmation is still pending; refresh your Secured collection before retrying.",
         );
@@ -3414,8 +3457,8 @@ export default function App() {
         method === "mint_avatar"
           ? tr("Your explorer is secured.")
           : method === "unequip_aura"
-            ? tr("Aura taken off your secured outfit.")
-            : tr("Equipped. Your secured Aura is glowing on the map."),
+            ? tr("Aura taken off.")
+            : tr("Equipped. Your Aura is glowing on the map."),
       );
     });
   }
@@ -3639,7 +3682,8 @@ export default function App() {
     if (lockedHereId === lockedShown.current) return;
     lockedShown.current = lockedHereId;
     const zone = lockedHereId ? world?.zones.find((z) => z.id === lockedHereId) : null;
-    if (zone) setLockedZoneDialog(zone);
+    // The guided tour never asks for a stake in passing.
+    if (zone && !tourRunning) setLockedZoneDialog(zone);
   }, [lockedHereId, world]);
   const recommendation = world
     ? nearestDiscovery({
@@ -3798,7 +3842,8 @@ export default function App() {
   };
   // Guided tour (docs/GUIDED-TOUR.md): where a step points, and how to open it.
   const TOUR_COMPANION = "seed-p-ondra";
-  const TOUR_ACTORS: Record<string, string[]> = { "quest-giver": ["quest_giver"], monster: ["roamer", "guardian", "boss"], trader: ["trader"], keeper: ["keeper"] };
+  // A plain roaming Lickquidator first: guardians and the boss are harder (GameMap picks the nearest of the kinds).
+  const TOUR_ACTORS: Record<string, string[]> = { "quest-giver": ["quest_giver"], monster: ["roamer"], trader: ["trader"], keeper: ["keeper"] };
   function tourQuest(kind: string) {
     let best: Quest | null = null;
     for (const q of world?.quests || []) {
@@ -3807,9 +3852,34 @@ export default function App() {
     }
     return best;
   }
+  // The tour never leads into a zone the explorer cannot enter yet.
+  function tourCoin(find: boolean) {
+    const tier = player?.tier || 1;
+    const lockedZones = (world?.zones || []).filter((z) => z.tier > tier);
+    let best: World["coins"][number] | null = null;
+    for (const c of world?.coins || []) {
+      if (c.claimant || !!c.find !== find) continue;
+      if (lockedZones.some((z) => zoneInteriorMargin(z, c) !== null)) continue;
+      if (!best || meters(position, c) < meters(position, best)) best = c;
+    }
+    return best ?? nearestCoin(find);
+  }
+  // Pip hears about a finished step at once: any change to the explorer's record re-reads the tour.
+  const tourPulse = player ? `${player.xp}:${player.gold_u}:${player.inventory.length}:${player.inventory.filter((i) => i.equipped).length}` : "";
+  useEffect(() => {
+    if (tourPulse && gameLayer?.tour) window.dispatchEvent(new Event("questlayer:tour-refresh"));
+  }, [tourPulse, gameLayer?.tour]);
+  // A new step starts clean: the last step's route and arrow go away.
+  function clearTourGuidance() {
+    setDemoTarget(null);
+    setStreetFindTarget(null);
+    setPointTarget(null);
+    // The card of the place just finished ("Completed · 0 m away") would sit under the next step.
+    setSelected(null);
+  }
   function tourResolve(t: TourTarget) {
     if (t.kind === "coin" || t.kind === "find") {
-      const c = nearestCoin(t.kind === "find");
+      const c = tourCoin(t.kind === "find");
       return c ? { lat: c.lat, lng: c.lng, label: t.kind === "find" ? tr("Street find") : undefined } : null;
     }
     if (t.kind === "quest") {
@@ -3819,29 +3889,50 @@ export default function App() {
     // Characters walk: "Show me" focuses the map on the nearest one instead of a fixed arrow.
     return null;
   }
-  function tourGo(t: TourTarget) {
+  function tourGo(t: TourTarget, stepId?: string) {
     if (t.kind === "coin" || t.kind === "find") {
-      const c = nearestCoin(t.kind === "find");
+      const c = tourCoin(t.kind === "find");
       if (c) goToStreetFind(c);
       else notify(t.kind === "find" ? tr("No street find is left near you today.") : tr("No coin is left near you right now. More appear in the next wave."), true);
     } else if (t.kind === "quest") {
       const q = tourQuest(t.quest);
       if (q) guideToQuest(q);
-      else void showGoal("quest");
+      else notify(tr("Nothing like that is open near you right now. You can skip this step."), true);
     } else if (t.kind === "actor") {
       // The walking companion bot of the Test Layer (server/test-seed): its card has Wave and Message.
-      if (t.role === "companion") setCardPlayer(TOUR_COMPANION);
-      else if (TOUR_ACTORS[t.role]) {
+      if (t.role === "companion") {
+        // The message step opens the chat itself; the wave step opens his card.
+        if (stepId === "message") window.dispatchEvent(new CustomEvent("questlayer:inbox-open" /* INBOX_OPEN_EVENT, src/inbox/Inbox.tsx (lazy) */, { detail: { playerId: TOUR_COMPANION, name: "Ondra" } }));
+        else setCardPlayer(TOUR_COMPANION);
+      } else if (TOUR_ACTORS[t.role]) {
         setTab("explore");
+        actorFallback.current = t.role === "monster" ? ["roamer", "guardian", "boss"] : null;
         showActor({ kinds: TOUR_ACTORS[t.role] }, t.role === "keeper");
       }
       else { setTab("community"); setSheetExpanded(true); }
     } else if (t.kind === "screen" && t.screen === "treasury") {
       setTreasuryVoteOpen(true);
+      // Looking at the vote finishes the step: voting itself opens at level 3.
+      void api("/tour", { action: "seen", step: "vote" })
+        .then(() => window.dispatchEvent(new Event("questlayer:tour-refresh")))
+        .catch(() => {});
     } else if (t.kind === "screen") {
-      const tabs: Record<string, Tab> = { inventory: "inventory", rolls: "inventory", market: "market", shop: "shop", stake: "fund" };
+      const tabs: Record<string, Tab> = { inventory: "inventory", rolls: "inventory", sell: "inventory", market: "market", shop: "shop", stake: "fund" };
       setTab(tabs[t.screen] || "explore");
       setSheetExpanded(true);
+      // Wearing and selling start in an Aura's own card: open it.
+      if (t.screen === "inventory" || t.screen === "sell")
+        setInventoryFocus({ mode: t.screen === "sell" ? "sell" : "wear", revision: Date.now() });
+      // The wisp roll sits in the open in Inventory while there is a ticket: scroll to it.
+      if (t.screen === "rolls")
+        window.setTimeout(() => {
+          const rolls = document.querySelector<HTMLElement>(".wisp-rolls");
+          // It lives in Inventory's "Secured on NEAR" fold: open that first.
+          const fold = rolls?.closest("details");
+          if (fold) fold.open = true;
+          if (rolls) rolls.scrollIntoView({ behavior: "smooth", block: "center" });
+          else notify(tr("No roll ticket yet. Beat a Pocket Wisp first."), true);
+        }, 900);
     } else if (t.kind === "action") {
       if (t.action === "task") openNearbyForm("task");
       else if (t.action === "note" || t.action === "topic" || t.action === "shout") setQuickCreate(t.action);
@@ -4063,7 +4154,7 @@ export default function App() {
           onMoveEnd={(center, zoom) => setMapCenter(zoom >= 13 ? center : null)}
           // Only game elements sit on the map. Community quests, player tasks
           // and Secrets are reached from the Community button and Nearby.
-          creatorPlaces={MAP_DIALOG_PINS ? creatorPlaces : []}
+          creatorPlaces={creatorPlaces}
           onCreatorPlace={(questId) => {
             setTab("community");
             setCreatorView({ page: "quest", questId });
@@ -4077,6 +4168,8 @@ export default function App() {
           frame={myFrame}
           goldMap={goldMapData}
           selectedQuestId={selectedQuestId}
+          guideLabel={selected ? (zoneQuest ? questDisplayTitle(zoneQuest.title) : selected.name) : undefined}
+          onGuideStop={selected ? closeZone : findTarget ? () => setStreetFindTarget(null) : undefined}
           guideRequest={guideRequest && guideRequest.worldId === world?.id && guideRequest.playerId === player?.id && selected && zoneQuest?.id === guideRequest.questId && zoneQuests.some(q => q.id === guideRequest.questId && !q.completed && q.opens_at <= now && q.closes_at > now) ? guideRequest : null}
           route={questRoute}
           onPlacePin={(id) => {
@@ -4095,7 +4188,11 @@ export default function App() {
           actorFocus={actorFocus}
           pointTarget={pointTarget}
           onActorFocus={(text, found) => {
-            if (!found && actorMissing.current) {
+            if (!found && actorFallback.current) {
+              const kinds = actorFallback.current;
+              actorFallback.current = null;
+              showActor({ kinds });
+            } else if (!found && actorMissing.current) {
               setTab("fund");
               setSheetExpanded(true);
             } else notify(text, !found);
@@ -4232,7 +4329,7 @@ export default function App() {
         </div>
       </header>
       </>)}
-      {player && zonePresence && !selected && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => { const q = world?.quests.find(x => x.id === zonePresence.questId); if (q) startQuest(q); else selectZone(zonePresence.zone); }} />}
+      {player && zonePresence && !selected && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => selectZone(zonePresence.zone)} />}
       {player && tab !== "explore" && (
         // Desktop: Inventory, Community and Profile open as a card over the
         // map; a click beside the card closes it like the panel's close button.
@@ -4244,7 +4341,7 @@ export default function App() {
           hidden={compactHidden}
           ref={mainPanel}
           tabIndex={-1}
-          className={`main-panel ${tab === "explore" ? `explore-panel ${selected ? "zone-explore-panel" : ""} ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
+          className={`main-panel ${settingsOpen ? "settings-panel " : ""}${tab === "explore" ? `explore-panel ${selected ? "zone-explore-panel" : ""} ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
           {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} gameLayer={gameLayer} onNavigate={navigation.update} />}
           {tab === "explore" && !sheetExpanded && <div className="objective-dismiss-bar">
@@ -4491,7 +4588,7 @@ export default function App() {
                 >
                   {tr("New discoveries open with the next day. Coins on the streets still count while you walk.")}</EmptyState>
               )}
-              {showObjective("find") && !coachStep &&
+              {showObjective("find") && !coachStep && !tourRunning &&
                 recommendedFind &&
                 !nativeTarget &&
                 !adventureNotice &&
@@ -4518,7 +4615,7 @@ export default function App() {
                   </button>
                   </div>
                 )}
-              {showObjective("quest") && !coachStep &&
+              {showObjective("quest") && !coachStep && !tourRunning &&
                 recommended &&
                 recommendedZone &&
                 !nativeTarget &&
@@ -4645,17 +4742,20 @@ export default function App() {
                     />
                   ) : undefined
                 }
+                tourFocus={inventoryFocus}
+                rolls={
+                  <WispRolls
+                    accountId={
+                      invisible.status === "ready" && invisible.signer
+                        ? invisible.signer.accountId
+                        : null
+                    }
+                    send={sendWispRoll}
+                    onWon={() => void me()}
+                  />
+                }
                 nativeContent={
                   <>
-                    <WispRolls
-                      accountId={
-                        invisible.status === "ready" && invisible.signer
-                          ? invisible.signer.accountId
-                          : null
-                      }
-                      send={sendWispRoll}
-                      onWon={() => void me()}
-                    />
                     <NativeWardrobe
                       player={player}
                       data={nativeWardrobe}
@@ -5256,8 +5356,11 @@ export default function App() {
               </button>
             </div>
           )}
-          {tab === "explore" && !globe && gameLayer?.tour && player && (
+          {!globe && gameLayer?.tour && player && (
             <TourHelper
+              onMap={tab === "explore"}
+              balance={wallet && !(wallet.realm === "qgold" && wallet.balanceKnown === false) ? wallet.balanceU : null}
+              onStep={clearTourGuidance}
               position={position}
               heading={arena && !nativePlay ? demoWalk.heading : (gpsCourse ?? undefined)}
               resolve={tourResolve}

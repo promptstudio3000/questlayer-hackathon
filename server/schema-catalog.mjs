@@ -37,6 +37,7 @@ for (const relative of [
   "./qgold/keeper-journal.mjs",
   "./native/social-records.mjs",
   "./npc/rolls-schema.mjs",
+  "./npc/lore.mjs",
   "./npc/keeper-vault.mjs",
   "./npc/patron-rank.mjs",
   "./npc/trader-ledger.mjs",

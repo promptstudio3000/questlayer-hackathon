@@ -203,6 +203,9 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
             "INSERT OR IGNORE INTO messages(id,player_id,text,lat,lng,image,author_fix,created_at) VALUES(?,?,?,?,?,NULL,NULL,?)",
           ).run(id, n.author, n.text, n.at.lat, n.at.lng, now - (n.ago || 0) * 60_000);
           db.prepare("INSERT OR IGNORE INTO social_note_meta VALUES(?,?,'published',?)").run(id, arena, now - (n.ago || 0) * 60_000);
+          // The clock starts the first time the seed sees the note, so a note
+          // seeded before expiry existed still gets its full day or week.
+          db.prepare("INSERT OR IGNORE INTO social_note_expiry VALUES(?,?)").run(id, now + n.days * DAY);
         }
     });
   }
@@ -228,8 +231,7 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
         db.prepare(
           "INSERT OR IGNORE INTO place_threads(id,kind,author,title,text,lat,lng,cell,place,paid_until,free_forever,state,posts,authors,reads,paid_u,last_post_at,last_read_at,created_at) VALUES(?,?,?,?,?,?,?,?,'',?,?,'published',?,?,0,0,?,?,?)",
         ).run(threadId, t.kind, t.author, t.title || "", t.text, t.at.lat, t.at.lng, latLngToCell(t.at.lat, t.at.lng, 7), now + 7 * DAY, t.kind === "topic" ? 1 : 0, replies.length, authors, now, now, now);
-        // Shouts lapse after their paid days; the seed keeps them on the map.
-        db.prepare("UPDATE place_threads SET paid_until=MAX(paid_until,?),last_read_at=? WHERE id=? AND state='published'").run(now + 7 * DAY, now, threadId);
+        // Shouts lapse after their 7 paid days like a player's; the seed does not renew them.
         replies.forEach((r, i) =>
           db.prepare("INSERT OR IGNORE INTO place_posts(id,thread_id,author,text,state,created_at) VALUES(?,?,?,?,'published',?)").run(
             `seed-pp-${t.slug}-${i}`,

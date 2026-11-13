@@ -185,6 +185,8 @@ export function Inventory({
   characterItems,
   nativeContent,
   nativeExtras,
+  rolls,
+  tourFocus,
   adventureResults,
   busy,
   onEquip,
@@ -213,6 +215,10 @@ export function Inventory({
   characterItems: Item[];
   nativeContent: ReactNode;
   nativeExtras?: ReactNode;
+  /** The wisp roll: shown in the open, above the folds, while there is a ticket. */
+  rolls?: ReactNode;
+  /** The guided tour opens an Aura's card: one to wear, or one that can be sold. */
+  tourFocus?: { mode: "wear" | "sell"; revision: number } | null;
   adventureResults?: ReactNode;
   busy: string;
   onEvm: () => Promise<void>;
@@ -375,6 +381,19 @@ export function Inventory({
     setSelling(false);
     setListingError("");
   };
+  // The tour's "Show me" opens an Aura's own card. The list may still be loading when the
+  // screen opens, so the request waits until there is an Aura to show.
+  const tourRevision = tourFocus?.revision;
+  const tourShown = useRef(0);
+  const tourPick = entries.find((e) => (e.type === "aura" || e.type === "secured") && !e.worn) ??
+    entries.find((e) => e.type === "aura" || e.type === "secured");
+  const tourPickKey = tourPick?.key;
+  useEffect(() => {
+    if (!tourRevision || tourShown.current === tourRevision || !tourPickKey) return;
+    tourShown.current = tourRevision;
+    openItem(tourPickKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tourRevision, tourPickKey]);
   const closeItem = () => {
     setSelectedKey(null);
     setSelling(false);
@@ -544,11 +563,10 @@ export function Inventory({
       ? RARITY_NAMES[entry.rarity]?.() || entry.rarity
       : rarityName(entry.rarity);
   const entrySource = (entry: Entry) =>
-    entry.type === "aura"
-      ? tr("Not on NEAR yet")
-      : entry.type === "secured"
-        ? tr("Secured on NEAR")
-        : entry.item.verified
+    // Auras secure themselves in the background; where they are kept is not the player's concern.
+    entry.type === "aura" || entry.type === "secured"
+      ? ""
+      : entry.item.verified
           ? tr("Verified original in your wallet")
           : tr("In-game copy");
 
@@ -790,6 +808,7 @@ export function Inventory({
             ))}
           </div>
         )}
+        {rolls}
         {!!lockedEditions.length && (
           <details className="inv-catalog">
             <summary>{tr("Aura catalog · {0} of {1} found", { 0: progress.found, 1: progress.total })}</summary>
@@ -947,7 +966,7 @@ export function Inventory({
         </details>
         <details className="inventory-disclosure">
           <summary>
-            <Wallet size={20} aria-hidden="true" /> {" "}{tr("Secured on NEAR")}</summary>
+            <Wallet size={20} aria-hidden="true" /> {" "}{tr("Advanced")}</summary>
           <div className="inventory-disclosure-body inventory-native-content">
             {nativeContent}
             {nativeExtras}
@@ -1081,11 +1100,11 @@ export function Inventory({
                       {selected.type !== "wearable" && selected.item.serial != null ? ` · #${selected.item.serial}` : ""}
                     </p>
                     <span className="inventory-source">
-                      {entrySource(selected)}
-                      {selected.worn ? tr(" · Equipped") : ""}
-                      {selected.type === "aura" && !selected.worn && selected.count > 1
-                        ? ` · ${selected.count} held`
-                        : ""}
+                      {[
+                        entrySource(selected),
+                        selected.worn ? tr("Equipped") : "",
+                        selected.type === "aura" && !selected.worn && selected.count > 1 ? `${selected.count} held` : "",
+                      ].filter(Boolean).join(" · ")}
                     </span>
                   </div>
                   <button
@@ -1206,7 +1225,7 @@ export function Inventory({
                       {selected.type === "wearable"
                         ? tr("Wearables can't be sold: clones are not NFTs and originals stay in your wallet.")
                         : selected.type === "secured" && !selected.avatarReady
-                          ? tr("Secure your explorer under Secured on NEAR to wear secured Auras.")
+                          ? tr("Getting your Aura ready to wear. Try again in a moment.")
                           : selected.type === "secured" && selected.worn
                             ? tr("Take it off before you sell it.")
                             : selected.worn

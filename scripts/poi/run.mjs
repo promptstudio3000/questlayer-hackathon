@@ -12,14 +12,18 @@ import {
   readFileSync,
   renameSync,
   rmSync,
+  statSync,
   symlinkSync,
   writeFileSync,
 } from "node:fs";
 import { resolve } from "node:path";
 import { createHash } from "node:crypto";
+import { execFileSync } from "node:child_process";
 import { parseRegions } from "./regions.mjs";
+import { GEOFABRIK_AUTO, parseDemoCities } from "./demo-cities.mjs";
+import { loadGeofabrikIndex, pickGeofabrikExtract } from "./geofabrik-index.mjs";
 import { loadW4 } from "./lib/w4.mjs";
-import { extractOsm } from "./extract-osm.mjs";
+import { clipOsm, extractOsm } from "./extract-osm.mjs";
 import {
   collectWikidataIds,
   downloadIfChanged,
@@ -28,9 +32,10 @@ import {
   fetchWikidata,
   latestOvertureRelease,
   readInputs,
+  sha256File,
   verifyGeofabrikMd5,
 } from "./fetch.mjs";
-import { attributionMarkdown, buildPoiDatabase, writeJson } from "./build.mjs";
+import { attributionMarkdown, buildPoiDatabaseInParts, writeJson } from "./build.mjs";
 
 const args = new Map();
 for (const arg of process.argv.slice(2)) {
@@ -78,6 +83,11 @@ for (const signal of ["SIGTERM", "SIGINT"])
   process.on(signal, () => failed(new Error(`Stopped by ${signal}.`)));
 
 const regions = parseRegions(args.get("regions") || process.env.WORLD_REGIONS);
+// Demo cities outside the country regions: small OSM clips (demo-cities.mjs).
+const cityRegions = parseDemoCities(
+  args.get("cities") ?? process.env.WORLD_CITIES ?? "demo",
+);
+const allRegions = [...regions, ...cityRegions];
 const keep = Math.max(1, Number(process.env.POI_KEEP_RELEASES || 2));
 const log = (msg) => console.error(`[poi] ${new Date().toISOString()} ${msg}`);
 
@@ -108,7 +118,7 @@ stage = "lock";
 takeLock();
 process.on("exit", () => rmSync(lockPath, { force: true }));
 stage = "start";
-writeLastRun({ status: "running", regions: regions.map((r) => r.id) });
+writeLastRun({ status: "running", regions: allRegions.map((r) => r.id) });
 
 const inputsPath = `${workDir}/inputs.json`;
 const recorded = readInputs(inputsPath);
@@ -117,7 +127,7 @@ const save = () => writeJson(inputsPath, inputs);
 
 const w4 = await loadW4();
 log(
-  `regions ${regions.map((r) => r.id).join(",")}, W4 interface: ${w4.source}`,
+  `regions ${regions.map((r) => r.id).join(",")}, demo cities ${cityRegions.length}, W4 interface: ${w4.source}`,
 );
 
 const overtureRelease =
@@ -132,6 +142,8 @@ const buildInputs = {
 };
 
 stage = "fetch";
+const builtCities = [],
+  skippedCities = [];
 for (const region of regions) {
   const prev = recorded.regions?.[region.id] || {};
   const pbf = `${workDir}/inputs/${region.id}-latest.osm.pbf`;
@@ -163,6 +175,105 @@ for (const region of regions) {
   inputs.regions[region.id].overture = { ...overture, path: undefined };
   save();
   buildInputs.overture.push({ path: overture.path, country: region.country });
+}
+
+// A demo city keeps only its clip on disk: the source extract (up to a few
+// hundred MB) is deleted once the clip is cut. Unchanged Last-Modified/ETag
+// and an intact clip skip the download. No Overture query: OSM only.
+// A clip younger than DEMO_CITY_REFRESH_DAYS (default 28) is reused without
+// asking its source: 300 sources a week would be tens of GB for little change.
+const refreshMs =
+  Math.max(0, Number(process.env.DEMO_CITY_REFRESH_DAYS ?? 28)) * 86_400_000;
+let geofabrikIndex = null;
+for (const city of cityRegions) {
+  const prev = recorded.regions?.[city.id] || {};
+  const clip = `${workDir}/inputs/${city.id}.clip.osm.pbf`;
+  const src = `${workDir}/inputs/${city.id}.src.osm.pbf`;
+  const sameClip = prev.osm?.clipBbox?.join(",") === city.bbox.join(",");
+  // A source left by a killed run is never reused (disk is tight).
+  rmSync(src, { force: true });
+  let osm;
+  try {
+    let url = city.source;
+    if (
+      sameClip &&
+      existsSync(clip) &&
+      prev.osm.sha256 &&
+      Date.now() - Date.parse(prev.osm.checkedAt || prev.osm.fetchedAt || 0) <
+        refreshMs
+    ) {
+      osm = { ...prev.osm, changed: false };
+    } else {
+      if (url === GEOFABRIK_AUTO) {
+        geofabrikIndex ||= await loadGeofabrikIndex(`${workDir}/inputs`, { log });
+        url = pickGeofabrikExtract(geofabrikIndex, city.bbox);
+        if (!url) throw new Error("no Geofabrik extract contains the clip");
+      }
+      osm = await downloadIfChanged(
+        url,
+        clip,
+        sameClip && prev.osm?.url === url
+          ? { ...prev.osm, bytes: prev.osm.clipBytes }
+          : null,
+        { log },
+      );
+      osm.checkedAt = new Date().toISOString();
+    }
+    if (osm.changed) {
+      // downloadIfChanged wrote the source to `clip`; move it aside and cut.
+      renameSync(clip, src);
+      if (city.sourceKind === "geofabrik")
+        osm.md5 = await verifyGeofabrikMd5(url, src);
+      clipOsm({
+        pbf: src,
+        out: clip,
+        bbox: city.bbox,
+        osmium: process.env.OSMIUM_BIN || "osmium",
+      });
+      rmSync(src, { force: true });
+      osm.sourceBytes = osm.bytes;
+      osm.sourceSha256 = osm.sha256;
+      osm.clipBbox = city.bbox;
+      osm.clipBytes = statSync(clip).size;
+      osm.sha256 = await sha256File(clip);
+    }
+  } catch (error) {
+    // One unreachable city never stops the import; its previous clip stays.
+    rmSync(src, { force: true });
+    if (!existsSync(clip) || !prev.osm?.sha256) {
+      log(`demo city ${city.id} skipped: ${error.message}`);
+      skippedCities.push({ id: city.id, reason: String(error.message).slice(0, 200) });
+      continue;
+    }
+    log(`demo city ${city.id} keeps its previous clip: ${error.message}`);
+    osm = prev.osm;
+  }
+  delete osm.changed;
+  let extracted;
+  try {
+    extracted = extractOsm({
+      pbf: clip,
+      pbfSha256: osm.sha256,
+      workDir,
+      region: city.id,
+      osmium: process.env.OSMIUM_BIN || "osmium",
+      log,
+    });
+  } catch (error) {
+    // A broken clip is dropped (the next run downloads it again).
+    log(`demo city ${city.id} skipped, extract failed: ${error.message}`);
+    rmSync(clip, { force: true });
+    delete inputs.regions[city.id];
+    save();
+    skippedCities.push({ id: city.id, reason: "extract-failed" });
+    continue;
+  }
+  inputs.regions[city.id] = { osm, kind: "city" };
+  save();
+  buildInputs.osmPois.push(extracted.pois);
+  buildInputs.osmPaths.push(extracted.paths);
+  buildInputs.osmExclusions.push(extracted.exclusions);
+  builtCities.push(city);
 }
 
 stage = "geonames";
@@ -211,7 +322,7 @@ const inputHash = createHash("sha256")
       Object.entries(inputs.regions).map(([id, r]) => [
         id,
         r.osm.sha256,
-        r.overture.sha256,
+        r.overture?.sha256 ?? null,
       ]),
       inputs.geonames.sha256,
       ids.length,
@@ -222,7 +333,9 @@ const inputHash = createHash("sha256")
   )
   .digest("hex")
   .slice(0, 8);
-const version = `${regions.map((r) => r.id).join("-")}-${osmDate}-${inputHash}`;
+// Demo cities add "-c<count>" so the version stays short (the city ids are in
+// the input hash and in manifest.regions).
+const version = `${regions.map((r) => r.id).join("-")}${builtCities.length ? `-c${builtCities.length}` : ""}-${osmDate}-${inputHash}`;
 const file = `${workDir}/releases/poi-${version}.sqlite`;
 const manifestPath = `${workDir}/releases/poi-${version}.manifest.json`;
 
@@ -233,16 +346,52 @@ if (existsSync(file) && existsSync(manifestPath) && !args.has("rebuild")) {
   manifest = JSON.parse(readFileSync(manifestPath, "utf8"));
 } else {
   log(`building ${version}`);
-  manifest = await buildPoiDatabase({
-    inputs: buildInputs,
+  // Countries in one part, demo cities in chunks (POI_CITY_CHUNK, default 40):
+  // the parts are built one after another and merged, so memory stays at one
+  // part (docs/POI-PIPELINE.md "Demo cities abroad").
+  const n = regions.length,
+    chunk = Math.max(1, Number(process.env.POI_CITY_CHUNK || 40)),
+    slice = (from, to) => ({
+      osmPois: buildInputs.osmPois.slice(from, to),
+      osmPaths: buildInputs.osmPaths.slice(from, to),
+      osmExclusions: buildInputs.osmExclusions.slice(from, to),
+    });
+  const parts = [
+    {
+      regions: regions.map((r) => r.id),
+      inputs: { ...buildInputs, ...slice(0, n) },
+    },
+  ];
+  for (let i = 0; i < builtCities.length; i += chunk)
+    parts.push({
+      regions: builtCities.slice(i, i + chunk).map((c) => c.id),
+      inputs: {
+        ...slice(n + i, n + i + chunk),
+        overture: [],
+        geonames: [],
+        wikidata: buildInputs.wikidata,
+        closures: buildInputs.closures,
+      },
+    });
+  manifest = await buildPoiDatabaseInParts({
+    parts,
     outPath: file,
     version,
-    regions: regions.map((r) => r.id),
+    regions: [...regions, ...builtCities].map((r) => r.id),
     w4,
     log,
   });
   const sources = [
-    ...Object.entries(inputs.regions).flatMap(([id, r]) => [
+    ...Object.entries(inputs.regions).flatMap(([id, r]) => r.kind === "city" ? [
+      {
+        source: `openstreetmap:${id}`,
+        url: r.osm.url,
+        version: r.osm.lastModified,
+        sha256: r.osm.sha256,
+        clip: r.osm.clipBbox,
+        licence: "ODbL-1.0",
+      },
+    ] : [
       {
         source: `openstreetmap:${id}`,
         url: r.osm.url,
@@ -274,6 +423,7 @@ if (existsSync(file) && existsSync(manifestPath) && !args.has("rebuild")) {
   ];
   manifest = {
     ...manifest,
+    demoCities: builtCities.map((c) => c.cityId),
     inputs: sources,
     builtAt: new Date().toISOString(),
   };
@@ -315,21 +465,27 @@ let autoCities = null;
 if (process.env.AUTO_CITIES !== "0") {
   stage = "auto-cities";
   try {
-    const { runAutoCities } = await import("./auto-cities.mjs");
-    const auto = await runAutoCities({
-      workDir,
-      regions: regions.map((r) => r.id),
-      minPopulation: Number(process.env.AUTO_CITY_MIN_POP || 15000),
-      log: (m) => log(m),
-    });
+    // Own process: the POI build's heap is gone before the packs are built.
+    const out = execFileSync(
+      process.execPath,
+      [
+        new URL("./auto-cities.mjs", import.meta.url).pathname,
+        `--work=${workDir}`,
+        `--min-pop=${Number(process.env.AUTO_CITY_MIN_POP || 15000)}`,
+      ],
+      { stdio: ["ignore", "pipe", "inherit"], maxBuffer: 64 * 1024 * 1024 },
+    )
+      .toString()
+      .trim()
+      .split("\n")
+      .at(-1);
+    const auto = JSON.parse(out);
     autoCities = {
-      version: auto.index.version,
-      published: auto.report.published,
-      selected: auto.report.selected,
+      version: auto.version,
+      published: auto.published,
+      selected: auto.selected,
     };
-    log(
-      `auto cities ${auto.index.version}: ${auto.report.published}/${auto.report.selected} published`,
-    );
+    log(`auto cities ${auto.version}: ${auto.published}/${auto.selected} published`);
   } catch (error) {
     log(`auto cities failed: ${error.stack || error.message}`);
     autoCities = { error: String(error.message).slice(0, 300) };
@@ -343,6 +499,7 @@ writeLastRun({
   finishedAt: new Date().toISOString(),
   version,
   pois: manifest.counts?.pois ?? null,
+  demoCities: { built: builtCities.map((c) => c.cityId), skipped: skippedCities },
   autoCities,
 });
 console.log(JSON.stringify(manifest));

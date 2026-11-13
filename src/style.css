@@ -647,24 +647,24 @@ svg {
   border-radius: 50%;
 }
 .zone-map-pin.tier-2 > span {
-  border-color: #b398cd;
-  color: #a88dbd;
-  box-shadow:
-    inset 0 0 0 4px #f9f5eb,
-    inset 0 0 0 5px #dfd1eb;
-}
-.zone-map-pin.tier-2 > b {
-  background: #b398cd;
-}
-.zone-map-pin.tier-3 > span {
   border-color: #d7b46f;
   color: #c7a04f;
   box-shadow:
     inset 0 0 0 4px #f9f5eb,
     inset 0 0 0 5px #ebdcb9;
 }
-.zone-map-pin.tier-3 > b {
+.zone-map-pin.tier-2 > b {
   background: #d7b46f;
+}
+.zone-map-pin.tier-3 > span {
+  border-color: #d9707a;
+  color: #c9515d;
+  box-shadow:
+    inset 0 0 0 4px #f9f5eb,
+    inset 0 0 0 5px #efcdd0;
+}
+.zone-map-pin.tier-3 > b {
+  background: #d9707a;
 }
 .hidden {
   visibility: hidden;
