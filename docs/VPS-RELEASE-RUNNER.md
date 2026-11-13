@@ -92,3 +92,8 @@ deploys the deploy branch head. The Mac copy of `.data/` stays as an encrypted b
 - Anyone who can push to the deploy branch can deploy testnet and queue allowlisted jobs: protect the
   branch with a ruleset.
 - No mainnet: no mainnet scripts in the allowlist, no mainnet keys, `NEAR_NETWORK=testnet` forced.
+
+- `startUnit`: `{"id": "poi-worker-run-1", "startUnit": "questlayer-poi", "note": "..."}` makes root start one
+  allowlisted oneshot unit (`startUnits` in the allowlist; today only the POI World worker) with
+  `systemctl start --no-block` and nothing else. Follow it with `journalctl -u questlayer-poi` and
+  `/api/health` → `poiWorld.lastRun`.

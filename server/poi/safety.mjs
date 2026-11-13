@@ -95,7 +95,51 @@ const WORSHIP_BUILDINGS = any(
   "shrine",
   "basilica",
 );
-const PRIVATE = any("no", "private", "customers", "permit", "delivery");
+const PRIVATE = any(
+  "no",
+  "private",
+  "customers",
+  "permit",
+  "delivery",
+  "staff",
+  "employees",
+  "members",
+  "residents",
+  "students",
+  "military",
+  "official",
+  "restricted",
+);
+
+// Names that say a place is closed to the public even when the mapper left
+// out an access tag, e.g. "Pusat Sumber (Untuk Kakitangan Sahaja)" (Malay:
+// staff only). Phrases only: a bare "Private" or "Staff" is usually a shop or
+// company name. Matched case-insensitively against name and every name:*.
+const WHO = String.raw`(?:staff|employees?|personnel|members?|residents?|students?|officials?|authori[sz]ed(?: personnel| persons?| staff)?)`;
+const RESTRICTED_NAME = [
+  new RegExp(String.raw`\b${WHO} only\b`, "iu"),
+  new RegExp(String.raw`\b(?:for|reserved for) ${WHO}(?: use)? only\b`, "iu"),
+  /\b(?:no public access|not open to the public|closed to the public|private (?:property|residence|area|road|grounds))\b/iu,
+  /\bstaff (?:quarters|housing|residen(?:ce|ces|ts)|house|entrance|car ?park|parking)\b/iu,
+  /\b(?:untuk|khas untuk) (?:kakitangan|pekerja|ahli|penghuni|pelajar)\b|\b(?:kakitangan|pekerja|ahli|penghuni) sahaja\b/iu,
+  /\bkhusus (?:karyawan|pegawai|staf|anggota|penghuni)\b/iu,
+  /\bnur f(?:ü|ue)r (?:personal|mitarbeiter|mitglieder|bewohner|anlieger|befugte)\b/iu,
+  /\br(?:é|e)serv(?:é|e)e? (?:au personnel|aux membres|aux r(?:é|e)sidents|aux employ(?:é|e)s)\b/iu,
+  /\bs(?:ó|o)lo (?:personal|empleados|socios|residentes|miembros)\b/iu,
+  /\b(?:apenas|somente|s(?:ó|o)) (?:funcion(?:á|a)rios|s(?:ó|o)cios|moradores)\b/iu,
+  /\balleen (?:personeel|leden|bewoners)\b/iu,
+  /関係者以外|関係者専用|職員専用|社員専用|員工專用|员工专用|职工专用|職工專用|직원 ?전용|관계자 ?외|เฉพาะเจ้าหน้าที่/u,
+];
+
+/** Whether a name says the place is for staff, members or residents only. */
+export function restrictedName(name) {
+  if (typeof name !== "string" || !name) return false;
+  return RESTRICTED_NAME.some((re) => re.test(name));
+}
+const namesOf = (tags) =>
+  Object.entries(tags)
+    .filter(([k]) => k === "name" || k.startsWith("name:") || k === "official_name" || k === "alt_name")
+    .map(([, v]) => v);
 
 /**
  * Tag rules. `level` is excluded or review. `area: true` means a polygon with
@@ -379,6 +423,7 @@ export function tagReasons(tags = {}) {
     )
   )
     codes.push("disused");
+  if (namesOf(tags).some(restrictedName)) codes.push("private-access");
   return uniq(codes);
 }
 
@@ -606,6 +651,7 @@ export function enclosingGrounds(ctx, poi) {
  */
 export function evaluatePoi(ctx, poi) {
   const reasons = [...(poi.reasons || [])];
+  if (restrictedName(poi.name)) reasons.push("private-access");
   for (const a of enclosingGrounds(ctx, poi)) reasons.push(INSIDE(a.code));
   const snap = snapTarget(ctx, poi.geometry);
   if (!snap.target) {
@@ -726,6 +772,7 @@ export function assessPoi(
   { nearestPath = null, exclusion = null, closures = new Set() } = {},
 ) {
   const reasons = [...tagReasons(poi.tags || {})];
+  if (restrictedName(poi.name)) reasons.push("private-access");
   const meta = poi.category ? poiCategory(poi.category) : null;
   if (!meta) reasons.push("uncategorised");
   else {

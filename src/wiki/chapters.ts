@@ -729,8 +729,8 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "coverage-tiers",
     status: "live",
-    updated: "2026-11-11",
-    sources: ["docs/WORLDS-PLAN.md", "docs/POI-PIPELINE.md", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "docs/GLOBAL-WORLD-PREPARATION.md", "server/world-preparation/worker.mjs", "server/world-preparation/geography.mjs", "server/world-preparation/export.mjs", "server/world-preparation/collector.mjs", "server/world-preparation/launch-scope.mjs", "server/world-preparation/source-audit.mjs", "server/global-activities.mjs", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
+    updated: "2026-11-13",
+    sources: ["docs/WORLDS-PLAN.md", "docs/POI-PIPELINE.md", "scripts/poi/demo-cities.mjs", "scripts/poi/demo-capitals.json", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "docs/GLOBAL-WORLD-PREPARATION.md", "server/world-preparation/worker.mjs", "server/world-preparation/geography.mjs", "server/world-preparation/export.mjs", "server/world-preparation/collector.mjs", "server/world-preparation/launch-scope.mjs", "server/world-preparation/source-audit.mjs", "server/global-activities.mjs", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
     blocks: [
       { h: "Coverage tiers" },
       {
@@ -738,7 +738,7 @@ export const CHAPTERS: Chapter[] = [
           head: ["Tier", "What", "Content", "Money"],
           rows: [
             ["A · reviewed city", "Hand-checked city pack (Plzeň)", "Six city zones, cast NPCs, POI quests", "Funded NEAR days"],
-            ["B · auto city", "GeoNames towns ≥ 15,000 people (85 cities)", "Zones with an Unverified map notice, generic cast", "No funded NEAR days"],
+            ["B · auto city", "GeoNames towns ≥ 15,000 people in Czechia (85 cities) and demo cities abroad (28 from New York to Sydney, plus the capital of every country and every US state)", "Zones with an Unverified map notice, generic cast, POI quests, street coins", "No funded NEAR days"],
             ["C · street cell", "Every H3 res-7 cell", "Up to 6 POI quests, generic cast, cell zones", "Map rewards plan"],
           ],
         },
@@ -750,6 +750,8 @@ export const CHAPTERS: Chapter[] = [
           "A weekly worker builds a SQLite file from OpenStreetMap (ODbL), Overture (CDLA-P-2.0) and Wikidata (CC0). The first Czech import held about 290,000 places, 198,000 of them quest-ready.",
           "Every place is snapped within 40 m of a public path and kept 25 m from excluded areas (schools, private grounds, dangerous sites), with stable reason codes.",
           "The game reads the file read-only; a missing file simply means no POI quests.",
+          "Demo cities abroad (New York, San Francisco, London, Berlin, Zürich, Lisbon, Singapore, Kuala Lumpur, Cochabamba, Paris, Zug, Amsterdam, Toronto, Mumbai, Bengaluru, Tokyo, Seoul, Taipei, Hong Kong, Buenos Aires, Chicago, Barcelona, Warsaw, Denver, Bangkok, Ho Chi Minh City, Lagos, Sydney): the same worker cuts an 8 × 8 km OpenStreetMap clip around a central square or park and builds POI quests, offline street paths and an auto city with Tier 1–3 zones from it. Zone prizes stay 0; street coins come only from the shared daily budget.",
+          "The same worker also prepares the capital of every country and of every US state (a 6 × 6 km clip each), plus the main city where a country splits its capital, such as La Paz, Abidjan or Istanbul.",
         ],
       },
       { h: "Daily preparation" },
@@ -1299,14 +1301,14 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "fair-play",
     status: "live",
-    updated: "2026-11-05",
+    updated: "2026-11-13",
     sources: ["docs/FAIR-PLAY.md", "docs/POI-SAFETY.md", "docs/SOCIAL-CONTROLS.md", "docs/MAP-NOTES-UI.md", "docs/MODERATION-AND-EVIDENCE.md", "server/fair-play.mjs"],
     blocks: [
       {
         list: [
           "Faster than about 15 km/h (on foot or by bike, `FAIR_PLAY_MAX_SPEED_KMH`) returns `422 IMPLAUSIBLE_MOVE` (wait capped at 2 h).",
           "XP caps: the claim still succeeds, extra XP is trimmed and the response says so.",
-          "Rate limits on sign-up and APIs; all quests sit on safety-filtered public places.",
+          "Rate limits on sign-up and APIs; all quests sit on safety-filtered public places. Places tagged or named as staff, members or residents only (for example \"Staff only\", \"Untuk Kakitangan Sahaja\", \"関係者以外\") never become quests.",
           "Map notes, place messages, places and creator quests have reports, blocks and moderators.",
           "Money paths use database transactions with exactly-once ids; contracts keep their own invariants independent of the server.",
           "GPS can be spoofed: the server validates physical evidence, and the contracts bound what a compromised validator could do.",
