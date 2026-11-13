@@ -3218,5 +3218,6 @@
  "0.001–1 test NEAR · 1 NEAR = {0} QGOLD": "0.001〜1 test NEAR · 1 NEAR = {0} QGOLD",
  "Choose a price between 1M and 1,000B QGOLD.": "1M〜1,000B QGOLDの価格を選んでください。",
  "Practice QGOLD is play money with no value.": "練習用QGOLDは価値のないゲーム内通貨です。",
- "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "回答はレビュー担当者が確認します。3回まで挑戦できます。開始すると、このバージョンのクエストが保存されます。XP・アイテム・QGOLDの報酬は設定されておらず、GPSや現地訪問は確認されません。"
+ "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "回答はレビュー担当者が確認します。3回まで挑戦できます。開始すると、このバージョンのクエストが保存されます。XP・アイテム・QGOLDの報酬は設定されておらず、GPSや現地訪問は確認されません。",
+ "The reward must be at least {0} QGOLD per completion.": "報酬は1回の達成につき{0} QGOLD以上にしてください。"
 }
