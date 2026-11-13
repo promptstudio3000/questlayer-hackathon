@@ -2637,7 +2637,6 @@
  "Direction guide": "Ukazatel směru",
  "Drag the stick, or use arrows or WASD": "Táhni páčku, nebo použij šipky či WASD",
  "Every coin and prize on the map is backed by today's funded pot: realized staking yield and sponsors, checked against the books.": "Každá mince a cena na mapě je krytá dnešním financovaným potem: skutečným výnosem ze stakingu a sponzory, ověřeno proti účetnictví.",
- "Guiding you to": "Vede tě k cíli",
  "Hide pot details": "Skrýt podrobnosti potu",
  "Sends": "Platby",
  "Show coins everywhere": "Ukázat mince všude",
@@ -3144,8 +3143,8 @@
  "Choose a price between 1M and 1,000B QGOLD.": "Zvol cenu mezi 1M a 1 000B QGOLD.",
  "Practice QGOLD is play money with no value.": "Cvičný QGOLD jsou herní peníze bez hodnoty.",
  "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "Odpověď kontroluje recenzent, máš až 3 pokusy. Spuštěním si uložíš tuto verzi questu. Není nastavena žádná odměna v XP, předmětech ani QGOLD a nikdo neověřuje GPS ani fyzickou návštěvu.",
- "The reward must be at least {0} QGOLD per completion.": "Odměna musí být aspoň {0} QGOLD za jedno splnění.",
  "No treasury vote is open on this layer right now.": "Na této vrstvě teď neprobíhá žádné hlasování o treasury.",
+ "The reward must be at least {0} QGOLD per completion.": "Odměna musí být aspoň {0} QGOLD za jedno splnění.",
  "A bigger stake opens more places.": "Větší stake otevře víc míst.",
  "Choose your tier": "Vyber si tier",
  "Coins and quests pay QGOLD.": "Mince a questy vyplácí QGOLD.",
@@ -3167,5 +3166,6 @@
  "Pip, your guide": "Pip, tvůj průvodce",
  "Restore your account on this device: Settings → Account.": "Obnov účet na tomto zařízení: Nastavení → Účet.",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Nejdřív si ulož passkey nebo svých 12 slov. Bez nich se tento průzkumník nedá vrátit.",
- "Shows your next step on the map": "Ukazuje tvůj další krok na mapě"
+ "Shows your next step on the map": "Ukazuje tvůj další krok na mapě",
+ "Guiding you to": "Vede tě k cíli"
 }

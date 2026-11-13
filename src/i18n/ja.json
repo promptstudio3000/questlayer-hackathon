@@ -2637,7 +2637,6 @@
  "Direction guide": "方向ガイド",
  "Drag the stick, or use arrows or WASD": "スティックをドラッグするか、矢印キーかWASDを使います",
  "Every coin and prize on the map is backed by today's funded pot: realized staking yield and sponsors, checked against the books.": "マップ上のコインと賞品はすべて今日の資金プールで裏付けられています。実現したステーキング利回りとスポンサーで、帳簿と照合済みです。",
- "Guiding you to": "案内中",
  "Hide pot details": "プールの詳細を隠す",
  "Sends": "送金",
  "Show coins everywhere": "すべての場所のコインを表示",
@@ -3144,8 +3143,8 @@
  "Choose a price between 1M and 1,000B QGOLD.": "1M〜1,000B QGOLDの価格を選んでください。",
  "Practice QGOLD is play money with no value.": "練習用QGOLDは価値のないゲーム内通貨です。",
  "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "回答はレビュー担当者が確認します。3回まで挑戦できます。開始すると、このバージョンのクエストが保存されます。XP・アイテム・QGOLDの報酬は設定されておらず、GPSや現地訪問は確認されません。",
- "The reward must be at least {0} QGOLD per completion.": "報酬は1回の達成につき{0} QGOLD以上にしてください。",
  "No treasury vote is open on this layer right now.": "このレイヤーでは今、トレジャリー投票は開いていません。",
+ "The reward must be at least {0} QGOLD per completion.": "報酬は1回の達成につき{0} QGOLD以上にしてください。",
  "A bigger stake opens more places.": "ステークが大きいほど行ける場所が増えます。",
  "Choose your tier": "ティアを選ぶ",
  "Coins and quests pay QGOLD.": "コインとクエストでQGOLDがもらえます。",
@@ -3167,5 +3166,6 @@
  "Pip, your guide": "案内役のピップ",
  "Restore your account on this device: Settings → Account.": "この端末でアカウントを復元：設定 → アカウント。",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "先にパスキーか12個の単語を保存してください。ないとこの探検家は戻せません。",
- "Shows your next step on the map": "次の一歩をマップに表示します"
+ "Shows your next step on the map": "次の一歩をマップに表示します",
+ "Guiding you to": "案内中"
 }

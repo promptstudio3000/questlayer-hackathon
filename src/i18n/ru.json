@@ -2637,7 +2637,6 @@
  "Direction guide": "Указатель направления",
  "Drag the stick, or use arrows or WASD": "Тяните джойстик или используйте стрелки либо WASD",
  "Every coin and prize on the map is backed by today's funded pot: realized staking yield and sponsors, checked against the books.": "Каждая монета и приз на карте обеспечены сегодняшним пополненным фондом: полученный доход от стейкинга и спонсоры, сверено с учётом.",
- "Guiding you to": "Ведём к цели",
  "Hide pot details": "Скрыть детали фонда",
  "Sends": "Переводы",
  "Show coins everywhere": "Показать монеты везде",
@@ -3144,8 +3143,8 @@
  "Choose a price between 1M and 1,000B QGOLD.": "Выбери цену от 1M до 1 000B QGOLD.",
  "Practice QGOLD is play money with no value.": "Тренировочный QGOLD — игровые деньги без ценности.",
  "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "Ответ проверяет рецензент, до 3 попыток. При старте за тобой сохраняется эта версия квеста. Награда в XP, предметах или QGOLD не назначена, GPS и личное посещение никто не проверяет.",
- "The reward must be at least {0} QGOLD per completion.": "Награда должна быть не меньше {0} QGOLD за одно выполнение.",
  "No treasury vote is open on this layer right now.": "Сейчас на этом слое нет открытого голосования по казне.",
+ "The reward must be at least {0} QGOLD per completion.": "Награда должна быть не меньше {0} QGOLD за одно выполнение.",
  "A bigger stake opens more places.": "Больший стейк открывает больше мест.",
  "Choose your tier": "Выбери свой уровень",
  "Coins and quests pay QGOLD.": "Монеты и квесты приносят QGOLD.",
@@ -3167,5 +3166,6 @@
  "Pip, your guide": "Пип, твой проводник",
  "Restore your account on this device: Settings → Account.": "Восстанови аккаунт на этом устройстве: Настройки → Аккаунт.",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Сначала сохрани passkey или свои 12 слов. Без них этот исследователь не сможет вернуться.",
- "Shows your next step on the map": "Показывает твой следующий шаг на карте"
+ "Shows your next step on the map": "Показывает твой следующий шаг на карте",
+ "Guiding you to": "Ведём к цели"
 }

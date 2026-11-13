@@ -171,6 +171,46 @@ test("realized-yield backing counts vault payouts against yield-backed days", ()
     BigInt(backing.limit.coins) + BigInt(backing.limit.zones),
     BigInt(backing.free),
   );
+  // A closed day keeps only what its players were awarded; the unclaimed
+  // rest went back to the treasury and is free yield again.
+  const closed = realizedYieldBacking({
+    vaultStates: [{ rewards: rewardsId, game_paid: "176316808318321203504" }],
+    yieldDays: [{ ...day, awarded: "1000" }],
+    rewardsId,
+  });
+  assert.equal(closed.committed, "1000");
+  assert.equal(BigInt(closed.free), 176316808318321203504n - 1000n);
+  // An award can never count for more than the day cost.
+  const capped = realizedYieldBacking({
+    vaultStates: [{ rewards: rewardsId, game_paid: "176316808318321203504" }],
+    yieldDays: [{ ...day, awarded: (cost.total * 2n).toString() }],
+    rewardsId,
+  });
+  assert.equal(capped.committed, cost.total.toString());
+  // A drip spreads what is free: one day takes free / days, rounded down.
+  const drip = realizedYieldBacking({
+    vaultStates: [{ rewards: rewardsId, game_paid: "176316808318321203504" }],
+    yieldDays: [day],
+    rewardsId,
+    dripDays: 7,
+  });
+  assert.equal(drip.free, backing.free);
+  assert.equal(drip.dripDays, 7);
+  assert.equal(BigInt(drip.daily), BigInt(backing.free) / 7n);
+  assert.equal(
+    BigInt(drip.limit.coins) + BigInt(drip.limit.zones),
+    BigInt(drip.daily),
+  );
+  assert.throws(
+    () =>
+      realizedYieldBacking({
+        vaultStates: [],
+        yieldDays: [],
+        rewardsId,
+        dripDays: 0,
+      }),
+    /drip days/,
+  );
   // Without any harvest there is nothing to back a day.
   const none = realizedYieldBacking({
     vaultStates: [{ rewards: rewardsId, game_paid: "0" }],
@@ -202,6 +242,7 @@ test("allocation settings come from the environment", () => {
       NATIVE_FUNDED_CITIES: "plzen:3, brno",
       NATIVE_DAILY_SHARE_BPS: "500",
       NATIVE_YIELD_BACKED_DAYS: "1",
+      NATIVE_YIELD_DRIP_DAYS: "14",
     }),
     {
       fundedCities: [
@@ -211,6 +252,7 @@ test("allocation settings come from the environment", () => {
       budgetSplit: "demand",
       dailyShareBps: 500,
       yieldBackedDays: true,
+      yieldDripDays: 14,
     },
   );
   assert.throws(
