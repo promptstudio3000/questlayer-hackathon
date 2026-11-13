@@ -1,0 +1,6 @@
+{
+  "id": "d3-testlayer-frontend",
+  "deployTarget": "testlayer",
+  "installKeys": [],
+  "note": "Test Layer at the World frontend release: desktop profile (#346), keep 3D after collect (#347), city from URL (#348), NPC dialog (#349)."
+}
