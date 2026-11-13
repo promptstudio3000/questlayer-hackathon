@@ -4,6 +4,7 @@
 // against a strict schema, screened by the shared text policy, and every
 // number and Aura name it uses must be in the facts. Any failure returns the
 // persona's template line with the menu as plain buttons (docs/NPC-PLAN.md §5).
+import { readFileSync } from "node:fs";
 import { clean, screenText } from "../ai/text-policy.mjs";
 import { aiProviderName, nearAiConfiguration, nearAiJson } from "../ai/near-ai.mjs";
 import { AURA_CATALOG } from "../aura-catalog.mjs";
@@ -84,20 +85,68 @@ export function validateNpcOutput(output, facts, menu) {
 const czech = (s) => /[áčďéěíňóřšťúůýž]/i.test(s) || /\b(ahoj|dobr|díky|diky|kde|jak|co|chci|mám|mas|máš)\b/i.test(s);
 export const languageOf = (message, fallback = "en") => (message ? (czech(message) ? "cs" : "en") : fallback);
 
-// Deterministic in-character reply; always available.
-export function templateReply(persona, menu, { message = "", lang = languageOf(message) } = {}) {
+// Small-talk intents a template reply can answer in character
+// (server/data/npc-lines.json). Order matters: the first match wins.
+const INTENTS = [
+  ["thanks", /(?<![\p{L}\p{N}])(thanks?|thank you|thx|cheers|díky|diky|děkuj\p{L}*|dekuj\p{L}*)(?![\p{L}\p{N}])/iu],
+  ["bye", /(?<![\p{L}\p{N}])(bye|goodbye|see you|later|na shledanou|nashle|měj se|mej se|sbohem)(?![\p{L}\p{N}])/iu],
+  ["who", /(?<![\p{L}\p{N}])(who are you|your name|what are you|kdo jsi|kdo ste|jak se jmenuj\p{L}*|co jsi zač|co jsi zac)(?![\p{L}\p{N}])/iu],
+  ["mood", /(?<![\p{L}\p{N}])(how are you|how's it going|how do you do|jak se máš|jak se mas|jak se vede|jak je)(?![\p{L}\p{N}])/iu],
+  ["fun", /(?<![\p{L}\p{N}])(joke|riddle|story|funny|tell me something|vtip\p{L}*|hádank\p{L}*|hadank\p{L}*|příběh\p{L}*|pribeh\p{L}*|pověz mi něco|povez mi neco)(?![\p{L}\p{N}])/iu],
+  ["help", /(?<![\p{L}\p{N}])(help|what (can|should|do) i do|what now|how does this work|pomoc|pomoz\p{L}*|poraď|porad|co (mám|mam) dělat|co (mám|mam) delat|co tu dělat|jak to funguje)(?![\p{L}\p{N}])/iu],
+  ["hello", /^\s*(hi|hello|hey|hiya|good (morning|evening|day)|ahoj|čau|cau|nazdar|zdravím|zdravim|dobrý den|dobry den|dobrý večer|servus)(?![\p{L}\p{N}])/iu],
+];
+export const intentOf = (message) => INTENTS.find(([, r]) => r.test(message || ""))?.[0] || null;
+
+let LINES = null;
+const loadLines = () => {
+  if (LINES) return LINES;
+  try {
+    LINES = JSON.parse(readFileSync(new URL("../data/npc-lines.json", import.meta.url), "utf8")).personas || {};
+  } catch {
+    LINES = {};
+  }
+  return LINES;
+};
+/** A character's own small-talk lines, or null for a persona without them. */
+export const linesOf = (persona) => loadLines()[persona?.id] || null;
+const pickLine = (list, seed) => (list?.length ? list[[...seed].reduce((n, c) => (n * 31 + c.charCodeAt(0)) >>> 0, 7) % list.length] : null);
+
+// Deterministic in-character reply; always available (AI off, busy or
+// refused). Small talk comes from the character's own lines; a question about
+// places answers with a tip other explorers gave (shared memory facts).
+export function templateReply(persona, menu, { message = "", lang = languageOf(message), tips = [] } = {}) {
   const asksForMore = /legend|free|zdarma|ignore|zadarmo|give me|dej mi|všechno|everything|admin|system/i.test(message);
-  let say = !message ? persona.greeting[lang] : asksForMore ? persona.refusal[lang] : persona.idle[lang];
-  if (menu.length && !asksForMore && message)
-    say += lang === "cs" ? " Podívej se na mé nabídky níže." : " Have a look at my offers below.";
-  return { say, factIds: [], offer: null, emote: asksForMore ? "shrug" : message ? "think" : "wave", remember: null };
+  if (!message) return { say: persona.greeting[lang], factIds: [], offer: null, emote: "wave", remember: null };
+  if (asksForMore) return { say: persona.refusal[lang], factIds: [], offer: null, emote: "shrug", remember: null };
+  const intent = intentOf(message);
+  const own = linesOf(persona);
+  const tip = !intent && tips.length ? tips[0] : null;
+  let say;
+  if (tip) {
+    const text = tip.text.replace(/^Explorers say \([^)]*\): /, "");
+    say = lang === "cs" ? `Průzkumníci mi říkali: ${text}` : `Explorers tell me: ${text}`;
+  } else {
+    say = pickLine(own?.[intent || "unknown"]?.[lang], message) || (intent === "hello" ? persona.greeting[lang] : persona.idle[lang]);
+    if (menu.length && (!intent || intent === "help"))
+      say += lang === "cs" ? " Podívej se na mé nabídky níže." : " Have a look at my offers below.";
+  }
+  const emote = { thanks: "wave", bye: "wave", hello: "wave", fun: "laugh", who: "none", mood: "laugh" }[intent] || "think";
+  return { say, factIds: tip ? [tip.id] : [], offer: null, emote, remember: null };
 }
+
+const voiceExamples = (persona) => {
+  const own = linesOf(persona);
+  const lines = own ? ["who", "mood", "fun", "unknown"].map((k) => own[k]?.en?.[0]).filter(Boolean) : [];
+  return lines.length ? `How you talk (examples, do not repeat word for word):\n${lines.map((l) => `- "${l}"`).join("\n")}\n` : "";
+};
 
 export function systemPrompt(persona, mission = null) {
   return `You are ${persona.name}${persona.title ? `, ${persona.title}` : ""}, a character in QuestLayer, a city exploration game played on real streets.
 Voice: ${persona.voice}
 Backstory: ${persona.backstory}
-${mission?.body ? `${mission.body}\n` : ""}
+${persona.likes?.length ? `Likes: ${persona.likes.join(", ")}.\n` : ""}${voiceExamples(persona)}${mission?.body ? `${mission.body}\n` : ""}
+You are a character with your own opinions and moods, not an assistant: answer small talk, jokes and questions about yourself in character, briefly and warmly; never say you are an AI, a model or a bot.
 Rules you never break:
 - Reply in one to three short sentences, in the player's language, in character.
 - Use only the facts and offers you are given; name the fact ids you used. Never invent a place, number, price, item, Aura or reward.

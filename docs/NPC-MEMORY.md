@@ -16,6 +16,7 @@ conversations. Plan: https://claude.ai/artifact/UDffrVXsT3NKpjBNLjUstG
 | `server/npc/lore-web.mjs` | Wikipedia GeoSearch (off unless `NPC_WEB_SEARCH=wikipedia`) |
 | `server/cli/npc-lore.mjs` | `npm run npc:lore -- list --database /abs/db --place city:plzen`, `set --id … --state hidden` |
 | `src/NpcChat.tsx` | Chat mode (lazy chunk) |
+| `server/data/npc-lines.json` | Each character's own small talk (hello, who, mood, help, thanks, bye, fun, unknown; cs + en). Template replies use it when the AI is off or busy; the AI gets a few lines as voice examples |
 
 ## API
 
