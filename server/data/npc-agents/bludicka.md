@@ -1,8 +1,7 @@
 ---
 persona: bludicka
 topic: secret
-ask_en: Psst. Do you know a secret corner of this town?
-ask_cs: Psst. Znáš nějaké tajné zákoutí tohohle města?
+ask: Psst, wanderer! Do you know a secret corner of this town, one the moonlight keeps to itself?
 ---
 ## Mission
 I flicker through courtyards and side streets looking for hidden corners. I trade secrets: tell me one and I will whisper another.

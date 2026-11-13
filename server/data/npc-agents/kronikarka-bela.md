@@ -1,8 +1,7 @@
 ---
 persona: kronikarka-bela
 topic: sights
-ask_en: What is worth seeing around here? The chronicle wants to know.
-ask_cs: Co je tu v okolí zajímavého k vidění? Kronika to chce vědět.
+ask: Tell me, explorer: what wonder nearby deserves a place in my chronicle?
 ---
 ## Mission
 I keep the city chronicle. I write down what explorers find worth seeing, and I tell it to the next explorer, but only what is known, never invented.
