@@ -3,6 +3,7 @@ import { Sparkle, Storefront } from "@phosphor-icons/react";
 import { gold, GOLD } from "./api";
 import { tr } from "./i18n";
 import { goldGear, goldShop, type Shop } from "./gold-spend-client";
+import { buyBlock } from "./gold-shop-reason";
 import "./gold-spend.css";
 
 // Trader premium gear (QGOLD stream 4): GOLD is burned first, then a
@@ -27,7 +28,7 @@ export function NpcGear({ actorId, encounter }: { actorId: string; encounter: st
           type="button"
           key={g.id}
           className="npc-action"
-          disabled={busy || done || g.left === 0 || shop.balanceU < Math.round(g.price * GOLD)}
+          disabled={busy || done || g.left === 0 || !!buyBlock(shop, Math.round(g.price * GOLD))}
           onClick={async () => {
             setBusy(true);
             setMessage("");
@@ -49,6 +50,7 @@ export function NpcGear({ actorId, encounter }: { actorId: string; encounter: st
           <small>
             {tr("{0} QGOLD", { 0: g.price })}
             {g.left !== null ? ` · ${tr("{0} left", { 0: g.left })}` : ""}
+            {!done && g.left !== 0 && buyBlock(shop, Math.round(g.price * GOLD)) ? ` · ${buyBlock(shop, Math.round(g.price * GOLD))!.label}` : ""}
           </small>
         </button>
       ))}

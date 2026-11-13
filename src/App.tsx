@@ -27,7 +27,6 @@ import {
   GasWatch,
   ChainSettings,
   WalletPanel,
-  FundPanel,
   AutoSocialProfile,
   ChainLink,
   CreatorCommunity,
@@ -43,7 +42,7 @@ import {
   NativeMarketPanel,
   MarketBoard,
   NativeExpeditions,
-  NativeEconomyPanel,
+  GameEconomy,
   RewardFundingPage,
   TodaysPot,
   PotRow,
@@ -73,7 +72,7 @@ import {
   LockedZoneCard,
   LockedZoneDialog,
 } from "./lazy-panels";
-import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
+import { goldBalance, goldMap as readGoldMap, goldShop, type GoldMap, type WalletBalance } from "./gold-spend-client";
 import type { NotePin } from "./gold-map-layer";
 import type { RollCall } from "./WispRolls";
 import type { InventoryTab } from "./Inventory";
@@ -314,7 +313,7 @@ import { useDemoWalk } from "./useDemoWalk";
 import { DemoControls } from "./DemoControls";
 import type { MapAction } from "./MapActions";
 import { useHudCard } from "./useHudCard";
-import { registerChainTrades } from "./chain-trades";
+import { registerChainTrades } from "./chain-trades-registry";
 import { tr } from "./i18n";
 
 type Tab =
@@ -390,6 +389,11 @@ export default function App() {
     }
   };
   const worldOwner = useRef<string | undefined>(undefined);
+  // The balance the top bar shows: QGOLD on the NEAR account (what every
+  // price check uses), not the game's own counter. Refreshed when the game
+  // counter moves and after every spend.
+  const [wallet, setWallet] = useState<WalletBalance | null>(null),
+    [walletTick, setWalletTick] = useState(0);
   const [player, setPlayer] = useState<Player | null>(null),
     [clueChoice, setClueChoice] = useState<Record<string, string>>({}),
     [loaded, setLoaded] = useState(false),
@@ -515,6 +519,15 @@ export default function App() {
   }, [hasPlayer]);
   const firstSession = useFirstSession(player);
   const learning = useLearning(player?.id);
+  useEffect(() => {
+    if (!player?.id) return setWallet(null);
+    let live = true;
+    // Keep the last value on a failed read; the next change tries again.
+    goldBalance().then((w) => live && setWallet(w), () => undefined);
+    return () => {
+      live = false;
+    };
+  }, [player?.id, player?.gold_u, walletTick]);
   const [manualIntro, setManualIntro] = useState<string | null>(null);
   const introOpen = !!player && (manualIntro === player.id || (learning.state.intro === "new" && !location.hash));
   const learnedSteps = firstSession.progress.steps.map(s => s.done ? s.step.id : "").join(":");
@@ -1098,7 +1111,10 @@ export default function App() {
     else if (t.kind === "coin") goToStreetFind(t.coin);
     else notify(t.text, true);
   }
-  function showActor(match: ActorFocusMatch) {
+  // `missing`: with nobody like that out nearby, open Game economy (the tour's keeper outside reviewed cities).
+  const actorMissing = useRef(false);
+  function showActor(match: ActorFocusMatch, missing = false) {
+    actorMissing.current = missing;
     setOverview(false);
     setSheetExpanded(false);
     setActorFocus({ revision: Date.now(), match });
@@ -3813,7 +3829,10 @@ export default function App() {
     } else if (t.kind === "actor") {
       // The walking companion bot of the Test Layer (server/test-seed): its card has Wave and Message.
       if (t.role === "companion") setCardPlayer(TOUR_COMPANION);
-      else if (TOUR_ACTORS[t.role]) showActor({ kinds: TOUR_ACTORS[t.role] });
+      else if (TOUR_ACTORS[t.role]) {
+        setTab("explore");
+        showActor({ kinds: TOUR_ACTORS[t.role] }, t.role === "keeper");
+      }
       else { setTab("community"); setSheetExpanded(true); }
     } else if (t.kind === "screen" && t.screen === "treasury") {
       setTreasuryVoteOpen(true);
@@ -3859,23 +3878,26 @@ export default function App() {
           ? tr("Community")
           : nav.find((n) => n.id === tab)?.label ||
         {
-          messages: tr("Map notes"),
           shop: tr("Inventory"),
-          places: tr("Community"),
-          bounties: tr("Community tasks"),
-          community: tr("Community"),
-          settings: tr("Settings"),
           fund: tr("Game economy"),
           funding: tr("How rewards are funded"),
-          fuel: tr("Fuel the prize pool"),
           layer: virtualLayer?.name ?? tr("Layer"),
           expeditions: tr("Nearby walks"),
           inventory: tr("Inventory"),
           market: tr("Inventory"),
-          wallet: tr("Wallet"),
         }[tab] ||
         "QuestLayer";
   const nearbyHome = tab === "explore" && !detailZone && !nativePlay;
+  // One stake form in three places: Profile → Stake, Game economy and the Gate Keeper's dialog.
+  const explorerId = invisible.status === "ready" ? invisible.accountId || "" : "";
+  const stakeProps = player && {
+    player,
+    account: explorerId || player.wallets[0]?.account_id || "",
+    managed: !!explorerId,
+    explorerStatus: invisible.status,
+    onLinkWallet: () => connectNear(),
+    onTransaction: operateNativeVault,
+  };
   return (
     <div
       className={`app-shell${player && tab !== "explore" ? " sheet-open" : ""}${player && mapFullOn ? " map-full" : ""}${player && !hudReady ? " hud-loading" : ""}`}
@@ -4002,7 +4024,12 @@ export default function App() {
           actorReports={npcTasks && npcTasks.worldId === world?.id ? npcTasks.tasks.filter((t) => t.ready).map((t) => t.actorId) : []}
           actorFocus={actorFocus}
           pointTarget={pointTarget}
-          onActorFocus={(text, found) => notify(text, !found)}
+          onActorFocus={(text, found) => {
+            if (!found && actorMissing.current) {
+              setTab("fund");
+              setSheetExpanded(true);
+            } else notify(text, !found);
+          }}
           marketPins={MAP_DIALOG_PINS && !!player && !arena && !nativePlay}
           onMarketPin={() => {
             setTab("explore");
@@ -4120,7 +4147,11 @@ export default function App() {
                       ? nativeGame.state?.balance
                         ? goldFromYocto(nativeGame.state.balance.credit)
                         : "—"
-                      : gold(player.gold_u)}
+                      : wallet
+                        ? wallet.realm === "qgold" && wallet.balanceKnown === false
+                          ? "…"
+                          : gold(wallet.balanceU)
+                        : "…"}
                   </b>
                   <span>QGOLD</span>
                 </button>
@@ -4303,7 +4334,6 @@ export default function App() {
                 className="panel-back"
                 onClick={() => setTab("settings")}
                 aria-label={tr("Back to profile")}
-                title={tr("Back to profile")}
               >
                 <ArrowLeft size={20} aria-hidden="true" />
               </button>
@@ -4394,6 +4424,7 @@ export default function App() {
                 arena={arena && !nativePlay}
                 notify={notify}
                 onSpent={() => {
+                  setWalletTick((n) => n + 1);
                   void me();
                   void refreshGoldMap();
                   void readGoldLook();
@@ -4566,6 +4597,7 @@ export default function App() {
             <ScreenTabPanel idBase="bag" value="wardrobe">
               <Inventory
                 key={player.id}
+                walletU={wallet && !(wallet.realm === "qgold" && wallet.balanceKnown === false) ? wallet.balanceU : null}
                 onOriginalAppearance={(appearance) =>
                   setPlayer((current) =>
                     current?.id === player.id
@@ -5030,35 +5062,16 @@ export default function App() {
             />
           )}
           {/* Opens "Convert QGOLD to gas" by itself when the explorer's gas runs low. */}
-          {invisible.status === "ready" && invisible.accountId && (
+          {explorerId && (
             <GasWatch refreshKey={`${player.id}:${player.gold_u}:${tab}`} />
           )}
           {tab === "fuel" && (
             <ScreenTabPanel idBase="profile" value="stake">
-              <FuelTheCity
-                player={player}
-                account={
-                  invisible.status === "ready" && invisible.accountId
-                    ? invisible.accountId
-                    : player.wallets[0]?.account_id || ""
-                }
-                managed={invisible.status === "ready" && !!invisible.accountId}
-                explorerStatus={invisible.status}
-                cityName={world?.cityName}
-                onConnect={activateExplorer}
-                onLinkWallet={() => connectNear()}
-                onTransaction={operateNativeVault}
-              />
+              <FuelTheCity {...stakeProps!} />
             </ScreenTabPanel>
           )}
           {tab === "fund" && (
-            <>
-              <NativeEconomyPanel />
-              <details className="play-details">
-                <summary>{tr("Practice economy simulation")}</summary>
-                <FundPanel />
-              </details>
-            </>
+            <GameEconomy {...stakeProps!} />
           )}
           {tab === "community" && (
             <ScreenTabPanel idBase="community" value={communityTab}>
@@ -5074,12 +5087,8 @@ export default function App() {
                 onPlayerChange={me}
                 position={position}
                 money={{
-                  accountId:
-                    invisible.status === "ready" && invisible.accountId
-                      ? invisible.accountId
-                      : player.wallets[0]?.account_id || "",
-                  managed:
-                    invisible.status === "ready" && !!invisible.accountId,
+                  accountId: explorerId || player.wallets[0]?.account_id || "",
+                  managed: !!explorerId,
                   pay: operateCreatorPayment,
                 }}
                 onCapabilityChange={(enabled) => {
@@ -5430,7 +5439,7 @@ export default function App() {
       {treasuryVoteOpen && player && (
         <TreasuryVoteDialog
           key={`treasury-${player.id}`}
-          account={invisible.status === "ready" ? invisible.accountId || null : null}
+          account={explorerId || null}
           sign={signTreasury}
           notify={notify}
           onClose={() => setTreasuryVoteOpen(false)}
@@ -5582,6 +5591,7 @@ export default function App() {
             showActor({ actorId: id });
           }}
           onClose={() => setActorOpen(null)}
+          keeperPanel={actorOpen.archetype === "keeper" && stakeProps ? <GameEconomy {...stakeProps} /> : undefined}
         />
       )}
       {showNpc && (

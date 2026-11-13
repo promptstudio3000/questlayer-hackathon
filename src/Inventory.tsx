@@ -181,6 +181,7 @@ export function Inventory({
   map3D,
   onMap3D,
   player,
+  walletU = null,
   characterItems,
   nativeContent,
   nativeExtras,
@@ -207,6 +208,8 @@ export function Inventory({
   map3D: boolean;
   onMap3D: () => void;
   player: Player;
+  /** QGOLD on the NEAR account (the one balance prices use); null while unknown. */
+  walletU?: number | null;
   characterItems: Item[];
   nativeContent: ReactNode;
   nativeExtras?: ReactNode;
@@ -644,10 +647,10 @@ export function Inventory({
           </div>
           <dl className="inv-stats">
             <div>
-              <dt>{tr("QGOLD earned")}</dt>
+              <dt>{tr("QGOLD")}</dt>
               <dd>
                 <Coins size={16} weight="fill" aria-hidden="true" />
-                {compactGold(player.gold_u)}
+                {walletU === null ? "…" : compactGold(walletU)}
               </dd>
             </div>
             <div>

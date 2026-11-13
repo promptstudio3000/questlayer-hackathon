@@ -13,7 +13,7 @@ phones). It offers the tour once; after **Start the tour** each card shows:
 1. what just happened (for a few seconds after a step is done),
 2. the one thing to do next,
 3. where it is: an arrow relative to where the explorer faces and the distance, for coins, finds and quests,
-4. **Show me** (starts the map navigation or opens the right screen or dialog) and **Skip**.
+4. **Show me** (starts the map navigation or opens the right screen or dialog) and **Skip**. The stake step marks the Gate Keeper on the map (his Vault tab holds the stake form); with no keeper out nearby it opens the Game economy dialog directly.
 
 The card folds to Pip's head with a step counter and can be closed. While the tour runs, the first-steps
 coach steps aside. While the map tools menu is open, Pip shrinks to his lantern on the left so the menu and Pip never overlap; menus from the top bar (map settings, world picker) hide Pip until they close. At the end the card lists every transaction of the run with a link to the explorer.
