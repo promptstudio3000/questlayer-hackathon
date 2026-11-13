@@ -1,5 +1,6 @@
 // HTTP routes for GOLD spending and place messages (docs/GOLD-SPENDING.md):
 //   GET  /api/gold/shop                       catalog, prices, what the player owns
+//   GET  /api/gold/balance                    spendable QGOLD (wallet) + on the way
 //   POST /api/gold/buy {sku}                  unlock a premium emote or a cosmetic (burn)
 //   POST /api/gold/equip {frame}              wear an unlocked marker frame (null = none)
 //   POST /api/gold/emote {emote}              show an emote above the character
@@ -124,6 +125,10 @@ export function createGoldSpendRoutes(
         assert(p, "Purchase not found.", 404, "PURCHASE_NOT_FOUND");
         respond(res, { accountId: p.account_id, contractId: p.contract_id, amount: String(p.amount_u), memo: p.memo, state: p.state }); return true;
       }
+      // The one balance every price check and the top bar show: QGOLD on the
+      // player's NEAR account (the richest linked one) plus what the next
+      // payout brings. The game's own counter is not money.
+      if (path === "/api/gold/balance" && method === "GET") return respond(res, await withBalance(player, gold.wallet(player))), true;
       if (path === "/api/gold/shop" && method === "GET") return respond(res, await withBalance(player, gold.shop(player))), true;
       if (path === "/api/gold/burn/prepare" && method === "POST") {
         assert(onChain(), "QGOLD spending is not open here.", 503, "QGOLD_DISABLED");

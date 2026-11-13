@@ -65,3 +65,29 @@ test("the QGOLD shop reports the spendable account, payout on the way and read f
   assert.equal(none.hasAccount, false);
   assert.equal(buyBlock(none, 2_500).kind, "account");
 });
+
+test("the top bar balance is the wallet, not the game counter", async () => {
+  const f = purchaseFixture();
+  f.db.prepare("UPDATE players SET gold_u=8000000 WHERE id=?").run(f.player);
+  const call = async (realm, qgold) => {
+    setSpendRealm(realm);
+    const routes = createGoldSpendRoutes({ db: f.db, gold: f.gold, qgold });
+    let out;
+    await routes.handle({ method: "GET", headers: {} }, {}, new URL("http://127.0.0.1/api/gold/balance"), {
+      player: f.player, body: async () => ({}), assert: domainAssert, respond: (_, v) => (out = v),
+    });
+    return out;
+  };
+  try {
+    const q = await call("qgold", {
+      contract: TOKEN, txStatus: async () => null, accountIds: () => ["explorer.testnet"],
+      spendable: async () => ({ accountId: "explorer.testnet", balanceU: 462 }), pendingU: () => 30,
+    });
+    assert.deepEqual(q, { realm: "qgold", balanceU: 462, balanceKnown: true, pendingU: 30, hasAccount: true });
+    // Local practice only: the game counter is the balance.
+    assert.equal((await call("practice", null)).balanceU, 8_000_000);
+  } finally {
+    setSpendRealm("practice");
+    f.db.close();
+  }
+});

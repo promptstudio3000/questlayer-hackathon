@@ -72,7 +72,7 @@ import {
   LockedZoneCard,
   LockedZoneDialog,
 } from "./lazy-panels";
-import { goldMap as readGoldMap, goldShop, type GoldMap } from "./gold-spend-client";
+import { goldBalance, goldMap as readGoldMap, goldShop, type GoldMap, type WalletBalance } from "./gold-spend-client";
 import type { NotePin } from "./gold-map-layer";
 import type { RollCall } from "./WispRolls";
 import type { InventoryTab } from "./Inventory";
@@ -389,6 +389,11 @@ export default function App() {
     }
   };
   const worldOwner = useRef<string | undefined>(undefined);
+  // The balance the top bar shows: QGOLD on the NEAR account (what every
+  // price check uses), not the game's own counter. Refreshed when the game
+  // counter moves and after every spend.
+  const [wallet, setWallet] = useState<WalletBalance | null>(null),
+    [walletTick, setWalletTick] = useState(0);
   const [player, setPlayer] = useState<Player | null>(null),
     [clueChoice, setClueChoice] = useState<Record<string, string>>({}),
     [loaded, setLoaded] = useState(false),
@@ -508,6 +513,15 @@ export default function App() {
   }, [hasPlayer]);
   const firstSession = useFirstSession(player);
   const learning = useLearning(player?.id);
+  useEffect(() => {
+    if (!player?.id) return setWallet(null);
+    let live = true;
+    // Keep the last value on a failed read; the next change tries again.
+    goldBalance().then((w) => live && setWallet(w), () => undefined);
+    return () => {
+      live = false;
+    };
+  }, [player?.id, player?.gold_u, walletTick]);
   const [manualIntro, setManualIntro] = useState<string | null>(null);
   const introOpen = !!player && (manualIntro === player.id || (learning.state.intro === "new" && !location.hash));
   const learnedSteps = firstSession.progress.steps.map(s => s.done ? s.step.id : "").join(":");
@@ -4162,7 +4176,11 @@ export default function App() {
                       ? nativeGame.state?.balance
                         ? goldFromYocto(nativeGame.state.balance.credit)
                         : "—"
-                      : gold(player.gold_u)}
+                      : wallet
+                        ? wallet.realm === "qgold" && wallet.balanceKnown === false
+                          ? "…"
+                          : gold(wallet.balanceU)
+                        : "…"}
                   </b>
                   <span>QGOLD</span>
                 </button>
@@ -4436,6 +4454,7 @@ export default function App() {
                 arena={arena && !nativePlay}
                 notify={notify}
                 onSpent={() => {
+                  setWalletTick((n) => n + 1);
                   void me();
                   void refreshGoldMap();
                   void readGoldLook();
@@ -4608,6 +4627,7 @@ export default function App() {
             <ScreenTabPanel idBase="bag" value="wardrobe">
               <Inventory
                 key={player.id}
+                walletU={wallet && !(wallet.realm === "qgold" && wallet.balanceKnown === false) ? wallet.balanceU : null}
                 onOriginalAppearance={(appearance) =>
                   setPlayer((current) =>
                     current?.id === player.id
