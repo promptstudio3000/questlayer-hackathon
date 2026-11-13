@@ -716,13 +716,23 @@ async function runDevice(name, servers) {
           // Continue must be usable now; a failure says why the window did not open.
           const go = intro.getByRole("button", { name: "Continue", exact: true });
           await waitFor(() => go.isEnabled(), "Continue enabled in the wallet intro");
+          const trail = [];
+          const onConsole = (m) => trail.push(`${m.type()}: ${m.text().slice(0, 160)}`);
+          const onRequest = (r) => /\/config|localhost/.test(r.url()) && trail.push(`req ${r.method()} ${r.url().slice(0, 100)}`);
+          page.on("console", onConsole);
+          context.on("request", onRequest);
           const [secure] = await Promise.all([
             context.waitForEvent("page", { timeout: 30_000 }).catch(async (error) => {
-              const shown = await page.locator(".toast, [role=alert], [role=status]").allInnerTexts().catch(() => []);
-              throw Error(`${error.message}; on screen: ${shown.join(" | ").slice(0, 300) || "nothing"}`);
+              const shown = await page.locator(".toast").allInnerTexts().catch(() => []);
+              await page.screenshot({ path: join(shots, "wallet-no-window.png") }).catch(() => {});
+              throw Error(`${error.message}; toast: ${shown.join(" | ").slice(0, 200) || "none"}; trail: ${trail.slice(-12).join(" ; ")}`);
             }),
-            go.click(),
+            go.click({ timeout: 20_000 }).catch((error) => {
+              trail.push(`click failed: ${error.message.split("\n").slice(0, 6).join(" / ")}`);
+            }),
           ]);
+          page.off("console", onConsole);
+          context.off("request", onRequest);
           await secure.getByRole("heading", { name: "Get 12 words for a wallet?" }).waitFor();
           await secure.getByText(state.account.accountId).waitFor();
           await secure.screenshot({ path: join(shots, "wallet-1-warning.png") });
