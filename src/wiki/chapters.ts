@@ -404,7 +404,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "actor-dialog",
     status: "live",
     updated: "2026-11-11",
-    sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/come-back.ts", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs"],
+    sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/come-back.ts", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/actors/poi-file-source.mjs", "server/npc/service.mjs"],
     blocks: [
       { h: "Who walks the map" },
       {
@@ -420,7 +420,7 @@ export const CHAPTERS: Chapter[] = [
           ],
         },
       },
-      { p: "Reviewed cities have a hand-cast list; every other city and cell gets a generic cast (quest giver, storyteller, wandering rare, one roamer, two lurkers). Day and night casts switch with the real sun." },
+      { p: "Reviewed cities have a hand-cast list; every other city and cell gets a generic cast (quest giver, storyteller, wandering rare, one roamer, two lurkers). Its NPCs stand at real named places from the checked place database (a park, a castle, a viewpoint on a public path), or at a path junction where a cell has none. Day and night casts switch with the real sun." },
       { h: "Encounters" },
       {
         list: [

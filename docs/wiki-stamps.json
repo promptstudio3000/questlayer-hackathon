@@ -1,7 +1,7 @@
 {
   "note": "Written by npm run wiki:stamp (docs/WIKI.md). Do not edit by hand.",
   "docs": {
-    "docs/ACTORS-API.md": "5f4808d6a6cc5b63",
+    "docs/ACTORS-API.md": "994b0b8f1abfcfbd",
     "docs/AI-QUEST-DRAFTS.md": "03c41a3c34e89c58",
     "docs/ARCHITECTURE.md": "839d5faccdf915d5",
     "docs/ASSET-CATALOG.md": "f6ba2d912f985da4",
@@ -89,7 +89,7 @@
     "docs/WORLD-COVERAGE.md": "f91fed2566aaa415",
     "docs/WORLD-GENERATION.md": "55854f094cb01175",
     "docs/WORLD-WORKER.md": "fc4e280dc58919e4",
-    "docs/WORLDS-PLAN.md": "c67e840ca25df6fd",
+    "docs/WORLDS-PLAN.md": "b43384dd0ec56951",
     "docs/YIELD-VAULT-PLAN.md": "0ee14820abac58a5",
     "docs/YIELD-VAULT.md": "9337f8e366c42d91"
   }
