@@ -1,0 +1,67 @@
+{
+  "id": "b3-testlayer-deploy",
+  "deployTarget": "testlayer",
+  "ref": "claude/project-thread-07xi02",
+  "sha": "c06badf750e932a28593f67b35df4c00dda9a9a9",
+  "installKeys": [
+    {
+      "service": "questlayer-testlayer",
+      "file": "testlayer/work/.data/award-attestor.pem"
+    },
+    {
+      "service": "questlayer-testlayer",
+      "file": "testlayer/work/.data/badges-minter-testnet.json",
+      "to": "badges-minter.json"
+    },
+    {
+      "service": "questlayer-testlayer",
+      "file": "testlayer/work/.data/creators-publisher.json"
+    },
+    {
+      "service": "questlayer-testlayer",
+      "file": "testlayer/work/.data/escrow-publisher.json"
+    },
+    {
+      "service": "questlayer-testlayer",
+      "file": "testlayer/work/.data/ledger-recorder.json"
+    },
+    {
+      "service": "questlayer-testlayer",
+      "file": "testlayer/work/.data/npc-games-ticket-signer-testnet.pem",
+      "to": "npc-games-ticket-signer.pem"
+    },
+    {
+      "service": "questlayer-testlayer",
+      "file": "testlayer/work/.data/player-factory-testnet.json",
+      "to": "player-factory.json"
+    },
+    {
+      "service": "questlayer-testlayer",
+      "file": "testlayer/work/.data/relayer-testnet.json",
+      "to": "relayer.json"
+    },
+    {
+      "service": "questlayer-testlayer",
+      "file": "testlayer/work/.data/reward-attestor.pem"
+    },
+    {
+      "service": "questlayer-testlayer",
+      "file": "testlayer/work/.data/reward-worker.json"
+    }
+  ],
+  "runtimeEnv": {
+    "service": "questlayer-testlayer",
+    "set": {
+      "PLAYER_FACTORY_ACCOUNT": {
+        "fromKey": "testlayer/work/.data/player-factory-testnet.json",
+        "field": "accountId"
+      },
+      "PLAYER_FACTORY_KEY_PATH": "/var/lib/questlayer-testlayer/player-factory.json",
+      "RELAYER_KEY_PATH": "/var/lib/questlayer-testlayer/relayer.json",
+      "REWARD_ATTESTOR_PATH": "/var/lib/questlayer-testlayer/reward-attestor.pem",
+      "REWARD_WORKER_KEY_PATH": "/var/lib/questlayer-testlayer/reward-worker.json",
+      "CREATORS_PUBLISHER_KEY_PATH": "/var/lib/questlayer-testlayer/creators-publisher.json"
+    }
+  },
+  "note": "First Test Layer deploy: 10 keys + runtime.env, then build VITE_QL_LAYER=test and activate questlayer-testlayer (7093) + test signer (7094)."
+}

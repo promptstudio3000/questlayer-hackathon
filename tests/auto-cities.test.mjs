@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import {
   citySlug,
@@ -250,6 +250,10 @@ test("the index directory reloads after a worker run without a restart", async (
     join(dir, "index.json"),
     JSON.stringify({ ...index, cities: [] }),
   );
+  // Linux file systems can keep the same mtime for a write in the same tick;
+  // a worker run changes it, so move it forward explicitly.
+  const later = new Date(statSync(join(dir, "index.json")).mtimeMs + 2000);
+  utimesSync(join(dir, "index.json"), later, later);
   assert.equal(auto.entries.length, 1, "cached within refreshMs");
   t = 5000;
   assert.equal(auto.entries.length, 0);

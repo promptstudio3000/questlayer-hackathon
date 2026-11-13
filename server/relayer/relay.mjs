@@ -19,6 +19,7 @@ import {
   RelayPolicyError,
   SOCIAL_CONTRACT,
   STORAGE_DEPOSIT,
+  SOCIAL_STORAGE_FLOOR,
   validateDelegate,
 } from "./policy.mjs";
 import { awardMessage } from "../native/award-vouchers.mjs";
@@ -35,9 +36,6 @@ const STATE_MARGIN = 10n ** 22n; // 0.01 NEAR
 const integer = (value) => Number.isSafeInteger(value) && value > 0;
 // A voucher must outlive admission plus the relayer's first send.
 const CLAIM_MARGIN_MS = 60000;
-// SocialDB storage the game already considers enough for a 1 yocto write
-// (server/native/social-profile.mjs quotes 0.05 NEAR only below it).
-const SOCIAL_STORAGE_FLOOR = 10n ** 22n;
 const ED25519_SPKI = Buffer.from("302a300506032b6570032100", "hex");
 function awardSignatureValid(publicKeyBase64, message, signatureBase64) {
   try {
@@ -352,7 +350,7 @@ export class Relayer {
         !balance ||
           (/^\d{1,39}$/.test(String(balance.available)) &&
             BigInt(balance.available) < SOCIAL_STORAGE_FLOOR),
-        "Your NEAR Social storage already covers this record. Prepare it again.",
+        "That didn't go through. Try again.",
         409,
         "RELAY_SOCIAL_STORAGE",
       );
@@ -372,7 +370,7 @@ export class Relayer {
         !balance ||
           (/^\d{1,39}$/.test(String(balance.available)) &&
             BigInt(balance.available) < BigInt(call.deposit)),
-        "Your escrow storage deposit already covers this agreement. Prepare it again.",
+        "That didn't go through. Try again.",
         409,
         "RELAY_ESCROW_STORAGE",
       );

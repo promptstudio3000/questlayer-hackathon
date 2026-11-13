@@ -17,6 +17,27 @@ export function toUnits(raw: string | null | undefined, decimals: number): numbe
 }
 
 /** QGOLD backing rate R (the API gives yoctoNEAR per whole QGOLD) as NEAR. */
+/**
+ * One currency on screen (owner, 12–13 Nov 2026): the game counts QGOLD in its
+ * smallest unit, so 1 NEAR ≈ 1B QGOLD (src/gold-units.ts). The vault's rate is
+ * NEAR per whole token (10^6 units), so prices read per 1B QGOLD = 1,000 tokens.
+ */
+export const QGOLD_B_TOKENS = 1000;
+/** NEAR behind 1B QGOLD for a 24-decimal rate per whole token. */
+export function rateB(rate: string | null | undefined): number {
+  return rateNear(rate) * QGOLD_B_TOKENS;
+}
+/** "1.45B", "967.5M", "1,250" for a count of QGOLD (smallest units). */
+export function qgoldCount(units: number | string | bigint | null | undefined): string {
+  const n = Number(units ?? NaN);
+  if (!Number.isFinite(n)) return "—";
+  const cut = (v: number) => v.toLocaleString("en-US", { maximumFractionDigits: 2 });
+  const a = Math.abs(n);
+  if (a >= 1e9) return `${cut(n / 1e9)}B`;
+  if (a >= 1e6) return `${cut(n / 1e6)}M`;
+  return Math.round(n).toLocaleString("en-US");
+}
+
 export function rateNear(rate: string | null | undefined): number {
   if (!rate || !/^\d+$/.test(rate)) return 0;
   return Number(BigInt(rate)) / 1e24;

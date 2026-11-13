@@ -1,0 +1,14 @@
+{
+  "id": "a1-collectibles-editions-uncap",
+  "script": "scripts/upgrade-collectibles-editions-testnet.mjs",
+  "wasm": {
+    "path": "contracts/target/wasm32-unknown-unknown/release/questlayer_collectibles.wasm",
+    "sha256": "d82f4dee87eccc225e83f6048faedc49c96840cfa0eed0de18e57b388884b62a"
+  },
+  "outputs": [
+    "public/native-editions-testnet.json",
+    "public/native-claims-testnet.json",
+    "contracts/wasm-sha256.json"
+  ],
+  "note": "Uncap Aura editions on nfts.questlayer-dev-20261101.testnet (economy thread, reviewed build 8b10c4c)"
+}
