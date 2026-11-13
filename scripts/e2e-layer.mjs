@@ -136,9 +136,8 @@ try {
   await phone.setViewportSize({ width: 360, height: 780 });
   await phone.screenshot({ path: join(out, "phone-360-world.png") });
   assert.equal(await phone.locator(".ml-map-tools").count(), 0, "the map stays folded until requested");
-  await phone.getByRole("button", { name: "Map settings", exact: true }).click();
+  await phone.getByRole("button", { name: "Settings", exact: true }).click();
   await phone.getByRole("button", { name: "Shared atlas", exact: true }).click();
-  await phone.getByRole("button", { name: "Open shared atlas" }).click();
   await phone.screenshot({ path: join(out, "phone-360-atlas.png") });
   await phone.getByRole("button", { name: "Look north", exact: true }).click();
   await phone
@@ -148,10 +147,8 @@ try {
   await phone.setViewportSize({ width: 740, height: 360 });
   await phone.screenshot({ path: join(out, "landscape-world.png") });
   await phone.setViewportSize({ width: 390, height: 844 });
-  await phone.getByRole("button", { name: "Map settings", exact: true }).click();
-  await phone
-    .getByRole("button", { name: "Open MetaLayer field guide" })
-    .click();
+  await phone.getByRole("button", { name: "Settings", exact: true }).click();
+  await phone.getByRole("button", { name: "How to play", exact: true }).click();
   await phone.addStyleTag({
     content:
       ".ml-sheet, .ml-sheet p, .ml-sheet li, .ml-sheet button { font-size: 20px !important; } .ml-sheet h2 { font-size: 30px !important; }",

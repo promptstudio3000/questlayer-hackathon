@@ -44,10 +44,8 @@ export function PlacePanel({ id, progress: p, position, busy, demoActors, onFace
   if (id === "treasury") return <>
     <div className="ml-sheet-hero"><GameObjectArt kind="coin" state="locked" size={48} /><h2>{placeName(id)}</h2></div>
     <p className="badge">{tr("Treasury inactive")}</p>
-    <p>{tr("This golden vault marks the future MetaGold treasury. It has no funded coin drops or spendable MetaGold yet.")}</p>
-    <p>{tr("Play the expedition now. MetaGold rewards, MetaXP and NFTs need the reviewed NEAR integration.")}</p>
-    <div className="ml-story-actions">{!nearby && face}<button className="primary-button ml-wide" onClick={onObjective}>{tr("Face objective")}</button>
-      <button className="secondary-button ml-wide" onClick={onActivity}>{tr("Actions and NEAR proofs")}</button></div>
+    <p>{tr("This golden vault will hold MetaGold, the coin of this world. Coins and rewards open later; the expedition is ready now.")}</p>
+    <div className="ml-story-actions">{!nearby && face}<button className="primary-button ml-wide" onClick={onObjective}>{tr("Face objective")}</button></div>
   </>;
   if (id === "workshop") return <>
     <div className="ml-sheet-hero"><img src={STARTER_SPRITE} alt="" /><h2>{placeName(id)}</h2></div>

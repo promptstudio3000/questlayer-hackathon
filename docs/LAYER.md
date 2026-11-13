@@ -64,16 +64,25 @@ reduced motion freezes them. Without the explicit switch, the normal host render
 the guide and place props with no demo explorers.
 
 MetaLayer inherits the current QuestLayer shell: `WorldSwitcher`, `Character`,
-HUD bubble, map settings flyout, `DemoControls` on the left, `MapActions` on the
+HUD bubble, the Settings gear, `DemoControls` on the left, `MapActions` on the
 right, the existing navigation rail, `ScreenTabs` and native map dialogs. The app
 mount only passes the current world configuration and the normal Profile action.
 No independent colour palette or navigation appearance is introduced.
 
-On phones, the shared atlas starts folded. Request it from Map settings, then tap
+The gear opens the same Settings sheet as GotchiGO (`src/layer/LayerSettings.tsx`
+reuses its groups and rows). Only the first group differs: world tools (my
+location, shared atlas, central square, land and building, minimap switch)
+instead of GPS, city overview and globe. Game (language, sound, vibration,
+reduced motion), Help (how to play) and Account (opens the platform Settings,
+back to GotchiGO) follow. Saved actions and NEAR references live under
+**Advanced**; Community shows only Quests and Field journal, and the backpack
+and treasury never link to chain details.
+
+On phones, the shared atlas starts folded. Request it from Settings, then tap
 the small minimap to expand the atlas. Tool switching and Jump live under Actions.
 Build opens the material picker on request; the held tool appears only in Build mode or when an aimed block is mineable. The default objective is a compact shared peek with its title and one short
 status line. A nearby place temporarily uses that same line and action, adding no
-permanent HUD panel. Story details, journal and NEAR history stay in requested sheets.
+permanent HUD panel. Story details and the journal stay in requested sheets; NEAR history stays under Settings → Advanced.
 
 The objective shows its target direction and distance in **blocks**. Its board
 keeps the current action, chapter progress and replayable journal together. Wrong

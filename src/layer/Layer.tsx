@@ -31,6 +31,7 @@ import { MapActions } from "../MapActions";
 import { ScreenTabs, Details } from "../ScreenTabs";
 import { InfoTip } from "../InfoTip";
 import { LayerSettings } from "./LayerSettings";
+import { MapSettings } from "../MapSettings";
 import type { DemoControl } from "../useDemoWalk";
 import { STARTER_SPRITE } from "../character-art";
 import { tr } from "../i18n";
@@ -63,7 +64,7 @@ type Snapshot = Progress & {
   tiles: [number, number][];
 };
 type Entry = Snapshot & { spawn: { x: number; y: number; z: number } };
-type Sheet = "help" | "inventory" | "community" | "atlas" | "parcel" | "activity" | "materials" | "place" | null;
+type Sheet = "help" | "settings" | "inventory" | "community" | "atlas" | "parcel" | "activity" | "materials" | "place" | null;
 const blockName = (b: number) =>
   ({
     [BLOCK.plank]: tr("Plank"),
@@ -90,7 +91,7 @@ export function Layer({
   player: Player;
   items: Item[];
   layer: PublicLayer;
-  onNavigate: (view: { tab: "explore" } | { tab: "settings"; profileView: "character" }) => void;
+  onNavigate: (view: { tab: "explore" } | { tab: "settings"; profileView: "character" | "settings" }) => void;
   gameLayer?: GameLayerConfig | null;
 }) {
   const onExit = () => onNavigate({ tab: "explore" });
@@ -504,10 +505,10 @@ export function Layer({
             </button>
             <button className="balance-pill ml-pocket" onClick={() => setSheet("inventory")} aria-label={tr("Open resource inventory")}><span className="gold-icon ml-resource-icon"><Diamond size={18} /></span><b>{progress?.inventory.diamonds ?? 0}</b></button>
           </div>
-          <LayerSettings mapShown={mapShown} onMap={() => setMapShown(v => !v)} onLocate={() => engine.current?.recenter()} onSquare={() => void returnToSquare()} onGuide={() => setSheet("help")} onExit={onExit} />
+          <MapSettings demo={false} open={sheet === "settings"} onOpen={() => setSheet("settings")} />
         </div>
       </header>
-      <div className="map-sky-chip ml-location"><strong>{tr("MetaLayer")}</strong><span>{here} · {tr("{0} nearby", { 0: peers })}</span></div>
+      <div className="map-sky-chip ml-location"><span>{here} · {tr("{0} nearby", { 0: peers })}</span></div>
       {mapShown && <aside className="ml-map-tools">
         <button className="ml-atlas-toggle" onClick={() => { setMapCenter({ x: position.x, z: position.z }); setSheet("atlas"); }} aria-label={tr("Open shared atlas")}>
           <Minimap tiles={tiles} x={position.x} z={position.z} heading={position.heading} />
@@ -623,7 +624,7 @@ export function Layer({
       <nav className="nav-rail ml-nav" aria-label={tr("MetaLayer navigation")}><div className="rail-links">
         <button className={!sheet ? "active" : ""} onClick={close} aria-current={!sheet ? "page" : undefined}><Compass size={25} /><span>{tr("Explore")}</span></button>
         <button className={sheet === "inventory" ? "active" : ""} onClick={() => setSheet("inventory")}><Backpack size={25} /><span>{tr("Inventory")}</span></button>
-        <button className={sheet === "community" || sheet === "activity" ? "active" : ""} onClick={() => { setCommunityView("quests"); setSheet("community"); }}><UsersThree size={25} /><span>{tr("Community")}</span></button>
+        <button className={sheet === "community" ? "active" : ""} onClick={() => { setCommunityView("quests"); setSheet("community"); }}><UsersThree size={25} /><span>{tr("Community")}</span></button>
       </div></nav>
       {sheet && (
         <Dialog
@@ -636,7 +637,7 @@ export function Layer({
                   ? tr("Expedition board")
                   : sheet === "parcel"
                     ? tr("Parcel detail")
-                    : sheet === "activity" ? tr("Actions and NEAR proofs") : sheet === "materials" ? tr("Blocks") : sheet === "place" ? placeName(place) : tr("MetaLayer field guide")
+                    : sheet === "activity" ? tr("Actions and NEAR proofs") : sheet === "settings" ? tr("Settings") : sheet === "materials" ? tr("Blocks") : sheet === "place" ? placeName(place) : tr("MetaLayer field guide")
           }
           onClose={close}
           presentation="map"
@@ -645,12 +646,16 @@ export function Layer({
           <div className="main-panel explore-panel ml-sheet">
             <div className="panel-heading">
               <button className="panel-back" onClick={close} aria-label={tr("Back to map")}><ArrowLeft size={20} /></button>
-              <div><h1>{sheet === "community" || sheet === "activity" ? tr("Community") : sheet === "inventory" ? tr("Inventory") : sheet === "atlas" ? tr("Shared atlas") : sheet === "materials" ? tr("Blocks") : sheet === "parcel" ? tr("Land and building") : sheet === "place" ? tr("MetaLayer") : tr("MetaLayer field guide")}</h1></div>
+              <div><h1>{sheet === "community" ? tr("Community") : sheet === "inventory" ? tr("Inventory") : sheet === "atlas" ? tr("Shared atlas") : sheet === "materials" ? tr("Blocks") : sheet === "parcel" ? tr("Land and building") : sheet === "settings" ? tr("Settings") : sheet === "activity" ? tr("Actions and NEAR proofs") : sheet === "place" ? tr("MetaLayer") : tr("MetaLayer field guide")}</h1></div>
               <button className="panel-close" onClick={close} aria-label={tr("Close")}><X size={18} /></button>
             </div>
-            {(sheet === "community" || sheet === "activity") && <ScreenTabs sticky={false} withPanel={false} label={tr("Community")} value={sheet === "activity" ? "proofs" : communityView}
-              tabs={[{ id: "quests", label: tr("Quests"), icon: Compass }, { id: "journal", label: tr("Field journal"), icon: Backpack }, { id: "proofs", label: tr("On chain"), icon: Cube }]}
-              onChange={view => { if (view === "proofs") setSheet("activity"); else { setCommunityView(view); setSheet("community"); } }} />}
+            {sheet === "community" && <ScreenTabs sticky={false} withPanel={false} label={tr("Community")} value={communityView}
+              tabs={[{ id: "quests", label: tr("Quests"), icon: Compass }, { id: "journal", label: tr("Field journal"), icon: Backpack }]}
+              onChange={view => { setCommunityView(view); setSheet("community"); }} />}
+            {sheet === "settings" && <LayerSettings mapShown={mapShown} onMap={() => setMapShown(v => !v)} onLocate={() => { close(); engine.current?.recenter(); }}
+              onAtlas={() => { setMapCenter({ x: position.x, z: position.z }); setSheet("atlas"); }} onSquare={() => { close(); void returnToSquare(); }}
+              onLand={() => setSheet("parcel")} onGuide={() => setSheet("help")} onProofs={() => setSheet("activity")}
+              onAccount={() => onNavigate({ tab: "settings", profileView: "settings" })} onExit={onExit} />}
             {notice && <p className="ml-sheet-error" role="alert">{notice}</p>}
             {sheet === "activity" && <LayerActivity layer={layer.id} />}
             {sheet === "place" && progress && <PlacePanel id={place} progress={progress} position={position} busy={saving} demoActors={!!layer.demoActors}
@@ -714,7 +719,6 @@ export function Layer({
                 </p>
                 <button className="primary-button ml-wide" onClick={() => setSheet("community")}>{tr("Continue the story")}</button>
                 <div className="ml-story-actions">
-                  <button className="secondary-button ml-wide" onClick={() => setSheet("activity")}>{tr("Actions and NEAR proofs")}</button>
                   <button className="secondary-button ml-wide" onClick={() => setSheet("parcel")}>{tr("Land and building")}</button>
                   <button className="secondary-button ml-wide" onClick={() => openPlace("treasury")}>{tr("MetaGold treasury")}</button>
                 </div>
@@ -733,7 +737,7 @@ export function Layer({
                         "Public square. Everyone can build on its green areas.",
                       )
                     : tr(
-                        "Open land. Parcel purchases need the MetaLayer contract integration.",
+                        "Open land. Your own plot here opens later.",
                       )}
                 </p>
                 <button
@@ -813,7 +817,7 @@ export function Layer({
                 {progress && <Details summary={tr("Places in this world")}><PlaceDirectory progress={progress} onPlace={openPlace} /></Details>}
               </>
             )}
-            <div className="ml-preview-note"><span className="badge">{tr("Preview")}</span><InfoTip label={tr("MetaLayer")}>{tr("Play preview. MetaGold, XP rewards, parcel NFTs and onchain settlement await integration.")}</InfoTip></div>
+            <div className="ml-preview-note"><span className="badge">{tr("Preview")}</span><InfoTip label={tr("MetaLayer")}>{tr("Play preview. MetaGold coins and rewards open later.")}</InfoTip></div>
           </div>
         </Dialog>
       )}

@@ -715,11 +715,16 @@ export const CHAPTERS: Chapter[] = [
         "Build a trail marker at the outlined site: two spore stalk blocks with a lamp above. Manual building and the nearby template both work, and another explorer’s existing shared marker can satisfy the inspection. Templates never overwrite unrelated blocks or another explorer’s body.",
         "Bring the expedition diamonds to the central beacon and tune it. The first completion lights the shared beam for everyone; personal story and field-journal completion remain independent. Materials are requirements, not currency spending. The preview grants no token, XP, NFT or badge for these chapters.",
       ] },
+      { h: "Same platform, another game" },
+      { list: [
+        "MetaLayer uses the GotchiGO screen layout: the logo world picker and daily-goal chip top left, the avatar bubble (here with diamonds instead of QGOLD) and the gear top right, the stick bottom left, Actions bottom right, one objective card and the Explore / Inventory / Community bar. Only the game canvas and its actions change.",
+        "The gear opens the same Settings sheet as GotchiGO. Its first group holds world tools (my location, shared atlas, central square, land and building, minimap) instead of GPS, city overview and globe. Game, Help and Account follow; account and backup open the platform Settings. Saved actions and chain references sit under Advanced, not in Community or the backpack.",
+      ] },
       { h: "Controls and proof" },
       { list: [
         "Use the same accessible stick as the city demonstration: forward, back and turns, with Run and Jump. Hold a mine block to extract it; choose Build to place on the square. Desktop right-click places a block. Modals keep movement keys for their own controls.",
         "The first preview uses an Aavegotchi starter ghost and the equipped Aura. Full verified-original 3D outfits remain a renderer integration. Movement in MetaLayer never counts as real GPS evidence.",
-        "Block edits, discoveries, extraction receipts and resource inventories are stored in the dedicated MetaLayer module. This preview issues no QuestLayer items, XP or money. The Actions and NEAR proofs panel separates locally saved actions from verified chain references and offers the existing platform account feed as separately labelled history.",
+        "Block edits, discoveries, extraction receipts and resource inventories are stored in the dedicated MetaLayer module. This preview issues no QuestLayer items, XP or money. The Actions and NEAR proofs panel (Settings → Advanced) separates locally saved actions from verified chain references and offers the existing platform account feed as separately labelled history.",
       ] },
       { note: "The read-only verifier requires a reviewed MetaLayer testnet contract, recorder and code hash. It checks final execution, every receipt, receipt reachability, the action’s own layer/actor/evidence event, inclusion blocks and historical/current contract code. It submits no transaction and grants no ownership or rewards. The local preview has no activated contract or genuine MetaLayer chain proof.", tone: "warn" },
       { h: "Accepted contract integration" },
@@ -991,7 +996,7 @@ export const CHAPTERS: Chapter[] = [
     updated: "2026-11-13",
     sources: ["docs/QGOLD-VAULT.md", "docs/QGOLD-MARKET.md", "contracts/qgold/src/lib.rs", "server/qgold/keeper.mjs", "server/qgold/token-page.mjs"],
     blocks: [
-      { p: "**One coin, many names.** The game shows one name, QGOLD, everywhere, and every layer may give it its own name (Space Layer plans MINECOIN). Whatever the label, it is the same QGOLD token with the same backing and the same rate R." },
+      { p: "**One coin per game.** GotchiGO shows one name, QGOLD, everywhere. Another game on the platform may have its own coin: MetaLayer plans MetaGold with its own treasury, which QGOLD can later convert into one way. MetaGold is not active yet, so today QGOLD is the only coin that pays." },
       { p: "**One unit on screen (13 Nov).** Every screen counts QGOLD in its smallest unit, so **1 NEAR ≈ 1B QGOLD**: Stake, the map, [Treasury](/treasury) and [Economy](/economy) all show the same numbers. The vault's rate R is per whole token (1,000,000 units), so the pages show it per 1B QGOLD (about 1.02 NEAR today); the swap card reads \"1B QGOLD = … NEAR\" and takes amounts like 967.5M. Profile → Stake → On the map today and Treasury → Today on the map → Coins are the same number (the coins placed on today's map). Display only: the token, R and the economy are unchanged." },
       { h: "Actions" },
       {

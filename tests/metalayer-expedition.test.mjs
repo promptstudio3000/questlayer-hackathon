@@ -526,3 +526,14 @@ test("story gates, stale presence and protected landmarks cannot be bypassed", t
   f.clock.at+=13000;
   assert.throws(()=>f.store.interact(alice,input({action:"signal",site:"garden",symbol:"spore"})),e=>e.status===409);
 });
+
+test("a body below the floor or above the sky is put back, not rejected (blank-world start)", (t) => {
+  const { store, clock, actors: [alice] } = fixture(t);
+  const saved = store.enter(alice).spawn;
+  for (const y of [-3, 1e4]) {
+    clock.at += 500;
+    const result = store.move(alice, undefined, { x: saved.x, y, z: saved.z });
+    assert.deepEqual(result.corrected, { x: saved.x, y: saved.y, z: saved.z });
+  }
+  assert.throws(() => store.move(alice, undefined, { x: NaN, y: 15, z: 0 }), /Invalid position/);
+});

@@ -238,13 +238,14 @@ export function createExpeditionStore(db, { now = () => Date.now(), near } = {})
       at = now();
     const { x, y, z } = position;
     assert(
-      [x, y, z].every(Number.isFinite) &&
-        Math.abs(x) <= 1e6 &&
-        Math.abs(z) <= 1e6 &&
-        y >= 0 &&
-        y <= HEIGHT + 4,
+      [x, y, z].every(Number.isFinite) && Math.abs(x) <= 1e6 && Math.abs(z) <= 1e6,
       "Invalid position.",
     );
+    // A body that slipped below the floor or above the sky (for example while
+    // the first chunks were still loading) goes back to its last saved spot
+    // instead of failing the whole world start.
+    if (y < 0 || y > HEIGHT + 4)
+      return { corrected: { x: row.x, y: row.y, z: row.z }, ...progress(actor, layer) };
     const seconds = Math.max(0.2, Math.min(2, (at - row.seen_at) / 1000));
     const corrected =
       Math.hypot(x - row.x, z - row.z) > 12 * seconds + 2 ||

@@ -69,6 +69,8 @@ try {
     db.prepare("UPDATE ml_explorers SET x=?,y=15,z=?,seen_at=? WHERE player_id=?").run(x,z,Date.now(),actor.id);
     await page.waitForFunction(({x,z})=>{const p=JSON.parse(document.querySelector('[data-testid="layer-stage"]').dataset.position||"{}");return Math.abs(p.x-x)<.2&&Math.abs(p.z-z)<.2;},{x,z},{timeout:15000});
   }
+  // Saved actions and NEAR references live under Settings → Advanced.
+  const proofs=async()=>{if(await page.locator("dialog[open]").count())await page.keyboard.press("Escape");await page.locator("dialog[open]").first().waitFor({state:"detached",timeout:5000}).catch(()=>{});await page.locator(".layer-screen .map-settings-toggle").click();await page.locator(".layer-screen .settings-advanced summary").click();await page.getByRole("button",{name:"Actions and NEAR proofs",exact:true}).click();};
   const board=async()=>{if(!await page.getByRole("dialog",{name:"Expedition board",exact:true}).isVisible())await page.locator(".layer-screen .daily-board-chip").click();};
   await pose(-28,18);await board();
   await page.getByRole("button",{name:"Star",exact:true}).click();
@@ -92,7 +94,7 @@ try {
   await page.getByRole("heading",{name:"The beacon is awake",exact:true}).waitFor();
   await shot("360-story-complete");await axe("story-complete");
   await page.getByRole("tab",{name:"Field journal",exact:true}).click();await shot("360-journal");
-  await page.getByRole("tab",{name:"On chain",exact:true}).click();
+  await proofs();
   await page.getByText("Saved in preview",{exact:true}).first().waitFor();
   assert.equal(await page.locator(".ml-activity-list .chain-link.is-final").count(),0,"local receipts never appear final on NEAR");
   await shot("360-local-action-receipts");await axe("receipts");
@@ -106,7 +108,7 @@ try {
   // Controlled capability fixture for the dormant verifier form. No proof,
   // contract activation or successful chain result is invented by this fixture.
   await page.route(/\/api\/layer\/expedition\/activity\?/,async route=>{const r=await route.fetch();const body=await r.json();await route.fulfill({response:r,json:{...body,verifier:"read-only"}});});
-  await board();await page.getByRole("tab",{name:"On chain",exact:true}).click();
+  await proofs();
   await page.getByLabel("World action",{exact:true}).selectOption({index:1});
   await page.getByLabel("NEAR transaction hash",{exact:true}).fill("not-a-valid-transaction");
   await page.setViewportSize({width:390,height:480});
