@@ -77,7 +77,11 @@ const coordinates = (input) => {
   return { x, y, z };
 };
 
-export function createExpeditionStore(db, { now = () => Date.now(), near, onRecord = null } = {}) {
+/** The places Keeper Nera's independent tour asks for (src/layer/PlacePanel.tsx). */
+export const NERA_TOUR = Object.freeze(["treasury", "workshop", "hollow", "garden"]);
+/** Land a player owns as a MetaLayer parcel NFT: 16 × 16 blocks outside the square. */
+const PARCEL = 16;
+export function createExpeditionStore(db, { now = () => Date.now(), near, onRecord = null, ownsLand = null } = {}) {
   ensureModuleVersion(db, EXPEDITION_SCHEMA);
   const explorer = db.prepare(
     "SELECT * FROM ml_explorers WHERE layer=? AND player_id=?",
@@ -276,10 +280,18 @@ export function createExpeditionStore(db, { now = () => Date.now(), near, onReco
       const revealed = db.prepare("INSERT OR IGNORE INTO ml_atlas VALUES(?,?,?)").run(layer.id, ...tile);
       if (revealed.changes) activity.record(actor, layer, `tile:${tile}`, "atlas-revealed", { tile });
       story.visit(actor, layer, { x, y, z });
+      let atTourPlace = false;
       if (Math.abs(y - 15) <= 3)
         for (const place of WORLD_PLACES)
-          if (Math.hypot(x - place.x, z - place.z) <= PLACE_REACH)
+          if (Math.hypot(x - place.x, z - place.z) <= PLACE_REACH) {
             activity.record(actor, layer, place.id, "place-found", { place: place.id });
+            atTourPlace ||= NERA_TOUR.includes(place.id);
+          }
+      // Nera's short tour: the four places she names, in any order.
+      const toured = !atTourPlace ? 0 : db.prepare(`SELECT COUNT(DISTINCT json_extract(envelope,'$.data.place')) n FROM ml_actions
+        WHERE layer=? AND player_id=? AND kind='place-found' AND json_extract(envelope,'$.data.place') IN (${NERA_TOUR.map(() => "?").join(",")})`)
+        .get(layer.id, actor.id, ...NERA_TOUR).n;
+      if (toured === NERA_TOUR.length) activity.record(actor, layer, "tour-complete", "tour-complete", { places: NERA_TOUR });
       const mine = MINES[0];
       if (
         Math.hypot(x - mine.entranceX, z - mine.entranceZ) <= 8 &&
@@ -345,14 +357,10 @@ export function createExpeditionStore(db, { now = () => Date.now(), near, onReco
     assert(Number.isInteger(input.expected), "Expected block is required.");
     return once(actor, layer, input, "edit", () => {
       const pose = nearActor(actor, layer);
-      assert(
-        inPlaza(target.x, target.z) &&
-          !protectedPlaza(target.x, target.z) &&
-          target.y > PLAZA.y &&
-          target.y < 40,
-        "Build on the green areas of the public square.",
-        403,
-      );
+      const onSquare = inPlaza(target.x, target.z) && !protectedPlaza(target.x, target.z) && target.y > PLAZA.y && target.y < 40;
+      const onOwnLand = !inPlaza(target.x, target.z) && target.y > 0 && target.y < 60 &&
+        !!ownsLand?.(actor, Math.floor(target.x / PARCEL) * PARCEL, Math.floor(target.z / PARCEL) * PARCEL);
+      assert(onSquare || onOwnLand, "Build on the green areas of the public square or on your own land.", 403);
       assert(
         Math.hypot(
           target.x + 0.5 - pose.x,

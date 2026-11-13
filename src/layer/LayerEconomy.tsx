@@ -7,6 +7,7 @@ import { tr } from "../i18n";
 
 export type Economy = {
   active: boolean;
+  contract?: string | null;
   account: string | null;
   metagold: string | null;
   metaXp: number | null;

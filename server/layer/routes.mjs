@@ -44,6 +44,7 @@ export function createLayerRoutes({ store, authenticate, actorFor }) {
       else if (route === "expedition/mine-finish" && method === "POST") result = store.expedition.finishMining(actor, input);
       else if (route === "expedition/interact" && method === "POST") result = store.expedition.interact(actor, input);
       else if (route === "expedition/economy" && method === "GET") result = await store.economy(actor, q("layer"));
+      else if (route === "expedition/parcel" && method === "POST") result = await store.syncParcel(actor, input);
       else if (route === "expedition/activity" && method === "GET") result = store.expedition.activity(actor, q("layer"));
       else if (route === "expedition/verify" && method === "POST") result = await store.expedition.verifyAction(actor, input);
       else if (route === "home" && method === "POST") {

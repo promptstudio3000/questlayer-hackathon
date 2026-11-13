@@ -3129,7 +3129,6 @@
   "Block removed": "移除方块",
   "Build a trail marker at the outlined site.": "在标记的位置建造发光路标。",
   "Build it myself": "自己建造",
-  "Build on the green areas of the public square.": "请在公共广场的绿色区域建造。",
   "Central square": "中央广场",
   "Chapter {0} of {1}": "第{0}章，共{1}章",
   "Check the shared marker": "检查共享路标",
@@ -3318,5 +3317,16 @@
   "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "在 设置 → 账户 中保护你的探险者即可领取 MetaGold。奖励会一直等你。",
   "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "这座金库存放着这个世界的金币 MetaGold。故事步骤的奖励从这里支付，用 MetaGold 购买土地的钱也回到这里。",
   "Your land": "你的土地",
-  "MetaXP": "MetaXP"
+  "MetaXP": "MetaXP",
+  "Build on the green areas of the public square or on your own land.": "请在公共广场的绿色区域或你自己的土地上建造。",
+  "This land is yours. Build anywhere on it.": "这块土地属于你。你可以在上面任意建造。",
+  "The purchase is on its way. Look again in a moment.": "购买正在处理中。稍后再看一下。",
+  "The purchase did not go through. Try again.": "购买未成功。请再试一次。",
+  "Another explorer owns this land.": "这块土地属于另一位探险者。",
+  "Checking who owns this land…": "正在查看这块土地的主人…",
+  "Open land. Buy it to build here.": "空地。买下它就能在这里建造。",
+  "Secure my account": "保护我的账户",
+  "You need {0} MetaGold": "需要 {0} MetaGold",
+  "Buying…": "购买中…",
+  "Buy land for {0} MetaGold": "用 {0} MetaGold 购买土地"
 }

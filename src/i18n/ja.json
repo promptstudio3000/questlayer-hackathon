@@ -3129,7 +3129,6 @@
   "Block removed": "ブロックを撤去",
   "Build a trail marker at the outlined site.": "印のある場所に光る道しるべを建てよう。",
   "Build it myself": "自分で建てる",
-  "Build on the green areas of the public square.": "公共広場の緑のエリアで建築できます。",
   "Central square": "中央広場",
   "Chapter {0} of {1}": "第{0}章／全{1}章",
   "Check the shared marker": "共有の道しるべを確認",
@@ -3318,5 +3317,16 @@
   "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "MetaGoldを受け取るには、設定 → アカウントで探検者を保護してください。報酬はそれまで待機します。",
   "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "この金色の金庫には、この世界のコインMetaGoldが入っています。ストーリーの報酬はここから支払われ、MetaGoldで買った土地の代金はここに戻ります。",
   "Your land": "あなたの土地",
-  "MetaXP": "MetaXP"
+  "MetaXP": "MetaXP",
+  "Build on the green areas of the public square or on your own land.": "公共広場の緑のエリアか、自分の土地で建築できます。",
+  "This land is yours. Build anywhere on it.": "この土地はあなたのものです。どこにでも建築できます。",
+  "The purchase is on its way. Look again in a moment.": "購入を処理中です。少ししてからもう一度確認してください。",
+  "The purchase did not go through. Try again.": "購入できませんでした。もう一度お試しください。",
+  "Another explorer owns this land.": "この土地は別の探検家のものです。",
+  "Checking who owns this land…": "この土地の持ち主を確認しています…",
+  "Open land. Buy it to build here.": "空いている土地です。購入するとここに建築できます。",
+  "Secure my account": "アカウントを保護",
+  "You need {0} MetaGold": "{0} MetaGold が必要です",
+  "Buying…": "購入中…",
+  "Buy land for {0} MetaGold": "{0} MetaGold で土地を購入"
 }

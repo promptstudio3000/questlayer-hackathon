@@ -3129,7 +3129,6 @@
   "Block removed": "Odstraněný blok",
   "Build a trail marker at the outlined site.": "Postav světelný marker na vyznačeném místě.",
   "Build it myself": "Postavím ho sám",
-  "Build on the green areas of the public square.": "Stavět lze na zelených plochách veřejného náměstí.",
   "Central square": "Centrální náměstí",
   "Chapter {0} of {1}": "Kapitola {0} z {1}",
   "Check the shared marker": "Zkontrolovat společný marker",
@@ -3318,5 +3317,16 @@
   "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "Zabezpeč svého průzkumníka v Nastavení → Účet, abys dostal MetaGold. Odměny do té doby počkají.",
   "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "Tento zlatý trezor drží MetaGold, minci tohoto světa. Kroky příběhu se platí z něj a pozemky koupené za MetaGold do něj platí zpátky.",
   "Your land": "Tvoje pozemky",
-  "MetaXP": "MetaXP"
+  "MetaXP": "MetaXP",
+  "Build on the green areas of the public square or on your own land.": "Stavět lze na zelených plochách veřejného náměstí nebo na vlastním pozemku.",
+  "This land is yours. Build anywhere on it.": "Tento pozemek je tvůj. Stavět na něm můžeš kdekoli.",
+  "The purchase is on its way. Look again in a moment.": "Nákup je na cestě. Za chvíli se podívej znovu.",
+  "The purchase did not go through. Try again.": "Nákup neprošel. Zkus to znovu.",
+  "Another explorer owns this land.": "Tento pozemek patří jinému průzkumníkovi.",
+  "Checking who owns this land…": "Zjišťuji, komu pozemek patří…",
+  "Open land. Buy it to build here.": "Volný pozemek. Kup si ho a stav na něm.",
+  "Secure my account": "Zabezpečit účet",
+  "You need {0} MetaGold": "Potřebuješ {0} MetaGold",
+  "Buying…": "Kupuji…",
+  "Buy land for {0} MetaGold": "Koupit pozemek za {0} MetaGold"
 }

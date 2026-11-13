@@ -34,6 +34,7 @@ import { LayerSettings } from "./LayerSettings";
 import { CoinIcon } from "../app-bits";
 import { formatGold } from "../gold-units";
 import { LayerEconomy, type Economy } from "./LayerEconomy";
+import { ParcelSheet, type BuyParcel } from "./ParcelSheet";
 import { MapSettings } from "../MapSettings";
 import type { DemoControl } from "../useDemoWalk";
 import { STARTER_SPRITE } from "../character-art";
@@ -90,12 +91,14 @@ export function Layer({
   layer,
   onNavigate,
   gameLayer,
+  buyParcel,
 }: {
   player: Player;
   items: Item[];
   layer: PublicLayer;
   onNavigate: (view: { tab: "explore" } | { tab: "settings"; profileView: "character" | "settings" }) => void;
   gameLayer?: GameLayerConfig | null;
+  buyParcel?: BuyParcel;
 }) {
   const onExit = () => onNavigate({ tab: "explore" });
   const onProfile = () => onNavigate({ tab: "settings", profileView: "character" });
@@ -119,7 +122,9 @@ export function Layer({
   const [held, setHeld] = useState<Set<DemoControl>>(() => new Set()),
     [run, setRun] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [economy, setEconomy] = useState<Economy | null>(null);
+  const [economy, setEconomy] = useState<Economy | null>(null), [economyTick, setEconomyTick] = useState(0);
+  const ownedParcels = useRef(new Set<string>());
+  ownedParcels.current = new Set(economy?.parcels ?? []);
   const [place, setPlace] = useState<WorldPlaceId>("nera");
   const openPlace = (id: WorldPlaceId) => { setPlace(id); setNotice(""); setSheet("place"); };
   const heldRef = useRef(new Set<DemoControl>()),
@@ -177,7 +182,7 @@ export function Layer({
     void load();
     const timer = setInterval(load, 20_000);
     return () => { live = false; clearInterval(timer); };
-  }, [layer.id, storyKey]);
+  }, [layer.id, storyKey, economyTick]);
   useEffect(() => {
     let active = true,
       view: LayerEngine | null = null,
@@ -262,6 +267,7 @@ export function Layer({
         spawn: entry.spawn,
         facing: storyObjective(entry).target || undefined,
         expedition: true,
+        ownLand: (x, z) => ownedParcels.current.has(`parcel:${Math.floor(x / 16) * 16}:${Math.floor(z / 16) * 16}`),
         demoActors: layer.demoActors,
         onPlace: id => { setPlace(id); setNotice(""); setSheet("place"); },
         outfit: outfitById("nebula"),
@@ -295,7 +301,7 @@ export function Layer({
         onNotice: (reason) =>
           setNotice(
             reason === "own-plot"
-              ? tr("Build on the green areas of the public square.")
+              ? tr("Build on the green areas of the public square or on your own land.")
               : reason === "too-far"
                 ? tr("Move closer to that block.")
                 : reason === "occupied"
@@ -739,31 +745,10 @@ export function Layer({
               </>
             )}
             {sheet === "parcel" && (
-              <>
-                <h2>{tr("Parcel detail")}</h2>
-                <p className="ml-coordinate">
-                  {Math.floor(position.x / 16) * 16},{" "}
-                  {Math.floor(position.z / 16) * 16} · 16 × 16
-                </p>
-                <p>
-                  {inPlaza(position.x, position.z)
-                    ? tr(
-                        "Public square. Everyone can build on its green areas.",
-                      )
-                    : tr(
-                        "Open land. Your own plot here opens later.",
-                      )}
-                </p>
-                <button
-                  className="secondary-button ml-wide"
-                  onClick={() => {
-                    close();
-                    void returnToSquare();
-                  }}
-                >
-                  {tr("Return to the central square")}
-                </button>
-              </>
+              <ParcelSheet x={position.x} z={position.z} layerId={layer.id} economy={economy} buyParcel={buyParcel}
+                onEconomy={() => setEconomyTick(t => t + 1)}
+                onAccount={() => onNavigate({ tab: "settings", profileView: "settings" })}
+                onSquare={() => { close(); void returnToSquare(); }} />
             )}
             {sheet === "atlas" && (
               <>

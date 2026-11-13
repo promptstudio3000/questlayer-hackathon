@@ -537,3 +537,51 @@ test("a body below the floor or above the sky is put back, not rejected (blank-w
   }
   assert.throws(() => store.move(alice, undefined, { x: NaN, y: 15, z: 0 }), /Invalid position/);
 });
+
+test("Nera's tour pays once after her four places, in any order", (t) => {
+  const { db, store, actors: [alice], walk } = fixture(t);
+  const tours = () => db.prepare("SELECT COUNT(*) n FROM ml_actions WHERE player_id=? AND kind='tour-complete'").get(alice.id).n;
+  let at = { x: PLAZA_SPAWN.x, z: PLAZA_SPAWN.z };
+  const visit = (id) => {
+    const p = placeById(id), lane = p.z > 0 ? 9.5 : -9.5;
+    walk(alice, { x: at.x, y: 15, z: lane });
+    walk(alice, { x: p.x, y: 15, z: lane });
+    walk(alice, { x: p.x, y: 15, z: p.z });
+    at = p;
+  };
+  for (const id of ["treasury", "workshop", "garden"]) visit(id);
+  assert.equal(tours(), 0, "three of four places are not the tour");
+  visit("hollow");
+  assert.equal(tours(), 1);
+  visit("treasury");
+  visit("hollow");
+  assert.equal(tours(), 1, "the tour is recorded once");
+});
+
+test("own land opens building outside the square only for its owner", (t) => {
+  const db = openDatabase(":memory:"), clock = { at: 100_000 };
+  t.after(() => db.close());
+  for (const id of ["ml-Alice", "ml-Bob"]) db.prepare("INSERT INTO players(id,name,created_at) VALUES(?,?,1)").run(id, id);
+  const alice = { id: "ml-Alice", name: "Alice" }, bob = { id: "ml-Bob", name: "Bob" };
+  const asked = [];
+  const store = createExpeditionStore(db, {
+    now: () => clock.at,
+    ownsLand: (actor, x0, z0) => (asked.push([x0, z0]), actor.id === alice.id && x0 === 48 && z0 === 0),
+  });
+  const seed = LAYER_REGISTRY[0].seed;
+  const ground = (x, z) => { for (let y = 60; y > 0; y--) if (naturalExpeditionBlock(seed, x, y, z) !== BLOCK.air) return y; return 0; };
+  for (const actor of [alice, bob]) {
+    let at = store.enter(actor).spawn;
+    for (const x of [16.5, 24.5, 32.5, 40.5, 46.5, 50.5]) {
+      const next = { x, y: ground(Math.floor(x), 0) + 1, z: 0.5 };
+      clock.at += 2000;
+      assert.equal(store.move(actor, undefined, next).corrected, null, `walk to ${x}`);
+      at = next;
+    }
+    const y = ground(52, 0) + 1;
+    const edit = { requestId: `request-own-land-${actor.id}`.padEnd(20, "0"), x: 52, y, z: 0, block: BLOCK.plank, expected: BLOCK.air };
+    if (actor === alice) assert.ok(store.edit(actor, edit));
+    else assert.throws(() => store.edit(actor, edit), /your own land/);
+  }
+  assert.deepEqual(asked.at(-1), [48, 0]);
+});

@@ -64,3 +64,29 @@ test("summary reads balances from the contract and lists what still waits", asyn
   assert.deepEqual(s.badges, ["crystal-hollow"]);
   assert.equal(s.pending.length, 1);
 });
+
+test("the whole story pays exactly 100 MetaGold, the price of one parcel", () => {
+  const r = METALAYER_REWARDS;
+  const story = r["expedition-complete"].metagold + r["quarry-found"].metagold + 3 * r["signal-tuned"].metagold +
+    r["marker-checked"].metagold + r["beacon-restored"].metagold + r["tour-complete"].metagold;
+  assert.equal(story, 100);
+});
+
+test("a parcel read from the contract opens building rights for its owner only", async (t) => {
+  const owners = { "48:0": "alice.testnet", "64:0": "carol.testnet" };
+  const chainView = async (method, args) => method === "parcel" ? (owners[`${args.x0}:${args.z0}`] ? { owner_id: owners[`${args.x0}:${args.z0}`] } : null) : null;
+  const db = openDatabase(":memory:");
+  t.after(() => db.close());
+  const own = createMetaLayerEconomy(db, { chain: { active: true, state: { contractId: "m.testnet" }, view: chainView, award: async () => ({}) }, linkedAccount: (id) => ({ "p-alice": "alice.testnet", "p-bob": "bob.testnet" })[id] ?? null, now: () => 1 });
+  const alice = { id: "p-alice" }, bob = { id: "p-bob" };
+  assert.equal(own.ownsLand(alice, 48, 0), false, "nothing is known before the chain is read");
+  assert.deepEqual(await own.syncParcel(alice, 48, 0), { owned: true, owner: "you" });
+  assert.equal(own.ownsLand(alice, 48, 0), true);
+  assert.equal(own.ownsLand(bob, 48, 0), false);
+  assert.deepEqual(await own.syncParcel(bob, 48, 0), { owned: false, owner: "someone" });
+  assert.deepEqual(await own.syncParcel(alice, 32, 0), { owned: false, owner: null });
+  assert.deepEqual(await own.syncParcel(alice, 7, 0), { owned: false, owner: null }, "corners are multiples of 16");
+  delete owners["48:0"];
+  await own.syncParcel(alice, 48, 0);
+  assert.equal(own.ownsLand(alice, 48, 0), false, "a transferred parcel closes again");
+});
