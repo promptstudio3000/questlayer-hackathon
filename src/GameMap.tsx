@@ -1398,7 +1398,10 @@ export function GameMap(props: GameMapProps) {
     const m = map.current,
       element = avatar.current?.getElement();
     // Aavegotchi wearable clones are drawn on the 2D starter only.
-    if (!m || !element || !ready || props.active === false || props.map3D === false || wearing2D) return;
+    // The 3D look stays while a sheet covers the map (a find, an NPC, a
+    // zone): it renders only on map moves, so it costs nothing in between,
+    // and tearing it down made every collect fall back to the 2D sprite.
+    if (!m || !element || !ready || props.map3D === false || wearing2D) return;
     const controller = new AbortController(),
       host = document.createElement("div");
     host.className = "map-character-model";
@@ -1409,7 +1412,9 @@ export function GameMap(props: GameMapProps) {
       : "official-2d";
     let active = true,
       view: PawnScene | null = null,
-      paintFrame = 0;
+      paintFrame = 0,
+      retryTimer = 0,
+      attempts = 0;
     const show2D = () => {
       element.classList.remove("character-model-ready");
       element.dataset.characterRenderer = props.skinUrl
@@ -1418,6 +1423,17 @@ export function GameMap(props: GameMapProps) {
       view?.dispose();
       if (pawn.current === view) pawn.current = null;
       view = null;
+    };
+    // A lost WebGL context or a flaky download falls back to 2D, then tries
+    // the 3D look again a few times instead of staying 2D until a reload.
+    const fail = () => {
+      if (!active) return;
+      show2D();
+      if (attempts >= 4 || retryTimer) return;
+      retryTimer = window.setTimeout(() => {
+        retryTimer = 0;
+        if (active) build();
+      }, 1500 * attempts);
     };
     const orient = () => {
       if (!latest.current.globe)
@@ -1430,7 +1446,8 @@ export function GameMap(props: GameMapProps) {
     m.on("resize", orient);
     window.addEventListener("focus", reveal);
     document.addEventListener("visibilitychange", reveal);
-    void (async () => {
+    const build = () => void (async () => {
+      attempts++;
       const original = props.skinUrl?.match(/tokenId=(\d+)/)?.[1];
       const [{ descriptor, bytes }, module] = await Promise.all([
         loadCharacterModel(original, controller.signal, { forMap: true }),
@@ -1442,7 +1459,7 @@ export function GameMap(props: GameMapProps) {
       view = module.createCharacterScene(host, bytes, {
         starter: descriptor.source === "starter",
         presentation: "map",
-        onError: show2D,
+        onError: fail,
       });
       pawn.current = view;
       const currentView = view;
@@ -1454,11 +1471,14 @@ export function GameMap(props: GameMapProps) {
       paintFrame = requestAnimationFrame(() => {
         if (active) orient();
       });
-    })().catch(() => {
-      if (active) show2D();
+    })().catch((e) => {
+      // An outfit the map cannot draw in 3D stays 2D without retries.
+      if (active) (/2D appearance/.test(String(e?.message)) ? show2D : fail)();
     });
+    build();
     return () => {
       active = false;
+      window.clearTimeout(retryTimer);
       controller.abort();
       cancelAnimationFrame(paintFrame);
       m.off("move", orient);
@@ -1468,7 +1488,7 @@ export function GameMap(props: GameMapProps) {
       show2D();
       host.remove();
     };
-  }, [props.skinUrl, props.map3D, props.active, wearing2D, ready]);
+  }, [props.skinUrl, props.map3D, wearing2D, ready]);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;

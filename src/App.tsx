@@ -298,6 +298,7 @@ import { headingTo, metersBetween } from "./map-motion.ts";
 import { locationPermission, rememberMode, shouldStartWithGps } from "./play-here";
 import { advanceGpsFacing, initialGpsFacing } from "./gps-facing";
 import { useDemoWalk } from "./useDemoWalk";
+import { demoCityFromSearch, demoCityUrl, type DemoCity } from "./demo-city";
 import { DemoControls } from "./DemoControls";
 import type { MapAction } from "./MapActions";
 import { useHudCard } from "./useHudCard";
@@ -321,6 +322,8 @@ type Tab =
   | "shop"
   | "places";
 const HOME = { lat: 49.74745, lng: 13.3774 };
+// "/?newyork": the city the address asks the demo to open (src/demo-city.ts).
+const DEMO_CITY_ASKED = typeof location === "undefined" ? "" : demoCityFromSearch(location.search);
 const SHARE_POSITION_KEY = "questlayer.sharePosition";
 function readSharePosition() {
   try {
@@ -456,6 +459,10 @@ export default function App() {
         setGameLayer(c.gameLayer ?? null);
         // Until launch World opens the Test Layer; "?world=1" (from its picker) keeps World for good.
         const g = c.gameLayer, key = "questlayer.stayWorld";
+        // A city in the address plays in the Test Layer's demo; World has no demo of its own.
+        if (DEMO_CITY_ASKED && g && !g.test && g.testLayerUrl && !/[?&]world=1/.test(location.search))
+          return location.replace(demoCityUrl(g.testLayerUrl, DEMO_CITY_ASKED));
+        if (DEMO_CITY_ASKED && g?.test) void openDemoCity(DEMO_CITY_ASKED);
         try {
           if (/[?&]world=1/.test(location.search)) { localStorage.setItem(key, "1"); history.replaceState(null, "", location.pathname + location.hash); }
           else if (g?.defaultTest && g.testLayerUrl && !localStorage.getItem(key)) location.replace(g.testLayerUrl);
@@ -464,6 +471,23 @@ export default function App() {
       })
       .catch(() => {});
   }, []);
+  // The Test Layer's city demo ("/?newyork"); null keeps the Plzeň demo.
+  const demoCity = useRef<DemoCity | null>(null);
+  const demoHome = () => demoCity.current?.center ?? HOME;
+  async function openDemoCity(name: string) {
+    try {
+      const { city } = await api<{ city: DemoCity | null }>(`/demo-city?${new URLSearchParams({ q: name })}`);
+      // An unknown name quietly keeps Plzeň.
+      if (!city) return;
+      demoCity.current = city;
+      if (!latest.current.player || !arenaIntent.current) return;
+      setPosition(city.center);
+      void loadWorld(city.center, true);
+      notify(tr("City demo: {0}", { 0: city.name }));
+    } catch {
+      /* The Plzeň demo stays. */
+    }
+  }
   // Read guards follow the requested mode before React commits its next render.
   const arenaIntent = useRef(arena);
   function setArena(value: boolean) {
@@ -1448,6 +1472,7 @@ export default function App() {
       const w = await api<World>("/world", {
         location,
         arena: asArena,
+        ...(asArena && demoCity.current ? { city: demoCity.current.id } : {}),
         near: explore ? latest.current.position : location,
         ...(explore ? { explore } : {}),
       });
@@ -1537,13 +1562,13 @@ export default function App() {
     gpsFacing.current = initialGpsFacing();
     setGpsCourse(null);
     gpsResumeOnMovement.current = false;
-    setPosition(HOME);
+    setPosition(demoHome());
     setArena(true);
     setOthers([]);
     setBusy("");
     setToast(null);
     if (player) {
-      void loadWorld(HOME, true);
+      void loadWorld(demoHome(), true);
       void resumeLocation();
     }
   }, [player?.id]);
@@ -1553,6 +1578,8 @@ export default function App() {
     const owner = ownerContext();
     const permission = await locationPermission();
     if (ownerContext() !== owner || !arenaIntent.current) return;
+    // A city asked for in the address stays in its demo.
+    if (DEMO_CITY_ASKED) return;
     if (shouldStartWithGps(permission)) void locate(true);
   }
   useEffect(() => {
@@ -1643,7 +1670,7 @@ export default function App() {
     if (searchedNear(position, SEARCH_SPACING_M)) return;
     if (Date.now() - exploreAt.current < 20_000) return;
     exploreAt.current = Date.now();
-    void loadWorld(arena ? HOME : position, arena, position);
+    void loadWorld(arena ? demoHome() : position, arena, position);
   }, [player?.id, world?.id, position, nativePlay]);
   const searchHere =
     !!player &&
@@ -2251,8 +2278,9 @@ export default function App() {
     gpsResumeOnMovement.current = false;
     rememberMode("demo");
     setArena(true);
-    setPosition(HOME);
-    void loadWorld(HOME, true);
+    const home = demoHome();
+    setPosition(home);
+    void loadWorld(home, true);
   }
   async function locate(quiet = false) {
     if (!navigator.geolocation) {
@@ -4995,64 +5023,66 @@ export default function App() {
             </>
           )}
           {tab === "settings" && (profileView === "character" || profileView === "badges") && (
-            <ScreenTabPanel idBase="profile" value="character">
-              <ProfileHero
-                avatar={
-                  <Character
-                    items={appearanceItems}
-                    // originTokenId and look (outfit tag) of the worn original.
-                    {...player.appearance}
-                  />
-                }
-                name={player.name}
-                appearanceLabel={`${player.nativeOutfit ? tr("Secured outfit") : tr("Game outfit")} · ${player.appearance.originTokenId ? tr("Original") : tr("Starter ghost")}`}
-                level={hudLevel}
-                progress={
-                  hudXp !== null && hudLevel !== null
-                    ? Math.max(
-                        0,
-                        Math.min(
-                          100,
-                          ((hudXp - 100 * (hudLevel - 1) ** 2) /
-                            (100 * (hudLevel ** 2 - (hudLevel - 1) ** 2))) *
+            <ScreenTabPanel idBase="profile" value="character" className="profile-character">
+              <div className="profile-character-grid">
+                <ProfileHero
+                  avatar={
+                    <Character
+                      items={appearanceItems}
+                      // originTokenId and look (outfit tag) of the worn original.
+                      {...player.appearance}
+                    />
+                  }
+                  name={player.name}
+                  appearanceLabel={`${player.nativeOutfit ? tr("Secured outfit") : tr("Game outfit")} · ${player.appearance.originTokenId ? tr("Original") : tr("Starter ghost")}`}
+                  level={hudLevel}
+                  progress={
+                    hudXp !== null && hudLevel !== null
+                      ? Math.max(
+                          0,
+                          Math.min(
                             100,
-                        ),
-                      )
-                    : null
-                }
-                detail={
-                  hudXp !== null && hudLevel !== null
-                    ? tr("{0} / {1} XP to level {2}", { 0: hudXp, 1: 100 * hudLevel ** 2, 2: hudLevel + 1 })
-                    : tr("Secure your explorer to keep progress")
-                }
-              />
-              {invisible.signer?.kind === "managed" && (
-                // The inbox pill shows only with new messages; this opens
-                // older conversations too (src/inbox/Inbox.tsx).
-                <div className="profile-tiles">
-                  <ProfileTile
-                    icon={ChatCircle}
-                    label={tr("Messages")}
-                    hint={tr("Private chats with explorers")}
-                    onClick={() =>
-                      window.dispatchEvent(new CustomEvent("questlayer:inbox-open", { detail: {} }))
-                    }
-                  />
-                </div>
-              )}
-              <CharacterJourney
-                refreshKey={`${player.id}:${player.xp}:${player.gold_u}`}
-                badges={
-                  <BadgeBook
-                    inline
-                    collapsible
-                    key={player.id}
-                    fix={fix}
-                    arena={arena}
-                    onConnectNear={() => void activateExplorer()}
-                  />
-                }
-              />
+                            ((hudXp - 100 * (hudLevel - 1) ** 2) /
+                              (100 * (hudLevel ** 2 - (hudLevel - 1) ** 2))) *
+                              100,
+                          ),
+                        )
+                      : null
+                  }
+                  detail={
+                    hudXp !== null && hudLevel !== null
+                      ? tr("{0} / {1} XP to level {2}", { 0: hudXp, 1: 100 * hudLevel ** 2, 2: hudLevel + 1 })
+                      : tr("Secure your explorer to keep progress")
+                  }
+                />
+                {invisible.signer?.kind === "managed" && (
+                  // The inbox pill shows only with new messages; this opens
+                  // older conversations too (src/inbox/Inbox.tsx).
+                  <div className="profile-tiles">
+                    <ProfileTile
+                      icon={ChatCircle}
+                      label={tr("Messages")}
+                      hint={tr("Private chats with explorers")}
+                      onClick={() =>
+                        window.dispatchEvent(new CustomEvent("questlayer:inbox-open", { detail: {} }))
+                      }
+                    />
+                  </div>
+                )}
+                <CharacterJourney
+                  refreshKey={`${player.id}:${player.xp}:${player.gold_u}`}
+                  badges={
+                    <BadgeBook
+                      inline
+                      collapsible
+                      key={player.id}
+                      fix={fix}
+                      arena={arena}
+                      onConnectNear={() => void activateExplorer()}
+                    />
+                  }
+                />
+              </div>
             </ScreenTabPanel>
           )}
           {settingsOpen && (
@@ -5347,7 +5377,7 @@ export default function App() {
               onClick={() => {
                 exploreAt.current = Date.now();
                 setMapCenter(null);
-                void loadWorld(arena ? HOME : position, arena, searchHere);
+                void loadWorld(arena ? demoHome() : position, arena, searchHere);
               }}
             >
               <MagnifyingGlass size={16} weight="bold" aria-hidden="true" />
