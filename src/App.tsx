@@ -453,6 +453,12 @@ export default function App() {
       .then((c) => {
         setVirtualLayer(c.layer?.layers?.[0] ?? null);
         setGameLayer(c.gameLayer ?? null);
+        // Until launch World opens the Test Layer; "?world=1" (from its picker) keeps World for good.
+        const g = c.gameLayer, key = "questlayer.stayWorld";
+        try {
+          if (/[?&]world=1/.test(location.search)) { localStorage.setItem(key, "1"); history.replaceState(null, "", location.pathname + location.hash); }
+          else if (g?.defaultTest && g.testLayerUrl && !localStorage.getItem(key)) location.replace(g.testLayerUrl);
+        } catch {}
         if (c.gameLayer?.test) document.documentElement.dataset.testLayer = "1";
       })
       .catch(() => {});

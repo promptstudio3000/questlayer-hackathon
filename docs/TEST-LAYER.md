@@ -10,6 +10,15 @@
 | Explorers | Temporary: a session lasts 4 hours | Permanent |
 | Network | **Testnet only.** Mainnet has no Test Layer and refuses `QL_LAYER=test` | Testnet now, mainnet later (with the other layers) |
 
+## Test Layer first until launch
+
+Until launch (Lubos, 13 Nov 2026) the main address opens the Test Layer. World's runtime.env sets
+`DEFAULT_TEST_LAYER=1` and `TEST_LAYER_ORIGIN=https://questlayer-test.promptstudio3000.com`. `/api/config`
+then reports `gameLayer.defaultTest`, and a visitor without a saved choice is sent to the Test Layer.
+In the Test Layer, the world picker (logo, top left) links to QuestLayer World with `?world=1`. That
+choice is saved on the device (`questlayer.stayWorld`), so World stays put from then on. There is no
+redirect while `TEST_LAYER_ORIGIN` is missing. Remove `DEFAULT_TEST_LAYER` at launch.
+
 ## How it is built
 
 Same code, one switch: `QL_LAYER=test` (server, `server/native/network.mjs`) and `VITE_QL_LAYER=test`
