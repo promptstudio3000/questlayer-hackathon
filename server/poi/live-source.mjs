@@ -28,7 +28,12 @@ export function livePoiQuery(cell) {
   const b = cellToBoundary(cell),
     lats = b.map((p) => p[0]),
     lngs = b.map((p) => p[1]);
-  const box = `(${(Math.min(...lats) - PAD_DEG).toFixed(5)},${(Math.min(...lngs) - PAD_DEG).toFixed(5)},${(Math.max(...lats) + PAD_DEG).toFixed(5)},${(Math.max(...lngs) + PAD_DEG).toFixed(5)})`;
+  return livePoiQueryBox([Math.min(...lats) - PAD_DEG, Math.min(...lngs) - PAD_DEG, Math.max(...lats) + PAD_DEG, Math.max(...lngs) + PAD_DEG]);
+}
+
+/** The same query for a [south, west, north, east] box (sample checks use a small one). */
+export function livePoiQueryBox([south, west, north, east]) {
+  const box = `(${south.toFixed(5)},${west.toFixed(5)},${north.toFixed(5)},${east.toFixed(5)})`;
   const parts = [
     `nwr[tourism]${box}`,
     `nwr[historic]${box}`,
