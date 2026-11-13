@@ -3219,5 +3219,12 @@
  "Choose a price between 1M and 1,000B QGOLD.": "Choisis un prix entre 1M et 1 000B QGOLD.",
  "Practice QGOLD is play money with no value.": "Le QGOLD d’entraînement est de l’argent fictif sans valeur.",
  "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "Un relecteur vérifie ta réponse, jusqu'à 3 essais. En commençant, tu gardes cette version de la quête. Aucune récompense en XP, objet ou QGOLD n'est prévue, et personne ne vérifie le GPS ni une visite sur place.",
- "The reward must be at least {0} QGOLD per completion.": "La récompense doit être d’au moins {0} QGOLD par réalisation."
+ "The reward must be at least {0} QGOLD per completion.": "La récompense doit être d’au moins {0} QGOLD par réalisation.",
+ "+{0} XP · noted for other explorers": "+{0} XP · noté pour les autres explorateurs",
+ "Answer · +{0} XP": "Répondre · +{0} XP",
+ "No more XP for tips today.": "Plus d’XP pour les conseils aujourd’hui.",
+ "Noted; the NPC checks it before telling anyone.": "Noté ; le PNJ vérifie avant de le répéter.",
+ "Your answer helps other explorers · +{0} XP for a new tip": "Ta réponse aide les autres explorateurs · +{0} XP pour un nouveau conseil",
+ "Your answer…": "Ta réponse…",
+ "{0} is typing": "{0} écrit"
 }

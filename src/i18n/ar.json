@@ -3219,5 +3219,12 @@
  "Choose a price between 1M and 1,000B QGOLD.": "اختر سعراً بين 1M و 1,000B QGOLD.",
  "Practice QGOLD is play money with no value.": "QGOLD التدريبي مال لعب بلا قيمة.",
  "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "يراجع مدقّق إجابتك، حتى 3 محاولات. عند البدء تُحفظ لك هذه النسخة من المهمة. لا توجد مكافأة XP أو عنصر أو QGOLD، ولا أحد يتحقق من GPS أو من زيارة فعلية.",
- "The reward must be at least {0} QGOLD per completion.": "يجب أن تكون المكافأة {0} QGOLD على الأقل لكل إنجاز."
+ "The reward must be at least {0} QGOLD per completion.": "يجب أن تكون المكافأة {0} QGOLD على الأقل لكل إنجاز.",
+ "+{0} XP · noted for other explorers": "+{0} XP · سُجّل للمستكشفين الآخرين",
+ "Answer · +{0} XP": "أجب · +{0} XP",
+ "No more XP for tips today.": "لا مزيد من XP للنصائح اليوم.",
+ "Noted; the NPC checks it before telling anyone.": "سُجّل؛ ستتحقق الشخصية منه قبل أن تخبر أحدًا.",
+ "Your answer helps other explorers · +{0} XP for a new tip": "إجابتك تساعد المستكشفين الآخرين · +{0} XP لنصيحة جديدة",
+ "Your answer…": "إجابتك…",
+ "{0} is typing": "{0} يكتب"
 }

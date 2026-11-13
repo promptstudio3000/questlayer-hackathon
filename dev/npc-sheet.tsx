@@ -28,6 +28,7 @@ const reply = {
   ],
   source: "near-ai",
   note: undefined,
+  mission: { topic: "pub", ask: "Tell me, friend: where is the best pub around here?", answered: false, xp: 30, left: 3 },
   npc: { id: "x", name: model === "pilgrim" ? "Ráda the Pilgrim" : model, title: "Wanderer with errands", archetype },
 };
 const realFetch = window.fetch;
@@ -37,6 +38,8 @@ window.fetch = async (input, init) => {
   await new Promise((r) => setTimeout(r, 150));
   let body: unknown = reply;
   if (url.endsWith("/talk")) body = { ...reply, say: "Good question! Try the fountain.", emote: "think" };
+  if (url.endsWith("/mission"))
+    body = { outcome: "new", say: "Díky! Na Spilce si zapíšu a povím to dalším.", xp: 30, mission: { ...reply.mission, answered: true, left: 2 } };
   if (url.endsWith("/keeper")) body = { lines: ["Vault: 2.000 NEAR", "Pending yield: 0.004 NEAR"], stake: null };
   return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
 };
@@ -47,4 +50,4 @@ const encounter: ActorEncounter = {
   menu: [],
   actor: { id: "x", kind: "npc", archetype, name: reply.npc.name, title: reply.npc.title, model, segments: [] },
 };
-createRoot(document.getElementById("root")!).render(<NpcSheet actorId="x" encounter={encounter} onClose={() => {}} />);
+createRoot(document.getElementById("root")!).render(<NpcSheet playerId="fixture-player" draftRealm="fixture-world" actorId="x" encounter={encounter} onClose={() => {}} />);

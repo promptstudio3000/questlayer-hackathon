@@ -403,8 +403,8 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "actor-dialog",
     status: "live",
-    updated: "2026-11-11",
-    sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/come-back.ts", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs"],
+    updated: "2026-11-13",
+    sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/come-back.ts", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs", "server/npc/lore.mjs", "server/npc/agents.mjs", "src/NpcChat.tsx", "docs/NPC-MEMORY.md"],
     blocks: [
       { h: "Who walks the map" },
       {
@@ -428,6 +428,16 @@ export const CHAPTERS: Chapter[] = [
           "The full menu, active tasks, trader and keeper surfaces and the chat input sit under More (folded on a phone, open on desktop).",
           "Unsent NPC messages are kept as local drafts per explorer, world and actor; they never store tokens or prove anything.",
           "Nearby Open cues only open the encounter; the server still checks location, timing and availability.",
+        ],
+      },
+      { h: "NPC missions and shared memory" },
+      {
+        list: [
+          "Every NPC has its own mission card and asks one question about the place: the best pub, where to eat, what is worth seeing, a hidden corner or the best view. **Answer** opens chat mode.",
+          "NEAR AI turns a useful answer into a short neutral tip for that city (or map cell in the World). Other explorers who ask the NPCs get the best tips back: \"explorers tell me…\". Nobody sees who said what.",
+          "A new tip pays **30 XP**, confirming a known tip **10 XP**. At most **3 rewarded answers a day**, one per NPC, and the XP counts toward the daily location XP limit.",
+          "Answers with links, contacts, personal details, insults or attempts to change the NPC's rules are refused before any AI sees them, and the tip is checked again afterwards. Without AI an answer waits unseen and pays nothing.",
+          "Plzeň starts with a hand-checked set of tips. An optional Wikipedia lookup (off unless the host turns it on) adds sights near an NPC; it sends only map coordinates, never what a player wrote.",
         ],
       },
       { h: "Monsters" },

@@ -3219,5 +3219,12 @@
  "Choose a price between 1M and 1,000B QGOLD.": "Выбери цену от 1M до 1 000B QGOLD.",
  "Practice QGOLD is play money with no value.": "Тренировочный QGOLD — игровые деньги без ценности.",
  "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "Ответ проверяет рецензент, до 3 попыток. При старте за тобой сохраняется эта версия квеста. Награда в XP, предметах или QGOLD не назначена, GPS и личное посещение никто не проверяет.",
- "The reward must be at least {0} QGOLD per completion.": "Награда должна быть не меньше {0} QGOLD за одно выполнение."
+ "The reward must be at least {0} QGOLD per completion.": "Награда должна быть не меньше {0} QGOLD за одно выполнение.",
+ "+{0} XP · noted for other explorers": "+{0} XP · записано для других исследователей",
+ "Answer · +{0} XP": "Ответить · +{0} XP",
+ "No more XP for tips today.": "Сегодня за советы XP больше нет.",
+ "Noted; the NPC checks it before telling anyone.": "Записано; персонаж проверит, прежде чем рассказывать.",
+ "Your answer helps other explorers · +{0} XP for a new tip": "Твой ответ поможет другим исследователям · +{0} XP за новый совет",
+ "Your answer…": "Твой ответ…",
+ "{0} is typing": "{0} печатает"
 }
