@@ -107,6 +107,11 @@ type Props = {
    * Omitted, every section is reachable from the inner navigation.
    */
   section?: "quests" | "creators";
+  /**
+   * Set when one quest opens on its own from the map (Lubos, 13 Nov 2026):
+   * the header button closes the dialog instead of going back to the list.
+   */
+  onClose?: () => void;
 };
 type Point = { lat: number; lng: number };
 type Loaded = {
@@ -346,6 +351,7 @@ function CreatorCommunitySession({
   onGo,
   onRate,
   section: screenSection,
+  onClose,
 }: Props) {
   const client = useMemo(
     () => injected || createCreatorClient({ playerId: player.id }),
@@ -800,6 +806,7 @@ function CreatorCommunitySession({
                 client={client}
                 onGo={onGo}
                 onRate={onRate}
+                onClose={onClose}
               />
             )}
             {view.page === "mine" && (
@@ -1317,11 +1324,14 @@ function QuestHero({
   art,
   onBack,
   backLabel,
+  close = false,
 }: {
   photo?: string;
   art: ArtKind;
   onBack: () => void;
   backLabel: string;
+  /** In the map dialog the button closes it (X), not back to a list. */
+  close?: boolean;
 }) {
   const [broken, setBroken] = useState(false);
   const file = art === "story" ? "community" : art;
@@ -1333,7 +1343,7 @@ function QuestHero({
         <img className="qd-hero-art" src={mapKitUrl(`quests/${file}.png`)} width={96} height={96} alt="" draggable={false} />
       )}
       <button type="button" className="qd-back" aria-label={backLabel} title={backLabel} onClick={onBack}>
-        <ArrowLeft size={22} aria-hidden="true" />
+        {close ? <X size={22} weight="bold" aria-hidden="true" /> : <ArrowLeft size={22} aria-hidden="true" />}
       </button>
       <span className="qd-kind">{kindLabel(art)}</span>
     </div>
@@ -1357,6 +1367,7 @@ function QuestDetail({
   client,
   onGo,
   onRate,
+  onClose,
 }: {
   playerId: string;
   data: Loaded;
@@ -1370,6 +1381,7 @@ function QuestDetail({
   onGo?: (target: QuestMapTarget) => void;
   /** Keeps a saved rating on chain as well; runs in the background. */
   onRate?: (questId: string, stars: number) => void;
+  onClose?: () => void;
 }) {
   const quest = data.quest,
     part = data.participation;
@@ -1400,8 +1412,9 @@ function QuestDetail({
       <QuestHero
         photo={photo}
         art={art}
-        backLabel={part && !quest ? tr("Your started quests") : tr("Creator quests")}
-        onBack={() => navigate({ page: part && !quest ? "participations" : "community" })}
+        backLabel={onClose ? tr("Close") : part && !quest ? tr("Your started quests") : tr("Creator quests")}
+        close={!!onClose}
+        onBack={onClose || (() => navigate({ page: part && !quest ? "participations" : "community" }))}
       />
       <div className="qd-head">
         <h3>{title}</h3>

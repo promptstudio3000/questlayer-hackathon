@@ -173,7 +173,7 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "phone-hud",
     status: "live",
-    updated: "2026-11-11",
+    updated: "2026-11-13",
     sources: ["docs/ARCHITECTURE.md", "docs/GAME-RULES.md", "docs/SOURCES-AND-INTEGRATIONS.md", "README.md", "server/index.mjs", "src/main.tsx", "src/App.tsx", "src/DemoControls.tsx", "src/useDemoWalk.ts", "src/MapSurface.tsx", "src/nearby-action.ts", "src/Dialog.tsx", "src/QuestBrief.tsx", "src/activity-view.ts", "src/GameIntro.tsx", "src/learning-store.ts", "src/activity-help.ts", "src/FirstSession.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx", "src/zone-presence.ts", "src/ZonePresence.tsx", "src/MapSettings.tsx", "src/SettingsScreen.tsx", "src/MapActions.tsx", "src/InfoTip.tsx", "src/PotRow.tsx", "src/useHudCard.ts", "src/screens.tsx", "src/nearby-list.ts"],
     blocks: [
       { h: "Where everything lives" },
@@ -190,10 +190,14 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "One dismissible objective holds the next action. Confirmed results, recovery notices and the first equipment step come before nearby suggestions.",
-          "One tap on a quest (in Nearby, in a zone, from an NPC or from Today's board) goes straight to the map: the target is marked, a direction line points to it, other map content dims, and the X on the target chip clears it. No reward is reserved or claimed by choosing. At the place the same tap opens one confirm button. A plain map point (a tour stop, for example) can be the target too: it gets a pulsing ring and the same chip with distance and X, and clears itself within 15 m.",
+          "One tap on a quest (in Nearby, in a zone, from an NPC or from Today's board) goes straight to the map: the target is marked, a direction line points to it, other map content dims, and the X on the target chip clears it. The line shows only for a quest or place you started yourself: the chip under the header reads **Guiding you to** with its name, and its X ends the guidance. The nearest-discovery card at the bottom is only a suggestion and draws no line. No reward is reserved or claimed by choosing. At the place the same tap opens one confirm button. A plain map point (a tour stop, for example) can be the target too: it gets a pulsing ring and the same chip with distance and X, and clears itself within 15 m.",
+          "Walking into a zone greets you for a few seconds: **Welcome to** with the zone's name and how many quests wait there, once per visit. Then the name stays under the QuestLayer button as plain words over the map (no card); a tap opens the zone dialog. It never starts a quest by itself.",
+          "While you walk, the camera that follows you moves closer behind you and steps back a few seconds after you stop. Your own zoom is the level it returns to; with reduced motion on it does not move.",
+          "**Actions** sits in the bottom right corner on every map (Test Layer, GotchiGO and MetaLayer): a round purple button with a white rim and the word ACTIONS under its icon, bigger on desktop. One tap fans out notes, mood, tasks, Secrets and, for creators, new quests.",
+          "When a quest, find or character is in reach, the **Open …** button at the bottom gets a gold rim that gently pulses; with reduced motion on, the rim stays and the pulse is off.",
           "A zone dialog is the title, one row of icon facts (tier, open window, done today, XP, QGOLD and Auras left) and a list of one-tap quests.",
           "Notes, shouts and topics sit on the map as closed icons; a tap opens the text, a second tap opens the thread and the X folds it again.",
-          "Only game elements sit on the map. Community quests, player tasks and Secrets have no map markers; they are reached from Community and Nearby.",
+          "Quests made by players stand out on the map: a bigger round pin with a pink rim, the creator's photo (or the quest art) and the title under it; a tap opens just that quest in a dialog over the map (photo, Go, rating and discussion), and the X closes it. The Community screen with its tabs opens only from its own button; the creator's name in the dialog leads there. Quests that start on the same spot fan out side by side. Player tasks and Secrets have no map markers; they are reached from Community and Nearby.",
           "Each step shows its requirement (location, footprint, question) before confirmation. A minimum distance between stops is never described as a walking route; an unknown duration stays unknown.",
           "The confirmed result replaces the quest overlay; it is never stacked or repeated. Receipts, proofs and optional share actions sit under Learn more.",
           "Browsing Explore never replaces the active adventure; closing the list restores it and its server checkpoint.",
@@ -306,12 +310,12 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "day-clock",
     status: "live",
-    updated: "2026-11-11",
+    updated: "2026-11-13",
     sources: ["docs/WORLD-GENERATION.md", "docs/DEMO-ZONES.md", "server/demo-zones.mjs", "docs/LANDMARK-ERRANDS.md", "docs/DAILY-BOARD.md", "docs/QUEST-TEMPLATES.md", "server/world-planner.mjs", "server/poi-quests.mjs", "server/landmark-clue.mjs", "server/npc/routes.mjs", "src/DailyBoard.tsx", "src/actors-layer.ts", "src/ZoneActivities.tsx", "src/zone-landmarks.ts", "server/spatial/organic-shape.mjs", "src/LockedZone.tsx"],
     blocks: [
       { h: "City zones" },
       {
-        p: "A reviewed city gets six citywide zone slots a day: varied, non-overlapping polygons that need real walking between them. A zone shows a tall 3D totem of its type, a translucent wall, an aura on the ground and the loot it holds. Rarer zones open for a shorter window, with a countdown everyone sees.",
+        p: "A reviewed city gets six citywide zone slots a day: varied, non-overlapping polygons that need real walking between them. A zone shows a tall 3D totem of its type, a translucent wall, an aura on the ground and the loot it holds. The colour names the tier: **Tier 1 green, Tier 2 yellow, Tier 3 red**. Tier 2 and Tier 3 zones keep their full wall and colour all day, also before and after their short open window, with the countdown on the chip; only a zone you cleared steps back. Rarer zones open for a shorter window, with a countdown everyone sees.",
       },
       {
         table: {
@@ -326,7 +330,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**Tap the altar** in the middle of a zone (or its pin) to open the zone detail: whether it is open now or when it opens, how many of today's activities you have done, the XP, QGOLD and chest Auras still to win, and when the zone gets new activities and rewards (the next local midnight, when the daily world swaps).",
-          "**The round icons floating inside a zone** are the chest Auras its chest can hold today (ring colour = rarity) and a gold coin when an activity there pays QGOLD. Tap one to see what it is and jump to the zone's activities. They disappear once the zone is closed or cleared; the zone itself stays on the map all day with a low, dimmed wall and the chip “Closed · new zones tomorrow”.",
+          "**The round icons floating inside a zone** are the chest Auras its chest can hold today (ring colour = rarity) and a gold coin when an activity there pays QGOLD. Tap one to see what it is and jump to the zone's activities. They disappear once the zone is closed or cleared; the zone itself stays on the map all day with the chip “Closed · new zones tomorrow”: a Tier 1 or cleared zone with a low, dimmed wall, a Tier 2 or Tier 3 zone still in full colour.",
         ],
       },
       {
@@ -339,7 +343,7 @@ export const CHAPTERS: Chapter[] = [
       { viz: "quest-kinds" },
       {
         list: [
-          "**POI quests:** every H3 res-7 cell (about 5 km²) holds up to 6 a day, at least 250 m apart, from checked public places; at most 2 are category hunts (visit any 3 cafés). Open 08:00–20:00 local, rotating every 72 h. XP only: 40 visit, 90 hunt, 60 chest (one chest per cell and day). An empty cell says Nothing here yet.",
+          "**POI quests:** every H3 res-7 cell (about 5 km²) holds up to 6 a day, at least 250 m apart, from checked public places; at most 2 are category hunts (visit any 3 cafés). Open 08:00–20:00 local (all day on the Test Layer), rotating every 72 h. After closing time a player who did none of them reads that quests here are closed for today. XP only: 40 visit, 90 hunt, 60 chest (one chest per cell and day). An empty cell says Nothing here yet.",
           "**Landmark clues:** up to 2 per cell and day; the answer is a Wikidata fact. One answer per player: 70 XP right, 20 XP wrong.",
           "**Errands:** each quest giver hands out one a day: visit a place, come back for a fresh encounter. 40 XP, +10 for a right clue. When every step is done, the NPC carries a gold **Report back** sign until the turn-in.",
           "**Guardians:** a zone guardian stands on its zone's chest. The chest answers `423 GUARDED` until you win; the win drops the chest right there and **Open the chest** points the map at it.",
@@ -403,8 +407,8 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "actor-dialog",
     status: "live",
-    updated: "2026-11-11",
-    sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/come-back.ts", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/actors/poi-file-source.mjs", "server/npc/service.mjs"],
+    updated: "2026-11-13",
+    sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/come-back.ts", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/actors/poi-file-source.mjs", "server/npc/service.mjs", "server/npc/lore.mjs", "server/npc/agents.mjs", "src/NpcChat.tsx", "docs/NPC-MEMORY.md", "server/data/npc-lines.json"],
     blocks: [
       { h: "Who walks the map" },
       {
@@ -424,10 +428,23 @@ export const CHAPTERS: Chapter[] = [
       { h: "Encounters" },
       {
         list: [
-          "A greeting shows up to two current quest offers with a compact portrait; tapping one calls the real accept endpoint and, once confirmed, returns to the map guided to the first stop.",
-          "The full menu, active tasks, trader and keeper surfaces and the chat input sit under More (folded on a phone, open on desktop).",
+          "An encounter is a portrait and three tabs, one job each. **Talk** is the conversation: the greeting and the NPC's own question arrive as chat messages, **Answer** under the question turns your next message into the answer, anything else is ordinary chat.",
+          "**Tasks** holds everything the NPC offers (quests, errands, trades, rolls), rewards ready to collect and the tasks you are doing for it. Tapping an offer calls the real accept endpoint and, once confirmed, returns to the map guided to the first stop. A reward to collect or a trader's counter opens on Tasks, the keeper on Vault.",
+          "**Profile** tells who the character is (its story and what it likes) and lists up to 12 **places it knows** from the shared memory of the place, nearest first, with the distance from the NPC.",
           "Unsent NPC messages are kept as local drafts per explorer, world and actor; they never store tokens or prove anything.",
           "Nearby Open cues only open the encounter; the server still checks location, timing and availability.",
+        ],
+      },
+      { h: "NPC missions and shared memory" },
+      {
+        list: [
+          "Every NPC has its own mission card and asks one question about the place in the Talk tab: the best pub, where to eat, what is worth seeing, a hidden corner or the best view.",
+          "NEAR AI turns a useful answer into a short neutral tip for that city (or map cell in the World). Other explorers who ask the NPCs get the best tips back: \"explorers tell me…\". Nobody sees who said what.",
+          "A new tip pays **30 XP**, confirming a known tip **10 XP**. At most **3 rewarded answers a day**, one per NPC, and the XP counts toward the daily location XP limit.",
+          "Answers with links, contacts, personal details, insults or attempts to change the NPC's rules are refused before any AI sees them, and the tip is checked again afterwards. Without AI an answer waits unseen and pays nothing.",
+          "Every NPC has its own voice: a personality card and its own lines for greetings, small talk, jokes and \"I don't know\". When the AI is off or busy the NPC still answers in character and points to explorers' tips when asked about places.",
+          "Plzeň starts with a hand-checked set of tips with map positions. An optional Wikipedia lookup (off unless the host turns it on) adds sights near an NPC with their positions; it sends only map coordinates, never what a player wrote.",
+          "A tip that names a place with a known position shows its distance in the NPC's Profile; a place without one is listed without a distance.",
         ],
       },
       { h: "Monsters" },
@@ -509,8 +526,8 @@ export const CHAPTERS: Chapter[] = [
       { viz: "aura-secure" },
       {
         list: [
-          "Chest, roll and level Auras are secured automatically: the device key signs `redeem_aura` and the relayer pays gas. A worn Aura waits until it is taken off.",
-          "Selling lists the Aura on NEAR Intents (see the Intents chapter). A 2 % NEP-199 royalty goes to the treasury on outside marketplaces such as Mintbase.",
+          "Chest, roll and level Auras are secured automatically: the device key signs `redeem_aura` and the relayer pays gas. A worn Aura is secured too and put straight back on (`equip_aura`), and the explorer record it needs (`mint_avatar`) is created silently as soon as the explorer owns an Aura, so nothing has to be tapped.",
+          "Selling lists the Aura on NEAR Intents (see the Intents chapter). The secure account window asks to approve the sale first, right after the Sell tap; only then does the Aura move to the verifier, so a declined sale leaves it in the collection. A 2 % NEP-199 royalty goes to the treasury on outside marketplaces such as Mintbase.",
           "Planned: trading real Aavegotchi wearables through the Aavegotchi marketplace and its engine. Today wearables on the map are free clones and originals stay in the wallet.",
         ],
       },
@@ -556,7 +573,7 @@ export const CHAPTERS: Chapter[] = [
           "Signing in with an ETH wallet (or linking one) reads its Aavegotchis on Base. You are dressed in the one with the highest rarity score (BRS) unless you chose the starter ghost; Inventory → Wardrobe lists them, best first, to switch in one tap.",
           "The wallet is re-read every few minutes while you play; a gotchi that left the wallet is taken off.",
           "Restyle your gotchi with anything you own (map clones and wallet originals). The outfit is a look in the game only and changes nothing on Base.",
-          "**3D:** a Settings switch turns 3D characters on. The official Aavegotchi renderer draws a restyled look (at most once per 15 minutes per look, 40 looks an hour); a new combination shows in 2D until it is ready. Textures are shrunk to 512 px so every owned gotchi fits a phone.",
+          "**3D:** a Settings switch turns 3D characters on. The official Aavegotchi renderer draws a restyled look (at most once per 15 minutes per look, 40 looks an hour); a new combination shows in 2D until it is ready. Once your 3D character is on the map it stays 3D while a find, an NPC or a zone sheet is open; if the phone drops the 3D view it tries again on its own. Textures are shrunk to 512 px so every owned gotchi fits a phone.",
         ],
       },
       { h: "Explorer cards and waves" },
@@ -574,9 +591,9 @@ export const CHAPTERS: Chapter[] = [
         table: {
           head: ["Tab", "What it holds"],
           rows: [
-            ["Character", "Avatar, level and XP, your totals (finds, quests, tasks, monsters, wearables, badges, QGOLD on your account), Badges, a Messages tile for the inbox, and **Your story**: what happened, newest first (`GET /api/me/journey`)"],
+            ["Character", "Avatar, level and XP, your totals (finds, quests, tasks, monsters, wearables, badges, QGOLD on your account), Badges, a Messages tile for the inbox, and **Your story**: what happened, newest first (`GET /api/me/journey`). On a wide screen the avatar fills the left column with level and totals beside it; phones keep one column"],
             ["Stake", "One screen (Earnings was merged in on 12 Nov). On top, three small numbers: **your QGOLD** (with what the next payout adds), **QGOLD on the map today** and, once you have staked, **from your stake** (the yield kept for you). The page shows at once and fills its numbers as the chain answers: the tier ladder with the **yield share to the prize pool** (25 / 50 / 100 %) right under it, then a **tier choice** (Staker 2B, Tier 2 10B, Tier 3 50B QGOLD; picking Tier 2 or 3 sets the yield share to 100 %, and a smaller share raises the amount, because tiers count stake × share) and one **Stake** button for the chosen amount. The first tap sets up your personal vault (a one-time setup fee that is not returned), the next tap stakes; each money step asks for one Yes in a small QuestLayer confirmation window; when staking is not possible yet (no explorer account, too little test NEAR), the button opens a **Why you can't stake yet** dialog instead of an error: the same one-line dialog as in the Market, with one main button (use your QGOLD, get test NEAR or connect a NEAR wallet, which then pays the stake). There is **one stake per explorer**: afterwards the only action is **Withdraw** (about 1–7 days, 4 epochs; the game moves the unlocked NEAR back and you withdraw it to your balance). Once you have staked, a collapsed **Your vault** shows the vault address, owner, validator, staked NEAR and your yield share. Payment receipts live in **Settings → Receipts**. Stake amounts, tier requirements and locked-zone prices read in the same QGOLD as rewards (2 NEAR shows as 2B QGOLD); the payment itself still leaves in NEAR and the signing window shows that."],
-            ["Settings", "Its own sheet behind the **gear** in the top right corner, not a Profile tab (13 Nov). Four short parts: **Map** (city demo or GPS, My location, Full map, City overview, Globe, Turn the map with me, 3D character), **Game** (the helper switch for Pip or first-time tips, Show me to nearby explorers, language, sound, vibration, reduce motion), **Help** (How to play, Ask a question, **Game economy**, which explains the game in four illustrated steps (walk, collect, stake, unlock) and carries the same stake form as the Stake tab, with no chain details: those are on [Treasury](/treasury) and [Economy](/economy)) and **Account** (save the explorer with a passkey, the NEAR wallet with its 12 words, Sign out, which asks once because an explorer without a passkey or words cannot come back). Everything technical waits under one folded **Advanced**: linked NEAR and Ethereum wallets, devices, the on-chain feed, receipts and the developer reward-ledger switch. Reference links close the sheet"],
+            ["Settings", "A drawer that slides in from the right behind the **gear** in the top right corner, not a Profile tab (13 Nov); a strip of the map stays visible beside it and a tap there closes it. Four short parts: **Map** (city demo or GPS, My location, Full map, City overview, Globe, Turn the map with me, 3D character), **Game** (the helper switch for Pip or first-time tips, Show me to nearby explorers, language, sound, vibration, reduce motion), **Help** (How to play, Ask a question, **Game economy**, which explains the game in four illustrated steps (walk, collect, stake, unlock) and carries the same stake form as the Stake tab, with no chain details: those are on [Treasury](/treasury) and [Economy](/economy)) and **Account** (save the explorer with a passkey, the NEAR wallet with its 12 words, Sign out, which asks once because an explorer without a passkey or words cannot come back). Everything technical waits under one folded **Advanced**: linked NEAR and Ethereum wallets, devices, the on-chain feed, receipts and the developer reward-ledger switch. Reference links close the sheet"],
           ],
         },
       },
@@ -613,7 +630,7 @@ export const CHAPTERS: Chapter[] = [
           "**Shouts** are short paid bubbles for up to 7 days; a **topic** becomes free for good once 6 different players wrote in it (see Fees and spending). The game checks your QGOLD before anything is paid: if it does not cover the price, you see **Not enough QGOLD in your account** and nothing is taken.",
           "**Keep on NEAR Social** saves a message as your own public record in one tap; the game covers the small storage cost the first time.",
           "**Community places** are free recommendations: nearest first within 10 km, each as a card with a large coloured picture of its kind (view, nature, history, art, food & drink, hidden gem, walk & play) and its distance, kind chips to filter and sorting. Three reports from different players hide a place until a moderator looks. No links, contacts or private addresses; no QGOLD or XP moves.",
-          "Demo maps and the real GPS map keep separate messages and places. The test world seeds chat messages around náměstí Republiky and in towns 15–85 km away (Rokycany, Klatovy, Domažlice, Prague), so the distance filter has something to show.",
+          "Demo maps and the real GPS map keep separate messages and places. The test world seeds chat messages around náměstí Republiky and in towns 15–85 km away (Rokycany, Klatovy, Domažlice, Prague), so the distance filter has something to show. Seeded messages fade like a player's: \"right now\" chatter after 1 day, tips after 1 week, and seeded shouts after their 7 days; the seed never brings them back.",
         ],
       },
       { h: "Quests, tasks and creators" },
@@ -622,7 +639,7 @@ export const CHAPTERS: Chapter[] = [
           "**Quests** is one compact list with filter chips: All, Near me (5 km), Following and Started. Each row shows the quest's pixel icon (visit, trail, chest or story), the creator's own avatar and name, the distance and type on one line, and the price or Free.",
           "**Tasks** lists the QGOLD tasks explorers post for each other in the same rows, with a type badge, who posted it, the reward and places left. **Post a task** takes three short steps; the reward is at least 100 QGOLD per completion and the form says so if it is lower.",
           "**Creators** shows each creator's avatar (their map character), short bio, quests and followers, and a Follow button. Tapping a creator opens their profile as a dialog: level, quests, followers, finished runs and creator XP, a large Follow button, an (i) button with the safety notes and Block, and their quests in the same rows as the Quests list.",
-          "The test world adds demo-bot creators, quests and example tasks labelled demo-bot; example tasks hold no QGOLD and cannot be taken.",
+          "The test world adds demo-bot creators, quests and example tasks labelled demo-bot; example tasks hold no QGOLD and cannot be taken. Each demo-bot quest carries a credited photo of its real place (Wikimedia Commons, CC BY-SA).",
         ],
       },
     ],
@@ -670,36 +687,66 @@ export const CHAPTERS: Chapter[] = [
   {
     id: "virtual-layer",
     group: "play",
-    title: "The Layer (virtual voxel world)",
-    tldr: "The name says it: every community will build its own **layer**, its own world with its own rules, on the same stake-to-play mechanics and QGOLD. The first is the **Space Layer**, a shared 3D voxel world on testnet with a free home plot for every explorer.",
+    title: "MetaLayer",
+    tldr: "Meet other Aavegotchi explorers on a shared voxel square, build together and discover Crystal Hollow. Follow Nera’s five-chapter Quiet Beacon story: extraction, signal clues, a shared build and a world finale. Resource and action receipts persist; MetaGold and chain issuance await integration.",
     keyFacts: [
-      ["16 × 16", "free home plot per explorer"],
-      ["10", "block types to build with"],
-      ["128 blocks", "range to see other explorers"],
-      ["0", "coins paid or spent in a layer yet"],
+      ["96 × 96", "shared central square"],
+      ["5 chapters", "authored Quiet Beacon story"],
+      ["15 minutes", "natural diamond renewal"],
+      ["0", "MetaGold or XP issued by this preview"],
     ],
     status: "partial",
-    updated: "2026-11-11",
-    sources: ["docs/LAYER.md", "server/layer/world.mjs", "server/layer/store.mjs", "server/layer/routes.mjs", "server/layer/layers.mjs", "src/layer/Layer.tsx", "src/layer/engine.ts", "src/WorldSwitcher.tsx"],
+    updated: "2026-11-13",
+    sources: ["docs/LAYER.md", "server/layer/world.mjs", "server/layer/store.mjs", "server/layer/routes.mjs", "server/layer/layers.mjs", "server/layer/expedition.mjs", "server/layer/expedition-world.mjs", "src/layer/Layer.tsx", "src/layer/engine.ts", "src/layer/Minimap.tsx", "src/WorldSwitcher.tsx", "server/layer/story.mjs", "server/layer/story-world.mjs", "server/layer/activity.mjs", "src/layer/StoryBoard.tsx", "src/layer/LayerActivity.tsx", "src/layer/PlacePanel.tsx", "src/layer/world-places.ts", "docs/METALAYER-INTEGRATION.md"],
     blocks: [
-      { h: "Space Layer today" },
-      {
-        list: [
-          "**Switch:** off unless the server runs with `LAYER_ENABLED=1` (never on mainnet). Then the logo opens a world picker with QuestLayer and the **Space Layer**.",
-          "**Play:** walk and jump through one shared 3D world generated from a seed. Every explorer gets a free 16 × 16 home plot in a settlement and builds with ten blocks; only the owner can change a plot. Light pillars lead to beacons that activate when you stand on them. Daily goals: 8 blocks built, 3 beacons.",
-          "**Explorers:** others within 128 blocks appear with name and a blocky outfit (six colour sets; an equipped Aura shows as a halo). Positions are kept in memory for 15 seconds and fast jumps are corrected.",
-          "**Storage:** SQLite tables for plots, changed blocks, edit receipts and beacon activations. Edits carry a request id, so a retry never applies twice. When the connection or the server fails, the blocks stay and the same request is retried; only a refusal (for example outside your plot) undoes them. Leaving the layer or closing the app still sends unsaved blocks. Others see a plot's new blocks within about 5 seconds. Virtual movement never counts as GPS.",
-        ],
-      },
-      { h: "Community layers (agreed, not active)" },
-      {
-        list: [
-          "Each community gets its own layer: its own seed, name and coin name. The first is Space Layer with the coin MINECOIN.",
-          "Every layer uses the QGOLD mechanics; its share of the daily staking yield follows what its players staked, and its coin pays for tasks made in the layer.",
-          "A layer can call its coin whatever it likes (MINECOIN, for example), but it is always the same coin: QGOLD, backed by the same vault, at the same rate R.",
-          "**None of this is active.** Nothing in a layer pays or costs anything yet: no coin balance, staking, treasury, task payment, XP or items.",
-        ],
-      },
+      { h: "First expedition" },
+      { list: [
+        "Enter from the world picker when the testnet host enables MetaLayer. Start on the public square. Everyone can build on its green areas; the central altar, crossings and walking floor stay protected.",
+        "Meet Keeper Nera beside the arrival path. Tap her or open the nearby action to accept the first expedition. Community also opens the board. Follow the cyan beam into Crystal Hollow and dig ten natural diamond blocks with a click or tap. The server checks mining duration, reach, exposed sight line and exclusive extraction. Decorative crystals do not count as ore.",
+        "The same resource block disappears for everyone. Natural diamonds renew after fifteen minutes, while dug stone corridors stay open. The backpack shows confirmed resources. Completion is saved once and survives reconnecting.",
+        "The minimap shares every explorer's discoveries. The atlas loads only the chosen window, so a distant journey never shrinks the central square. Return to the square is an explicit jump and reveals no line between the two places.",
+      ] },
+      { h: "Places and preview explorers" },
+      { list: [
+        "Physical quest boards mark Crystal Hollow, Basalt Quarry, the three signals, the trail marker and the central beacon. A nearby place replaces the compact objective with one contextual action; tap a visible guide or sign to read it. Distant and locked chapters explain the next step without claiming completion.",
+        "Nera offers a short independent tour of the treasury, workshop, cave entrance and garden. Validated visits save personal field-journal discoveries once, even before accepting the expedition. The journal and expanded atlas have a directory of all ten authored places.",
+        "The golden vault near the centre is an inactive treasury landmark, not collectible MetaGold. The backpack links to its status. No funded coins, spendable balance or token reward exists yet.",
+        "The local preview enables three labelled demo explorers: Tavi near arrival, Luma at the workshop and Omi in the cave. They are cosmetic demonstrations, never online accounts, reward recipients or part of the real nearby-player count. Reduced motion freezes their routes. The ordinary host shows them only when LAYER_DEMO_ACTORS=1 is explicitly enabled.",
+      ] },
+      { h: "The Quiet Beacon" },
+      { list: [
+        "Keeper Nera’s story continues after the first expedition. Visit Basalt Quarry and hold six natural basalt resources, then read the Spore Garden, Tide Arch and Star Observatory inscriptions in order. Choose each sign near its actual station; incorrect answers change no progress.",
+        "Build a trail marker at the outlined site: two spore stalk blocks with a lamp above. Manual building and the nearby template both work, and another explorer’s existing shared marker can satisfy the inspection. Templates never overwrite unrelated blocks or another explorer’s body.",
+        "Bring the expedition diamonds to the central beacon and tune it. The first completion lights the shared beam for everyone; personal story and field-journal completion remain independent. Materials are requirements, not currency spending. The preview grants no token, XP, NFT or badge for these chapters.",
+      ] },
+      { h: "Same platform, another game" },
+      { list: [
+        "MetaLayer uses the GotchiGO screen layout: the logo world picker and daily-goal chip top left, the avatar bubble (here with diamonds instead of QGOLD) and the gear top right, the stick bottom left, Actions bottom right, one objective card and the Explore / Inventory / Community bar. Only the game canvas and its actions change.",
+        "Actions sits in the bottom right corner like GotchiGO and fans out Talk, Mine, Build, Jump and Land and building. With a keyboard each has a shortcut shown beside its label: T talk, M mine, B build, Space jump, L land. Talk opens the place or person in front of the explorer, otherwise Keeper Nera.",
+        "The gear opens the same Settings sheet as GotchiGO. Its first group holds world tools (my location, shared atlas, central square, land and building, minimap) instead of GPS, city overview and globe. Game, Help and Account follow; account and backup open the platform Settings. Saved actions and chain references sit under Advanced, not in Community or the backpack.",
+      ] },
+      { h: "Controls and proof" },
+      { list: [
+        "Use the same accessible stick as the city demonstration: forward, back and turns, with Run and Jump. Click or tap a mine block to dig it: the explorer turns to it and swings the pickaxe until it breaks, and walking away or dragging the view stops. Pressing and holding works too. Hard rock outside the mines says where to dig. Choose Build to place on the square. Desktop right-click places a block. Modals keep movement keys for their own controls.",
+        "The first preview uses an Aavegotchi starter ghost and the equipped Aura. Full verified-original 3D outfits remain a renderer integration. Movement in MetaLayer never counts as real GPS evidence.",
+        "Block edits, discoveries, extraction receipts and resource inventories are stored in the dedicated MetaLayer module. This preview issues no QuestLayer items, XP or money. The Actions and NEAR proofs panel (Settings → Advanced) separates locally saved actions from verified chain references and offers the existing platform account feed as separately labelled history.",
+      ] },
+      { note: "The read-only verifier requires a reviewed MetaLayer testnet contract, recorder and code hash. It checks final execution, every receipt, receipt reachability, the action’s own layer/actor/evidence event, inclusion blocks and historical/current contract code. It submits no transaction and grants no ownership or rewards. The local preview has no activated contract or genuine MetaLayer chain proof.", tone: "warn" },
+      { h: "MetaGold, MetaXP, badges and land on NEAR" },
+      { list: [
+        "The MetaLayer contract (contracts/metalayer, testnet) holds MetaGold, this world's own NEP-141 coin, in its own treasury. The treasury grows only from funding: NEAR sent to fund, or QGOLD sent with ft_transfer_call, which converts one way (1 QGOLD unit = 1 MetaGold unit; 1 NEAR = 1,000,000,000 MetaGold). Nothing converts MetaGold back.",
+        "Story steps pay from the treasury once each: Crystal Hollow 20 MetaGold, 50 MetaXP and the Crystal Hollow badge; the quarry 20 MetaXP; each signal 5 MetaGold and 15 MetaXP; the trail marker 20 MetaXP; the beacon 60 MetaGold, 100 MetaXP and the Quiet Beacon badge; each found place 5 MetaXP; Nera's square tour (treasury, workshop, Crystal Hollow, Spore Garden) 5 MetaGold and 10 MetaXP. The whole story pays 100 MetaGold, exactly one parcel. Walking, mining and building pay nothing. A daily cap (100,000 MetaGold) and the treasury balance bound every payout; a step that does not fit waits for the next day. These amounts are testnet placeholders.",
+        "The game server sends steps with a recorder key that can call only award and record_batch. Each award emits the questlayer_metalayer action_recorded event with the action's hashed actor and evidence hash. MetaXP and badges are soulbound counters in the contract and never change city XP.",
+        "Parcels are 16 × 16 NFTs (NEP-171) bought with MetaGold (100 on testnet), which returns to the treasury. The central square and the parcels touching it are never sold. Parcels transfer freely.",
+        "Land and building in the backpack shows the parcel under the explorer: public, theirs, someone else's, or open with one Buy land button. The explorer's own account signs buy_parcel (a 0.02 NEAR storage deposit, unused part refunded). The server then reads the owner from the contract, and the owner may build anywhere on that parcel; nobody else can.",
+        "A player without a secured NEAR account keeps rewards waiting; the backpack shows them as on the way. Backpack and HUD show MetaGold instead of diamonds once the contract and the server's recorder key are installed; without the key (previews, tests) the world keeps diamonds. Escape closes MetaLayer sheets and never leaves the world.",
+      ] },
+      { h: "Accepted contract integration" },
+      { list: [
+        "MetaGold is the planned MetaLayer currency with its own treasury. Project funding, local receipts and actually received attributable yield will fund terrain coins and system quests. Player tasks reserve their poster's MetaGold in escrow.",
+        "QGOLD can convert into MetaGold in one direction. Private parcels will be 16 × 16 NFTs bought with MetaGold, freely transferable with their standing blocks. Their subsequent external sale permits an indirect value exit.",
+        "The target records the whole durable world, inventories, MetaXP, quests, community and settlements on NEAR. Reconstructing a fresh server from chain data is the acceptance gate. Contract, treasury and signing integration remains under review.",
+      ] },
     ],
   },
   // ----------------------------------------------------------------- world
@@ -716,8 +763,8 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "coverage-tiers",
     status: "live",
-    updated: "2026-11-11",
-    sources: ["docs/WORLDS-PLAN.md", "docs/POI-PIPELINE.md", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "docs/GLOBAL-WORLD-PREPARATION.md", "server/world-preparation/worker.mjs", "server/world-preparation/geography.mjs", "server/world-preparation/export.mjs", "server/world-preparation/collector.mjs", "server/world-preparation/launch-scope.mjs", "server/world-preparation/source-audit.mjs", "server/global-activities.mjs", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
+    updated: "2026-11-13",
+    sources: ["docs/WORLDS-PLAN.md", "docs/POI-PIPELINE.md", "scripts/poi/demo-cities.mjs", "scripts/poi/demo-capitals.json", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "docs/GLOBAL-WORLD-PREPARATION.md", "server/world-preparation/worker.mjs", "server/world-preparation/geography.mjs", "server/world-preparation/export.mjs", "server/world-preparation/collector.mjs", "server/world-preparation/launch-scope.mjs", "server/world-preparation/source-audit.mjs", "server/global-activities.mjs", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
     blocks: [
       { h: "Coverage tiers" },
       {
@@ -725,7 +772,7 @@ export const CHAPTERS: Chapter[] = [
           head: ["Tier", "What", "Content", "Money"],
           rows: [
             ["A · reviewed city", "Hand-checked city pack (Plzeň)", "Six city zones, cast NPCs, POI quests", "Funded NEAR days"],
-            ["B · auto city", "GeoNames towns ≥ 15,000 people (85 cities)", "Zones with an Unverified map notice, generic cast", "No funded NEAR days"],
+            ["B · auto city", "GeoNames towns ≥ 15,000 people in Czechia, Slovakia and Austria (about 160 cities) and demo cities abroad (28 from New York to Sydney, plus the capital of every country and every US state)", "Zones with an Unverified map notice, generic cast, POI quests, street coins", "No funded NEAR days"],
             ["C · street cell", "Every H3 res-7 cell", "Up to 6 POI quests, generic cast, cell zones", "Map rewards plan"],
           ],
         },
@@ -734,9 +781,12 @@ export const CHAPTERS: Chapter[] = [
       { viz: "poi-pipeline" },
       {
         list: [
-          "A weekly worker builds a SQLite file from OpenStreetMap (ODbL), Overture (CDLA-P-2.0) and Wikidata (CC0). The first Czech import held about 290,000 places, 198,000 of them quest-ready.",
+          "A weekly worker builds a SQLite file from OpenStreetMap (ODbL), Overture (CDLA-P-2.0) and Wikidata (CC0). The first Czech import held about 290,000 places, 198,000 of them quest-ready. Slovakia and Austria followed on 13 Nov: about 620,000 places in the three countries, 443,000 of them quest-ready.",
           "Every place is snapped within 40 m of a public path and kept 25 m from excluded areas (schools, private grounds, dangerous sites), with stable reason codes.",
           "The game reads the file read-only; a missing file simply means no POI quests.",
+          "The worker builds a country in tiles of about 28 × 18 km: each tile's places are snapped, merged and checked, written to the file, and released from memory. Memory therefore stays about the same for a small or a large country, so more countries can follow Czechia.",
+          "Demo cities abroad (New York, San Francisco, London, Berlin, Zürich, Lisbon, Singapore, Kuala Lumpur, Cochabamba, Paris, Zug, Amsterdam, Toronto, Mumbai, Bengaluru, Tokyo, Seoul, Taipei, Hong Kong, Buenos Aires, Chicago, Barcelona, Warsaw, Denver, Bangkok, Ho Chi Minh City, Lagos, Sydney): the same worker cuts an 8 × 8 km OpenStreetMap clip around a central square or park and builds POI quests, offline street paths and an auto city with Tier 1–3 zones from it. Zone prizes stay 0; street coins come only from the shared daily budget.",
+          "The same worker also prepares the capital of every country and of every US state (a 6 × 6 km clip each), plus the main city where a country splits its capital, such as La Paz, Abidjan or Istanbul.",
         ],
       },
       { h: "Daily preparation" },
@@ -751,7 +801,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "With a connected geographic catalog, a background worker prepares mapped zones and Atlas quests for today and tomorrow before players load them. Only a completely imported UTC day opens; an interrupted import resumes without duplicates.",
-          "Everywhere on Earth the normal street world takes over whenever no prepared day covers the spot. Outside Czechia its places come live from OpenStreetMap: one query per cell, the same taxonomy and safety filter as the import, kept for a week. `GLOBAL_STREET_FALLBACK=czechia` limits this to Czechia, `=off` disables it.",
+          "Everywhere on Earth the normal street world takes over whenever no prepared day covers the spot. Outside the imported countries (Czechia, Slovakia, Austria) its places come live from OpenStreetMap: one query per cell, the same taxonomy and safety filter as the import, kept for a week. `GLOBAL_STREET_FALLBACK=czechia` limits this to Czechia, `=off` disables it.",
           "Atlas visits and three-stop hunts use the normal GPS checks and give personal XP. Without a separately confirmed financial day they promise no money or item.",
           "The launch selection covers European and US extracts with national-capital footprints elsewhere (Russia, North Korea and Iran excluded). The first active phase is EU-only: all 27 member countries. Completing it never reports a complete planet.",
           "A bulk collector continues from verified map downloads to real polygon selection and isolated checks, and reports unsafe or oversized areas instead of dropping them. This is map-derived coverage, not field verification.",
@@ -961,7 +1011,7 @@ export const CHAPTERS: Chapter[] = [
     updated: "2026-11-13",
     sources: ["docs/QGOLD-VAULT.md", "docs/QGOLD-MARKET.md", "contracts/qgold/src/lib.rs", "server/qgold/keeper.mjs", "server/qgold/token-page.mjs"],
     blocks: [
-      { p: "**One coin, many names.** The game shows one name, QGOLD, everywhere, and every layer may give it its own name (Space Layer plans MINECOIN). Whatever the label, it is the same QGOLD token with the same backing and the same rate R." },
+      { p: "**One coin per game.** GotchiGO shows one name, QGOLD, everywhere. Another game on the platform may have its own coin: MetaLayer plans MetaGold with its own treasury, which QGOLD can later convert into one way. MetaGold is not active yet, so today QGOLD is the only coin that pays." },
       { p: "**One unit on screen (13 Nov).** Every screen counts QGOLD in its smallest unit, so **1 NEAR ≈ 1B QGOLD**: Stake, the map, [Treasury](/treasury) and [Economy](/economy) all show the same numbers. The vault's rate R is per whole token (1,000,000 units), so the pages show it per 1B QGOLD (about 1.02 NEAR today); the swap card reads \"1B QGOLD = … NEAR\" and takes amounts like 967.5M. Profile → Stake → On the map today and Treasury → Today on the map → Coins are the same number (the coins placed on today's map). Display only: the token, R and the economy are unchanged." },
       { h: "Actions" },
       {
@@ -1286,14 +1336,14 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "fair-play",
     status: "live",
-    updated: "2026-11-05",
+    updated: "2026-11-13",
     sources: ["docs/FAIR-PLAY.md", "docs/POI-SAFETY.md", "docs/SOCIAL-CONTROLS.md", "docs/MAP-NOTES-UI.md", "docs/MODERATION-AND-EVIDENCE.md", "server/fair-play.mjs"],
     blocks: [
       {
         list: [
           "Faster than about 15 km/h (on foot or by bike, `FAIR_PLAY_MAX_SPEED_KMH`) returns `422 IMPLAUSIBLE_MOVE` (wait capped at 2 h).",
           "XP caps: the claim still succeeds, extra XP is trimmed and the response says so.",
-          "Rate limits on sign-up and APIs; all quests sit on safety-filtered public places. A place the filter would once have sent to a human reviewer (church exterior, cemetery, memorial, skate park, unnamed place) is left out entirely: nobody reviews places by hand.",
+          "Rate limits on sign-up and APIs; all quests sit on safety-filtered public places. Places tagged or named as staff, members or residents only (for example \"Staff only\", \"Untuk Kakitangan Sahaja\", \"関係者以外\") never become quests. A place the filter would once have sent to a human reviewer (church exterior, cemetery, memorial, skate park, unnamed place) is left out entirely too: nobody reviews places by hand.",
           "Map notes, place messages, places and creator quests have reports, blocks and moderators.",
           "Money paths use database transactions with exactly-once ids; contracts keep their own invariants independent of the server.",
           "GPS can be spoofed: the server validates physical evidence, and the contracts bound what a compromised validator could do.",
@@ -1315,7 +1365,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "daily-jobs",
     status: "live",
     updated: "2026-11-12",
-    sources: ["docs/RUNTIME-RELIABILITY.md", "docs/PERFORMANCE-BUDGET.md", "docs/STATE-RECOVERY.md", "docs/OWNER-RUNBOOK.md", "docs/TEST-SEED.md", "docs/TEST-LAYER.md", "docs/GUIDED-TOUR.md", "docs/NEAR-RPC-CACHE.md", "docs/VPS-RELEASE-RUNNER.md", "scripts/release-runner.mjs", ".github/workflows/check.yml", "scripts/check-bundle-budget.mjs", "server/cli/tester-account.mjs"],
+    sources: ["docs/RUNTIME-RELIABILITY.md", "docs/PERFORMANCE-BUDGET.md", "docs/STATE-RECOVERY.md", "docs/OWNER-RUNBOOK.md", "docs/TEST-SEED.md", "docs/TEST-LAYER.md", "docs/GUIDED-TOUR.md", "docs/NEAR-RPC-CACHE.md", "docs/VPS-RELEASE-RUNNER.md", "scripts/release-runner.mjs", ".github/workflows/check.yml", "scripts/check-bundle-budget.mjs", "server/cli/tester-account.mjs", "server/spatial/demo-city.mjs", "src/demo-city.ts"],
     blocks: [
       { p: "A React + MapLibre client talks to one Node 24 service (systemd, Caddy). SQLite in WAL mode is the durable store with strict schema modules. Server-sent events push coins and quests to nearby players." },
       {
@@ -1340,8 +1390,8 @@ export const CHAPTERS: Chapter[] = [
           "Phone budget: first-load JS and CSS are capped; every big screen, this wiki included, loads lazily.",
           "English is the default language; other languages are opt-in dictionaries, checked on 390 px phones in CI.",
           "The testnet runs a removable test seed (bots, quests, community tasks, free Secrets); every seeded row has a `seed-` id. Starter kits for real explorers are off unless `TEST_SEED_KIT=1`.",
-          "A guided tour (helper Pip, top-right card) walks a new explorer through every quest type, encounter, trade and community action in Plzeň; each step ticks only from the game's own records (ledger actions, sponsored transactions, burns), and the end lists every transaction with its explorer link. Show me marks characters on the map for the explorer to walk up to, and opens screens such as the treasury vote right away. **Settings → Pip, your guide** switches the helper off and back on, also before the tour began.",
-          "Two worlds, one code: QuestLayer World is the real game, and the **Test Layer** (testnet only, its own service, database, signing vault and contract set, Test QGOLD shown with a TEST tag, 4-hour explorers) holds the bots, the seed content, the compact Plzeň zones and every feature under test. Mainnet refuses the Test Layer. Until launch the main address opens the Test Layer; its world picker switches to World, and the device remembers that choice.",
+          "A guided tour (helper Pip, top-right card) walks a new explorer through every quest type, encounter, trade and community action in Plzeň; each step ticks only from the game's own records (ledger actions, sponsored transactions, burns), and the end lists every transaction by a plain name (Chest opened, Aura secured) with its time and explorer link. A run counts only what was done since it began, and every page load starts the running tour at step 1 again. There are 21 steps: securing is automatic and has no step, the quest step is a trail (World has no clue quests), and the vote step ticks by looking at the treasury vote, since voting itself opens at level 3. Show me marks characters on the map for the explorer to walk up to, never targets a coin, find, chest or stop inside a zone the explorer cannot enter yet, and opens screens such as the treasury vote right away. On a phone the card folds to a small arrow with the distance while the explorer walks; inside Inventory, Shop and other panels Pip stays as a one-line strip; a step that costs more QGOLD than the explorer has says how much is missing. **Settings → Pip, your guide** switches the helper off and back on, also before the tour began.",
+          "Two worlds, one code: GotchiGO (the QuestLayer World server) is the real game, and the **Test Layer** (testnet only, its own service, database, signing vault and contract set, Test QGOLD shown with a TEST tag, 4-hour explorers) holds the bots, the seed content, the compact Plzeň zones and every feature under test. Mainnet refuses the Test Layer. Until launch the main address opens the Test Layer; its world picker switches to World, and the device remembers that choice. The Test Layer always opens in the Plzeň demo with the pad, wherever the visitor is; it follows GPS only after they tap Use GPS there. A city name in the address (for example /?newyork or /?city=Buenos Aires; case, spaces and diacritics do not matter) opens the same demo in that city instead, from the reviewed cities and the auto cities (Czech towns, the demo cities abroad and the capitals); an unknown name keeps Plzeň, and GotchiGO hands such an address to the Test Layer. GotchiGO's Demo switch opens the Test Layer instead of a local demo; Use GPS in its Map settings brings back GPS on a device that picked the demo earlier. Its map coins and finds are paid as Test QGOLD in rounds every few minutes, and an explorer's first coin also brings a one-time welcome of 300 Test QGOLD, so the tour's shop, shout, topic and task steps can be paid at any hour. Its POI quests stay open all day, and its NEAR Intents market trades the Test Layer's own Auras.",
           "A tester-account command line sets the owner test explorer's password, removes the old practice-QGOLD credit from explorers created before 10 November and retires duplicate test explorers (QGOLD 0, sessions revoked).",
           "A deploy reinstalls the separate signing-vault origin whenever its code or contract list changed.",
           "Releases and testnet operator jobs run on the VPS itself. A release runner follows the deploy branch every minute (build, tests, database backup, switch, automatic rollback) and runs queued operator jobs from an allowlist, one at a time, after a read-only plan; contract upgrades only with a WASM hash that matches the reviewed build. It refuses mainnet. Its public status is at `/api/release/status`.",

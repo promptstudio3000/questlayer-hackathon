@@ -13,7 +13,7 @@ WorkingDirectory=/var/lib/questlayer-poi
 Environment=NODE_ENV=production
 Environment=HOME=/var/lib/questlayer-poi
 Environment=POI_WORK_DIR=/var/lib/questlayer-poi
-Environment=WORLD_REGIONS=cz
+Environment=WORLD_REGIONS=cz,sk,at
 Environment=POI_KEEP_RELEASES=2
 Environment=DUCKDB_BIN=/opt/ps3000/apps/questlayer-hackathon/tools/duckdb
 # Optional overrides (WORLD_REGIONS, OVERTURE_RELEASE, POI_CLOSURES_FILE).

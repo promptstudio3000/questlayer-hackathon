@@ -123,8 +123,49 @@ map" notice, and no zone prize. Auto cities are never in native publication, and
 ## Adding a region
 
 Add an entry to `scripts/poi/regions.mjs` (Geofabrik URL, ISO country, bbox) and set `WORLD_REGIONS=cz,sk` in
-`poi.env`. Europe and the planet need the same stages with more disk; the per-stage memory stays bounded by the
-number of places, not by the number of paths.
+`poi.env`. Europe and the planet need the same stages with more disk; memory stays at one tile (see below), not
+at the size of the country.
+
+Imported countries (13 Nov 2026): `cz`, `sk`, `at` (`deploy/questlayer-poi.service` sets `WORLD_REGIONS=cz,sk,at`;
+an existing VPS keeps its installed unit, so set the same line in `poi.env`). Vienna and Bratislava are also demo
+city clips: a GeoNames place whose centre lies inside a demo city's clip is left to the demo city (`inside-demo-city`),
+and its own districts fold into it, so no second Vienna appears. Local check (cloud, openstreetmap.fr extracts plus
+the two clips): 599,701 OSM places, 621,641 rows (442,967 ok), 524 tiles, POI build peak 0.44 GB in 6.7 min, 0.55 GB
+file; auto cities 158 of 166 published, peak 1.58 GB in 10 min.
+
+## Tiled build
+
+`scripts/poi/build.mjs` builds a country in tiles (13 Nov 2026). Before, it held every place of the country in
+memory to snap it to the nearest public path: Czechia (about 580,000 OSM places and Overture candidates) reached
+2.8 GB of the worker's 3 GB cap, and Germany would need about ten times that.
+
+1. Every input is streamed once into a scratch SQLite file next to the output (`<release>.sqlite.stage`, deleted
+   at the end): places keyed by id with their tile, public path lines as raw float64 coordinates, exclusion areas,
+   Wikidata items and the street path pieces.
+2. A tile is a `POI_TILE_DEG` × `POI_TILE_DEG` degree square (default 0.25, about 28 × 18 km in Czechia). A place
+   belongs to the tile of its own coordinates. A path line or exclusion area is staged for every tile its bounding
+   box reaches plus a 60 m margin, so the 40 m snap and the exclusion test see exactly what a whole-country build
+   sees.
+3. Pass 1, tile by tile: snap places to public paths and fold Overture rows into OSM places. A tile also reads its
+   neighbours' OSM places within 150 m, because an Overture row folds into a place up to 100 m away; the folds are
+   recorded, not applied.
+4. Pass 2, tile by tile: apply the folds, add Wikidata, run the W4 safety assessment and write the rows. Partition
+   hashes are computed afterwards in one ordered scan of the written file.
+
+The rules are unchanged (same taxonomy, safety filter, 40 m snap and Overture merge). The only possible difference
+from a whole-country build is the order of two Overture rows on opposite sides of a tile edge folding into the same
+nameless OSM place.
+
+Auto cities (`scripts/poi/auto-cities.mjs`) are built in chunks of `AUTO_CITY_CHUNK` country cities (default 40),
+one pass over the country's OSM exports per chunk. Which city owns a feature is still decided among all cities, so
+a chunk bins exactly what a full run would.
+
+Local check on 13 Nov (Czechia, openstreetmap.fr extract, Overture 2026-10-21.0, 79,352 Wikidata items, cloud
+sandbox): the tiled build and the old whole-country build wrote the same 297,372 places, 400 partitions, 17,309
+path cells and 123 cities, row for row, also with 0.1 degree tiles (1,133 tiles). Peak memory of the POI build
+fell from 1.30 GB to 0.43–0.46 GB (0.39 GB with 0.1 degree tiles), 2.3 minutes either way; the scratch file peaked at
+0.9 GB next to a 0.52 GB path export. Auto cities in chunks of 20: the same 85 packs (only `importedAt` differs),
+peak 1.26 GB down to 0.87 GB, about 5.5 minutes instead of 5.
 
 ## Run status and coverage
 
@@ -153,3 +194,62 @@ keeps the safe places with a path target in `geo_cache` under `poi:<cell>`
 for 7 days (failures retry after 10 minutes). The first visitor's world load
 waits up to 20 s for it; POI quests then use the rows like the imported file.
 `POI_LIVE=off` disables it, `POI_LIVE_URL` changes the Overpass endpoint.
+
+## Demo cities abroad (13 Nov 2026)
+
+Public Overpass is not reliable from the VPS (London returned `map-data-unavailable`
+for every retry on 13 Nov), so judges and visitors outside Czechia found an empty
+map. `scripts/poi/demo-cities.mjs` lists 28 demo cities (three waves, centre on a
+walkable public square or park). For each one the worker:
+
+1. downloads the smallest public extract that contains it (BBBike city extract,
+   download.openstreetmap.fr, or Geofabrik for Bolivia and Taiwan), skipping the
+   download when Last-Modified/ETag are unchanged;
+2. cuts an 8 × 8 km clip (`osmium extract -s simple`, `clipOsm`, about 2 GB peak), keeps only the
+   clip and deletes the source extract;
+3. runs the same osmium filters as a country (`osm-city-<id>-*.geojsonseq`), so the
+   places, paths and exclusions go into the same `current.sqlite`. No Overture
+   query for clips.
+
+The auto city step then builds one pinned auto CityPack per clip (id = the city
+id, coverage = the clip, timezone from the list, no GeoNames row needed). The
+server answers a cell abroad from the file when the file mapped it
+(`hasCell`), otherwise from live Overpass as before. Auto city rules are
+unchanged: unverified notice, zone gold 0, coins from the global daily budget.
+
+Wave 4 (`scripts/poi/demo-capitals.json`, 289 entries) adds the capital of
+every country (GeoNames `PPLC`, largest per country; RU, KP, IR left out like
+the launch scope, Czechia comes from the country import), the capital of every
+US state (Denver is already a demo city) and the main city of split capitals
+(La Paz, Abidjan, Dar es Salaam, Cotonou, Malabo, Cape Town, Johannesburg,
+Tel Aviv, Jerusalem, Ramallah, Yangon, Istanbul, Almaty, Karachi, Casablanca,
+São Paulo, Rio de Janeiro). A review moved seven centres to the walkable
+centre (Jakarta, Astana, Muscat, Brasília; Kolonia for Palikir, Koror for
+Ngerulmud, Brades for Plymouth). Capital clips are 6 × 6 km. The source is the
+smallest BBBike or openstreetmap.fr extract whose published polygon holds the
+clip (up to 600 MB), otherwise `geofabrik:auto`: on the VPS the worker reads
+Geofabrik's `index-v1.json` (cached 7 days) and takes the smallest extract
+that holds the clip (`scripts/poi/geofabrik-index.mjs`). A clip younger than
+`DEMO_CITY_REFRESH_DAYS` (28) is reused without contacting its source.
+
+`WORLD_CITIES` picks the set: `demo` (default, all), `off`, `wave1`..`wave4`,
+`capitals` or ids. A city whose source fails is skipped and reported in `last-run.json`
+(`demoCities.skipped`); its previous clip stays in use. The version gets
+`-c<count>`. After a deploy, `scripts/vps-activate-release.sh` starts one worker
+run when the release lacks a listed city (`scripts/poi/demo-cities-stale.mjs`).
+
+Local check on 13 Nov (26 clips, cloud sandbox; Taipei and Cochabamba need
+Geofabrik, VPS only): 25 auto cities, 6 zones a day in most, Lisbon 4, Zug 2,
+Mumbai 3; Lagos has too few mapped parks and footways for zones and stays a
+street world with POI quests and coins. Build 28 s and 531 MB RSS for the
+POI file, about 25 s per auto city.
+
+Local check of the memory-bounded worker (13 Nov, 169 clips that BBBike and
+openstreetmap.fr serve; the 148 Geofabrik ones only run on the VPS): POI build
+in 5 parts peaked at 750 MB (one build had peaked at 1.6 GB), auto cities in
+their own process at 994 MB, osmium about 2 GB per call. 140 of 169 clips
+became auto cities (zones per day 1-6, mean 4.3); the rest are small islands
+(e.g. Funafuti, Majuro) or Lagos and stay street worlds. In an API probe of
+143 capitals with a fresh player each: 115 auto cities (72 with a Tier 3
+zone), 142 with quests, 141 with street coins, and the first quest claimed
+in 117 (the rest were closed at that local hour or Tier 3 only).

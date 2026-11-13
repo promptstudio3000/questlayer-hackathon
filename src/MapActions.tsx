@@ -8,12 +8,16 @@ export type MapAction = {
   label: string;
   icon: ComponentType<{ size?: number; weight?: "regular" | "bold" | "fill"; "aria-hidden"?: boolean | "true" }>;
   onSelect: () => void;
+  /** Keyboard shortcut shown beside the label on devices with a keyboard. */
+  shortcut?: string;
 };
 
 /**
  * Actions button in the bottom right corner (Lubos, 10 Nov 2026): one tap
  * fans out round buttons to leave a note, change mood, post a task, hide a
  * Secret or create a quest, so these never crowd the map or the sheets.
+ * It carries a small "Actions" caption and a white rim so it reads as the
+ * main button on any map, and grows on desktop (Lubos, 13 Nov 2026).
  */
 export function MapActions({ actions, children }: { actions: MapAction[]; children?: ReactNode }) {
   const { open, setOpen, root, opener } = usePopover();
@@ -26,12 +30,16 @@ export function MapActions({ actions, children }: { actions: MapAction[]; childr
               <button
                 type="button"
                 className={`map-action map-action-${a.id}`}
+                aria-keyshortcuts={a.shortcut}
                 onClick={() => {
                   setOpen(false);
                   a.onSelect();
                 }}
               >
-                <span className="map-action-label">{a.label}</span>
+                <span className="map-action-label">
+                  {a.label}
+                  {a.shortcut && <kbd className="map-action-key" aria-hidden="true">{a.shortcut}</kbd>}
+                </span>
                 <span className="map-action-icon" aria-hidden="true">
                   <a.icon size={22} weight="bold" aria-hidden="true" />
                 </span>
@@ -43,13 +51,14 @@ export function MapActions({ actions, children }: { actions: MapAction[]; childr
       <button
         ref={opener}
         type="button"
-        className="map-actions-toggle"
+        className="map-actions-toggle map-actions-main"
         aria-label={tr("Actions")}
         title={tr("Actions")}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
       >
         {open ? <X size={24} weight="bold" aria-hidden="true" /> : <Lightning size={24} weight="fill" aria-hidden="true" />}
+        <span className="map-actions-caption" aria-hidden="true">{tr("Actions")}</span>
       </button>
       {children}
     </div>

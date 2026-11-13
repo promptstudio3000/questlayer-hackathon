@@ -431,7 +431,7 @@ export function PlaceCompose({
           {kind === "shout"
             ? tr("A short bubble here for everyone nearby. No replies.")
             : tr("Anyone from level {0} can write in it for free.", { 0: prices?.postLevel ?? 2 })}{" "}
-          {tr("Public at this map spot. QGOLD is burned and not returned if the message is removed.")}
+          {tr("Public at this map spot. QGOLD is not returned if the message is removed.")}
         </p>
         <button type="submit" className="gold-primary" disabled={busy || !text.trim() || (kind === "topic" && !title.trim())}>
           {tr("Post for {0} QGOLD", { 0: formatGold(perDay * days) })}

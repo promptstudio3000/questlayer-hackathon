@@ -67,6 +67,14 @@ and the file schema still accepts `review` so older releases load; new releases 
 | Path | `no-public-path`, `water-no-path`, `target-excluded` |
 | Operator | `operator-closure` |
 
+`private-access` covers `access` (unless `foot` allows it) of `no`, `private`, `customers`, `permit`, `delivery`,
+`staff`, `employees`, `members`, `residents`, `students`, `military`, `official` or `restricted`, `foot=no|private`,
+and a name (`name`, any `name:*`, `official_name`, `alt_name`, or an Overture name) that says the place is for staff,
+members or residents only: "Staff only", "Members only", "staff quarters", "Untuk Kakitangan Sahaja", "Nur für
+Personal", "Réservé au personnel", "Solo personal", "関係者以外", "员工专用", "직원 전용" and similar phrases
+(`restrictedName` in `server/poi/safety.mjs`). A bare "Private" or "Staff" is not enough, since those are usually shop
+or company names.
+
 ### Path snapping
 
 The check-in target is the nearest point on a mapped public path within **40 m** (`MAX_SNAP_M`). A polygon POI

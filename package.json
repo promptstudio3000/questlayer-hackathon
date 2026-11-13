@@ -44,6 +44,7 @@
     "world:sample-check": "node scripts/poi-sample-check.mjs",
     "ai:flavour": "node server/cli/ai-flavour.mjs",
     "ai:compare": "node server/cli/ai-compare.mjs",
+    "npc:lore": "node server/cli/npc-lore.mjs",
     "i18n:keys": "node scripts/i18n-keys.mjs",
     "e2e:languages": "node scripts/e2e-languages.mjs",
     "art:list": "node scripts/art.mjs list",

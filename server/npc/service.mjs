@@ -34,6 +34,9 @@ import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { ACTORS_SCHEMA } from "../actors/schema.mjs";
 import { checkGate, playerStakerAccess } from "../staker-gates.mjs";
 import { PILGRIM_LINES, awardEditionOnce, ensureEarnedEditions } from "../earned-editions.mjs";
+import { missionFor } from "./agents.mjs";
+import { createLoreService, createNearAiLoreProvider, topicOfQuestion } from "./lore.mjs";
+import { webSearchFor } from "./lore-web.mjs";
 import { PATRON_AURA_GATE, PATRON_EDITION, PATRON_PATH_LINES, completedPatronLines, isPatronRow, npcMenuCounts, patronStoryFor } from "./patron-path.mjs";
 
 const WORLD_FACTS = new Set(["mode", "paused", "zones", "progress", "next", "later", "safety"]);
@@ -67,11 +70,15 @@ export function createNpcService(
     clock = Date.now,
     personas,
     priceEur = () => null,
+    loreProvider = config.provider === "near-ai" && config.nearAi?.active ? createNearAiLoreProvider(config.nearAi) : null,
+    lore = null,
   } = {},
 ) {
   ensureModuleVersion(db, ACTORS_SCHEMA);
   ensureEarnedEditions(db);
   const store = createNpcStore(db, { clock });
+  // Shared memory of what explorers taught the NPCs (server/npc/lore.mjs).
+  const memory = lore ?? createLoreService(db, { env, provider: loreProvider, clock, web: webSearchFor(env) });
   const playerLevel = (player) => levelFor(db.prepare("SELECT xp FROM players WHERE id=?").get(player)?.xp || 0);
   const personaOf = (actor) => (personas ? personaFor(actor, personas) : personaFor(actor));
 
@@ -114,17 +121,42 @@ export function createNpcService(
   function greet({ player, actor, world, encounter = null }) {
     const { persona, menu, locked, rows } = context(player, actor, world, encounter?.menu);
     const reply = templateReply(persona, menu, { lang: "en" });
+    memory.refreshWeb({ world, actor });
     return {
       npc: { id: actor.id, name: persona.name, title: persona.title || null, archetype: persona.archetype },
+      // Profile tab: who the character is and the places it has heard of.
+      lore: {
+        backstory: typeof persona.backstory === "string" ? persona.backstory : null,
+        likes: Array.isArray(persona.likes) ? persona.likes.filter((x) => typeof x === "string").slice(0, 4) : [],
+      },
+      places: memory.places({ world, actor }),
       say: reply.say,
       emote: reply.emote,
       menu,
       menuHash: menuHash(menu),
       locked,
       active: activeView(rows, world),
+      mission: missionView(player, actor, persona),
       source: "template",
       policy: NPC_TALK_POLICY,
     };
+  }
+
+  // The NPC's own question (its agent card); the game UI is English.
+  function missionView(player, actor, persona) {
+    const m = missionFor(persona);
+    const s = memory.status(player, actor.id);
+    return { topic: m.topic, ask: m.ask.en, answered: s.answeredHere, xp: s.xp, left: Math.max(0, s.dailyLimit - s.rewardedToday) };
+  }
+
+  // The player answers the NPC's mission question.
+  async function mission({ player, actor, world, answer }) {
+    assert(typeof answer === "string" && answer.trim() && answer.length <= 300, "Say something of up to 300 characters.", 400, "NPC_INPUT");
+    assert(actor && actor.kind !== "monster", "This character does not talk.", 404, "NPC_UNKNOWN");
+    const persona = personaOf(actor);
+    const m = missionFor(persona);
+    const result = await memory.answer({ player, actor, persona, mission: m, world, text: answer, lang: languageOf(answer) });
+    return { ...result, mission: missionView(player, actor, persona), policy: NPC_TALK_POLICY };
   }
 
   async function talk({ player, actor, world, message, encounter = null }) {
@@ -136,10 +168,12 @@ export function createNpcService(
     );
     const text = clean(message);
     const { persona, menu, locked, level, now, rows } = context(player, actor, world, encounter?.menu);
-    const facts = npcFacts({ persona, world, menu, level, now });
+    const own = missionFor(persona);
+    const tips = memory.facts({ placeKey: memory.placeKeyFor(world, actor), topic: own.topic, message: text });
+    const facts = [...npcFacts({ persona, world, menu, level, now }), ...tips];
     const factsHash = hash(JSON.stringify(facts));
     const mh = menuHash(menu);
-    const memory = store.memory(player, actor.id);
+    const notes = store.memory(player, actor.id);
     let result = null,
       reason = null,
       outcome = "template",
@@ -153,7 +187,7 @@ export function createNpcService(
         reason = "daily-budget";
       } else {
         try {
-          const res = await provider.reply({ persona, facts, menu, memory: memory.notes, message: text });
+          const res = await provider.reply({ persona, mission: own, facts, menu, memory: notes.notes, message: text });
           used = provider.withMeta ? res : { output: res, source: provider.name, model: provider.model };
           const raw = used.output;
           const checked = validateNpcOutput(raw, facts, menu);
@@ -178,7 +212,9 @@ export function createNpcService(
         }
       }
     }
-    if (!result) result = templateReply(persona, menu, { message: text, lang: languageOf(text) });
+    // Without the model, only a question about places gets a tip.
+    if (!result)
+      result = templateReply(persona, menu, { message: text, lang: languageOf(text), tips: topicOfQuestion(text) ? tips : [] });
     if (result.remember) store.remember(player, actor.id, result.remember);
     const receipt = outcome === "answered" && used?.source === "near-ai" ? used.receipt : null;
     const auditId = store.audit({
@@ -379,6 +415,8 @@ export function createNpcService(
     attestation: (auditId) => store.attestation(auditId),
     greet,
     talk,
+    mission,
+    lore: memory,
     accept,
     complete,
     active: ({ player, actor, world }) => activeView(store.offersFor(player, actor.id), world),

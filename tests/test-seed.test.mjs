@@ -17,9 +17,14 @@ import {
   SEED_CREATOR_QUESTS,
   SEED_TASKS,
   SEED_BUYER,
+  SEED_NOTES,
   STARTER_KIT,
 } from "../server/test-seed/content.mjs";
 import { GOLD } from "../server/domain.mjs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { QUEST_PHOTO } from "../server/creators/feedback.mjs";
 import { reserveTask } from "../server/market/service.mjs";
 
 const ENV = {
@@ -30,7 +35,7 @@ const ENV = {
   CREATOR_COMPLETION_AUTHORITIES: "qa-validator",
 };
 
-function world(clock) {
+function world(clock, photoDirectory = null) {
   const db = openDatabase(":memory:");
   createActorService(db);
   initSocialContent(db);
@@ -42,6 +47,7 @@ function world(clock) {
   });
   const seed = createTestSeed(db, {
     clock,
+    photoDirectory,
     creators: {
       services: runtime.services,
       moderator: "qa-reviewer",
@@ -232,6 +238,25 @@ test("starter kit never replaces an Aura the explorer already wears", () => {
   }
 });
 
+test("bot quests get a credited header photo once", () => {
+  const directory = mkdtempSync(join(tmpdir(), "seed-photos-"));
+  const { db, runtime, seed } = world(() => 1_800_000_000_000, directory);
+  try {
+    assert.equal(seed.apply().creators.photos, SEED_CREATOR_QUESTS.length);
+    assert.equal(seed.apply().creators.photos, 0);
+    const viewer = createPlayer(db, "Photo viewer", 1_800_000_000_000);
+    for (const q of runtime.services.community.listQuests(viewer).items) {
+      const name = q.photo.match(QUEST_PHOTO)?.[1];
+      assert.ok(name && existsSync(join(directory, name)), q.id);
+      assert.equal(q.description.split("Photo: ").length, 2, q.id);
+      assert.match(q.description, /CC BY-SA [34]\.0, Wikimedia Commons\.$/);
+    }
+  } finally {
+    db.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
 test("revertKits takes kits back and keeps the rest of the test world", () => {
   const now = 1_800_000_000_000;
   const { db, seed } = world(() => now);
@@ -251,6 +276,38 @@ test("revertKits takes kits back and keeps the rest of the test world", () => {
     assert.equal(demoProgression(db, me).earnedXp, 0);
     assert.equal(db.prepare("SELECT COUNT(*) n FROM players WHERE substr(id,1,5)='seed-'").get().n, bots);
     assert.equal(seed.revertKits().removed, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test("seed notes and shouts fade with time and the seed does not renew them", () => {
+  let now = 1_800_000_000_000;
+  const DAY = 86_400_000;
+  const { db, seed } = world(() => now);
+  try {
+    seed.apply();
+    const visible = () =>
+      db
+        .prepare(
+          "SELECT count(*) n FROM messages m LEFT JOIN social_note_expiry e ON e.note_id=m.id WHERE substr(m.id,1,10)='seed-note-' AND (e.expires_at IS NULL OR e.expires_at>?)",
+        )
+        .get(now).n;
+    const shouts = () =>
+      db
+        .prepare("SELECT count(*) n FROM place_threads WHERE kind='shout' AND substr(id,1,5)='seed-' AND paid_until>?")
+        .get(now).n;
+    const oneDay = SEED_NOTES.filter((n) => n.days === 1).length * 2;
+    assert.ok(oneDay > 0 && oneDay < 24);
+    assert.equal(visible(), 24);
+    assert.ok(shouts() > 0);
+    now += DAY + 1000;
+    seed.apply();
+    assert.equal(visible(), 24 - oneDay);
+    now += 7 * DAY;
+    seed.apply();
+    assert.equal(visible(), 0);
+    assert.equal(shouts(), 0);
   } finally {
     db.close();
   }

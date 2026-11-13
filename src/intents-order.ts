@@ -133,6 +133,10 @@ export async function sellAuraOnIntents(signer: IntentsSigner, tokenId: string, 
   const publicKey = signer.knownPublicKey() || "";
   const account = () =>
     api<IntentsAccount>(`/native/intents/account?account=${encodeURIComponent(signer.accountId)}&publicKey=${encodeURIComponent(publicKey)}`);
+  // Sign first, right after the tap: the approval window opens while the tap
+  // still counts (phones block a late popup), and a declined sale leaves the
+  // Aura in the player's own collection instead of parked at the verifier.
+  const signed = await signIntents(signer.key, config, [auraTokenDiff("sell", config.nftContract, tokenId, priceYocto, config.wnear)]);
   let state = await account();
   if (!state.keyRegistered)
     await signer.call({ receiverId: config.verifier, methodName: "add_public_key", args: { public_key: publicKey }, deposit: "1", gas: "100000000000000" });
@@ -144,13 +148,12 @@ export async function sellAuraOnIntents(signer: IntentsSigner, tokenId: string, 
       deposit: "1",
       gas: "200000000000000",
     });
-    for (let i = 0; i < 8 && !state.auras.includes(tokenId); i++) {
+    for (let i = 0; i < 20 && !state.auras.includes(tokenId); i++) {
       await sleep(1000);
       state = await account();
     }
     if (!state.auras.includes(tokenId)) throw Error("The verifier has not confirmed the Aura yet. Try listing it again in a moment.");
   }
-  const signed = await signIntents(signer.key, config, [auraTokenDiff("sell", config.nftContract, tokenId, priceYocto, config.wnear)]);
   await api("/native/intents/orders", { signed });
   return "listed";
 }

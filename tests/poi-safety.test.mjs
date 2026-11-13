@@ -489,3 +489,30 @@ test("W3 adapter: classifyOsm, classifyOverture and assessPoi", () => {
   );
   assert.equal(river.reason, "water-no-path");
 });
+
+test("names and access values that mean staff or members only exclude a POI", async () => {
+  const { restrictedName } = await import("../server/poi/safety.mjs");
+  for (const n of [
+    "Pusat Sumber (Untuk Kakitangan Sahaja)",
+    "Staff Only",
+    "Members only lounge",
+    "MBPT staff quarters",
+    "Nur für Personal",
+    "Réservé au personnel",
+    "関係者以外立入禁止",
+    "员工专用",
+  ])
+    assert.equal(restrictedName(n), true, n);
+  for (const n of ["Staff", "Wagstaff", "Flagstaff", "Private Driver Barcelona", "Good Vibes Only", "Only Shoes", "Café Privé"])
+    assert.equal(restrictedName(n), false, n);
+  assert.deepEqual(tagReasons({ amenity: "library", name: "Pusat Sumber (Untuk Kakitangan Sahaja)" }), ["private-access"]);
+  assert.deepEqual(tagReasons({ amenity: "library", "name:en": "Staff only library" }), ["private-access"]);
+  assert.deepEqual(tagReasons({ leisure: "park", access: "residents" }), ["private-access"]);
+  assert.deepEqual(tagReasons({ leisure: "park", access: "residents", foot: "yes" }), []);
+  const v = assessPoi(
+    { id: "ovt:x", category: "library", name: "Staff Only Reading Room", tags: {} },
+    { nearestPath: { lat: 1, lng: 1, distanceM: 5 } },
+  );
+  assert.equal(v.safety, "excluded");
+  assert.equal(v.reason, "private-access");
+});

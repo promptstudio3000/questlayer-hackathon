@@ -33,6 +33,11 @@ browser builders produce identical bytes).
 
 ## How a trade works
 
+A sell signs its `token_diff` first (13 Nov 2026): the signing vault always asks the player to approve a
+NEP-413 message, and phones block an approval window that opens long after the tap. So the order is
+signed right after the Sell tap, then the key is turned on, the Aura deposited and the signed order posted.
+A declined approval leaves the Aura in the player's collection.
+
 ```
 seller (device key)                     buyer (device key)
   │ add_public_key (relayed, 1 yocto)     │ add_public_key (relayed)

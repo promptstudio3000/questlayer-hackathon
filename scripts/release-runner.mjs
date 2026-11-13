@@ -309,6 +309,12 @@ function runOp(id, deploySha) {
   let dir;
   try {
     const op = validateOp(JSON.parse(git(["show", `${deploySha}:deploy/ops/${id}.json`])), allowlist(), id);
+    if (op.startUnit) {
+      // Root, allowlisted unit only (e.g. the POI worker); its own logs are in journald.
+      asRoot(["systemctl", "start", "--no-block", `${op.startUnit}.service`]);
+      Object.assign(result, { startUnit: op.startUnit, note: op.note, status: "done" });
+      return;
+    }
     const rule = allowlist().scripts[op.script];
     Object.assign(result, { script: op.script, args: op.args, ref: op.ref, note: op.note });
     let sha = deploySha;

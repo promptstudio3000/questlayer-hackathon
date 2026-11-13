@@ -1,7 +1,7 @@
 // Layer state (docs/LAYER.md): home plots, player-built blocks, edit
 // receipts and daily beacon activations in SQLite, plus ephemeral presence
-// in memory. Nonfinancial: nothing here imports chain, signing, payout or
-// reward code. Virtual positions are never GPS evidence.
+// in memory. Nonfinancial: MetaLayer shares read-only receipt validation,
+// without signing, payout or reward writes. Virtual positions are never GPS evidence.
 import { atomic } from "../database.mjs";
 import { assert, hash, id } from "../domain.mjs";
 import {
@@ -9,6 +9,8 @@ import {
   registerModuleSchema,
 } from "../schema-compatibility.mjs";
 import { DEFAULT_LAYER, layerById } from "./layers.mjs";
+import { createExpeditionStore } from "./expedition.mjs";
+import { publicLook } from "../public-look.mjs";
 import {
   BLOCK,
   BUILD_BLOCKS,
@@ -112,8 +114,9 @@ export const spawnOf = (plot) => ({
   z: plot.z0 + plot.size / 2,
 });
 
-export function createLayerStore(db, { now = () => Date.now() } = {}) {
+export function createLayerStore(db, { now = () => Date.now(), economy = null } = {}) {
   ensureModuleVersion(db, LAYER_SCHEMA);
+  const expedition = createExpeditionStore(db, { now, onRecord: economy?.onRecord ?? null, ownsLand: economy?.ownsLand ?? null });
   const presence = new Map();
   const plotRow = db.prepare(
     "SELECT p.*, pl.name AS owner_name FROM layer_plots p JOIN players pl ON pl.id=p.owner_id WHERE p.id=?",
@@ -276,7 +279,17 @@ export function createLayerStore(db, { now = () => Date.now() } = {}) {
         }
       }
     }
-    presence.set(key, { ...position, at, name: actor.name, outfit: outfitById(input.outfit).id, layer: layer.id, peer: hash(key).slice(0, 16) });
+    let expeditionState;
+    if (input.expedition === true) {
+      assert(input.home !== true, "Return through the MetaLayer entrance.", 409);
+      expeditionState = expedition.move(actor, layer.id, position);
+      if (expeditionState.corrected) {
+        position = { ...position, ...expeditionState.corrected };
+        corrected = expeditionState.corrected;
+      }
+    }
+    const look = publicLook(db, actor.id, at);
+    presence.set(key, { ...position, at, name: actor.name, outfit: outfitById(input.outfit).id, layer: layer.id, peer: hash(key).slice(0, 16), look: { above: look.above, below: look.below } });
     if (presence.size > 256)
       for (const [k, v] of presence) if (at - v.at > LAYER_LIMITS.presenceTtlMs * 4) presence.delete(k);
 
@@ -302,10 +315,10 @@ export function createLayerStore(db, { now = () => Date.now() } = {}) {
     for (const [k, v] of presence) {
       if (k === key || v.layer !== layer.id || at - v.at > LAYER_LIMITS.presenceTtlMs) continue;
       if (Math.hypot(v.x - position.x, v.z - position.z) > LAYER_LIMITS.peerRadius) continue;
-      peers.push({ id: v.peer, name: v.name, outfit: v.outfit, x: v.x, y: v.y, z: v.z, yaw: v.yaw });
+      peers.push({ id: v.peer, name: v.name, outfit: v.outfit, x: v.x, y: v.y, z: v.z, yaw: v.yaw, look: v.look });
       if (peers.length >= LAYER_LIMITS.peersPerReply) break;
     }
-    return { peers, corrected, activated, progress: progress(actor, layer, at) };
+    return { peers, corrected, activated, progress: progress(actor, layer, at), ...(expeditionState ? { expedition: expeditionState } : {}) };
   }
 
   function leave(actor, layerId) {
@@ -313,5 +326,14 @@ export function createLayerStore(db, { now = () => Date.now() } = {}) {
     return { left: true };
   }
 
-  return { home, plotsNear, plot, edit, visit, leave, progress: (actor, l) => progress(actor, layerOf(l)) };
+  const economyOf = (actor, l) => {
+    const layer = layerOf(l);
+    return economy ? economy.summary(actor, layer.id) : { active: false, metagold: "0", metaXp: 0, badges: [], parcels: [], pending: [], treasury: null };
+  };
+  const syncParcel = (actor, input) => {
+    layerOf(input?.layer);
+    if (!economy?.syncParcel) return { owned: false, owner: null };
+    return economy.syncParcel(actor, Number(input.x0), Number(input.z0));
+  };
+  return { home, plotsNear, plot, edit, visit, leave, expedition, economy: economyOf, syncParcel, progress: (actor, l) => progress(actor, layerOf(l)) };
 }

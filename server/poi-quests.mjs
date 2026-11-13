@@ -23,6 +23,7 @@ import { localDateBounds, shiftDate } from "./spatial/calendar.mjs";
 import { poiQuestActivity } from "./quest-templates.mjs";
 import { flavourText } from "./ai/flavour.mjs";
 import { DEFAULT_LAYER } from "./worlds/registry.mjs";
+import { TEST_LAYER } from "./native/network.mjs";
 import { CLUE_XP, MAX_CLUES_PER_CELL, buildLandmarkClue, clueReady } from "./landmark-clue.mjs";
 import {
   ensureModuleVersion,
@@ -167,6 +168,7 @@ export function cluePoolFromFile(db, cell) {
  * target changes (checked at most once a minute). A missing or unreadable file
  * reports `available() === false` and never throws on the request path.
  */
+const cellQueries = new WeakMap();
 export function openPoiFileSource(path = process.env.POI_DB_PATH || DEFAULT_POI_DB, { clock = Date.now } = {}) {
   let db = null,
     opened = null,
@@ -219,6 +221,25 @@ export function openPoiFileSource(path = process.env.POI_DB_PATH || DEFAULT_POI_
         return poiRowsFromFile(handle, cell);
       } catch {
         return null;
+      }
+    },
+    // True when the import mapped this res-7 cell (its street paths or a
+    // place): demo city clips abroad are answered from the file, not live.
+    hasCell(cell) {
+      const handle = refresh();
+      if (!handle) return false;
+      try {
+        let q = cellQueries.get(handle);
+        if (!q) {
+          q = {
+            path: handle.prepare("SELECT 1 FROM path_cell WHERE h3r7=?"),
+            poi: handle.prepare("SELECT 1 FROM poi WHERE h3r7=? LIMIT 1"),
+          };
+          cellQueries.set(handle, q);
+        }
+        return !!(q.path.get(cell) || q.poi.get(cell));
+      } catch {
+        return false;
       }
     },
     cluePool(cell) {
@@ -429,9 +450,14 @@ function recentPoiIds(db, manifest, cell) {
   return recent;
 }
 
-/** Play hours of the default layer (08:00-20:00), clamped to the local day. */
-function playWindow(day, timezone) {
+/**
+ * Play hours of the default layer (08:00-20:00), clamped to the local day.
+ * The Test Layer is a demo: its places stay open all day, like its zones, so
+ * a visitor at any hour finds quests to play. World keeps its play hours.
+ */
+function playWindow(day, timezone, allDay = TEST_LAYER) {
   const { startsAt, endsAt } = localDateBounds(day, timezone);
+  if (allDay) return { opensAt: startsAt, closesAt: endsAt };
   const hours = DEFAULT_LAYER.pack?.rules?.hours || DEFAULT_LAYER.pack?.hours;
   const [open, close] = Array.isArray(hours) && hours.length === 2 ? hours : ["08:00", "20:00"];
   const at = (hhmm) => {

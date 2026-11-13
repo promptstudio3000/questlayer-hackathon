@@ -10,6 +10,20 @@ export const REGIONS = Object.freeze({
     // west, south, east, north; used for the Overture bbox query only.
     bbox: Object.freeze([12.09, 48.55, 18.86, 51.06]),
   }),
+  sk: Object.freeze({
+    id: "sk",
+    country: "SK",
+    name: "Slovakia",
+    geofabrik: "https://download.geofabrik.de/europe/slovakia-latest.osm.pbf",
+    bbox: Object.freeze([16.83, 47.73, 22.57, 49.62]),
+  }),
+  at: Object.freeze({
+    id: "at",
+    country: "AT",
+    name: "Austria",
+    geofabrik: "https://download.geofabrik.de/europe/austria-latest.osm.pbf",
+    bbox: Object.freeze([9.52, 46.37, 17.17, 49.03]),
+  }),
 });
 
 export const DEFAULT_REGIONS = "cz";
