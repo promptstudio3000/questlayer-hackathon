@@ -39,6 +39,27 @@ test("steps follow the ledger, skips never block, and the end lists the transact
   assert.equal(tourState(db, p, { enabled: true }).current.id, "find");
 });
 
+test("Settings switches Pip off and on, also before the tour began", () => {
+  const db = openDatabase(":memory:");
+  const p = createPlayer(db, "Tess", Date.now());
+  tourAction(db, p, { action: "hide" });
+  let s = tourState(db, p, { enabled: true });
+  assert.equal(s.hidden, true);
+  assert.equal(s.started, false);
+  assert.throws(() => tourAction(db, p, { action: "skip", step: "coin" }), /Start the tour first/);
+  tourAction(db, p, { action: "show" });
+  s = tourState(db, p, { enabled: true });
+  assert.equal(s.hidden, false);
+  assert.equal(s.started, false);
+  tourAction(db, p, { action: "start" });
+  s = tourState(db, p, { enabled: true });
+  assert.equal(s.started, true);
+  assert.equal(s.current.id, "coin");
+  tourAction(db, p, { action: "hide" });
+  assert.equal(tourState(db, p, { enabled: true }).current.id, "coin");
+  assert.equal(tourState(db, p, { enabled: true }).hidden, true);
+});
+
 test("every chapter has a step and every step points somewhere", () => {
   for (const c of TOUR_CHAPTERS) assert.ok(TOUR_STEPS.some((s) => s.chapter === c), c);
   for (const s of TOUR_STEPS) {

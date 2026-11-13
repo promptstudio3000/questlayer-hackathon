@@ -125,6 +125,8 @@ export function tourTransactions(db, player, limit = 60) {
 export function tourState(db, player, { enabled }) {
   if (!enabled) return { enabled: false };
   const r = row(db, player);
+  // started_at 0: Pip was switched off in Settings before the tour began.
+  const started = !!r && r.started_at > 0;
   const skipped = new Set(r ? JSON.parse(r.skipped) : []);
   const steps = TOUR_STEPS.map((s) => {
     let done = false;
@@ -135,14 +137,14 @@ export function tourState(db, player, { enabled }) {
     }
     return { id: s.id, chapter: s.chapter, done, skipped: !done && skipped.has(s.id) };
   });
-  const current = r ? TOUR_STEPS.find((s, i) => !steps[i].done && !steps[i].skipped) ?? null : null;
+  const current = started ? TOUR_STEPS.find((s, i) => !steps[i].done && !steps[i].skipped) ?? null : null;
   const doneCount = steps.filter((s) => s.done).length;
-  const transactions = r ? tourTransactions(db, player) : [];
+  const transactions = started ? tourTransactions(db, player) : [];
   return {
     enabled: true,
-    started: !!r,
+    started,
     hidden: !!r?.hidden,
-    finished: !!r && !current,
+    finished: started && !current,
     done: doneCount,
     total: steps.length,
     steps,
@@ -166,21 +168,24 @@ export function tourAction(db, player, input, now = Date.now()) {
   const r = row(db, player);
   if (act === "start" || act === "restart") {
     db.prepare(
-      "INSERT INTO tour_progress(player_id,started_at,skipped,hidden,updated_at) VALUES(?,?,'[]',0,?) ON CONFLICT(player_id) DO UPDATE SET skipped='[]',hidden=0,finished_at=NULL,updated_at=excluded.updated_at",
+      "INSERT INTO tour_progress(player_id,started_at,skipped,hidden,updated_at) VALUES(?,?,'[]',0,?) ON CONFLICT(player_id) DO UPDATE SET started_at=CASE WHEN tour_progress.started_at>0 THEN tour_progress.started_at ELSE excluded.started_at END,skipped='[]',hidden=0,finished_at=NULL,updated_at=excluded.updated_at",
     ).run(player, now, now);
     return;
   }
-  assert(r, "Start the tour first.", 409, "TOUR_NOT_STARTED");
+  // Settings switches Pip on and off, also before the tour began.
+  if (act === "hide" || act === "show") {
+    db.prepare(
+      "INSERT INTO tour_progress(player_id,started_at,skipped,hidden,updated_at) VALUES(?,0,'[]',?,?) ON CONFLICT(player_id) DO UPDATE SET hidden=excluded.hidden,updated_at=excluded.updated_at",
+    ).run(player, act === "hide" ? 1 : 0, now);
+    return;
+  }
+  assert(r && r.started_at > 0, "Start the tour first.", 409, "TOUR_NOT_STARTED");
   if (act === "skip") {
     const step = String(input?.step || "");
     assert(STEP_IDS.has(step), "Unknown tour step.", 400, "TOUR_STEP");
     const skipped = new Set(JSON.parse(r.skipped));
     skipped.add(step);
     db.prepare("UPDATE tour_progress SET skipped=?,updated_at=? WHERE player_id=?").run(JSON.stringify([...skipped]), now, player);
-    return;
-  }
-  if (act === "hide" || act === "show") {
-    db.prepare("UPDATE tour_progress SET hidden=?,updated_at=? WHERE player_id=?").run(act === "hide" ? 1 : 0, now, player);
     return;
   }
   assert(false, "Unknown tour action.", 400, "TOUR_ACTION");

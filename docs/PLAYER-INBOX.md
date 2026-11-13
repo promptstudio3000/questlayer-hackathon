@@ -110,7 +110,7 @@ read. NEAR, the relayer and NEAR Social are stubbed at the network layer; CI run
 Accounts created before the secure signing origin (8 November 2026) kept their only device key in a browser
 storage that later builds no longer read. Without a recovery passkey such an account can never sign again, so
 its explorer has no inbox. On testnet, `POST /api/account/start-over {publicKey}` (`ManagedAccounts.startOver`,
-button **Start with a new account** in Account and devices) marks the old managed account `failed`
+button **Start with a new account** in Settings → Account) marks the old managed account `failed`
 (`DEVICE_KEY_LOST`), unlinks it from the explorer and creates a new sponsored account with this device's key.
 Explorer data stays; tokens on the old account stay there. Once a day per explorer, never on mainnet, refused
 when a recovery passkey exists or when this device's key already belongs to the account.

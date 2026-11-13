@@ -120,7 +120,13 @@ export default function TourHelper({
     const t = window.setInterval(() => {
       if (document.visibilityState === "visible") void load();
     }, 5000);
-    return () => window.clearInterval(t);
+    // Settings switches Pip on and off (src/SettingsScreen.tsx).
+    const refresh = () => void load();
+    window.addEventListener("questlayer:tour-refresh", refresh);
+    return () => {
+      window.clearInterval(t);
+      window.removeEventListener("questlayer:tour-refresh", refresh);
+    };
   }, [load]);
   useEffect(() => {
     if (!fresh) return;

@@ -128,6 +128,7 @@ const mapHud = () => import("./map-hud-controls");
 export const MapSettings = lazyNamed(mapHud, "MapSettings", true);
 export const MapActions = lazyNamed(mapHud, "MapActions", true);
 export const InfoTip = lazyNamed(mapHud, "InfoTip", true);
+export const SettingsScreen = lazyNamed(() => import("./SettingsScreen"), "SettingsScreen");
 export const SecureAndShare = lazyNamed(
   () => import("./SecureAndShare"),
   "SecureAndShare",
