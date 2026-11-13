@@ -3218,5 +3218,6 @@
  "0.001–1 test NEAR · 1 NEAR = {0} QGOLD": "0.001–1 टेस्ट NEAR · 1 NEAR = {0} QGOLD",
  "Choose a price between 1M and 1,000B QGOLD.": "1M से 1,000B QGOLD के बीच कीमत चुनें।",
  "Practice QGOLD is play money with no value.": "प्रैक्टिस QGOLD खेल का पैसा है जिसकी कोई कीमत नहीं।",
- "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "एक समीक्षक आपका उत्तर जाँचता है, अधिकतम 3 प्रयास। शुरू करने पर क्वेस्ट का यह संस्करण आपके लिए सुरक्षित रहता है। कोई XP, आइटम या QGOLD इनाम तय नहीं है, और GPS या वहाँ जाने की जाँच कोई नहीं करता।"
+ "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "एक समीक्षक आपका उत्तर जाँचता है, अधिकतम 3 प्रयास। शुरू करने पर क्वेस्ट का यह संस्करण आपके लिए सुरक्षित रहता है। कोई XP, आइटम या QGOLD इनाम तय नहीं है, और GPS या वहाँ जाने की जाँच कोई नहीं करता।",
+ "The reward must be at least {0} QGOLD per completion.": "इनाम हर पूरा करने पर कम से कम {0} QGOLD होना चाहिए।"
 }
