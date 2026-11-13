@@ -1,0 +1,6 @@
+{
+  "id": "b7-testlayer-update",
+  "deployTarget": "testlayer",
+  "installKeys": [],
+  "note": "Update the Test Layer to World d8303c78: MetaLayer naming, bot quest photos, POI safety v2, NPC confirmation fix."
+}
