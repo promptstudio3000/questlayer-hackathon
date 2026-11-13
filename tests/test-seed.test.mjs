@@ -21,6 +21,10 @@ import {
   STARTER_KIT,
 } from "../server/test-seed/content.mjs";
 import { GOLD } from "../server/domain.mjs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { QUEST_PHOTO } from "../server/creators/feedback.mjs";
 import { reserveTask } from "../server/market/service.mjs";
 
 const ENV = {
@@ -31,7 +35,7 @@ const ENV = {
   CREATOR_COMPLETION_AUTHORITIES: "qa-validator",
 };
 
-function world(clock) {
+function world(clock, photoDirectory = null) {
   const db = openDatabase(":memory:");
   createActorService(db);
   initSocialContent(db);
@@ -43,6 +47,7 @@ function world(clock) {
   });
   const seed = createTestSeed(db, {
     clock,
+    photoDirectory,
     creators: {
       services: runtime.services,
       moderator: "qa-reviewer",
@@ -230,6 +235,25 @@ test("starter kit never replaces an Aura the explorer already wears", () => {
     );
   } finally {
     db.close();
+  }
+});
+
+test("bot quests get a credited header photo once", () => {
+  const directory = mkdtempSync(join(tmpdir(), "seed-photos-"));
+  const { db, runtime, seed } = world(() => 1_800_000_000_000, directory);
+  try {
+    assert.equal(seed.apply().creators.photos, SEED_CREATOR_QUESTS.length);
+    assert.equal(seed.apply().creators.photos, 0);
+    const viewer = createPlayer(db, "Photo viewer", 1_800_000_000_000);
+    for (const q of runtime.services.community.listQuests(viewer).items) {
+      const name = q.photo.match(QUEST_PHOTO)?.[1];
+      assert.ok(name && existsSync(join(directory, name)), q.id);
+      assert.equal(q.description.split("Photo: ").length, 2, q.id);
+      assert.match(q.description, /CC BY-SA [34]\.0, Wikimedia Commons\.$/);
+    }
+  } finally {
+    db.close();
+    rmSync(directory, { recursive: true, force: true });
   }
 });
 

@@ -1138,6 +1138,7 @@ const testSeed = createTestSeed(db, {
       }
     : null,
   log: (message) => console.log(message),
+  photoDirectory: questPhotos.directory,
 });
 try {
   if (testSeedMode === "apply") {

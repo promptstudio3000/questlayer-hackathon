@@ -50,6 +50,10 @@ npm run seed:test -- remove   [--db path]
   requirements. Publishing gives the bots the game's creator XP (server/data/creator-xp.json). A completion submitted
   on a seed quest is accepted after 30 s by the configured completion authority.
   Needs `CREATOR_COMMUNITY_ENABLED=1`; otherwise this part is skipped.
+  Each quest carries a header photo of the real place in Plzeň (`server/test-seed/photos/`,
+  from Wikimedia Commons under CC BY-SA, cropped to 600×450; authors and licences in
+  `photos/credits.json`). The seed copies the files into the quest photo store and names the
+  photo and its credit in the quest, also for quests an earlier seed already published.
 - **NPCs and monsters.** `TEST_SEED=1` turns the roaming actors on, as
   `ACTORS_ENABLED=1` does.
 - **Daily board.** Vera, Tomas and Jana finish today's board 7, 11 and 16 hours
