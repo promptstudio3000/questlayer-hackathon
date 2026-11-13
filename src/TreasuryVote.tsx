@@ -3,7 +3,7 @@
 // DAO, a Sputnik DAO on NEAR. The vote is signed by the explorer account, so
 // there is no wallet popup. Server: server/native/treasury-dao.mjs,
 // docs/TREASURY-DAO.md. Hidden on hosts without the DAO.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Bank, CheckCircle, Star } from "@phosphor-icons/react";
 import { api, ApiError } from "./api";
 import { tr } from "./i18n";
@@ -46,12 +46,15 @@ export function TreasuryVote({
   account,
   vote,
   notify,
+  empty = null,
 }: {
   /** The player's explorer account, or null while it is not ready. */
   account: string | null;
   /** Signs act_proposal(VoteApprove) on the DAO with the explorer account. */
   vote: (dao: string, proposalId: number) => Promise<boolean>;
   notify?: (message: string, error?: boolean) => void;
+  /** Shown instead of nothing when this host has no vote open (the tour's vote dialog). */
+  empty?: ReactNode;
 }) {
   const [view, setView] = useState<DaoView | null>(null);
   const [hidden, setHidden] = useState(false);
@@ -69,9 +72,10 @@ export function TreasuryVote({
     void load();
   }, [load]);
 
-  if (hidden || !view?.exists) return null;
+  if (hidden || (view && !view.exists)) return empty;
+  if (!view) return null;
   const polls = [view.weeklyMix, ...(view.extras || [])].filter((p): p is DaoPoll => !!p);
-  if (!polls.length) return null;
+  if (!polls.length) return empty;
   const member = !!view.me?.member;
 
   async function cast(p: DaoPoll, o: DaoOption) {
