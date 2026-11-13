@@ -126,6 +126,13 @@ Add an entry to `scripts/poi/regions.mjs` (Geofabrik URL, ISO country, bbox) and
 `poi.env`. Europe and the planet need the same stages with more disk; memory stays at one tile (see below), not
 at the size of the country.
 
+Imported countries (13 Nov 2026): `cz`, `sk`, `at` (`deploy/questlayer-poi.service` sets `WORLD_REGIONS=cz,sk,at`;
+an existing VPS keeps its installed unit, so set the same line in `poi.env`). Vienna and Bratislava are also demo
+city clips: a GeoNames place whose centre lies inside a demo city's clip is left to the demo city (`inside-demo-city`),
+and its own districts fold into it, so no second Vienna appears. Local check (cloud, openstreetmap.fr extracts plus
+the two clips): 599,701 OSM places, 621,641 rows (442,967 ok), 524 tiles, POI build peak 0.44 GB in 6.7 min, 0.55 GB
+file; auto cities 158 of 166 published, peak 1.58 GB in 10 min.
+
 ## Tiled build
 
 `scripts/poi/build.mjs` builds a country in tiles (13 Nov 2026). Before, it held every place of the country in

@@ -38,6 +38,30 @@ const row = (geonameid, name, lat, lng, population, extra = {}) => ({
   ...extra,
 });
 
+test("a country import leaves a demo city's box to the demo city", () => {
+  const at = (id, name, lat, lng, pop) =>
+    row(id, name, lat, lng, pop, { country: "AT", timezone: "Europe/Vienna" });
+  const rows = [
+    at(2761369, "Vienna", 48.20849, 16.37208, 1691468),
+    at(7, "Floridsdorf", 48.25, 16.4, 30000),
+    at(2778067, "Graz", 47.06667, 15.45, 222326),
+  ];
+  const viennaDemo = [16.3315, 48.1814, 16.4126, 48.2356];
+  const { cities, skipped } = selectAutoCities(rows, {
+    countries: ["AT"],
+    reservedIds: ["vienna"],
+    reservedBoxes: [viennaDemo],
+  });
+  assert.deepEqual(cities.map((c) => c.id), ["graz"]);
+  assert.deepEqual(
+    skipped.map((s) => [s.name, s.reason]),
+    [
+      ["Vienna", "inside-demo-city"],
+      ["Floridsdorf", "inside-larger-city"],
+    ],
+  );
+});
+
 test("city selection: Czech cities from 15k, reviewed Plzeň wins, stable ids", () => {
   const rows = [
     row(3068799, "Plzeň", 49.7475, 13.3776, 169858),
