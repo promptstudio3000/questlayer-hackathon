@@ -71,7 +71,7 @@ export async function verifyMetaLayerAction({ config, rpc, action, transactionHa
   assert(result?.final_execution_status === "FINAL", "The NEAR transaction is still finalizing.", 409);
   const tx = result.transaction, call = tx?.actions?.[0]?.FunctionCall;
   assert(tx?.hash === transactionHash && tx.signer_id === config.recorder && tx.receiver_id === config.contract &&
-    tx.actions.length === 1 && call?.method_name === "record_batch" && call.deposit === "0",
+    tx.actions.length === 1 && ["record_batch", "award"].includes(call?.method_name) && call.deposit === "0",
     "This transaction does not belong to MetaLayer's reviewed recorder.", 409);
   const receipts = result.receipts_outcome;
   assert(Array.isArray(receipts) && receipts.length > 0 && receipts.length <= 100 &&
@@ -118,7 +118,7 @@ export async function verifyMetaLayerAction({ config, rpc, action, transactionHa
     explorer: `https://testnet.nearblocks.io/txns/${transactionHash}`, poll: "none" };
 }
 
-export function createLayerActivity(db, { now = Date.now, config = metaLayerNearConfiguration(), rpc } = {}) {
+export function createLayerActivity(db, { now = Date.now, config = metaLayerNearConfiguration(), rpc, onRecord = null } = {}) {
   ensureModuleVersion(db, ACTIVITY_SCHEMA);
   const query = rpc || (config ? readOnlyRpc(config.rpc) : null);
   function record(actor, layer, reference, kind, data) {
@@ -129,6 +129,7 @@ export function createLayerActivity(db, { now = Date.now, config = metaLayerNear
       layer: layer.id, actor: actorHash, kind, at: now(), data });
     db.prepare("INSERT INTO ml_actions(id,layer,player_id,kind,at,envelope,evidence_hash) VALUES(?,?,?,?,?,?,?)")
       .run(actionId, layer.id, actor.id, kind, now(), envelope, hash(envelope));
+    onRecord?.({ id: actionId, layer: layer.id, playerId: actor.id, actor: actorHash, kind, evidenceHash: hash(envelope) });
     return actionId;
   }
   function list(actor, layer) {

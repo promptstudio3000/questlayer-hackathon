@@ -1844,6 +1844,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "questlayer-metalayer"
+version = "0.1.0"
+dependencies = [
+ "near-contract-standards",
+ "near-sdk",
+]
+
+[[package]]
 name = "questlayer-npc-games"
 version = "0.1.0"
 dependencies = [

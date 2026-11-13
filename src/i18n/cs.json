@@ -3215,7 +3215,6 @@
   "The Quiet Beacon": "Tichý maják",
   "The beacon is awake": "Maják se probudil",
   "The diamonds will focus the beacon. Keep them in your backpack.": "Diamanty soustředí světlo majáku. Nech si je v batohu.",
-  "These resources belong to this MetaLayer play preview.": "Tyto suroviny patří do této hratelné ukázky MetaLayeru.",
   "This transaction does not verify the selected MetaLayer action. Keep its reference and retry.": "Tato transakce nepotvrzuje vybranou akci MetaLayeru. Ulož si její odkaz a zkus to znovu.",
   "Three forgotten signals": "Tři zapomenuté signály",
   "Tide": "Příliv",
@@ -3312,5 +3311,12 @@
   "Play preview. MetaGold coins and rewards open later.": "Herní ukázka. Mince MetaGold a odměny se otevřou později.",
   "Show minimap": "Zobrazit minimapu",
   "This golden vault will hold MetaGold, the coin of this world. Coins and rewards open later; the expedition is ready now.": "Tento zlatý trezor bude držet MetaGold, minci tohoto světa. Mince a odměny se otevřou později; výprava je připravená už teď.",
-  "World": "Svět"
+  "World": "Svět",
+  "In the vault: {0} MetaGold · paid today {1} of {2}": "V trezoru: {0} MetaGold · dnes vyplaceno {1} z {2}",
+  "MetaGold": "MetaGold",
+  "On the way: {0} MetaGold from {1} story steps.": "Na cestě: {0} MetaGold za kroky příběhu ({1}).",
+  "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "Zabezpeč svého průzkumníka v Nastavení → Účet, abys dostal MetaGold. Odměny do té doby počkají.",
+  "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "Tento zlatý trezor drží MetaGold, minci tohoto světa. Kroky příběhu se platí z něj a pozemky koupené za MetaGold do něj platí zpátky.",
+  "Your land": "Tvoje pozemky",
+  "MetaXP": "MetaXP"
 }

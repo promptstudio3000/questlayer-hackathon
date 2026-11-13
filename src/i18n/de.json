@@ -3215,7 +3215,6 @@
   "The Quiet Beacon": "Das stille Leuchtfeuer",
   "The beacon is awake": "Das Leuchtfeuer ist erwacht",
   "The diamonds will focus the beacon. Keep them in your backpack.": "Die Diamanten bündeln das Licht. Behalte sie in deinem Rucksack.",
-  "These resources belong to this MetaLayer play preview.": "Diese Ressourcen gehören zu dieser MetaLayer-Spielvorschau.",
   "This transaction does not verify the selected MetaLayer action. Keep its reference and retry.": "Diese Transaktion bestätigt die gewählte MetaLayer-Aktion nicht. Bewahre ihre Referenz auf und versuche es erneut.",
   "Three forgotten signals": "Drei vergessene Signale",
   "Tide": "Gezeiten",
@@ -3312,5 +3311,12 @@
   "Play preview. MetaGold coins and rewards open later.": "Spielvorschau. MetaGold-Münzen und Belohnungen kommen später.",
   "Show minimap": "Minikarte zeigen",
   "This golden vault will hold MetaGold, the coin of this world. Coins and rewards open later; the expedition is ready now.": "Dieser goldene Tresor wird MetaGold halten, die Münze dieser Welt. Münzen und Belohnungen kommen später; die Expedition ist schon bereit.",
-  "World": "Welt"
+  "World": "Welt",
+  "In the vault: {0} MetaGold · paid today {1} of {2}": "Im Tresor: {0} MetaGold · heute ausgezahlt {1} von {2}",
+  "MetaGold": "MetaGold",
+  "On the way: {0} MetaGold from {1} story steps.": "Unterwegs: {0} MetaGold aus {1} Story-Schritten.",
+  "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "Sichere deinen Entdecker unter Einstellungen → Konto, um MetaGold zu erhalten. Deine Belohnungen warten bis dahin.",
+  "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "Dieser goldene Tresor hält MetaGold, die Münze dieser Welt. Story-Schritte werden daraus bezahlt, und Land, das mit MetaGold gekauft wird, zahlt zurück ein.",
+  "Your land": "Dein Land",
+  "MetaXP": "MetaXP"
 }

@@ -3215,7 +3215,6 @@
   "The Quiet Beacon": "المنارة الصامتة",
   "The beacon is awake": "استيقظت المنارة",
   "The diamonds will focus the beacon. Keep them in your backpack.": "يركّز الألماس ضوء المنارة. احتفظ به في حقيبتك.",
-  "These resources belong to this MetaLayer play preview.": "هذه الموارد تخص معاينة اللعب هذه في MetaLayer.",
   "This transaction does not verify the selected MetaLayer action. Keep its reference and retry.": "هذه المعاملة لا تثبت إجراء MetaLayer المحدد. احتفظ بمرجعها وحاول مجددًا.",
   "Three forgotten signals": "ثلاث إشارات منسية",
   "Tide": "المد والجزر",
@@ -3312,5 +3311,12 @@
   "Play preview. MetaGold coins and rewards open later.": "معاينة اللعبة. عملات MetaGold والمكافآت تُفتح لاحقًا.",
   "Show minimap": "إظهار الخريطة المصغرة",
   "This golden vault will hold MetaGold, the coin of this world. Coins and rewards open later; the expedition is ready now.": "ستحفظ هذه الخزنة الذهبية MetaGold، عملة هذا العالم. العملات والمكافآت تُفتح لاحقًا؛ والرحلة جاهزة الآن.",
-  "World": "العالم"
+  "World": "العالم",
+  "In the vault: {0} MetaGold · paid today {1} of {2}": "في الخزنة: {0} MetaGold · دُفع اليوم {1} من {2}",
+  "MetaGold": "MetaGold",
+  "On the way: {0} MetaGold from {1} story steps.": "في الطريق: {0} MetaGold من {1} خطوات في القصة.",
+  "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "أمّن مستكشفك من الإعدادات ← الحساب لتستلم MetaGold. مكافآتك تنتظر حتى ذلك الحين.",
+  "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "تحفظ هذه الخزنة الذهبية MetaGold، عملة هذا العالم. تُدفع خطوات القصة منها، وتعود إليها قيمة الأراضي المشتراة بـ MetaGold.",
+  "Your land": "أرضك",
+  "MetaXP": "MetaXP"
 }

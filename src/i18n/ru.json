@@ -3215,7 +3215,6 @@
   "The Quiet Beacon": "Тихий маяк",
   "The beacon is awake": "Маяк проснулся",
   "The diamonds will focus the beacon. Keep them in your backpack.": "Алмазы сфокусируют маяк. Оставь их в рюкзаке.",
-  "These resources belong to this MetaLayer play preview.": "Эти ресурсы принадлежат этому игровому прототипу MetaLayer.",
   "This transaction does not verify the selected MetaLayer action. Keep its reference and retry.": "Эта транзакция не подтверждает выбранное действие MetaLayer. Сохрани ссылку и попробуй снова.",
   "Three forgotten signals": "Три забытых сигнала",
   "Tide": "Прилив",
@@ -3312,5 +3311,12 @@
   "Play preview. MetaGold coins and rewards open later.": "Предпросмотр игры. Монеты MetaGold и награды появятся позже.",
   "Show minimap": "Показывать миникарту",
   "This golden vault will hold MetaGold, the coin of this world. Coins and rewards open later; the expedition is ready now.": "Это золотое хранилище будет хранить MetaGold, монету этого мира. Монеты и награды появятся позже; экспедиция уже готова.",
-  "World": "Мир"
+  "World": "Мир",
+  "In the vault: {0} MetaGold · paid today {1} of {2}": "В хранилище: {0} MetaGold · выплачено сегодня {1} из {2}",
+  "MetaGold": "MetaGold",
+  "On the way: {0} MetaGold from {1} story steps.": "В пути: {0} MetaGold за шаги истории ({1}).",
+  "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "Защити исследователя в Настройки → Аккаунт, чтобы получать MetaGold. Награды подождут.",
+  "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "Это золотое хранилище хранит MetaGold, монету этого мира. Шаги истории оплачиваются из него, а земля, купленная за MetaGold, платит обратно в него.",
+  "Your land": "Твоя земля",
+  "MetaXP": "MetaXP"
 }

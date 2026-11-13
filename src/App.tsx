@@ -841,6 +841,7 @@ export default function App() {
   }
   const [nativeVisitBusy, setNativeVisitBusy] = useState(false);
   const mainPanel = useRef<HTMLElement>(null);
+  const returnToLayer = useRef(false);
   const contentScreen = tab !== "explore" || sheetExpanded;
   useEffect(() => {
     if (!contentScreen || !player) return;
@@ -2207,6 +2208,12 @@ export default function App() {
   }
   function returnToAdventure() {
     setCatalogView(null);
+    // Profile or Settings opened from MetaLayer closes back into that world.
+    if (returnToLayer.current && virtualLayer) {
+      returnToLayer.current = false;
+      setTab("layer");
+      return;
+    }
     setTab("explore");
     setSheetExpanded(false);
     requestAnimationFrame(() => {
@@ -4343,7 +4350,7 @@ export default function App() {
           tabIndex={-1}
           className={`main-panel ${settingsOpen ? "settings-panel " : ""}${tab === "explore" ? `explore-panel ${selected ? "zone-explore-panel" : ""} ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
-          {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} gameLayer={gameLayer} onNavigate={navigation.update} />}
+          {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} gameLayer={gameLayer} onNavigate={(view) => { returnToLayer.current = view.tab === "settings"; navigation.update(view); }} />}
           {tab === "explore" && !sheetExpanded && <div className="objective-dismiss-bar">
             <button className="objective-dismiss" aria-label={tr("Hide objective")} onClick={() => { if (objective === "coach") learning.acknowledge(coachTopic); else if (zoneQuest) learning.acknowledge(questHelpTopic(zoneQuest)); setDismissedObjective(objectiveKey); }}><X size={20} aria-hidden="true" /></button>
           </div>}

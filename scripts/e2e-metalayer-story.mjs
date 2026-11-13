@@ -124,9 +124,8 @@ try {
   await page.setViewportSize({width:390,height:844});
   await page.locator(".layer-screen .profile-pill").click();
   await page.locator(".layer-screen").waitFor({state:"detached"});
+  // Closing Profile opened from MetaLayer returns straight into the world.
   await page.locator(".app-shell .main-panel .panel-close").click();
-  await page.locator(".topbar .world-switcher").click();
-  await page.getByRole("button",{name:/MetaLayer/}).click();
   await stage.waitFor({timeout:30000});
   await board();
   await page.getByRole("heading",{name:"The beacon is awake",exact:true}).waitFor();
