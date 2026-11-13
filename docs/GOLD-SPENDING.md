@@ -53,7 +53,7 @@ Czechia) and a cell-zone prize a few hundredths. So a premium emote
 (0.025–0.075) is about one good walk, a frame (0.1–0.3) a few days, NPC gear
 0.75 (rare) or 2 (epic), a lure 0.01–0.06, a shout 0.005 and a topic 0.01 a day.
 
-Since 11 Nov 2026 prices are whole GOLD (1 GOLD = 1 micro-QGOLD, `gold-spend-v3`). On 13 Nov 2026 the owner cut premium emotes to 40 %: 1,000–3,000 GOLD, about one or two cell-zone prizes (~1,500 GOLD each). Frames, gear and lures are unchanged.
+Since 11 Nov 2026 prices are whole GOLD (1 GOLD = 1 micro-QGOLD, `gold-spend-v3`). On 13 Nov 2026 the owner cut premium emotes to 40 % and then every price to 1/20, because active testers held only a few hundred GOLD on chain: emotes 50–150, frames 500–1,500, gear 3,750 / 10,000, lures 50–300, altar 125 / 250, shouts 25 and topics 50 a day. The top bar and every price check show one balance, the QGOLD on the NEAR account (`GET /api/gold/balance`); the game's `players.gold_u` counter also holds demo and test rewards that are never paid out, so it is not shown as money.
 
 | Spend | Rule |
 | --- | --- |

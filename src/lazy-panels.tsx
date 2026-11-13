@@ -79,9 +79,9 @@ export const CreatorCommunity = lazyNamed(
   () => import("./CreatorCommunity"),
   "CreatorCommunity",
 );
-export const TreasuryVote = lazyNamed(
+export const TreasuryVoteDialog = lazyNamed(
   () => import("./TreasuryVote"),
-  "TreasuryVote",
+  "TreasuryVoteDialog",
 );
 export const MapNotes = lazyNamed(() => import("./MapNotes"), "MapNotes");
 export const PlayerCard = lazyNamed(() => import("./PlayerCard"), "PlayerCard");

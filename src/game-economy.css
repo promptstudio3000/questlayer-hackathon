@@ -105,3 +105,4 @@
 .game-eco .fuel > * { margin: 0; }
 .game-eco .tier-card-numbers { display: none; }
 .game-eco .tier-card { padding: 12px; }
+.game-eco .stake-wallet dd { font-size: 15px; }
