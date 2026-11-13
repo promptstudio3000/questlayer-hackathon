@@ -3143,8 +3143,8 @@
  "Choose a price between 1M and 1,000B QGOLD.": "1M से 1,000B QGOLD के बीच कीमत चुनें।",
  "Practice QGOLD is play money with no value.": "प्रैक्टिस QGOLD खेल का पैसा है जिसकी कोई कीमत नहीं।",
  "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "एक समीक्षक आपका उत्तर जाँचता है, अधिकतम 3 प्रयास। शुरू करने पर क्वेस्ट का यह संस्करण आपके लिए सुरक्षित रहता है। कोई XP, आइटम या QGOLD इनाम तय नहीं है, और GPS या वहाँ जाने की जाँच कोई नहीं करता।",
- "No treasury vote is open on this layer right now.": "इस लेयर पर अभी कोई ट्रेज़री वोट खुला नहीं है।",
  "The reward must be at least {0} QGOLD per completion.": "इनाम हर पूरा करने पर कम से कम {0} QGOLD होना चाहिए।",
+ "No treasury vote is open on this layer right now.": "इस लेयर पर अभी कोई ट्रेज़री वोट खुला नहीं है।",
  "A bigger stake opens more places.": "बड़ा स्टेक ज़्यादा जगहें खोलता है।",
  "Choose your tier": "अपना टियर चुनें",
  "Coins and quests pay QGOLD.": "सिक्के और क्वेस्ट QGOLD देते हैं।",
@@ -3167,5 +3167,7 @@
  "Restore your account on this device: Settings → Account.": "इस डिवाइस पर अपना खाता वापस लाएँ: सेटिंग्स → खाता।",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "पहले पासकी या अपने 12 शब्द सहेजें। इनके बिना यह एक्सप्लोरर वापस नहीं आ सकता।",
  "Shows your next step on the map": "नक्शे पर आपका अगला कदम दिखाता है",
+ "Welcome to": "स्वागत है",
+ "{0} quests here. Tap to see them.": "यहाँ {0} क्वेस्ट हैं। देखने के लिए टैप करें।",
  "Guiding you to": "आपको ले जा रहा है"
 }

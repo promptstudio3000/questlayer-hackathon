@@ -3143,8 +3143,8 @@
  "Choose a price between 1M and 1,000B QGOLD.": "Wähle einen Preis zwischen 1M und 1.000B QGOLD.",
  "Practice QGOLD is play money with no value.": "Übungs-QGOLD ist Spielgeld ohne Wert.",
  "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "Ein Prüfer kontrolliert deine Antwort, bis zu 3 Versuche. Beim Start wird diese Version der Quest für dich gespeichert. Es ist keine XP-, Gegenstands- oder QGOLD-Belohnung festgelegt, und niemand prüft GPS oder einen Besuch vor Ort.",
- "No treasury vote is open on this layer right now.": "Auf dieser Ebene läuft gerade keine Treasury-Abstimmung.",
  "The reward must be at least {0} QGOLD per completion.": "Die Belohnung muss mindestens {0} QGOLD pro Erledigung betragen.",
+ "No treasury vote is open on this layer right now.": "Auf dieser Ebene läuft gerade keine Treasury-Abstimmung.",
  "A bigger stake opens more places.": "Ein größerer Stake öffnet mehr Orte.",
  "Choose your tier": "Wähle deine Stufe",
  "Coins and quests pay QGOLD.": "Münzen und Quests zahlen QGOLD.",
@@ -3167,5 +3167,7 @@
  "Restore your account on this device: Settings → Account.": "Stelle dein Konto auf diesem Gerät wieder her: Einstellungen → Konto.",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Sichere zuerst einen Passkey oder deine 12 Wörter. Ohne sie kommt dieser Entdecker nicht zurück.",
  "Shows your next step on the map": "Zeigt deinen nächsten Schritt auf der Karte",
+ "Welcome to": "Willkommen in",
+ "{0} quests here. Tap to see them.": "{0} Quests hier. Tippe, um sie zu sehen.",
  "Guiding you to": "Dein Ziel"
 }

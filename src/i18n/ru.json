@@ -3143,8 +3143,8 @@
  "Choose a price between 1M and 1,000B QGOLD.": "Выбери цену от 1M до 1 000B QGOLD.",
  "Practice QGOLD is play money with no value.": "Тренировочный QGOLD — игровые деньги без ценности.",
  "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "Ответ проверяет рецензент, до 3 попыток. При старте за тобой сохраняется эта версия квеста. Награда в XP, предметах или QGOLD не назначена, GPS и личное посещение никто не проверяет.",
- "No treasury vote is open on this layer right now.": "Сейчас на этом слое нет открытого голосования по казне.",
  "The reward must be at least {0} QGOLD per completion.": "Награда должна быть не меньше {0} QGOLD за одно выполнение.",
+ "No treasury vote is open on this layer right now.": "Сейчас на этом слое нет открытого голосования по казне.",
  "A bigger stake opens more places.": "Больший стейк открывает больше мест.",
  "Choose your tier": "Выбери свой уровень",
  "Coins and quests pay QGOLD.": "Монеты и квесты приносят QGOLD.",
@@ -3167,5 +3167,7 @@
  "Restore your account on this device: Settings → Account.": "Восстанови аккаунт на этом устройстве: Настройки → Аккаунт.",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Сначала сохрани passkey или свои 12 слов. Без них этот исследователь не сможет вернуться.",
  "Shows your next step on the map": "Показывает твой следующий шаг на карте",
+ "Welcome to": "Добро пожаловать в",
+ "{0} quests here. Tap to see them.": "Здесь {0} квестов. Нажмите, чтобы увидеть.",
  "Guiding you to": "Ведём к цели"
 }
