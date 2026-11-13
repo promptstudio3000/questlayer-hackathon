@@ -3627,6 +3627,8 @@ export default function App() {
   // per visit (src/LockedZone.tsx); leaving and coming back shows it again.
   const lockedHereId = zonePresence?.state === "locked" ? zonePresence.zone.id : null;
   const [lockedZoneDialog, setLockedZoneDialog] = useState<Zone | null>(null);
+  // The tour's vote step: the treasury vote opens right here, no NPC to walk to.
+  const [treasuryVoteOpen, setTreasuryVoteOpen] = useState(false);
   const lockedShown = useRef<string | null>(null);
   useEffect(() => {
     if (lockedHereId === lockedShown.current) return;
@@ -3826,8 +3828,10 @@ export default function App() {
       if (t.role === "companion") setCardPlayer(TOUR_COMPANION);
       else if (TOUR_ACTORS[t.role]) showActor({ kinds: TOUR_ACTORS[t.role] });
       else { setTab("community"); setSheetExpanded(true); }
+    } else if (t.kind === "screen" && t.screen === "treasury") {
+      setTreasuryVoteOpen(true);
     } else if (t.kind === "screen") {
-      const tabs: Record<string, Tab> = { inventory: "inventory", rolls: "inventory", market: "market", shop: "shop", stake: "fund", treasury: "fund" };
+      const tabs: Record<string, Tab> = { inventory: "inventory", rolls: "inventory", market: "market", shop: "shop", stake: "fund" };
       setTab(tabs[t.screen] || "explore");
       setSheetExpanded(true);
       // The wisp roll sits in Inventory's "Secured on NEAR" fold: open it and scroll there.
@@ -5443,6 +5447,19 @@ export default function App() {
           <strong>{tr("Connecting your explorer…")}</strong>
           <span>{tr("Approve the request in your wallet app.")}</span>
         </div>
+      )}
+      {treasuryVoteOpen && player && (
+        <Dialog label={tr("Treasury vote")} onClose={() => setTreasuryVoteOpen(false)}>
+          <div className="tour-vote-dialog">
+            <TreasuryVote
+              key={`treasury-${player.id}`}
+              account={invisible.status === "ready" ? invisible.accountId || null : null}
+              vote={voteTreasury}
+              notify={notify}
+              empty={<p className="bonus-vote-note">{tr("No treasury vote is open on this layer right now.")}</p>}
+            />
+          </div>
+        </Dialog>
       )}
       {lockedZoneDialog && player && !walletChoices && (
         <LockedZoneDialog zone={lockedZoneDialog} onClose={() => setLockedZoneDialog(null)} />

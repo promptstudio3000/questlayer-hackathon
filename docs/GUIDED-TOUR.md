@@ -28,12 +28,16 @@ coach steps aside. At the end the card lists every transaction of the run with a
 | Trade | sell an Aura, trade with Vojtěch through Intents, buy an emote | a listing or `nft_transfer_call` to the market, a call on the Intents verifier, a QGOLD burn |
 | Community | map note, shout, topic, task with a reward | a note, `shout`/`topic` burns, a posted task (QGOLD escrow) |
 | People | wave at Pip, send Pip a message | a wave, an inbox `set` on NEAR Social |
-| Stake | stake, vote on the treasury mix | `create_position`/`deposit_and_stake`, `act_proposal` |
+| Stake | walk to the Gate Keeper and stake; Show me opens the treasury vote right in the game (no NPC to walk to) | `create_position`/`deposit_and_stake`, `act_proposal` |
 
 Nothing is ticked by the client: `GET /api/tour` computes every step from the database on each read, so the
 tour can never claim a transaction that did not happen. `POST /api/tour {action}` only starts, skips a step,
 hides or restarts. A skipped step never blocks a later one. State: table `tour_progress` (module
 `guided-tour`).
+
+## Show me
+
+Show me never opens a character's dialog from afar. For a character (Ráda, the Lickquidator, Vojtěch, the Gate Keeper) it marks them on the map and pans there; the explorer walks up and taps them. Coins, finds and place quests start map navigation. Screens that need no walk (Inventory, Market, Shop, the wisp roll, the treasury vote dialog) and map actions at the explorer's own spot open directly.
 
 ## Guarantees
 
