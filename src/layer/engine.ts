@@ -112,7 +112,7 @@ export type EngineOptions = {
     z: number;
   }) => Promise<{ token: string; durationMs: number }>;
   onMineFinish?: (token: string) => Promise<void>;
-  onNotice: (text: "own-plot" | "too-far" | "occupied" | "depth") => void;
+  onNotice: (text: "own-plot" | "too-far" | "occupied" | "depth" | "too-hard") => void;
 };
 
 const GRAVITY = 17,
@@ -750,19 +750,24 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
     miningAt = 0,
     miningDurationMs = 0;
   let miningTimer: ReturnType<typeof setTimeout> | undefined;
+  // The block being dug and where the explorer stood: digging continues after
+  // the click or tap ends and stops when the explorer walks away or drags.
+  let digging: { x: number; z: number; fromX: number; fromZ: number } | null = null;
   function stopMining() {
     miningSequence++;
     clearTimeout(miningTimer);
     miningProgress = 0;
     miningAt = 0;
+    digging = null;
     cracks.visible = false;
   }
-  function startMining(clientX: number, clientY: number) {
+  /** Starts digging the block under the pointer; false when there is nothing to dig. */
+  function startMining(clientX: number, clientY: number, explain = true) {
     stopMining();
-    if (!inputEnabled || !options.onMineStart || !options.onMineFinish) return;
+    if (!inputEnabled || !options.onMineStart || !options.onMineFinish) return false;
     const target = pick(clientX, clientY);
+    if (!target) return false;
     if (
-      !target ||
       !breakable(
         seed,
         target.x,
@@ -770,12 +775,16 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
         target.z,
         blockAt(target.x, target.y, target.z),
       )
-    )
-      return;
-    if (!clearMiningRay(pos, target, blockAt)) {
-      options.onNotice("too-far");
-      return;
+    ) {
+      if (explain) options.onNotice("too-hard");
+      return false;
     }
+    if (!clearMiningRay(pos, target, blockAt)) {
+      if (explain) options.onNotice("too-far");
+      return false;
+    }
+    digging = { x: target.x + 0.5, z: target.z + 0.5, fromX: pos.x, fromZ: pos.z };
+    faceYaw = Math.atan2(pos.x - digging.x, pos.z - digging.z);
     const sequence = miningSequence;
     void options
       .onMineStart(target)
@@ -819,8 +828,12 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
       sy: e.clientY,
       t: performance.now(),
     });
-    if (options.expedition && pointers.size === 1 && e.button === 0 && !pickPlace(e.clientX,e.clientY))
-      miningTimer = setTimeout(() => startMining(e.clientX, e.clientY), 180);
+    // Press and hold on a block digs it, like a voxel sandbox; a quick tap
+    // digs too (see up). Places and build mode keep their own taps.
+    if (options.expedition && !building && pointers.size === 1 && e.button === 0 && !pickPlace(e.clientX,e.clientY)) {
+      stopMining();
+      miningTimer = setTimeout(() => startMining(e.clientX, e.clientY, false), 150);
+    }
     if (pointers.size === 2) {
       stopMining();
       const [a, b] = [...pointers.values()];
@@ -855,18 +868,19 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
     p.y = e.clientY;
   };
   const up = (e: PointerEvent) => {
-    stopMining();
     const p = pointers.get(e.pointerId);
     pointers.delete(e.pointerId);
     if (pointers.size < 2) pinch = 0;
+    const still = !!p && Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < 10;
+    // A dig that has started keeps going after release; a drag or cancel stops it.
+    if (!options.expedition || !still || e.type !== "pointerup" || e.button === 2) stopMining();
     if (!p) return;
-    const tap =
-      Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < 10 &&
-      performance.now() - p.t < 400;
+    const tap = still && performance.now() - p.t < 400;
     if (tap && e.button !== 2 && e.type === "pointerup") {
       const place = !building && pickPlace(e.clientX,e.clientY);
-      if (place) options.onPlace?.(place);
+      if (place) { stopMining(); options.onPlace?.(place); }
       else if (building) act(e.clientX, e.clientY);
+      else if (options.expedition && !digging) startMining(e.clientX, e.clientY);
     }
   };
   const context = (e: MouseEvent) => {
@@ -1137,7 +1151,9 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
       );
     }
     const moving = hasGround ? step(dt) : false;
-    me.animate(dt, moving, now / 1000);
+    if (digging && Math.hypot(pos.x - digging.fromX, pos.z - digging.fromZ) > 1.2) stopMining();
+    if (digging && !moving) faceYaw = Math.atan2(pos.x - digging.x, pos.z - digging.z);
+    me.animate(dt, moving, now / 1000, !!digging && !options.reducedMotion);
     places?.update(dt, now/1000, pos, options.reducedMotion);
     for (const peer of peers.values()) {
       const g = peer.avatar.group,
