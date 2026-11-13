@@ -267,7 +267,7 @@ function WalkScene({ active, reduce }: { active: boolean; reduce: boolean }) {
 // 02 Daily zones, drawn like the live map: a night city, irregular zone
 // outlines with a soft ground glow in the tier colour (src/zone-landmarks.ts),
 // the altar pin with its quest art and the countdown nameplate at its base.
-const ZONE_COLOR = { 1: "#45d6a0", 2: "#ae77ff", 3: "#ffd25a" } as const;
+const ZONE_COLOR = { 1: "#45d6a0", 2: "#ffd25a", 3: "#ff5d6c" } as const;
 const MAP_ZONES = [
   {
     tier: 1 as const,

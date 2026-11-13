@@ -396,3 +396,34 @@ html[data-test-layer] .balance-pill::after { content: "TEST"; position: absolute
 .map-point-target { width: 28px; height: 28px; border-radius: 50%; border: 4px solid #fff; background: var(--action); box-shadow: 0 0 0 6px rgb(255 255 255 / 0.35), 0 0 18px var(--action); animation: point-target-pulse 1.6s ease-in-out infinite; }
 @keyframes point-target-pulse { 50% { box-shadow: 0 0 0 14px rgb(255 255 255 / 0.12), 0 0 26px var(--action); } }
 @media (prefers-reduced-motion: reduce) { .map-point-target { animation: none; } }
+
+/* ---- Guidance chip: names the quest the player chose, X ends it ---------- */
+.map-guide-key > span { display: grid; min-width: 0; }
+.map-guide-key small { font-size: 12px; opacity: .8; }
+.map-guide-key strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-shell[data-screen]:has(.map-guide-key) .zone-presence { top: calc(124px + env(safe-area-inset-top)); }
+
+/* ---- Zone label: no card, just words over the map ------------------------ */
+.app-shell[data-screen] .zone-presence > button {
+  min-height: 48px; padding: 4px 8px; border: 0; background: none; box-shadow: none; color: #fff;
+  text-shadow: 0 0 3px #1a0335, 0 1px 2px #1a0335, 0 0 10px #1a0335;
+}
+.app-shell[data-screen] .zone-presence > button > svg { filter: drop-shadow(0 0 2px #1a0335) drop-shadow(0 1px 3px #1a0335); }
+.app-shell[data-screen] .zone-presence strong, .app-shell[data-screen] .zone-presence small { color: #fff; }
+@media (max-width: 760px) {
+  .app-shell[data-screen]:has(.zone-presence) .presence-chip { top: calc(140px + env(safe-area-inset-top)); }
+  .app-shell[data-screen]:has(.zone-presence):has(.map-guide-key) .presence-chip { top: calc(194px + env(safe-area-inset-top)); }
+}
+
+/* ---- "Open ..." when something is in reach: gold rim and a little life --- */
+.app-shell .nearby-open { border-color: #ffd25a; box-shadow: 0 0 0 3px #ffd25a59, 0 6px 22px #ffd25a80; }
+.nearby-open > svg { color: #ffd25a; }
+@media (prefers-reduced-motion: no-preference) {
+  .nearby-open { animation: nearby-in .28s ease-out, nearby-glow 1.8s ease-in-out .28s infinite; }
+  .nearby-open-art { animation: nearby-bob 1.8s ease-in-out infinite; }
+  .nearby-open > svg { animation: nearby-nudge 1.8s ease-in-out infinite; }
+  @keyframes nearby-in { from { opacity: 0; scale: .94; translate: 0 12px; } }
+  @keyframes nearby-glow { 50% { box-shadow: 0 0 0 7px #ffd25a26, 0 6px 30px #ffd25ab3; } }
+  @keyframes nearby-bob { 50% { translate: 0 -3px; } }
+  @keyframes nearby-nudge { 50% { translate: 4px 0; } }
+}
