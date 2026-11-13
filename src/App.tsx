@@ -1162,16 +1162,18 @@ export default function App() {
     playerReads.current.invalidate();
     setPlayer((current) => (current?.id === next.id ? next : current));
   }
-  // Auras from chests, levels and Wisp rolls are secured on NEAR on their own:
-  // the explorer account signs silently and the relayer pays. An Aura the
-  // player is wearing waits until it is taken off, so their look never changes
-  // under them. One at a time, with a back-off per Aura so a full edition or a
-  // spent daily relay budget never loops. localStorage
-  // questlayer-auto-secure=0 turns it off on this device.
+  // Auras from chests, levels and Wisp rolls are secured on their own: the
+  // explorer account signs silently and the relayer pays. The explorer's own
+  // record on the collection (needed to wear a secured Aura) is made the same
+  // way, once. An Aura the player is wearing is secured too and put straight
+  // back on, so their look does not change. One step at a time, with a
+  // back-off per Aura so a full edition or a spent daily relay budget never
+  // loops. localStorage questlayer-auto-secure=0 turns it off on this device.
   const autoSecure = useRef({
     running: false,
     retryAt: new Map<string, number>(),
     levelsAt: 0,
+    avatarAt: 0,
   });
   const [autoSecureTick, setAutoSecureTick] = useState(0);
   useEffect(() => {
@@ -1180,6 +1182,15 @@ export default function App() {
   }, []);
   const autoSecureSigner = invisible.signer;
   const autoSecureClaims = !!nativeWardrobe?.claimsEnabled;
+  const autoSecureAccount = nativeWardrobe?.accounts.find(
+    (a) => a.accountId === autoSecureSigner?.accountId,
+  );
+  // Only once the explorer has an Aura to wear: the record costs the relayer storage.
+  const autoSecureAvatar =
+    autoSecureClaims &&
+    !!autoSecureAccount &&
+    !autoSecureAccount.starterMinted &&
+    (autoSecureAccount.items.length > 0 || !!player?.inventory.some((i) => i.kind === "aura"));
   useEffect(() => {
     let off = false;
     try {
@@ -1190,11 +1201,11 @@ export default function App() {
     if (off || state.running || !player || !managed) return;
     if (!player.wallets.some((w) => w.account_id === managed.accountId)) return;
     const now = Date.now();
+    const avatar = autoSecureAvatar && state.avatarAt <= now;
     const item = autoSecureClaims
       ? player.inventory.find(
           (i) =>
             i.kind === "aura" &&
-            !i.equipped &&
             i.native_claim_state !== "minted" &&
             (!i.native_claim_state ||
               i.native_claim_receiver === managed.accountId) &&
@@ -1202,16 +1213,25 @@ export default function App() {
         )
       : undefined;
     const levels = state.levelsAt <= now;
-    if (!item && !levels) return;
+    if (!avatar && !item && !levels) return;
     state.running = true;
     void (async () => {
       let secured = 0;
       try {
-        if (item) {
+        if (avatar) {
+          state.avatarAt = Date.now() + 5 * 60_000;
+          try {
+            await sendNativeWardrobe("mint_avatar", managed, managed.accountId);
+          } catch {
+            // Tried again after the back-off.
+          }
+        } else if (item) {
+          const worn = !!item.equipped && (item.slot === "above" || item.slot === "below") ? item.slot : null;
           try {
             if (await secureAuraOnChain(item, managed, managed.accountId)) {
               secured++;
               state.retryAt.delete(item.id);
+              if (worn) await wearSecured(item.id, worn, managed).catch(() => {});
             } else state.retryAt.set(item.id, Date.now() + 2 * 60_000);
           } catch {
             state.retryAt.set(item.id, Date.now() + 15 * 60_000);
@@ -1231,10 +1251,7 @@ export default function App() {
             // Level rewards need the native rewards ledger; try again later.
           }
         }
-        if (secured) {
-          await refreshNative(true).catch(() => {});
-          notify(tr("Your Aura is secured."));
-        }
+        if (secured) await refreshNative(true).catch(() => {});
       } finally {
         state.running = false;
         await me().catch(() => {});
@@ -1242,7 +1259,20 @@ export default function App() {
       }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [player, autoSecureSigner, autoSecureClaims, autoSecureTick]);
+  }, [player, autoSecureSigner, autoSecureClaims, autoSecureAvatar, autoSecureTick]);
+  // Puts a just-secured Aura back on: it was worn when it was secured.
+  async function wearSecured(itemId: string, slot: "above" | "below", signer: NativeSigner) {
+    const claim = await api<{ claim: NativeAuraClaim }>("/native/claims/confirm", { itemId });
+    const tokenId = claim.claim.token_id;
+    if (!tokenId) return;
+    const data = await refreshNative(true);
+    const account = data.accounts.find((a) => a.accountId === signer.accountId);
+    const token = account?.items.find((i) => i.tokenId === tokenId);
+    if (!account?.starterOwned || !token) return;
+    if (!(await sendNativeWardrobe("equip_aura", signer, signer.accountId, token, slot))) return;
+    const r = await api<{ player: Player }>("/native/outfit", { enabled: true, accountId: signer.accountId });
+    updateOwnedPlayer(r.player);
+  }
   async function action<T>(
     name: string,
     fn: () => Promise<T>,
@@ -3364,6 +3394,59 @@ export default function App() {
       notify(tr("Your Aura is back in your practice collection."));
     });
   }
+  // The contract call behind "Secure my explorer" and wearing a secured Aura.
+  // Quiet: the automatic securing below calls it with no dialog or toast.
+  async function sendNativeWardrobe(
+    method: "mint_avatar" | "equip_aura" | "unequip_aura",
+    signer: NativeSigner,
+    accountId: string,
+    item?: NativeItem,
+    slot?: "above" | "below",
+  ): Promise<boolean> {
+    const contractId = nativeWardrobe?.contractId;
+    if (!onNearNetwork(contractId))
+      throw Error(
+        "Your secured collection could not load. Try again in a moment.",
+      );
+    await signer.send(
+      {
+        network: NEAR_NETWORK,
+        signerId: accountId,
+        receiverId: contractId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: method,
+              args:
+                method === "mint_avatar"
+                  ? {}
+                  : method === "unequip_aura"
+                    ? { slot }
+                    : { token_id: item!.tokenId, slot },
+              gas: "100000000000000",
+              deposit:
+                method === "mint_avatar" ? (5n * 10n ** 22n).toString() : "0",
+            },
+          },
+        ],
+      },
+      { playerId: player!.id },
+    );
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const data = await refreshNative(true),
+        state = data.accounts.find((a) => a.accountId === accountId);
+      const confirmed =
+        method === "mint_avatar"
+          ? !!state?.starterOwned
+          : method === "unequip_aura"
+            ? state?.equipment[slot!] === null
+            : state?.equipment[slot!] === item!.tokenId;
+      if (confirmed) return true;
+      await new Promise((resolve) => setTimeout(resolve, 800));
+    }
+    return false;
+  }
   async function nativeTransaction(
     method: "mint_avatar" | "equip_aura" | "unequip_aura",
     account: string,
@@ -3377,50 +3460,7 @@ export default function App() {
         !player?.wallets.some((w) => w.account_id === accountId)
       )
         throw Error("Choose the linked account that owns this Aura.");
-      const contractId = nativeWardrobe?.contractId;
-      if (!onNearNetwork(contractId))
-        throw Error(
-          "Your secured collection could not load. Try again in a moment.",
-        );
-      await signer.send(
-        {
-          network: NEAR_NETWORK,
-          signerId: accountId,
-          receiverId: contractId,
-          actions: [
-            {
-              type: "FunctionCall",
-              params: {
-                methodName: method,
-                args:
-                  method === "mint_avatar"
-                    ? {}
-                    : method === "unequip_aura"
-                      ? { slot }
-                      : { token_id: item!.tokenId, slot },
-                gas: "100000000000000",
-                deposit:
-                  method === "mint_avatar" ? (5n * 10n ** 22n).toString() : "0",
-              },
-            },
-          ],
-        },
-        { playerId: player!.id },
-      );
-      let confirmed = false;
-      for (let attempt = 0; attempt < 5; attempt++) {
-        const data = await refreshNative(true),
-          state = data.accounts.find((a) => a.accountId === accountId);
-        confirmed =
-          method === "mint_avatar"
-            ? !!state?.starterOwned
-            : method === "unequip_aura"
-              ? state?.equipment[slot!] === null
-              : state?.equipment[slot!] === item!.tokenId;
-        if (confirmed) break;
-        await new Promise((resolve) => setTimeout(resolve, 800));
-      }
-      if (!confirmed)
+      if (!(await sendNativeWardrobe(method, signer, accountId, item, slot)))
         throw Error(
           "Sent. Confirmation is still pending; refresh your Secured collection before retrying.",
         );
@@ -3433,8 +3473,8 @@ export default function App() {
         method === "mint_avatar"
           ? tr("Your explorer is secured.")
           : method === "unequip_aura"
-            ? tr("Aura taken off your secured outfit.")
-            : tr("Equipped. Your secured Aura is glowing on the map."),
+            ? tr("Aura taken off.")
+            : tr("Equipped. Your Aura is glowing on the map."),
       );
     });
   }

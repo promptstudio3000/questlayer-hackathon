@@ -1206,7 +1206,7 @@ export function Inventory({
                       {selected.type === "wearable"
                         ? tr("Wearables can't be sold: clones are not NFTs and originals stay in your wallet.")
                         : selected.type === "secured" && !selected.avatarReady
-                          ? tr("Secure your explorer under Secured on NEAR to wear secured Auras.")
+                          ? tr("Getting your Aura ready to wear. Try again in a moment.")
                           : selected.type === "secured" && selected.worn
                             ? tr("Take it off before you sell it.")
                             : selected.worn
