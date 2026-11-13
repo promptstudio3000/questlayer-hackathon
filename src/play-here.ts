@@ -9,7 +9,7 @@
 // wherever the visitor is, and uses GPS only after they tap Use GPS themselves.
 const MODE_KEY = "questlayer.playMode";
 const GPS_CHOSEN_KEY = "questlayer.gpsChosen";
-const TEST_LAYER = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_QL_LAYER === "test";
+export const TEST_LAYER = (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_QL_LAYER === "test";
 
 /** True when the player last chose the city demo themselves. */
 export function demoChosen(): boolean {
@@ -50,8 +50,8 @@ export async function locationPermission(): Promise<PermissionState | "unavailab
 }
 
 /**
- * Start in GPS unless location is refused or the player picked the demo.
- * The Test Layer starts in GPS only when the player chose GPS there before.
+ * Start in GPS unless location is refused. GotchiGO (World) always starts in
+ * GPS; the Test Layer starts in GPS only when the player chose GPS there before.
  */
 export function shouldStartWithGps(
   permission: PermissionState | "unavailable",
@@ -60,5 +60,7 @@ export function shouldStartWithGps(
   chosenGps = gpsChosen(),
 ) {
   if (testLayer && !chosenGps) return false;
+  // GotchiGO (World) is the real GPS game: a demo picked there once never sticks.
+  if (!testLayer) chosenDemo = false;
   return !chosenDemo && (permission === "granted" || permission === "prompt");
 }

@@ -7,7 +7,12 @@ test("the game starts in the world around the player unless location is refused 
   assert.equal(shouldStartWithGps("prompt", false), true);
   assert.equal(shouldStartWithGps("denied", false), false);
   assert.equal(shouldStartWithGps("unavailable", false), false);
-  assert.equal(shouldStartWithGps("granted", true), false);
+  assert.equal(shouldStartWithGps("granted", true, true, true), false);
+});
+
+test("GotchiGO always starts in GPS, even after the demo was picked there once", () => {
+  assert.equal(shouldStartWithGps("granted", true, false, false), true);
+  assert.equal(shouldStartWithGps("denied", true, false, false), false);
 });
 
 test("the Test Layer opens in the Plzeň demo until the player taps Use GPS there", () => {

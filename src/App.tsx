@@ -4045,7 +4045,10 @@ export default function App() {
     modeAria: arena || nativePlay ? tr("Use GPS, my location") : tr("Demo, back to city demo"),
     onModeSwitch: () => {
       backToMap();
-      void (arena || nativePlay ? locate() : returnToArena());
+      if (arena || nativePlay) return void locate();
+      // GotchiGO has no demo of its own: Demo opens the Plzeň demo in the Test Layer.
+      if (gameLayer && !gameLayer.test && gameLayer.testLayerUrl) return location.assign(gameLayer.testLayerUrl);
+      returnToArena();
     },
     onLocate: () => {
       backToMap();
