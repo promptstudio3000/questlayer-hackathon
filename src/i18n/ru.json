@@ -3365,5 +3365,6 @@
   "Noted; the NPC checks it before telling anyone.": "Записано; персонаж проверит, прежде чем рассказывать.",
   "Your answer helps other explorers · +{0} XP for a new tip": "Твой ответ поможет другим исследователям · +{0} XP за новый совет",
   "Your answer…": "Твой ответ…",
-  "{0} is typing": "{0} печатает"
+  "{0} is typing": "{0} печатает",
+  "Map settings": "Настройки карты"
 }
