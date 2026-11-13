@@ -1,7 +1,7 @@
 // Settings → Account and devices → "Open in a wallet". The game only explains
 // and links: the 12 words are made, shown and checked in the secure account
 // window, so this page never sees them.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { ArrowSquareOut, Copy, Key, PencilSimpleLine, Wallet, WarningCircle } from "@phosphor-icons/react";
 import { tr } from "./i18n";
 import { Dialog } from "./Dialog";
@@ -30,6 +30,13 @@ export function WalletWords({
   const [step, setStep] = useState<"closed" | "intro" | "done">("closed"),
     [copied, setCopied] = useState(false),
     working = busy === "wallet-words";
+  // Load the secure window's code while the warning is read, so Continue opens
+  // the window at once: a browser blocks it once the tap is a few seconds old.
+  useEffect(() => {
+    if (step !== "intro") return;
+    void import("./account-recovery").catch(() => undefined);
+    void import("./signing-vault/client.ts").catch(() => undefined);
+  }, [step]);
   const testnet = NEAR_NETWORK === "testnet";
   // The account name is public; only this is ever copied.
   async function copy() {

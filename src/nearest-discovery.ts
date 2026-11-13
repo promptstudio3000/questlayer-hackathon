@@ -78,7 +78,9 @@ export type QuestOutlook =
   | { state: "later"; opensAt: number }
   /** Nothing checked for quests here today (empty POI cell). */
   | { state: "empty" }
-  /** Everything here is done or closed for today. */
+  /** Quests here today closed before the explorer did any of them. */
+  | { state: "closed" }
+  /** Everything here is done (or closed after some were done) for today. */
   | { state: "none" };
 
 // First session outside the reviewed city: the coach and the map point at
@@ -105,9 +107,11 @@ export function poiQuestOutlook({
     zones.filter((z) => z.source === "poi").map((z) => [z.id, z]),
   );
   let best: NearestQuest | null = null;
-  let opensAt = Infinity;
+  let opensAt = Infinity,
+    done = false;
   for (const quest of quests) {
     const zone = quest.zone_id ? zoneById.get(quest.zone_id) : undefined;
+    if (zone && quest.completed) done = true;
     if (
       !zone ||
       quest.completed ||
@@ -131,5 +135,5 @@ export function poiQuestOutlook({
   if (best) return { state: "open", nearest: best };
   if (Number.isFinite(opensAt)) return { state: "later", opensAt };
   if (emptyCell || !zoneById.size) return { state: "empty" };
-  return { state: "none" };
+  return done ? { state: "none" } : { state: "closed" };
 }

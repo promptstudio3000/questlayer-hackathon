@@ -322,3 +322,21 @@ test("payout rounds mint within minutes, and the city demo pays like the map", a
     db.close();
   }
 });
+
+test("Test Layer starter grant: once per explorer with an account and a coin, capped per day, never on World", async () => {
+  const { grantStarters } = await import("../server/payouts/worker.mjs");
+  const { db, walker, guest, w, coins } = await setup();
+  const env = { TEST_STARTER_QGOLD: "250", TEST_STARTER_DAILY: "1" };
+  assert.equal(grantStarters(db, NOW + 1000, env, true), 0, "no coin yet");
+  void w;
+  claimCoin(db, walker, coins[0].id, fix(coins[0], NOW), NOW);
+  claimCoin(db, guest, coins[1].id, fix(coins[1], NOW), NOW);
+  assert.equal(grantStarters(db, NOW + 1000, env, false), 0, "World never grants");
+  assert.equal(grantStarters(db, NOW + 1000, {}, true), 0, "off by default");
+  assert.equal(grantStarters(db, NOW + 1000, env, true), 1, "only the linked explorer");
+  assert.equal(grantStarters(db, NOW + 2000, env, true), 0, "once");
+  const starter = unpaidRewards(db, NOW + 1000).find((r) => r.ref === `starter:${walker}`);
+  assert.equal(starter.kind, "zone");
+  assert.equal(starter.accountId, "walker.testnet");
+  assert.equal(starter.amountYocto, 250n * 10n ** 15n); // 250 game QGOLD at R = 0.001
+});

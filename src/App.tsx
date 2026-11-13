@@ -1,6 +1,7 @@
 import { currentZone, zoneInteriorMargin } from "./zone-presence";
 import { ZonePresence } from "./ZonePresence";
 import { MapSurface } from "./MapSurface";
+import type { CreatorCommunityView } from "./creator-community-types";
 import { ActorPortrait } from "./ActorPortrait";
 import { nearbyAction, type NearbyActor } from "./nearby-action";
 import type { Coin } from "./types";
@@ -2108,10 +2109,20 @@ export default function App() {
     setFollow(false);
     if (arena && !nativePlay) faceToward(start, target.title);
   }
+  // A creator quest opened from the map (its pin or the goal chip) shows
+  // only that quest in a dialog over the map (Lubos, 13 Nov 2026). The
+  // Community screen with its tabs opens only from its own button.
+  const [mapQuestId, setMapQuestId] = useState<string | null>(null);
   function openCommunityGoal() {
     if (!communityGoal) return;
+    setMapQuestId(communityGoal.questId);
+  }
+  function openMapQuestElsewhere(next: CreatorCommunityView) {
+    setMapQuestId(null);
+    // Back to a list just closes; a deliberate tap (creator, edit) opens Community.
+    if (next.page === "community" || next.page === "participations" || next.page === "quest") return;
     setTab("community");
-    setCreatorView({ page: "quest", questId: communityGoal.questId });
+    setCreatorView(next);
     setSheetExpanded(true);
   }
   function guideToQuest(q: Quest) {
@@ -3102,6 +3113,9 @@ export default function App() {
     });
     return ok === true;
   }
+  // A map refresh in the background never locks the account and wallet
+  // buttons: they act on the account, not on the world being loaded.
+  const accountBusy = busy === "world" ? "" : busy;
   async function exportWalletWords() {
     const ok = await action("wallet-words", async () => {
       const deviceKey = invisible.deviceKey;
@@ -3842,7 +3856,9 @@ export default function App() {
           ? tr("Quests here open at {0}. Street coins count already.", { 0: new Date(poiOutlook.opensAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: world?.timezone || undefined }) })
           : poiOutlook.state === "empty"
             ? tr("No quests in this spot today. Street coins still count; quests wait near parks, squares and landmarks.")
-            : tr("You've done every quest here today. New ones open tomorrow.")}
+            : poiOutlook.state === "closed"
+              ? tr("Quests here are closed for today. Street coins still count; new quests open tomorrow.")
+              : tr("You've done every quest here today. New ones open tomorrow.")}
       </p>
     );
   // The map marks one "next" place: the coach's POI quest, else the nearest
@@ -4241,9 +4257,7 @@ export default function App() {
           // and Secrets are reached from the Community button and Nearby.
           creatorPlaces={creatorPlaces}
           onCreatorPlace={(questId) => {
-            setTab("community");
-            setCreatorView({ page: "quest", questId });
-            setSheetExpanded(true);
+            setMapQuestId(questId);
             setFollow(false);
           }}
           actorsWorldId={world?.id || null}
@@ -5123,7 +5137,7 @@ export default function App() {
                     accountId={invisible.accountId}
                     keys={invisible.keys}
                     localPublicKey={invisible.publicKey}
-                    busy={busy}
+                    busy={accountBusy}
                     onSetupRecovery={setupRecoveryPasskey}
                     onRevoke={revokeDevice}
                     onRestore={restoreThisDevice}
@@ -5152,7 +5166,7 @@ export default function App() {
                       accountId={invisible.accountId}
                       keys={invisible.keys}
                       localPublicKey={invisible.publicKey}
-                      busy={busy}
+                      busy={accountBusy}
                       onSetupRecovery={setupRecoveryPasskey}
                       onRevoke={revokeDevice}
                       onRestore={restoreThisDevice}
@@ -5598,6 +5612,29 @@ export default function App() {
       )}
       {lockedZoneDialog && player && !walletChoices && (
         <LockedZoneDialog zone={lockedZoneDialog} onClose={() => setLockedZoneDialog(null)} />
+      )}
+      {mapQuestId && player && !walletChoices && (
+        <Dialog presentation="map" label={tr("Creator quests")} onClose={() => setMapQuestId(null)}>
+          <div className="map-quest-dialog">
+            <CreatorCommunity
+              key={`${player.id}:${mapQuestId}`}
+              player={player}
+              notify={notify}
+              view={{ page: "quest", questId: mapQuestId }}
+              onViewChange={openMapQuestElsewhere}
+              onClose={() => setMapQuestId(null)}
+              onGo={(target) => { setMapQuestId(null); goToCreatorQuest(target); }}
+              onRate={keepQuestRating}
+              onPlayerChange={me}
+              position={position}
+              money={{
+                accountId: explorerId || player.wallets[0]?.account_id || "",
+                managed: !!explorerId,
+                pay: operateCreatorPayment,
+              }}
+            />
+          </div>
+        </Dialog>
       )}
       {walletChoices && (
         <Dialog label={walletChoiceKind === "evm" ? tr("Choose an Ethereum wallet") : tr("Choose a NEAR wallet")} onClose={() => chooseWallet(null)}>

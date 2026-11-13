@@ -520,8 +520,9 @@ export function createActorService(db, options = {}) {
     };
   }
 
-  // Builds today's city plans (arena and reviewed cities) ahead of the first
-  // player, so no request pays for a cold plan. Street cells are cheap (~25 ms)
+  // Builds today's reviewed city plans (arena and Plzeň) ahead of the first
+  // player, so no request pays for a cold plan. Auto cities with the generic
+  // cast are left to their first visit. Street cells are cheap (~25 ms)
   // and are left to the first visit. Returns how many plans were built.
   function warm(now = clock()) {
     let built = 0;
@@ -536,6 +537,8 @@ export function createActorService(db, options = {}) {
         continue;
       }
       if (!manifest.cityId || !(manifest.endsAt > now)) continue;
+      // Only reviewed casts (Plzeň) are warmed; auto cities plan on their first visit.
+      if (manifest.cityStatus === "auto" || castFor(manifest)?.generic) continue;
       const before = plans.size;
       try {
         planFor(manifest);
@@ -547,5 +550,35 @@ export function createActorService(db, options = {}) {
     return built;
   }
 
-  return { list, encounter, requireEncounter, planFor, warm, castNow, manifestFor };
+  // The same warm-up for server start: it yields to the event loop between
+  // plans. With a hundred auto city worlds the plans take ~30 s of CPU, which
+  // must not block /api/health during a release activation.
+  async function warmInBackground(now = clock()) {
+    let built = 0;
+    const rows = db
+      .prepare("SELECT manifest FROM worlds WHERE created_at >= ?")
+      .all(now - 2 * 86_400_000);
+    for (const row of rows) {
+      await new Promise((resolve) => setImmediate(resolve));
+      let manifest;
+      try {
+        manifest = JSON.parse(row.manifest);
+      } catch {
+        continue;
+      }
+      if (!manifest.cityId || !(manifest.endsAt > now)) continue;
+      // Only reviewed casts (Plzeň) are warmed; auto cities plan on their first visit.
+      if (manifest.cityStatus === "auto" || castFor(manifest)?.generic) continue;
+      const before = plans.size;
+      try {
+        planFor(manifest);
+      } catch {
+        continue;
+      }
+      if (plans.size > before) built++;
+    }
+    return built;
+  }
+
+  return { list, encounter, requireEncounter, planFor, warm, warmInBackground, castNow, manifestFor };
 }
