@@ -3219,5 +3219,6 @@
  "Choose a price between 1M and 1,000B QGOLD.": "Elige un precio entre 1M y 1.000B QGOLD.",
  "Practice QGOLD is play money with no value.": "El QGOLD de práctica es dinero de juego sin valor.",
  "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "Un revisor comprueba tu respuesta, hasta 3 intentos. Al empezar se guarda para ti esta versión de la misión. No hay recompensa de XP, objeto ni QGOLD, y nadie comprueba el GPS ni una visita física.",
- "No treasury vote is open on this layer right now.": "Ahora no hay ninguna votación del tesoro abierta en esta capa."
+ "No treasury vote is open on this layer right now.": "Ahora no hay ninguna votación del tesoro abierta en esta capa.",
+ "The reward must be at least {0} QGOLD per completion.": "La recompensa debe ser de al menos {0} QGOLD por cada vez completada."
 }

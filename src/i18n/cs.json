@@ -3219,5 +3219,6 @@
  "Choose a price between 1M and 1,000B QGOLD.": "Zvol cenu mezi 1M a 1 000B QGOLD.",
  "Practice QGOLD is play money with no value.": "Cvičný QGOLD jsou herní peníze bez hodnoty.",
  "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "Odpověď kontroluje recenzent, máš až 3 pokusy. Spuštěním si uložíš tuto verzi questu. Není nastavena žádná odměna v XP, předmětech ani QGOLD a nikdo neověřuje GPS ani fyzickou návštěvu.",
- "No treasury vote is open on this layer right now.": "Na této vrstvě teď neprobíhá žádné hlasování o treasury."
+ "No treasury vote is open on this layer right now.": "Na této vrstvě teď neprobíhá žádné hlasování o treasury.",
+ "The reward must be at least {0} QGOLD per completion.": "Odměna musí být aspoň {0} QGOLD za jedno splnění."
 }

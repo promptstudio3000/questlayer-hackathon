@@ -196,6 +196,8 @@ function shareUrl(kind: "task" | "secret", id: string, k?: string | null) {
   return `${location.origin}/#${kind}=${encodeURIComponent(id)}${k ? `&k=${encodeURIComponent(k)}` : ""}`;
 }
 const feeOnTop = (v: number) => Math.ceil(v / 10);
+/** Smallest task reward the server accepts (server/market/service.mjs). */
+const MIN_TASK_REWARD = 100;
 const when = (ms: number) =>
   new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(ms);
 
@@ -880,7 +882,7 @@ function Review({ label, children }: { label: string; children: ReactNode }) {
 // is validated by the browser before the next one opens; nothing is sent
 // until the last step.
 function TaskForm({ balance, position, busy, onClose, submit }: { balance: number; position: Point; busy: boolean; onClose: () => void; submit: (input: Record<string, unknown>) => void }) {
-  const [v, setV] = useState({ title: "", description: "", type: "go", reward: "5", slots: "1", days: "7", visibility: "public", assignee: "", group: "", answer: "", rounds: "4", everyDays: "7" });
+  const [v, setV] = useState({ title: "", description: "", type: "go", reward: String(MIN_TASK_REWARD), slots: "1", days: "7", visibility: "public", assignee: "", group: "", answer: "", rounds: "4", everyDays: "7" });
   const [step, setStep] = useState(0);
   const set = (key: keyof typeof v) => (e: { target: { value: string } }) => setV({ ...v, [key]: e.target.value });
   const reward = units(v.reward),
@@ -888,7 +890,8 @@ function TaskForm({ balance, position, busy, onClose, submit }: { balance: numbe
     rounds = v.type === "recurring" ? Math.max(2, Number(v.rounds) || 2) : 1;
   const total = reward * slots * rounds,
     fee = feeOnTop(total);
-  const short = total + fee > balance;
+  const short = total + fee > balance,
+    tooSmall = reward < MIN_TASK_REWARD * GOLD;
   const VISIBILITY: Record<string, string> = {
     public: tr("Everyone nearby"),
     link: tr("Anyone with the link"),
@@ -935,6 +938,7 @@ function TaskForm({ balance, position, busy, onClose, submit }: { balance: numbe
         </Field>
         {v.visibility === "user" && <Field label={tr("Player id or NEAR account")}><input required value={v.assignee} onChange={set("assignee")} /></Field>}
         {v.visibility === "group" && <Field label={tr("Player ids or NEAR accounts, separated by commas")}><input required value={v.group} onChange={set("group")} /></Field>}
+        {tooSmall && <p className="market-meta" role="status">{tr("The reward must be at least {0} QGOLD per completion.", { 0: gold(MIN_TASK_REWARD * GOLD) })}</p>}
         {short && <p role="alert">{tr("Not enough QGOLD in your account.")}</p>}
       </>}
       {step === 2 && <>
@@ -953,8 +957,8 @@ function TaskForm({ balance, position, busy, onClose, submit }: { balance: numbe
         {short && <p role="alert">{tr("Not enough QGOLD in your account.")}</p>}
       </>}
       {step < 2
-        ? <button disabled={step === 1 && reward < 100 * GOLD}>{tr("Continue")}</button>
-        : <button disabled={busy || short || reward < 100 * GOLD}>{tr("Post and hold the reward")}</button>}
+        ? <button disabled={step === 1 && tooSmall}>{tr("Continue")}</button>
+        : <button disabled={busy || short || tooSmall}>{tr("Post and hold the reward")}</button>}
     </FormShell>
   );
 }
