@@ -3219,5 +3219,6 @@
  "Choose a price between 1M and 1,000B QGOLD.": "请选择 1M 到 1,000B QGOLD 之间的价格。",
  "Practice QGOLD is play money with no value.": "练习 QGOLD 是没有价值的游戏币。",
  "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "审核员会检查你的回答，最多 3 次机会。开始后会为你保留此版本的任务。未设置 XP、物品或 QGOLD 奖励，也不会检查 GPS 或实地到访。",
+ "No treasury vote is open on this layer right now.": "此图层目前没有开放的金库投票。",
  "The reward must be at least {0} QGOLD per completion.": "每次完成的奖励至少为 {0} QGOLD。"
 }

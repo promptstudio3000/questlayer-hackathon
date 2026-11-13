@@ -1,0 +1,32 @@
+{
+  "verifiedAt": "2026-11-12T14:04:48.399Z",
+  "network": "testnet",
+  "contractId": "nfts-tl1112.questlayer-dev-20261101.testnet",
+  "wasmSha256": "d82f4dee87eccc225e83f6048faedc49c96840cfa0eed0de18e57b388884b62a",
+  "supportedEditions": [
+    "polar",
+    "moon",
+    "gold",
+    "ember",
+    "dew",
+    "bloom",
+    "storm",
+    "comet",
+    "nova",
+    "pilgrim",
+    "chronicle",
+    "ledger",
+    "wardbreaker",
+    "wisp",
+    "bossbane",
+    "stride",
+    "kindle",
+    "compass",
+    "quill",
+    "laurel",
+    "summit",
+    "patron",
+    "season"
+  ],
+  "transactions": []
+}
