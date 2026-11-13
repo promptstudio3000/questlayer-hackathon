@@ -273,7 +273,7 @@ function queueOps(state, head) {
   }
   // Public files left at "running" by an op that was killed earlier (state already says failed).
   for (const [id, o] of Object.entries(state.ops)) {
-    if (o.status !== "failed") continue;
+    if (o.status !== "failed" || unitActive(id)) continue; // a unit started again by hand is still running
     const file = join(STATUS_DIR, "ops", `${id}.json`);
     const pub = readJson(file, null);
     if (pub?.status === "running") writeJson(file, { ...pub, status: "failed", error: o.error || "The operation stopped without a result.", finishedAt: o.finishedAt || now() });
