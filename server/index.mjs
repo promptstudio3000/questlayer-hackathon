@@ -640,11 +640,7 @@ const actorRoutes = createActorRoutes(actorService);
 // first /api/actors call does not stall the server (docs/PERFORMANCE-BUDGET.md).
 if (actorService && !backgroundWorkersDisabled)
   setTimeout(() => {
-    try {
-      actorService.warm();
-    } catch (e) {
-      console.error("Actor plan warm-up failed:", e.name);
-    }
+    actorService.warmInBackground().catch((e) => console.error("Actor plan warm-up failed:", e?.name));
   }, 1000).unref();
 // A city world opened for the first time today gets its actor plan built
 // right after the response, before the client asks for the cast.

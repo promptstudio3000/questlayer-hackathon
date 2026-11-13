@@ -41,8 +41,8 @@ npm run world:sample-check -- [--poi /var/lib/questlayer-poi/current.sqlite] [--
 ```
 
 Nobody walks the quest sample by hand. The check (`server/poi/sample-check.mjs`) takes a seeded sample of
-quest-ready OpenStreetMap places from the POI file, asks Overpass once per cell (one request at a time, with a
-pause) and runs the answer through the same taxonomy and safety filter as the import. Each place is
+quest-ready OpenStreetMap places from the POI file, asks Overpass once per place (about 300 m around it, one
+request at a time, three tries, with a pause) and runs the answer through the same taxonomy and safety filter as the import. Each place is
 `confirmed`, `renamed` (still fine, name changed), `moved` (check-in point more than 30 m away), `now-excluded`
 (with the new reason codes), `gone` (no longer in OpenStreetMap) or `unchecked` (request failed). Output:
 `report.json` (schema `questlayer.poi-sample-check/1`) and `report.md` with OpenStreetMap links, in

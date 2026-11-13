@@ -547,5 +547,33 @@ export function createActorService(db, options = {}) {
     return built;
   }
 
-  return { list, encounter, requireEncounter, planFor, warm, castNow, manifestFor };
+  // The same warm-up for server start: it yields to the event loop between
+  // plans. With a hundred auto city worlds the plans take ~30 s of CPU, which
+  // must not block /api/health during a release activation.
+  async function warmInBackground(now = clock()) {
+    let built = 0;
+    const rows = db
+      .prepare("SELECT manifest FROM worlds WHERE created_at >= ?")
+      .all(now - 2 * 86_400_000);
+    for (const row of rows) {
+      await new Promise((resolve) => setImmediate(resolve));
+      let manifest;
+      try {
+        manifest = JSON.parse(row.manifest);
+      } catch {
+        continue;
+      }
+      if (!manifest.cityId || !(manifest.endsAt > now)) continue;
+      const before = plans.size;
+      try {
+        planFor(manifest);
+      } catch {
+        continue;
+      }
+      if (plans.size > before) built++;
+    }
+    return built;
+  }
+
+  return { list, encounter, requireEncounter, planFor, warm, warmInBackground, castNow, manifestFor };
 }

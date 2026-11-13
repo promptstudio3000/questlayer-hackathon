@@ -5,13 +5,13 @@
 //                                 [--out output/qa/poi-sample-check] [--delay-ms 2000]
 //
 // Picks a seeded sample of quest-ready OpenStreetMap places from the POI file,
-// asks Overpass once per cell (one request at a time, a pause between them) and
+// asks Overpass once per place (one request at a time, retries, a pause between) and
 // writes report.json + report.md into <out>/<POI version>/. Read-only: it
 // never changes the POI file or the game database.
 import { DatabaseSync } from "node:sqlite";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join, resolve } from "node:path";
-import { livePoiQuery } from "../server/poi/live-source.mjs";
+import { livePoiQueryBox } from "../server/poi/live-source.mjs";
 import { MAP_USER_AGENT, boundedJson } from "../server/spatial/map-data.mjs";
 import { compareCell, pickSample, summarize } from "../server/poi/sample-check.mjs";
 
@@ -34,21 +34,37 @@ const version = db.prepare("SELECT value FROM meta WHERE key='version'").get()?.
 const sample = pickSample(db, { size, seed });
 db.close();
 
-const cells = new Map();
-for (const r of sample) cells.set(r.h3r7, [...(cells.get(r.h3r7) || []), r]);
-const results = [];
-for (const [cell, rows] of cells) {
-  try {
-    const res = await fetch(`${url}?${new URLSearchParams({ data: livePoiQuery(cell) })}`, {
-      headers: { "User-Agent": MAP_USER_AGENT },
-      signal: AbortSignal.timeout(40_000),
-    });
-    const json = await boundedJson(res, 16 * 1024 * 1024);
-    results.push(...compareCell(rows, json?.elements || []));
-  } catch (e) {
-    results.push(...rows.map((r) => ({ ...r, status: "unchecked", error: String(e?.message || e).slice(0, 120) })));
+// One small query per place (about 300 m around its check-in point, enough for
+// its grounds and paths): the public Overpass server times out on whole cells.
+const PAD = 0.003;
+async function ask(r) {
+  const query = livePoiQueryBox([r.lat - PAD, r.lng - PAD * 1.5, r.lat + PAD, r.lng + PAD * 1.5]);
+  let last;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, {
+        method: "POST",
+        body: new URLSearchParams({ data: query }),
+        headers: { "User-Agent": MAP_USER_AGENT },
+        signal: AbortSignal.timeout(90_000),
+      });
+      return await boundedJson(res, 16 * 1024 * 1024);
+    } catch (e) {
+      last = e;
+      await new Promise((ok) => setTimeout(ok, 15_000 * (attempt + 1)));
+    }
   }
-  await new Promise((r) => setTimeout(r, delayMs));
+  throw last;
+}
+const results = [];
+for (const r of sample) {
+  try {
+    const json = await ask(r);
+    results.push(...compareCell([r], json?.elements || []));
+  } catch (e) {
+    results.push({ ...r, status: "unchecked", error: String(e?.message || e).slice(0, 120) });
+  }
+  await new Promise((ok) => setTimeout(ok, delayMs));
 }
 
 const summary = summarize(results);
