@@ -42,8 +42,9 @@ Same code, one switch: `QL_LAYER=test` (server, `server/native/network.mjs`) and
   much Test QGOLD all explorers together can receive; top it up when it runs low.
 - **Demo first.** The Test Layer opens in the Plzeň demo for every visitor, also with location allowed far
   from Plzeň (`src/play-here.ts`). GPS starts only after the visitor taps Use GPS there; that choice is
-  remembered on the device until they switch back to the demo. GotchiGO (World) is the real GPS game: it always
-  starts in GPS when location is allowed, and its Demo switch opens the Test Layer instead of a local demo.
+  remembered on the device until they switch back to the demo. GotchiGO (World) is the real GPS game: its Demo
+  switch opens the Test Layer instead of a local demo. A device that picked the demo on World before keeps it
+  until Use GPS in Map settings.
 - **Intents market.** The Test Layer shares World's NEAR Intents verifier record, but its Auras live in its own
   collectibles contract, so the server trades the market's collection (`nativeMarket.nfts`), not the record's
   `nftContract`.
