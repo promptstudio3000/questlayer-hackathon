@@ -18,7 +18,7 @@ import {
   round7,
 } from "./geo.mjs";
 
-export const POI_SAFETY_VERSION = "poi-safety-v1";
+export const POI_SAFETY_VERSION = "poi-safety-v2";
 export const MAX_SNAP_M = 40;
 export const CHILD_BUFFER_M = 25;
 export const MIN_OVERTURE_CONFIDENCE = 0.5;
@@ -405,10 +405,15 @@ export const levelOf = (code) =>
     ? "review"
     : "excluded";
 
-/** ok | review | excluded from a list of reason codes. */
+/**
+ * ok | excluded from a list of reason codes. Since poi-safety-v2 nobody reviews
+ * places by hand: a review-level reason (cemetery, church exterior, memorial,
+ * skate park...) excludes the place just like a hard reason. `levelOf` still
+ * tells the two kinds apart for reports. The `review` state stays valid in the
+ * file schema so older releases still load.
+ */
 export function safetyOf(reasons) {
-  if (reasons.some((r) => levelOf(r) === "excluded")) return "excluded";
-  return reasons.length ? "review" : "ok";
+  return reasons.length ? "excluded" : "ok";
 }
 
 const ROAD_WITH_SIDEWALK = any("primary", "secondary", "tertiary");

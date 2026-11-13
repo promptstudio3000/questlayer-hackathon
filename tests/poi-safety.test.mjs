@@ -169,12 +169,14 @@ test("every exclusion rule has a fixture that carries its reason code", () => {
     const r = records.find((x) => x.id === "osm:n1");
     assert.ok(r, code);
     assert.ok(r.reasons.includes(code), `${code}: ${r.reasons}`);
-    assert.equal(r.safety, level, code);
+    // poi-safety-v2: review-level reasons exclude too; the level only labels the rule.
+    assert.equal(levelOf(code), level, code);
+    assert.equal(r.safety, "excluded", code);
     assert.ok(SAFETY_REASONS[code], code);
   }
 });
 
-test("POIs inside grounds inherit the grounds' reason; review grounds give review", () => {
+test("POIs inside grounds inherit the grounds' reason; review grounds exclude too", () => {
   const { records } = classify([
     rect(20, 0, -50, 100, 50, { amenity: "hospital" }),
     node(21, 50, 10, { tourism: "artwork", artwork_type: "sculpture" }),
@@ -192,7 +194,7 @@ test("POIs inside grounds inherit the grounds' reason; review grounds give revie
   assert.ok(r["osm:n21"].reasons.includes("inside-hospital"));
   assert.equal(r["osm:n21"].safety, "excluded");
   assert.deepEqual(r["osm:n23"].reasons, ["inside-cemetery"]);
-  assert.equal(r["osm:n23"].safety, "review");
+  assert.equal(r["osm:n23"].safety, "excluded");
   assert.ok(r["osm:n25"].reasons.includes("inside-military"));
   assert.equal(r["osm:n25"].safety, "excluded");
 });
@@ -212,7 +214,7 @@ test("review categories and unnamed features carry reason codes", () => {
   const r = byId(records);
   assert.equal(r["osm:n1"].category, "skate_park");
   assert.deepEqual(r["osm:n1"].reasons, ["category-review"]);
-  assert.equal(r["osm:n1"].safety, "review");
+  assert.equal(r["osm:n1"].safety, "excluded");
   assert.deepEqual(r["osm:n2"].reasons, ["unnamed"]);
   assert.equal(r["osm:n2"].safety, "excluded");
   assert.equal(r["osm:n3"].safety, "ok");
@@ -405,7 +407,7 @@ test("reason levels and tag reasons stay consistent", () => {
 
 test("W3 adapter: classifyOsm, classifyOverture and assessPoi", () => {
   assert.equal(TAXONOMY_VERSION, "poi-taxonomy-v1");
-  assert.equal(SAFETY_VERSION, "poi-safety-v1");
+  assert.equal(SAFETY_VERSION, "poi-safety-v2");
   assert.equal(classifyOsm({ leisure: "park" }), "park");
   assert.equal(classifyOsm({ shop: "bakery" }), null);
   assert.equal(classifyOsm(undefined), null);
@@ -456,9 +458,9 @@ test("W3 adapter: classifyOsm, classifyOverture and assessPoi", () => {
     nearestPath: path,
     exclusion: { kind: "cemetery", id: "x" },
   });
-  assert.equal(cem.safety, "review");
+  assert.equal(cem.safety, "excluded");
   assert.equal(cem.reason, "inside-cemetery");
-  assert.deepEqual(cem.target, { lat: 49.75, lng: 13.38 });
+  assert.equal(cem.target, null);
   const closed = assessPoi(park, {
     nearestPath: path,
     closures: new Set(["osm:w100"]),
@@ -474,7 +476,7 @@ test("W3 adapter: classifyOsm, classifyOverture and assessPoi", () => {
     { id: "ovt:abc", category: "skate_park", name: "Skatepark", tags: {} },
     { nearestPath: path },
   );
-  assert.equal(ovt.safety, "review");
+  assert.equal(ovt.safety, "excluded");
   assert.equal(ovt.reason, "category-review");
   const river = assessPoi(
     {

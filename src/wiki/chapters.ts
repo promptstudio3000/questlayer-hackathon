@@ -1293,7 +1293,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "Faster than about 15 km/h (on foot or by bike, `FAIR_PLAY_MAX_SPEED_KMH`) returns `422 IMPLAUSIBLE_MOVE` (wait capped at 2 h).",
           "XP caps: the claim still succeeds, extra XP is trimmed and the response says so.",
-          "Rate limits on sign-up and APIs; all quests sit on safety-filtered public places.",
+          "Rate limits on sign-up and APIs; all quests sit on safety-filtered public places. A place the filter would once have sent to a human reviewer (church exterior, cemetery, memorial, skate park, unnamed place) is left out entirely: nobody reviews places by hand.",
           "Map notes, place messages, places and creator quests have reports, blocks and moderators.",
           "Money paths use database transactions with exactly-once ids; contracts keep their own invariants independent of the server.",
           "GPS can be spoofed: the server validates physical evidence, and the contracts bound what a compromised validator could do.",
