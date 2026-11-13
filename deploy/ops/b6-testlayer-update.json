@@ -1,0 +1,6 @@
+{
+  "id": "b6-testlayer-update",
+  "deployTarget": "testlayer",
+  "installKeys": [],
+  "note": "Update the Test Layer to World 9547586: map notes expiry fix and yield-only coin days."
+}
