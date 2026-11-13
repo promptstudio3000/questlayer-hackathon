@@ -1,7 +1,7 @@
 # MetaLayer integration contract and owner handoff
 
 13 November 2026. Task branch `weekend/m1-metalayer-first-expedition`, source base
-`18dffa97c8cc260c99e0243a5aba5e21f1a5fcb2`. This document describes the running
+`673e9fc77c56133955e01ae32b962ec2edfff3b6`. This document describes the running
 local slice and the remaining owner integration. It does not activate a contract,
 financial obligation, XP credit or NFT ownership. Use this branch as the review
 source, not the older local transfer patches. Start with the short
@@ -47,8 +47,9 @@ aiming at a mineable block.
 The atlas is folded until requested; block materials appear only while choosing
 one. The default world view has one short objective/status line. Community opens
 the quests, journal and onchain tabs, and detailed prose stays behind disclosures.
-The source baseline is the fetched integration commit `18dffa97`. Upstream tour,
-World/Test Layer selection and deployment records are retained as merged. Their
+The source baseline is the fetched integration commit `673e9fc7`. Upstream tour,
+World/Test Layer selection, wallet-balance/price changes, Game economy and
+realized-yield funding rules are retained as merged. Their
 presence in the base is not a deployment or activation of MetaLayer.
 
 ## Capabilities now and next

@@ -1,0 +1,146 @@
+{
+  "createdAt": "2026-11-13T10:25:06.033486+00:00",
+  "sourceBase": "673e9fc77c56133955e01ae32b962ec2edfff3b6",
+  "branch": "weekend/m1-metalayer-first-expedition",
+  "delivery": "review candidate; no production deployment",
+  "checks": [
+    {
+      "command": "npm run check",
+      "sourceBase": "673e9fc77c56133955e01ae32b962ec2edfff3b6",
+      "status": "passed",
+      "application": {
+        "tests": 1827,
+        "passed": 1827,
+        "failed": 0
+      },
+      "guardSuite": {
+        "tests": 1664,
+        "passed": 1642,
+        "skipped": 22,
+        "failed": 0
+      }
+    },
+    {
+      "command": "node --test tests/i18n.test.mjs tests/wiki.test.mjs tests/metalayer-expedition.test.mjs tests/metalayer-near.test.mjs",
+      "sourceBase": "673e9fc77c56133955e01ae32b962ec2edfff3b6",
+      "status": "passed",
+      "tests": 33
+    },
+    {
+      "command": "node scripts/e2e-metalayer-places.mjs",
+      "sourceBase": "673e9fc77c56133955e01ae32b962ec2edfff3b6",
+      "status": "passed",
+      "report": "world/world-ui.json",
+      "stateFixtures": false
+    },
+    {
+      "command": "npm run e2e:languages",
+      "sourceBase": "673e9fc77c56133955e01ae32b962ec2edfff3b6",
+      "status": "passed",
+      "report": "languages.json",
+      "languages": 11,
+      "screensPerLanguage": 13
+    },
+    {
+      "command": "npm run e2e:first-session -- --device=phone-390",
+      "sourceBase": "18dffa97c8cc260c99e0243a5aba5e21f1a5fcb2",
+      "status": "passed",
+      "report": "first-session/report.json",
+      "note": "Completed before the latest upstream rebase. Final PR CI exercises the new base on three browser/device profiles."
+    },
+    {
+      "command": "npm run e2e:layer",
+      "sourceBase": "18dffa97c8cc260c99e0243a5aba5e21f1a5fcb2",
+      "status": "passed",
+      "report": "expedition/verification.json"
+    },
+    {
+      "command": "node scripts/e2e-metalayer-story.mjs",
+      "sourceBase": "18dffa97c8cc260c99e0243a5aba5e21f1a5fcb2",
+      "status": "passed",
+      "report": "story/story-ui.json",
+      "fixtures": [
+        "completed extraction and checkpoint positions",
+        "dormant read-only verifier form capability"
+      ]
+    },
+    {
+      "command": "E2E_LANG=cs node scripts/e2e-metalayer-places.mjs",
+      "sourceBase": "18dffa97c8cc260c99e0243a5aba5e21f1a5fcb2",
+      "status": "passed",
+      "report": "cs/world-ui.json",
+      "stateFixtures": false
+    }
+  ],
+  "rebaseVerification": "MetaLayer client, server and original story/mining journey files are byte-identical across the last upstream rebase; latest full checks and fresh world/language journeys were repeated.",
+  "firstLoadLatestBuild": {
+    "jsRawKb": 702,
+    "jsGzipKb": 213,
+    "cssGzipKb": 33,
+    "scripts": 4,
+    "budgetsChanged": false
+  },
+  "sourceSha256": {
+    "docs/CLAUDE-METALAYER-BRIEF.md": "de3bb56235ede6ddaf494eb3f4f7dd220c0b98af8c78ab8710e3bc5c4f044648",
+    "docs/LAYER.md": "4f44927358c174ec4ce29e58f4078229733b4135fcacd57fd70edbd21591219a",
+    "docs/METALAYER-INTEGRATION.md": "77ea512491b7ca203c3b860464f89b48e66e4b27b962b360147aad9bf86eaade",
+    "docs/wiki-coverage.json": "fd14bcabb0f82cffad83c943281f0cd1695905b73d95dc7f35bb3097e9c47956",
+    "docs/wiki-stamps.json": "d00c3878d79449958910acdcb397fdd99b58ebac3a381e683392c29f62152d6a",
+    "scripts/e2e-layer.mjs": "adad899a6d091c5a24dc6827072397fb42b1f98ef3526728a8e0892aefcadf8c",
+    "scripts/e2e-metalayer-places.mjs": "182f6297b275447ae13295aa523f0f4272e836b1af48b219808cfb0288b410d5",
+    "scripts/e2e-metalayer-story.mjs": "62c1f4b322544186141f64b1ebd6d36fc8237b25478fb7c040011ef1fc96bc9f",
+    "scripts/preview-metalayer.mjs": "127ba40e41fae76337ef7c564547c1faa29bd730f8ac3caacc8e69140683af1a",
+    "server/layer/activity.mjs": "897db2cecd0ecce17ae8d214397c5c94e031ce7d527f16ee3cfa83e71fef6010",
+    "server/layer/expedition-world.d.mts": "b53acbe97fc9e7bf432f9852bf30eca9f1cfcf3d38d2ae722d4dc5dfcd158f4b",
+    "server/layer/expedition-world.mjs": "f24d3cb091bb2f0346fe90365a1524a270120884768879c2a313511818bf661d",
+    "server/layer/expedition.mjs": "cec2415d42a19f4473d7cbc510c2e04439c54f3505510c045c718662cea48a62",
+    "server/layer/layers.mjs": "6efd2806d9f1a2fa92b741687826a795dcfc0ecaf31c29cf57497aaf1db299fc",
+    "server/layer/routes.mjs": "05ad3928c4035a36f45cb09e937a290941cd62a7de9125c05d398f49569da8ce",
+    "server/layer/store.mjs": "f38227b2621f90ead4189d2db9b9c7b6499b174663f06e2400d782d68afe50c3",
+    "server/layer/story-world.d.mts": "ca425a30a09bbbe64715d194824446e06eddd9e1f8d939552878a10962884313",
+    "server/layer/story-world.mjs": "ff4b57e1388cd9e57d9fc726d1f22b1dd912de38e0049b21dc54e9f52c883d75",
+    "server/layer/story.mjs": "a4ef40f603122458a98b8f5838a56e03fdbfbd4b444f32cc0ae78906f8024529",
+    "server/schema-catalog.mjs": "bfbc7d08fd262033e5fc628df42e2fb10cf7d3ee5ebe2c0301c29ab39ceb3f1a",
+    "src/App.tsx": "c0aadc6199563f0aa35b1411fbc298aca89f231ed8fbc89b47ad25988eaeaf8c",
+    "src/i18n/ar.json": "dd0b43695af95e95819256a9327c8a1146bc6f00714978598577470e608e93b1",
+    "src/i18n/cs.json": "f75ef5d15b998d674dee7c27fab3da1286a478c56b57dea1f3940bc3ed8adf0a",
+    "src/i18n/de.json": "58891143b957a2b34cec1c3e766197bb124c3883ef31867d2717400bb6a13cfc",
+    "src/i18n/es.json": "86b287f6191f8da07971945c58ce980d498cea55ae6b2b8453589a4d7343bff7",
+    "src/i18n/fr.json": "1dceeabd4f4d6574700ab6900e34fb712440113fd6fe43e8eab8301c6edb33b1",
+    "src/i18n/hi.json": "737979be0b739a161ba4e950c7fa51bca637461fa42c18178976b36233c9b046",
+    "src/i18n/ja.json": "8d0807f7591be35557863a7d6721a83f8b0481255751e0e2e67f021d0519b0fb",
+    "src/i18n/pt.json": "ea9c5bec6bfbca06a1db57687f165f9a909d47cfd64f482df0bc06d13b687064",
+    "src/i18n/ru.json": "123b86c5f32c7a962478ab441b46aea8444ad9627ea0357635e4acafbd63e1a0",
+    "src/i18n/zh.json": "68b2ea083b1d431df7c658c3b9adc2a93a9c39ee647cb2d51178e97e6b5ac1ce",
+    "src/layer/Layer.tsx": "9dbf2ec587bdefa6077a75d3b5ac238a4861a98132fd7a1f253cc69507674f11",
+    "src/layer/LayerActivity.tsx": "5937e101fae2f63881464281edd098cf015c205a7f49f1f99f717a68cad4a997",
+    "src/layer/LayerSettings.tsx": "a00a59968dd608a6b1dd4ad2240d819d999e7c93e6b1bc7805b5c84a31d9abea",
+    "src/layer/Minimap.tsx": "8461417f1447e13d99810027460b480b66ff2974b09447a13b06c806af4b1eb4",
+    "src/layer/PlacePanel.tsx": "927826d7d794cc4cf4d46cc89c98150822e463b8987628f07bb8f1caf03e9bcf",
+    "src/layer/StoryBoard.tsx": "9b1a4ded65a26d946093a884348f939e8d57c7fa95516ed865f72b32117dd502",
+    "src/layer/avatar.ts": "c763742daf4dda8767651aee1eea4057c18e5dd7817aa0e6fb041dc4507dd9ff",
+    "src/layer/engine.ts": "9ed51b37c7f22c7e27d52d90fac33f287f65fc2ee12b358d1ecd75f742adc4ee",
+    "src/layer/layer.css": "f932d650b3e9da5dda97fbe941f2337049e4a5ea97155f580d730b442908663b",
+    "src/layer/mesher.ts": "830c3ad2e450e819392e06bb841ff2fdcdd151ce7e5a17aad29ded4622070cea",
+    "src/layer/place-ui.ts": "30c7d6b5f5684b227cbd6c690bdfc49b575ddd15252d252432ecda9ed2dd1ed4",
+    "src/layer/story-ui.ts": "ea384620fcc4033161642648285cacd62cf374ed139f4d3c2c9b6c83e18d50ae",
+    "src/layer/world-places.ts": "767d6a39cc81f208edc896fc2be69750116a2feb20acba088d1c2de03f1eba93",
+    "src/wiki/chapters.ts": "c0f125ec06d1b32e2d466f2a0aa653085a7cb02595bf8e6915057f98d9cbddbd",
+    "tests/layer.test.mjs": "ec98d6d3e26debc4efe6b3e7b906bad9a692da6c9ea4c797b56853b1618460ad",
+    "tests/metalayer-expedition.test.mjs": "7b2c1a0c265b14ab281912e9b5afb18302ec814570a9970d6f8535c106701a13",
+    "tests/metalayer-near.test.mjs": "7cbc69d6d946d04390aa5bd774481c2c4d542ed3b7dbcb2af1f86e0ff52b4b71"
+  },
+  "limitations": [
+    "No actual MetaLayer NEAR submission or asset issuance",
+    "No physical iOS/Android verification",
+    "Intermittent startup blank world / Invalid position remains unresolved",
+    "Further UI and scene polish required"
+  ],
+  "knownFailureCapture": "known-startup-invalid-position.png",
+  "productionChanged": false,
+  "liveNearTransaction": false,
+  "metaGoldIssued": false,
+  "metaXpIssued": false,
+  "nftIssued": false,
+  "protectedPaths": "Repository guard required before push; no protected source edits. Final status is also checked in PR CI."
+}

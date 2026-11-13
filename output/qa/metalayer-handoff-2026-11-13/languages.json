@@ -1,0 +1,57 @@
+[
+  {
+    "language": "ar",
+    "screens": 13,
+    "problems": []
+  },
+  {
+    "language": "cs",
+    "screens": 13,
+    "problems": []
+  },
+  {
+    "language": "de",
+    "screens": 13,
+    "problems": []
+  },
+  {
+    "language": "en",
+    "screens": 13,
+    "problems": []
+  },
+  {
+    "language": "es",
+    "screens": 13,
+    "problems": []
+  },
+  {
+    "language": "fr",
+    "screens": 13,
+    "problems": []
+  },
+  {
+    "language": "hi",
+    "screens": 13,
+    "problems": []
+  },
+  {
+    "language": "ja",
+    "screens": 13,
+    "problems": []
+  },
+  {
+    "language": "pt",
+    "screens": 13,
+    "problems": []
+  },
+  {
+    "language": "ru",
+    "screens": 13,
+    "problems": []
+  },
+  {
+    "language": "zh",
+    "screens": 13,
+    "problems": []
+  }
+]

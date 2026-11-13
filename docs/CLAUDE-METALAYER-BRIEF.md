@@ -1,7 +1,7 @@
 # MetaLayer: Claude continuation brief
 
 Review branch: `weekend/m1-metalayer-first-expedition` → `claude/upbeat-gauss-5czir7`.
-Baseline: `18dffa97`. **Do not change production or merge automatically.**
+Baseline: `673e9fc7`. **Do not change production or merge automatically.**
 
 The owner wants QuestLayer's platform adapted to a shared Minecraft-like world,
 with the current QuestLayer UI and minimal phone chrome. This branch is a playable,
