@@ -2637,7 +2637,6 @@
  "Direction guide": "Guia de direção",
  "Drag the stick, or use arrows or WASD": "Arraste o joystick ou use as setas ou WASD",
  "Every coin and prize on the map is backed by today's funded pot: realized staking yield and sponsors, checked against the books.": "Cada moeda e prêmio no mapa é coberto pelo pote financiado de hoje: rendimento de staking realizado e patrocinadores, conferido com a contabilidade.",
- "Hide direction guide": "Ocultar o guia de direção",
  "Hide pot details": "Ocultar detalhes do pote",
  "Sends": "Envios",
  "Show coins everywhere": "Mostrar moedas em todo lugar",
@@ -3167,5 +3166,6 @@
  "Pip, your guide": "Pip, o teu guia",
  "Restore your account on this device: Settings → Account.": "Restaura a tua conta neste dispositivo: Definições → Conta.",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Guarda primeiro uma passkey ou as tuas 12 palavras. Sem elas este explorador não pode voltar.",
- "Shows your next step on the map": "Mostra o teu próximo passo no mapa"
+ "Shows your next step on the map": "Mostra o teu próximo passo no mapa",
+ "Guiding you to": "A guiar-te até"
 }

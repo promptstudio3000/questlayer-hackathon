@@ -173,7 +173,7 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "phone-hud",
     status: "live",
-    updated: "2026-11-11",
+    updated: "2026-11-13",
     sources: ["docs/ARCHITECTURE.md", "docs/GAME-RULES.md", "docs/SOURCES-AND-INTEGRATIONS.md", "README.md", "server/index.mjs", "src/main.tsx", "src/App.tsx", "src/DemoControls.tsx", "src/useDemoWalk.ts", "src/MapSurface.tsx", "src/nearby-action.ts", "src/Dialog.tsx", "src/QuestBrief.tsx", "src/activity-view.ts", "src/GameIntro.tsx", "src/learning-store.ts", "src/activity-help.ts", "src/FirstSession.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx", "src/zone-presence.ts", "src/ZonePresence.tsx", "src/MapSettings.tsx", "src/SettingsScreen.tsx", "src/MapActions.tsx", "src/InfoTip.tsx", "src/PotRow.tsx", "src/useHudCard.ts", "src/screens.tsx", "src/nearby-list.ts"],
     blocks: [
       { h: "Where everything lives" },
@@ -190,7 +190,9 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "One dismissible objective holds the next action. Confirmed results, recovery notices and the first equipment step come before nearby suggestions.",
-          "One tap on a quest (in Nearby, in a zone, from an NPC or from Today's board) goes straight to the map: the target is marked, a direction line points to it, other map content dims, and the X on the target chip clears it. No reward is reserved or claimed by choosing. At the place the same tap opens one confirm button. A plain map point (a tour stop, for example) can be the target too: it gets a pulsing ring and the same chip with distance and X, and clears itself within 15 m.",
+          "One tap on a quest (in Nearby, in a zone, from an NPC or from Today's board) goes straight to the map: the target is marked, a direction line points to it, other map content dims, and the X on the target chip clears it. The line shows only for a quest or place you started yourself: the chip under the header reads **Guiding you to** with its name, and its X ends the guidance. The nearest-discovery card at the bottom is only a suggestion and draws no line. No reward is reserved or claimed by choosing. At the place the same tap opens one confirm button. A plain map point (a tour stop, for example) can be the target too: it gets a pulsing ring and the same chip with distance and X, and clears itself within 15 m.",
+          "Inside a zone its name stands under the QuestLayer button as plain words over the map (no card); a tap opens the zone dialog. It never starts a quest by itself.",
+          "When a quest, find or character is in reach, the **Open …** button at the bottom gets a gold rim that gently pulses; with reduced motion on, the rim stays and the pulse is off.",
           "A zone dialog is the title, one row of icon facts (tier, open window, done today, XP, QGOLD and Auras left) and a list of one-tap quests.",
           "Notes, shouts and topics sit on the map as closed icons; a tap opens the text, a second tap opens the thread and the X folds it again.",
           "Only game elements sit on the map. Community quests, player tasks and Secrets have no map markers; they are reached from Community and Nearby.",
@@ -306,12 +308,12 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "day-clock",
     status: "live",
-    updated: "2026-11-11",
+    updated: "2026-11-13",
     sources: ["docs/WORLD-GENERATION.md", "docs/DEMO-ZONES.md", "server/demo-zones.mjs", "docs/LANDMARK-ERRANDS.md", "docs/DAILY-BOARD.md", "docs/QUEST-TEMPLATES.md", "server/world-planner.mjs", "server/poi-quests.mjs", "server/landmark-clue.mjs", "server/npc/routes.mjs", "src/DailyBoard.tsx", "src/actors-layer.ts", "src/ZoneActivities.tsx", "src/zone-landmarks.ts", "server/spatial/organic-shape.mjs", "src/LockedZone.tsx"],
     blocks: [
       { h: "City zones" },
       {
-        p: "A reviewed city gets six citywide zone slots a day: varied, non-overlapping polygons that need real walking between them. A zone shows a tall 3D totem of its type, a translucent wall, an aura on the ground and the loot it holds. Rarer zones open for a shorter window, with a countdown everyone sees.",
+        p: "A reviewed city gets six citywide zone slots a day: varied, non-overlapping polygons that need real walking between them. A zone shows a tall 3D totem of its type, a translucent wall, an aura on the ground and the loot it holds. The colour names the tier: **Tier 1 green, Tier 2 yellow, Tier 3 red**. Rarer zones open for a shorter window, with a countdown everyone sees.",
       },
       {
         table: {
@@ -576,7 +578,7 @@ export const CHAPTERS: Chapter[] = [
           rows: [
             ["Character", "Avatar, level and XP, your totals (finds, quests, tasks, monsters, wearables, badges, QGOLD on your account), Badges, a Messages tile for the inbox, and **Your story**: what happened, newest first (`GET /api/me/journey`)"],
             ["Stake", "One screen (Earnings was merged in on 12 Nov). On top, three small numbers: **your QGOLD** (with what the next payout adds), **QGOLD on the map today** and, once you have staked, **from your stake** (the yield kept for you). The page shows at once and fills its numbers as the chain answers: the tier ladder with the **yield share to the prize pool** (25 / 50 / 100 %) right under it, then a **tier choice** (Staker 2B, Tier 2 10B, Tier 3 50B QGOLD; picking Tier 2 or 3 sets the yield share to 100 %, and a smaller share raises the amount, because tiers count stake × share) and one **Stake** button for the chosen amount. The first tap sets up your personal vault (a one-time setup fee that is not returned), the next tap stakes; each money step asks for one Yes in a small QuestLayer confirmation window; when staking is not possible yet (no explorer account, too little test NEAR), the button opens a **Why you can't stake yet** dialog instead of an error: the same one-line dialog as in the Market, with one main button (use your QGOLD, get test NEAR or connect a NEAR wallet, which then pays the stake). There is **one stake per explorer**: afterwards the only action is **Withdraw** (about 1–7 days, 4 epochs; the game moves the unlocked NEAR back and you withdraw it to your balance). Once you have staked, a collapsed **Your vault** shows the vault address, owner, validator, staked NEAR and your yield share. Payment receipts live in **Settings → Receipts**. Stake amounts, tier requirements and locked-zone prices read in the same QGOLD as rewards (2 NEAR shows as 2B QGOLD); the payment itself still leaves in NEAR and the signing window shows that."],
-            ["Settings", "Its own sheet behind the **gear** in the top right corner, not a Profile tab (13 Nov). Four short parts: **Map** (city demo or GPS, My location, Full map, City overview, Globe, Turn the map with me, 3D character), **Game** (the helper switch for Pip or first-time tips, Show me to nearby explorers, language, sound, vibration, reduce motion), **Help** (How to play, Ask a question, **Game economy**, which explains the game in four illustrated steps (walk, collect, stake, unlock) and carries the same stake form as the Stake tab, with no chain details: those are on [Treasury](/treasury) and [Economy](/economy)) and **Account** (save the explorer with a passkey, the NEAR wallet with its 12 words, Sign out, which asks once because an explorer without a passkey or words cannot come back). Everything technical waits under one folded **Advanced**: linked NEAR and Ethereum wallets, devices, the on-chain feed, receipts and the developer reward-ledger switch. Reference links close the sheet"],
+            ["Settings", "A drawer that slides in from the right behind the **gear** in the top right corner, not a Profile tab (13 Nov); a strip of the map stays visible beside it and a tap there closes it. Four short parts: **Map** (city demo or GPS, My location, Full map, City overview, Globe, Turn the map with me, 3D character), **Game** (the helper switch for Pip or first-time tips, Show me to nearby explorers, language, sound, vibration, reduce motion), **Help** (How to play, Ask a question, **Game economy**, which explains the game in four illustrated steps (walk, collect, stake, unlock) and carries the same stake form as the Stake tab, with no chain details: those are on [Treasury](/treasury) and [Economy](/economy)) and **Account** (save the explorer with a passkey, the NEAR wallet with its 12 words, Sign out, which asks once because an explorer without a passkey or words cannot come back). Everything technical waits under one folded **Advanced**: linked NEAR and Ethereum wallets, devices, the on-chain feed, receipts and the developer reward-ledger switch. Reference links close the sheet"],
           ],
         },
       },

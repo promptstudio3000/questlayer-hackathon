@@ -2637,7 +2637,6 @@
  "Direction guide": "Ukazatel směru",
  "Drag the stick, or use arrows or WASD": "Táhni páčku, nebo použij šipky či WASD",
  "Every coin and prize on the map is backed by today's funded pot: realized staking yield and sponsors, checked against the books.": "Každá mince a cena na mapě je krytá dnešním financovaným potem: skutečným výnosem ze stakingu a sponzory, ověřeno proti účetnictví.",
- "Hide direction guide": "Skrýt ukazatel směru",
  "Hide pot details": "Skrýt podrobnosti potu",
  "Sends": "Platby",
  "Show coins everywhere": "Ukázat mince všude",
@@ -3167,5 +3166,6 @@
  "Pip, your guide": "Pip, tvůj průvodce",
  "Restore your account on this device: Settings → Account.": "Obnov účet na tomto zařízení: Nastavení → Účet.",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Nejdřív si ulož passkey nebo svých 12 slov. Bez nich se tento průzkumník nedá vrátit.",
- "Shows your next step on the map": "Ukazuje tvůj další krok na mapě"
+ "Shows your next step on the map": "Ukazuje tvůj další krok na mapě",
+ "Guiding you to": "Vede tě k cíli"
 }

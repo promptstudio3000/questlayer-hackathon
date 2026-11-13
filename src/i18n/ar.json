@@ -2637,7 +2637,6 @@
  "Direction guide": "دليل الاتجاه",
  "Drag the stick, or use arrows or WASD": "اسحب العصا، أو استخدم الأسهم أو WASD",
  "Every coin and prize on the map is backed by today's funded pot: realized staking yield and sponsors, checked against the books.": "كل عملة وجائزة على الخريطة مغطاة بصندوق اليوم الممول: عائد التخزين المحقق والرعاة، وتمت مطابقته مع الدفاتر.",
- "Hide direction guide": "إخفاء دليل الاتجاه",
  "Hide pot details": "إخفاء تفاصيل الصندوق",
  "Sends": "الإرسالات",
  "Show coins everywhere": "عرض العملات في كل مكان",
@@ -3167,5 +3166,6 @@
  "Pip, your guide": "بيب، مرشدك",
  "Restore your account on this device: Settings → Account.": "استعد حسابك على هذا الجهاز: الإعدادات ← الحساب.",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "احفظ مفتاح مرور أو كلماتك الـ12 أولاً. بدونها لا يمكن لهذا المستكشف أن يعود.",
- "Shows your next step on the map": "يعرض خطوتك التالية على الخريطة"
+ "Shows your next step on the map": "يعرض خطوتك التالية على الخريطة",
+ "Guiding you to": "يرشدك إلى"
 }
