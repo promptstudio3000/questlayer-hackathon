@@ -4995,64 +4995,66 @@ export default function App() {
             </>
           )}
           {tab === "settings" && (profileView === "character" || profileView === "badges") && (
-            <ScreenTabPanel idBase="profile" value="character">
-              <ProfileHero
-                avatar={
-                  <Character
-                    items={appearanceItems}
-                    // originTokenId and look (outfit tag) of the worn original.
-                    {...player.appearance}
-                  />
-                }
-                name={player.name}
-                appearanceLabel={`${player.nativeOutfit ? tr("Secured outfit") : tr("Game outfit")} · ${player.appearance.originTokenId ? tr("Original") : tr("Starter ghost")}`}
-                level={hudLevel}
-                progress={
-                  hudXp !== null && hudLevel !== null
-                    ? Math.max(
-                        0,
-                        Math.min(
-                          100,
-                          ((hudXp - 100 * (hudLevel - 1) ** 2) /
-                            (100 * (hudLevel ** 2 - (hudLevel - 1) ** 2))) *
+            <ScreenTabPanel idBase="profile" value="character" className="profile-character">
+              <div className="profile-character-grid">
+                <ProfileHero
+                  avatar={
+                    <Character
+                      items={appearanceItems}
+                      // originTokenId and look (outfit tag) of the worn original.
+                      {...player.appearance}
+                    />
+                  }
+                  name={player.name}
+                  appearanceLabel={`${player.nativeOutfit ? tr("Secured outfit") : tr("Game outfit")} · ${player.appearance.originTokenId ? tr("Original") : tr("Starter ghost")}`}
+                  level={hudLevel}
+                  progress={
+                    hudXp !== null && hudLevel !== null
+                      ? Math.max(
+                          0,
+                          Math.min(
                             100,
-                        ),
-                      )
-                    : null
-                }
-                detail={
-                  hudXp !== null && hudLevel !== null
-                    ? tr("{0} / {1} XP to level {2}", { 0: hudXp, 1: 100 * hudLevel ** 2, 2: hudLevel + 1 })
-                    : tr("Secure your explorer to keep progress")
-                }
-              />
-              {invisible.signer?.kind === "managed" && (
-                // The inbox pill shows only with new messages; this opens
-                // older conversations too (src/inbox/Inbox.tsx).
-                <div className="profile-tiles">
-                  <ProfileTile
-                    icon={ChatCircle}
-                    label={tr("Messages")}
-                    hint={tr("Private chats with explorers")}
-                    onClick={() =>
-                      window.dispatchEvent(new CustomEvent("questlayer:inbox-open", { detail: {} }))
-                    }
-                  />
-                </div>
-              )}
-              <CharacterJourney
-                refreshKey={`${player.id}:${player.xp}:${player.gold_u}`}
-                badges={
-                  <BadgeBook
-                    inline
-                    collapsible
-                    key={player.id}
-                    fix={fix}
-                    arena={arena}
-                    onConnectNear={() => void activateExplorer()}
-                  />
-                }
-              />
+                            ((hudXp - 100 * (hudLevel - 1) ** 2) /
+                              (100 * (hudLevel ** 2 - (hudLevel - 1) ** 2))) *
+                              100,
+                          ),
+                        )
+                      : null
+                  }
+                  detail={
+                    hudXp !== null && hudLevel !== null
+                      ? tr("{0} / {1} XP to level {2}", { 0: hudXp, 1: 100 * hudLevel ** 2, 2: hudLevel + 1 })
+                      : tr("Secure your explorer to keep progress")
+                  }
+                />
+                {invisible.signer?.kind === "managed" && (
+                  // The inbox pill shows only with new messages; this opens
+                  // older conversations too (src/inbox/Inbox.tsx).
+                  <div className="profile-tiles">
+                    <ProfileTile
+                      icon={ChatCircle}
+                      label={tr("Messages")}
+                      hint={tr("Private chats with explorers")}
+                      onClick={() =>
+                        window.dispatchEvent(new CustomEvent("questlayer:inbox-open", { detail: {} }))
+                      }
+                    />
+                  </div>
+                )}
+                <CharacterJourney
+                  refreshKey={`${player.id}:${player.xp}:${player.gold_u}`}
+                  badges={
+                    <BadgeBook
+                      inline
+                      collapsible
+                      key={player.id}
+                      fix={fix}
+                      arena={arena}
+                      onConnectNear={() => void activateExplorer()}
+                    />
+                  }
+                />
+              </div>
             </ScreenTabPanel>
           )}
           {settingsOpen && (
