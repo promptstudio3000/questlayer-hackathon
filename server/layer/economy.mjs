@@ -88,7 +88,9 @@ export function createMetaLayerChain({ provider, contractId, keyPath, loadAccoun
     const statuses = value ? JSON.parse(Buffer.from(value, "base64").toString()) : [];
     return { tx: r.transaction?.hash || r.transaction_outcome?.id, statuses };
   }
-  return { state, connect, view, award, get active() { return !!contractId; } };
+  // Live only where the server can pay: a contract and its recorder key. A
+  // checkout without the key (tests, previews) keeps the diamond HUD.
+  return { state, connect, view, award, get active() { return !!contractId && !!keyPath && existsSync(keyPath); } };
 }
 
 export function createMetaLayerEconomy(db, { chain = null, linkedAccount = () => null, now = Date.now, log = console } = {}) {

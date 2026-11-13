@@ -6,7 +6,8 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { preflightDatabase } from "../server/schema-compatibility.mjs";
-import { createMetaLayerEconomy, METALAYER_REWARDS } from "../server/layer/economy.mjs";
+import { createMetaLayerChain, createMetaLayerEconomy, METALAYER_REWARDS } from "../server/layer/economy.mjs";
+import { writeFileSync } from "node:fs";
 
 function fixture(t, { accounts = { "p-alice": "alice.testnet" }, statuses } = {}) {
   const db = openDatabase(":memory:"), clock = { at: 1_000_000 }, calls = [];
@@ -113,4 +114,15 @@ test("a database from the first MetaLayer payout release opens and gains the par
   createMetaLayerEconomy(db, { chain: null, linkedAccount: () => null });
   assert.ok(db.prepare("SELECT 1 FROM sqlite_master WHERE name='ml_parcels'").get());
   assert.equal(db.prepare("SELECT version FROM questlayer_schema_modules WHERE name='metalayer-parcels'").get().version, 1);
+});
+
+test("the economy is live only with the contract and its recorder key", (t) => {
+  const dir = mkdtempSync(join(tmpdir(), "ml-key-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const keyPath = join(dir, "metalayer-recorder.json");
+  const chain = (contractId) => createMetaLayerChain({ provider: null, contractId, keyPath, loadAccount: async () => ({}) });
+  assert.equal(chain("m.testnet").active, false, "no recorder key: previews and tests keep diamonds");
+  writeFileSync(keyPath, "{}");
+  assert.equal(chain("m.testnet").active, true);
+  assert.equal(chain(null).active, false);
 });

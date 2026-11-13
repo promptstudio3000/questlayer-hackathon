@@ -735,7 +735,7 @@ export const CHAPTERS: Chapter[] = [
         "The game server sends steps with a recorder key that can call only award and record_batch. Each award emits the questlayer_metalayer action_recorded event with the action's hashed actor and evidence hash. MetaXP and badges are soulbound counters in the contract and never change city XP.",
         "Parcels are 16 × 16 NFTs (NEP-171) bought with MetaGold (100 on testnet), which returns to the treasury. The central square and the parcels touching it are never sold. Parcels transfer freely.",
         "Land and building in the backpack shows the parcel under the explorer: public, theirs, someone else's, or open with one Buy land button. The explorer's own account signs buy_parcel (a 0.02 NEAR storage deposit, unused part refunded). The server then reads the owner from the contract, and the owner may build anywhere on that parcel; nobody else can.",
-        "A player without a secured NEAR account keeps rewards waiting; the backpack shows them as on the way. Backpack and HUD show MetaGold instead of diamonds once the contract is live.",
+        "A player without a secured NEAR account keeps rewards waiting; the backpack shows them as on the way. Backpack and HUD show MetaGold instead of diamonds once the contract and the server's recorder key are installed; without the key (previews, tests) the world keeps diamonds. Escape closes MetaLayer sheets and never leaves the world.",
       ] },
       { h: "Accepted contract integration" },
       { list: [
