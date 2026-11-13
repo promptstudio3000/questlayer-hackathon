@@ -3901,14 +3901,13 @@ export default function App() {
       const tabs: Record<string, Tab> = { inventory: "inventory", rolls: "inventory", market: "market", shop: "shop", stake: "fund" };
       setTab(tabs[t.screen] || "explore");
       setSheetExpanded(true);
-      // The wisp roll sits in Inventory's "Secured on NEAR" fold: open it and scroll there.
+      // The wisp roll sits in the open in Inventory while there is a ticket: scroll to it.
       if (t.screen === "rolls")
         window.setTimeout(() => {
           const rolls = document.querySelector<HTMLElement>(".wisp-rolls");
-          const fold = rolls?.closest("details");
-          if (fold) fold.open = true;
-          rolls?.scrollIntoView({ behavior: "smooth", block: "center" });
-        }, 600);
+          if (rolls) rolls.scrollIntoView({ behavior: "smooth", block: "center" });
+          else notify(tr("No roll ticket yet. Beat a Pocket Wisp first."), true);
+        }, 900);
     } else if (t.kind === "action") {
       if (t.action === "task") openNearbyForm("task");
       else if (t.action === "note" || t.action === "topic" || t.action === "shout") setQuickCreate(t.action);
@@ -4712,17 +4711,19 @@ export default function App() {
                     />
                   ) : undefined
                 }
+                rolls={
+                  <WispRolls
+                    accountId={
+                      invisible.status === "ready" && invisible.signer
+                        ? invisible.signer.accountId
+                        : null
+                    }
+                    send={sendWispRoll}
+                    onWon={() => void me()}
+                  />
+                }
                 nativeContent={
                   <>
-                    <WispRolls
-                      accountId={
-                        invisible.status === "ready" && invisible.signer
-                          ? invisible.signer.accountId
-                          : null
-                      }
-                      send={sendWispRoll}
-                      onWon={() => void me()}
-                    />
                     <NativeWardrobe
                       player={player}
                       data={nativeWardrobe}

@@ -185,6 +185,7 @@ export function Inventory({
   characterItems,
   nativeContent,
   nativeExtras,
+  rolls,
   adventureResults,
   busy,
   onEquip,
@@ -213,6 +214,8 @@ export function Inventory({
   characterItems: Item[];
   nativeContent: ReactNode;
   nativeExtras?: ReactNode;
+  /** The wisp roll: shown in the open, above the folds, while there is a ticket. */
+  rolls?: ReactNode;
   adventureResults?: ReactNode;
   busy: string;
   onEvm: () => Promise<void>;
@@ -544,11 +547,10 @@ export function Inventory({
       ? RARITY_NAMES[entry.rarity]?.() || entry.rarity
       : rarityName(entry.rarity);
   const entrySource = (entry: Entry) =>
-    entry.type === "aura"
-      ? tr("Not on NEAR yet")
-      : entry.type === "secured"
-        ? tr("Secured on NEAR")
-        : entry.item.verified
+    // Auras secure themselves in the background; where they are kept is not the player's concern.
+    entry.type === "aura" || entry.type === "secured"
+      ? ""
+      : entry.item.verified
           ? tr("Verified original in your wallet")
           : tr("In-game copy");
 
@@ -790,6 +792,7 @@ export function Inventory({
             ))}
           </div>
         )}
+        {rolls}
         {!!lockedEditions.length && (
           <details className="inv-catalog">
             <summary>{tr("Aura catalog · {0} of {1} found", { 0: progress.found, 1: progress.total })}</summary>
@@ -947,7 +950,7 @@ export function Inventory({
         </details>
         <details className="inventory-disclosure">
           <summary>
-            <Wallet size={20} aria-hidden="true" /> {" "}{tr("Secured on NEAR")}</summary>
+            <Wallet size={20} aria-hidden="true" /> {" "}{tr("Advanced")}</summary>
           <div className="inventory-disclosure-body inventory-native-content">
             {nativeContent}
             {nativeExtras}
@@ -1081,11 +1084,11 @@ export function Inventory({
                       {selected.type !== "wearable" && selected.item.serial != null ? ` · #${selected.item.serial}` : ""}
                     </p>
                     <span className="inventory-source">
-                      {entrySource(selected)}
-                      {selected.worn ? tr(" · Equipped") : ""}
-                      {selected.type === "aura" && !selected.worn && selected.count > 1
-                        ? ` · ${selected.count} held`
-                        : ""}
+                      {[
+                        entrySource(selected),
+                        selected.worn ? tr("Equipped") : "",
+                        selected.type === "aura" && !selected.worn && selected.count > 1 ? `${selected.count} held` : "",
+                      ].filter(Boolean).join(" · ")}
                     </span>
                   </div>
                   <button

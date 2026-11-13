@@ -108,7 +108,7 @@ export function WispRolls({
     <section className="aura-claims wisp-rolls" aria-label={tr("Wisp rolls")}>
       <h2>{tr("Roll at the wisp")}</h2>
       <p>
-        {tr("You have")}{" "}<strong>{status.tickets.available}</strong> {" "}{tr("roll ticket")}{status.tickets.available === 1 ? "" : "s"} {" "}{tr("from lurkers and the weekly boss. A roll is free: the draw happens on NEAR and the odds are fixed on chain.")}</p>
+        {tr("You have")}{" "}<strong>{status.tickets.available}</strong> {" "}{tr("roll ticket")}{status.tickets.available === 1 ? "" : "s"} {" "}{tr("from Pocket Wisps and the weekly boss. A roll is free and the odds are fixed.")}</p>
       {status.odds.length > 0 && (
         <ul className="wisp-odds">
           {status.odds.map((o) => (
