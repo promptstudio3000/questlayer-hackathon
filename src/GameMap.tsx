@@ -1702,7 +1702,6 @@ export function GameMap(props: GameMapProps) {
         const img = document.createElement("img");
         img.className = "creator-pin-photo";
         img.alt = "";
-        img.loading = "lazy";
         img.addEventListener("error", () => img.remove());
         img.src = place.photo;
         face.append(img);

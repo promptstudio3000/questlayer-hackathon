@@ -216,7 +216,7 @@ test("routes use the session explorer and refuse cross-site or anonymous writes"
   assert.equal(home.data.plot.ownerName, "Alice");
   assert.equal(home.data.progress.buildGoal, LAYER_LIMITS.buildGoal);
   const layers = await call(routes, "/api/layer/layers");
-  assert.equal(layers.data.layers[0].coin, "MINECOIN");
+  assert.equal(layers.data.layers[0].coin, "MetaGold");
   assert.equal(layers.data.layers[0].economyActive, false);
   await assert.rejects(
     call(routes, "/api/layer/home", { method: "POST", body: {}, headers: { "sec-fetch-site": "cross-site" } }),
@@ -229,9 +229,9 @@ test("routes use the session explorer and refuse cross-site or anonymous writes"
   assert.equal(await routes.handle(request("GET"), {}, new URL("http://x/api/other"), {}), false);
 });
 
-test("every layer keeps QGOLD mechanics and inactive money until reviewed", () => {
+test("MetaLayer names its own currency and keeps settlement inactive until reviewed", () => {
   for (const layer of LAYER_REGISTRY) {
-    assert.equal(layer.coin.mechanics, "qgold");
+    assert.equal(layer.coin.mechanics, "metalayer");
     assert.equal(layer.economy.active, false);
     assert.equal(layer.economy.treasury, "per-layer");
     assert.equal(layerById(layer.id), layer);
