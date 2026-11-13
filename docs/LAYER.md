@@ -102,6 +102,9 @@ the story and to action receipts.
   the same; Run toggles pace, Shift reverses the pace, Space jumps. One-block steps
   climb automatically. Drag to inspect, pinch/wheel to zoom, My location restores
   the following camera. Forms and modal dialogs own their keys.
+- **Actions:** the bottom-right button (same corner as GotchiGO) fans out Talk (T),
+  Mine (M), Build (B), Jump (Space) and Land and building (L). The keys work
+  without opening it; their hints show only on keyboard devices.
 - **Build:** select Build, select a material, then tap a face or use the placement
   button. Desktop right-click places. Only the green square areas above ground
   and below height 40 accept shared edits. No private plot is automatically claimed

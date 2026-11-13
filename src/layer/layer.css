@@ -93,7 +93,7 @@
 .ml-proof-form { display: grid; gap: 12px; margin: 16px 0; }
 .ml-proof-form > div { display: grid; gap: 6px; }
 .ml-proof-form :is(input,select) { width: 100%; min-width: 0; padding: 10px; font-size: 16px; box-sizing: border-box; }
-@media (min-width: 601px) { .layer-screen .ml-objective-panel { bottom: 12px; }.layer-screen .demo-pad { left: 16px; bottom: calc(80px + var(--hud-card,0px)); }.layer-screen .map-actions { bottom: calc(80px + var(--hud-card,0px)); } }
+@media (min-width: 601px) { .layer-screen .ml-objective-panel { bottom: 12px; }.layer-screen .demo-pad { left: 16px; bottom: calc(80px + var(--hud-card,0px)); }.layer-screen .map-actions { bottom: 12px; } }
 @media (max-height: 500px) and (min-width: 600px) { .layer-screen.app-shell[data-screen] .main-panel.ml-objective-panel { left: auto; right: 80px; bottom: 12px; width: min(35vw,280px); }.layer-screen .map-actions { bottom: 12px; }.layer-screen .demo-pad { left: 128px; bottom: 12px; }.layer-screen .ml-location { display: none; } }
 
 /* Preserve the shared appearance while extending small utility hit regions. */

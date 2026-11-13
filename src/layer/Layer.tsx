@@ -9,6 +9,7 @@ import {
   ArrowRight,
   ArrowUp,
   ArrowDown,
+  ChatCircleDots,
   Check,
   Compass,
   Crosshair,
@@ -27,7 +28,7 @@ import { Dialog } from "../Dialog";
 import { DemoControls } from "../DemoControls";
 import { Character } from "../Character";
 import { WorldSwitcher, type GameLayerConfig } from "../WorldSwitcher";
-import { MapActions } from "../MapActions";
+import { MapActions, type MapAction } from "../MapActions";
 import { ScreenTabs, Details } from "../ScreenTabs";
 import { InfoTip } from "../InfoTip";
 import { LayerSettings } from "./LayerSettings";
@@ -124,6 +125,20 @@ export function Layer({
   const [saving, setSaving] = useState(false);
   const [economy, setEconomy] = useState<Economy | null>(null), [economyTick, setEconomyTick] = useState(0);
   const ownedParcels = useRef(new Set<string>());
+  const shortcutActions = useRef<MapAction[]>([]);
+  useEffect(() => {
+    const keydown = (e: KeyboardEvent) => {
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (document.querySelector("dialog[open],[role=dialog][aria-modal=true]")) return;
+      if (e.target instanceof Element && e.target.closest("input,textarea,select,[contenteditable=true]")) return;
+      const action = shortcutActions.current.find(a => a.shortcut?.length === 1 && a.shortcut.toLowerCase() === e.key.toLowerCase());
+      if (!action) return;
+      e.preventDefault();
+      action.onSelect();
+    };
+    addEventListener("keydown", keydown);
+    return () => removeEventListener("keydown", keydown);
+  }, []);
   ownedParcels.current = new Set(economy?.parcels ?? []);
   const [place, setPlace] = useState<WorldPlaceId>("nera");
   const openPlace = (id: WorldPlaceId) => { setPlace(id); setNotice(""); setSheet("place"); };
@@ -500,6 +515,16 @@ export function Layer({
     engine.current?.facePoint(target.x,target.z); setSheet(null);
   };
   const contextualPlace = !building ? hud?.place : null;
+  // One list for the Actions button and the keyboard: T talk, M mine, B build,
+  // Space jump, L land. Shortcuts show beside each label on a keyboard device.
+  const actions: MapAction[] = [
+    { id: "talk", label: tr("Talk"), icon: ChatCircleDots, shortcut: "T", onSelect: () => openPlace(hud?.place ?? "nera") },
+    { id: "mine", label: tr("Mine blocks"), icon: Pickaxe, shortcut: "M", onSelect: () => setBuilding(false) },
+    { id: "build", label: tr("Build"), icon: Cube, shortcut: "B", onSelect: () => { setBuilding(true); setSheet("materials"); } },
+    { id: "jump", label: tr("Jump"), icon: ArrowFatUp, shortcut: tr("Space"), onSelect: () => engine.current?.jump() },
+    { id: "parcel", label: tr("Land and building"), icon: House, shortcut: "L", onSelect: () => setSheet("parcel") },
+  ];
+  shortcutActions.current = actions;
   const showQuests = () => { setCommunityView("quests"); setSheet("community"); };
   const buildFreely = () => {
     if (progress?.story.stage === "marker") {
@@ -579,12 +604,7 @@ export function Layer({
               engine.current?.setMove(vector?.x ?? 0, vector?.y ?? 0)
             }
           />
-          <MapActions actions={[
-            { id: "mine", label: tr("Mine blocks"), icon: Pickaxe, onSelect: () => setBuilding(false) },
-            { id: "build", label: tr("Build"), icon: Cube, onSelect: () => { setBuilding(true); setSheet("materials"); } },
-            { id: "jump", label: tr("Jump"), icon: ArrowFatUp, onSelect: () => engine.current?.jump() },
-            { id: "parcel", label: tr("Land and building"), icon: House, onSelect: () => setSheet("parcel") },
-          ]}>
+          <MapActions actions={actions}>
             {(building || hud?.target?.mineable) && <div className="ml-action-buttons">
             {building ? (
               <button
