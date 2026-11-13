@@ -3206,5 +3206,12 @@
   "Back to QuestLayer": "Zpět do QuestLayeru",
   "Moving here never counts as GPS movement in QuestLayer.": "Pohyb tady se v QuestLayeru nikdy nepočítá jako pohyb podle GPS.",
   "Tour done: {0} transactions on NEAR.": "Prohlídka hotová: {0} transakcí na NEAR.",
-  "Public at this map spot. QGOLD is burned and not returned if the message is removed.": "Veřejné na tomto místě mapy. QGOLD se spálí a při smazání vzkazu se nevrací."
+  "Public at this map spot. QGOLD is burned and not returned if the message is removed.": "Veřejné na tomto místě mapy. QGOLD se spálí a při smazání vzkazu se nevrací.",
+  "+{0} XP · noted for other explorers": "+{0} XP · zapsáno pro další průzkumníky",
+  "Answer · +{0} XP": "Odpovědět · +{0} XP",
+  "No more XP for tips today.": "Dnes už za tipy XP nedostaneš.",
+  "Noted; the NPC checks it before telling anyone.": "Zapsáno; postava si to ověří, než to někomu poví.",
+  "Your answer helps other explorers · +{0} XP for a new tip": "Tvoje odpověď pomůže dalším průzkumníkům · +{0} XP za nový tip",
+  "Your answer…": "Tvoje odpověď…",
+  "{0} is typing": "{0} píše"
 }

@@ -5,6 +5,7 @@
 //   POST /api/actors/:id/offers/:offerId/accept      {encounter}
 //   POST /api/actors/:id/offers/:offerId/complete    {encounter}
 //   POST /api/actors/:id/greet                       {encounter}
+//   POST /api/actors/:id/mission                     {encounter, answer}  (shared NPC memory)
 import { worldView } from "../world.mjs";
 import { readStakerStatus } from "../staker-gates.mjs";
 
@@ -12,7 +13,7 @@ import { readStakerStatus } from "../staker-gates.mjs";
 // when older than this, so locked chips match the player's real stake.
 const STAKER_STALE_MS = 10 * 60_000;
 
-const TALK = /^\/api\/actors\/([a-z0-9-]{3,44})\/(talk|greet)$/;
+const TALK = /^\/api\/actors\/([a-z0-9-]{3,44})\/(talk|greet|mission)$/;
 const OFFER = /^\/api\/actors\/([a-z0-9-]{3,44})\/offers\/((?:quest|chapter):[0-9a-f]{16})\/(accept|complete)$/;
 
 export function createNpcRoutes(npc, actors, db, { refreshStaker = null, clock = Date.now } = {}) {
@@ -57,6 +58,7 @@ export function createNpcRoutes(npc, actors, db, { refreshStaker = null, clock =
           }
       }
       if (talk?.[2] === "greet") respond(res, npc.greet({ player, actor, world, encounter }));
+      else if (talk?.[2] === "mission") respond(res, await npc.mission({ player, actor, world, answer: input.answer }));
       else if (talk) respond(res, await npc.talk({ player, actor, world, encounter, message: input.message }));
       else if (offer[3] === "accept") respond(res, npc.accept({ player, actor, world, encounter, offerId: offer[2] }));
       else respond(res, npc.complete({ player, actor, world, encounter, offerId: offer[2] }));

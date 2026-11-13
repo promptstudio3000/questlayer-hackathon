@@ -3206,5 +3206,12 @@
   "Back to QuestLayer": "Volver a QuestLayer",
   "Moving here never counts as GPS movement in QuestLayer.": "Moverse aquí nunca cuenta como movimiento GPS en QuestLayer.",
   "Tour done: {0} transactions on NEAR.": "Recorrido terminado: {0} transacciones en NEAR.",
-  "Public at this map spot. QGOLD is burned and not returned if the message is removed.": "Público en este punto del mapa. El QGOLD se quema y no se devuelve si se elimina el mensaje."
+  "Public at this map spot. QGOLD is burned and not returned if the message is removed.": "Público en este punto del mapa. El QGOLD se quema y no se devuelve si se elimina el mensaje.",
+  "+{0} XP · noted for other explorers": "+{0} XP · anotado para otros exploradores",
+  "Answer · +{0} XP": "Responder · +{0} XP",
+  "No more XP for tips today.": "Hoy ya no hay más XP por consejos.",
+  "Noted; the NPC checks it before telling anyone.": "Anotado; el NPC lo comprobará antes de contarlo.",
+  "Your answer helps other explorers · +{0} XP for a new tip": "Tu respuesta ayuda a otros exploradores · +{0} XP por un consejo nuevo",
+  "Your answer…": "Tu respuesta…",
+  "{0} is typing": "{0} está escribiendo"
 }

@@ -3206,5 +3206,12 @@
   "Back to QuestLayer": "返回 QuestLayer",
   "Moving here never counts as GPS movement in QuestLayer.": "在这里移动永远不会算作 QuestLayer 中的 GPS 移动。",
   "Tour done: {0} transactions on NEAR.": "导览完成：NEAR 上 {0} 笔交易。",
-  "Public at this map spot. QGOLD is burned and not returned if the message is removed.": "在此地图位置公开。QGOLD 会被销毁，消息删除后不退还。"
+  "Public at this map spot. QGOLD is burned and not returned if the message is removed.": "在此地图位置公开。QGOLD 会被销毁，消息删除后不退还。",
+  "+{0} XP · noted for other explorers": "+{0} XP · 已为其他探险者记下",
+  "Answer · +{0} XP": "回答 · +{0} XP",
+  "No more XP for tips today.": "今天提示已无法再获得 XP。",
+  "Noted; the NPC checks it before telling anyone.": "已记下；NPC 会先核实再告诉别人。",
+  "Your answer helps other explorers · +{0} XP for a new tip": "你的回答能帮助其他探险者 · 新提示 +{0} XP",
+  "Your answer…": "你的回答…",
+  "{0} is typing": "{0} 正在输入"
 }
