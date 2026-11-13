@@ -7,7 +7,8 @@ import type { Outfit } from "./world";
 export type Avatar = {
   group: THREE.Group;
   setOutfit: (o: Outfit, aura?: string) => void;
-  animate: (dt: number, moving: boolean, t: number) => void;
+  /** swing: the explorer is digging, so the pickaxe arm chops. */
+  animate: (dt: number, moving: boolean, t: number, swing?: boolean) => void;
   dispose: () => void;
 };
 
@@ -105,11 +106,21 @@ export function createAvatar(outfit: Outfit, aura?: string): Avatar {
   return {
     group,
     setOutfit,
-    animate(_dt, moving, t) {
+    animate(_dt, moving, t, swing = false) {
       ghost.position.y =
         Math.sin(t * (moving ? 7 : 2.2)) * (moving ? 0.07 : 0.035);
       left.rotation.x = Math.sin(t * 7) * (moving ? 0.3 : 0.03);
-      right.rotation.x = -left.rotation.x;
+      if (swing) {
+        // A quick chop about three times a second: wind up behind, strike forward.
+        const chop = Math.abs(Math.sin(t * 9.5));
+        right.rotation.x = -0.9 * chop;
+        tool.rotation.x = -1.6 * chop + 0.5;
+        tool.position.set(0.68, 0.93 + 0.18 * chop, -0.2 - 0.22 * (1 - chop));
+      } else {
+        right.rotation.x = -left.rotation.x;
+        tool.rotation.x = 0;
+        tool.position.set(0.68, 0.93, -0.2);
+      }
     },
     dispose() {
       disposed = true;

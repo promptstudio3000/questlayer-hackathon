@@ -321,6 +321,8 @@ export function Layer({
                 ? tr("Move closer to that block.")
                 : reason === "occupied"
                   ? tr("You are standing there.")
+                  : reason === "too-hard"
+                  ? tr("This rock is too hard. Dig in Crystal Hollow or Basalt Quarry, or on blocks built on the square.")
                   : tr("That block is outside the building height."),
           ),
       });
