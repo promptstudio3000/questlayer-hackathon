@@ -49,7 +49,11 @@ writes its rewards once (`map_cell_drops`):
 
 1. **Zones per cell (1–3):** 1, plus one at 30 and one at 150 checked places. The chosen POI quests of the
    cell become funded *cell zones* (gold, 70 m) with the cell's zone budget as the first-finisher prize.
-   Plzeň keeps its six reviewed city zones and gets no cell zones. Big cities (Praha, Brno, …) scale by their
+   Plzeň keeps its six reviewed city zones and gets no POI cell zones; instead its reviewed zones in the cell
+   (Tier 3 first, up to the cell's zone count) share the cell's zone budget as their first-finisher prize
+   (owner, 13 Nov 2026: every prize is paid out on chain). Only the first world to open the cell that day
+   funds them, so the GPS city and the demo never spend it twice. With map rewards on, the game treasury
+   funds no zone prize. Big cities (Praha, Brno, …) scale by their
    cells instead of six zones per city.
 2. **Coins:** Poisson-disc spots on mapped public paths, 95–120 m apart, 60 m within 300 m of a zone
    (3× denser), never two coins closer than 60 m, at most the cell's 400. Every coin has the day's one value;

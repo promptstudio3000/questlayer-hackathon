@@ -205,9 +205,9 @@ type Feature = {
     | { type: "LineString"; coordinates: Ring };
 };
 
-/** Presentation-only tint of the existing maximum chest rarity (not a reward promise). */
+/** Presentation-only tier tint: Tier 1 green, Tier 2 yellow, Tier 3 red (not a reward promise). */
 export function zoneAuraColor(tier: number) {
-  return {common: "#45d6a0", rare: "#45d6a0", epic: "#ae77ff", legendary: "#ffd25a"}[zoneRarity(tier)];
+  return tier >= 3 ? "#ff5d6c" : tier === 2 ? "#ffd25a" : "#45d6a0";
 }
 
 /** Boundary paths for open sky curtains. No filled polygon, roof or offset footprint. */
