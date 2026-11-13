@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { BookOpen, CaretDown, GlobeHemisphereWest, Cube, Flask, Question, Vault } from "@phosphor-icons/react";
 import { BrandLogo } from "./Ghost";
 import { tr } from "./i18n";
-import { REALMS } from "./realms";
+import { APP_NAME, REALMS } from "./realms";
 import "./world-switcher.css";
 
 export type GameLayerConfig = {
@@ -26,7 +26,7 @@ export function WorldSwitcher({
   /** Display name of the virtual voxel layer (docs/LAYER.md). */
   layerName: string;
   onChoose: (virtual: boolean) => void;
-  /** Test Layer or QuestLayer World (docs/TEST-LAYER.md), from /api/config. */
+  /** Test Layer or the real game, GotchiGO (docs/TEST-LAYER.md), from /api/config. */
   gameLayer?: GameLayerConfig | null;
 }) {
   const test = !!gameLayer?.test;
@@ -93,7 +93,7 @@ export function WorldSwitcher({
       >
         <BrandLogo />
         <span className="world-switcher-name">
-          {REALMS.questlayer.name.toUpperCase()}
+          {APP_NAME.toUpperCase()}
           <small>
             {virtual ? layerName : outdoorName}
           </small>
