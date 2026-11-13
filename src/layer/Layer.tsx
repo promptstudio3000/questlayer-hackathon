@@ -1,26 +1,49 @@
-// The Layer screen (docs/LAYER.md): a shared, nonfinancial 3D voxel world.
-// Lazy: three.js, the world generator and this screen load only on entry.
-import { useCallback, useEffect, useRef, useState } from "react";
+// MetaLayer's shared world and Quiet Beacon story. The mounted entry uses the authenticated Layer
+// API, with server-confirmed world edits and resource receipts. Settlement stays
+// explicitly unconfigured until the owner's dedicated contract integration.
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   ArrowFatUp,
   ArrowLeft,
+  ArrowRight,
+  ArrowUp,
+  ArrowDown,
+  Check,
+  Compass,
   Crosshair,
   Cube,
-  Eraser,
+  Diamond,
   Hammer,
   House,
   NavigationArrow,
-  Question,
-  TShirt,
+  Hammer as Pickaxe,
+  Backpack,
+  UsersThree,
   X,
 } from "@phosphor-icons/react";
 import { api, ApiError } from "../api";
+import { Dialog } from "../Dialog";
+import { DemoControls } from "../DemoControls";
+import { Character } from "../Character";
+import { WorldSwitcher, type GameLayerConfig } from "../WorldSwitcher";
+import { MapActions } from "../MapActions";
+import { ScreenTabs } from "../ScreenTabs";
+import { InfoTip } from "../InfoTip";
+import { LayerSettings } from "./LayerSettings";
+import type { DemoControl } from "../useDemoWalk";
+import { STARTER_SPRITE } from "../character-art";
 import { tr } from "../i18n";
 import type { Item, Player } from "../types";
 import { cssColor } from "./mesher";
-import { BLOCK, BUILD_BLOCKS, OUTFITS, outfitById, type Biome } from "./world";
-import type { BlockEdit, EngineState, LayerEngine, LayerPlot, Peer } from "./engine";
+import { BLOCK, BUILD_BLOCKS, outfitById } from "./world";
+import { MINES, inPlaza } from "../../server/layer/expedition-world.mjs";
+import { Minimap } from "./Minimap";
+import { StoryBoard } from "./StoryBoard";
+import { LayerActivity } from "./LayerActivity";
+import { storyObjective, siteName, playFailure, type ExpeditionProgress } from "./story-ui";
+import { storySiteAt } from "../../server/layer/story-world.mjs";
+import type { BlockEdit, EngineState, LayerEngine, Peer } from "./engine";
 import "./layer.css";
 
 export type PublicLayer = {
@@ -31,36 +54,14 @@ export type PublicLayer = {
   coin: string;
   economyActive: boolean;
 };
-type Progress = { day: string; beacons: string[]; beaconGoal: number; built: number; buildGoal: number };
-type Home = { plot: LayerPlot; spawn: { x: number; y: number; z: number }; progress: Progress };
-type Notice = "own-plot" | "too-far" | "occupied" | "depth" | "saved-failed" | "save-retry" | "activated";
-/** A batch of block edits with its request id, kept for a retry with the same id. */
-type EditBatch = { requestId: string; edits: BlockEdit[] };
-
-const OUTFIT_KEY = "questlayer.layer.outfit";
-/** Server limit per /api/layer/edit request (server/layer/store.mjs). */
-const LAYER_EDITS_PER_REQUEST = 32;
-const editBody = (plotId: string, b: EditBatch) => ({
-  plotId,
-  requestId: b.requestId,
-  edits: b.edits.map(({ x, y, z, block }) => ({ x, y, z, block })),
-});
-const HELP_KEY = "questlayer.layer.help-seen";
-const readLocal = (k: string) => {
-  try {
-    return localStorage.getItem(k);
-  } catch {
-    return null;
-  }
+type Progress = ExpeditionProgress;
+type Snapshot = Progress & {
+  changes: [number, number, number, number][];
+  tiles: [number, number][];
 };
-const writeLocal = (k: string, v: string) => {
-  try {
-    localStorage.setItem(k, v);
-  } catch {
-    /* private mode: a convenience only */
-  }
-};
-const blockLabel = (b: number) =>
+type Entry = Snapshot & { spawn: { x: number; y: number; z: number } };
+type Sheet = "help" | "inventory" | "community" | "atlas" | "parcel" | "activity" | "materials" | null;
+const blockName = (b: number) =>
   ({
     [BLOCK.plank]: tr("Plank"),
     [BLOCK.brick]: tr("Hull plate"),
@@ -72,470 +73,726 @@ const blockLabel = (b: number) =>
     [BLOCK.wood]: tr("Spore stalk"),
     [BLOCK.leaves]: tr("Spore cap"),
     [BLOCK.crystal]: tr("Crystal"),
-  })[b] ?? tr("Block");
-const biomeLabel = (b: Biome) =>
-  ({
-    meadow: tr("Lumen plains"),
-    forest: tr("Spore forest"),
-    desert: tr("Dust dunes"),
-    wetland: tr("Aether shallows"),
-    crag: tr("Basalt peaks"),
-    crystal: tr("Crystal fields"),
-    settlement: tr("Settlement"),
-  })[b];
-const outfitLabel = (id: string) =>
-  ({
-    nebula: tr("Nebula"),
-    solar: tr("Solar"),
-    comet: tr("Comet"),
-    moss: tr("Moss"),
-    void: tr("Void"),
-    ember: tr("Ember"),
-  })[id] ?? id;
-const noticeText = (n: Notice) =>
-  ({
-    "own-plot": tr("You can build only on your own plot (gold border)."),
-    "too-far": tr("Move closer to build there."),
-    occupied: tr("You are standing there."),
-    depth: tr("That is too deep or too high for your plot."),
-    "saved-failed": tr("Your last blocks were not saved and were undone. Try again."),
-    "save-retry": tr("Connection problem. Your blocks are kept and will be saved when it is back."),
-    activated: tr("Beacon activated!"),
-  })[n];
-
-function Joystick({ onMove }: { onMove: (x: number, y: number) => void }) {
-  const base = useRef<HTMLDivElement>(null),
-    [knob, setKnob] = useState({ x: 0, y: 0 }),
-    active = useRef<number | null>(null);
-  const update = (e: React.PointerEvent) => {
-    const r = base.current!.getBoundingClientRect();
-    let x = (e.clientX - (r.left + r.width / 2)) / (r.width / 2),
-      y = (e.clientY - (r.top + r.height / 2)) / (r.height / 2);
-    const l = Math.hypot(x, y);
-    if (l > 1) {
-      x /= l;
-      y /= l;
-    }
-    setKnob({ x, y });
-    onMove(x, -y);
-  };
-  const end = () => {
-    active.current = null;
-    setKnob({ x: 0, y: 0 });
-    onMove(0, 0);
-  };
-  return (
-    <div
-      ref={base}
-      className="layer-joystick"
-      aria-hidden="true"
-      onPointerDown={(e) => {
-        active.current = e.pointerId;
-        e.currentTarget.setPointerCapture(e.pointerId);
-        update(e);
-      }}
-      onPointerMove={(e) => active.current === e.pointerId && update(e)}
-      onPointerUp={end}
-      onPointerCancel={end}
-    >
-      <i style={{ transform: `translate(${knob.x * 34}px, ${knob.y * 34}px)` }} />
-    </div>
-  );
-}
+  })[b] || tr("Block");
+const stateOrder = { available: 0, discover: 1, mine: 2, complete: 3 };
+const storyOrder = { expedition: 0, quarry: 1, signals: 2, marker: 3, beacon: 4, complete: 5 };
 
 export function Layer({
   player,
   items,
   layer,
   onExit,
+  onProfile,
+  gameLayer,
 }: {
   player: Player;
   items: Item[];
   layer: PublicLayer;
   onExit: () => void;
+  onProfile: () => void;
+  gameLayer?: GameLayerConfig | null;
 }) {
+  const scope = useRef<HTMLElement>(null), objectiveCard = useRef<HTMLDivElement>(null);
+  const [mapShown, setMapShown] = useState(false), [communityView, setCommunityView] = useState<"quests" | "journal">("quests");
   const host = useRef<HTMLDivElement>(null),
-    engine = useRef<LayerEngine | null>(null),
-    pending = useRef<BlockEdit[]>([]),
-    retry = useRef<EditBatch | null>(null),
-    retryAt = useRef(0),
-    retries = useRef(0),
-    inFlight = useRef(false),
-    homeRef = useRef<Home | null>(null);
-  const [home, setHome] = useState<Home | null>(null),
-    [error, setError] = useState(""),
-    [attempt, setAttempt] = useState(0),
-    [hud, setHud] = useState<EngineState | null>(null),
-    [building, setBuilding] = useState(false),
-    [breaking, setBreaking] = useState(false),
-    [block, setBlock] = useState<number>(BLOCK.plank),
-    [outfit, setOutfit] = useState(() => outfitById(readLocal(OUTFIT_KEY) || "nebula").id),
-    [sheet, setSheet] = useState<"help" | "outfit" | null>(() => (readLocal(HELP_KEY) ? null : "help")),
-    [notice, setNotice] = useState<Notice | null>(null),
-    [saving, setSaving] = useState<"idle" | "saving" | "saved">("idle"),
-    [progress, setProgress] = useState<Progress | null>(null),
-    [peerCount, setPeerCount] = useState(0);
-  const outfitRef = useRef(outfit),
-    homeTrip = useRef<() => void>(() => {});
-  const aura = items.find((i) => i.equipped && i.slot === "above")?.color;
-  const phone = typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches;
-  const reducedMotion = typeof matchMedia === "function" && matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  const flash = useCallback((n: Notice) => {
-    setNotice(n);
-    window.setTimeout(() => setNotice((v) => (v === n ? null : v)), 2600);
-  }, []);
-
-  // Send queued edits in small batches. A refusal (4xx) undoes the batch; a
-  // lost connection or a server error keeps the blocks and retries the same
-  // request id, which the server applies at most once.
-  const flush = useCallback(async () => {
-    const h = homeRef.current;
-    if (inFlight.current || !h) return;
-    if (retry.current && Date.now() < retryAt.current) return;
-    const batch: EditBatch | null =
-      retry.current ??
-      (pending.current.length
-        ? { requestId: crypto.randomUUID(), edits: pending.current.splice(0, LAYER_EDITS_PER_REQUEST) }
-        : null);
-    if (!batch) return;
-    retry.current = null;
-    inFlight.current = true;
-    setSaving("saving");
-    try {
-      const result = await api<{ plot: LayerPlot }>("/layer/edit", editBody(h.plot.id, batch));
-      h.plot = result.plot;
-      retries.current = 0;
-      setProgress((p) => (p ? { ...p, built: result.plot.blocks ?? p.built } : p));
-      setSaving(pending.current.length ? "saving" : "saved");
-    } catch (e) {
-      const refused = e instanceof ApiError && e.status >= 400 && e.status < 500 && e.status !== 408 && e.status !== 429;
-      if (refused) {
-        for (const edit of [...batch.edits].reverse()) engine.current?.applyLocal(edit.x, edit.y, edit.z, edit.previous);
-        flash("saved-failed");
-        setSaving(pending.current.length ? "saving" : "idle");
-      } else {
-        retry.current = batch;
-        retries.current += 1;
-        retryAt.current = Date.now() + Math.min(10_000, 500 * 2 ** Math.min(retries.current, 5));
-        if (retries.current === 1 || retries.current % 5 === 0) flash("save-retry");
-      }
-    } finally {
-      inFlight.current = false;
-    }
-  }, [flash]);
-
-  /** Hands every unsaved block to the browser so it is sent even while the page closes. */
-  const flushOnLeave = useCallback(() => {
-    const h = homeRef.current;
-    if (!h) return;
-    const batches: EditBatch[] = [];
-    if (retry.current) batches.push(retry.current);
-    retry.current = null;
-    while (pending.current.length)
-      batches.push({ requestId: crypto.randomUUID(), edits: pending.current.splice(0, LAYER_EDITS_PER_REQUEST) });
-    for (const b of batches)
-      void fetch("/api/layer/edit", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(editBody(h.plot.id, b)),
-        keepalive: true,
-      }).catch(() => {});
-  }, []);
+    engine = useRef<LayerEngine | null>(null);
+  const [progress, setProgress] = useState<Progress | null>(null),
+    [hud, setHud] = useState<EngineState | null>(null);
+  const [error, setError] = useState(""),
+    [notice, setNotice] = useState(""),
+    [attempt, setAttempt] = useState(0);
+  const [sheet, setSheet] = useState<Sheet>(null),
+    [building, setBuilding] = useState(false);
+  const [block, setBlock] = useState<number>(BLOCK.plank),
+    [peers, setPeers] = useState(0);
+  const [tiles, setTiles] = useState<[number, number][]>([]),
+    [mapTiles, setMapTiles] = useState<[number, number][]>([]);
+  const [mapCenter, setMapCenter] = useState({ x: 0, z: 0 }),
+    [mapBusy, setMapBusy] = useState(false);
+  const [held, setHeld] = useState<Set<DemoControl>>(() => new Set()),
+    [run, setRun] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const heldRef = useRef(new Set<DemoControl>()),
+    acting = useRef(false);
+  const interactRef = useRef<(body: Record<string, unknown>) => void>(() => {});
+  const refresh = useRef<() => Promise<void>>(async () => {});
+  useLayoutEffect(() => {
+    if (!objectiveCard.current || !scope.current) return;
+    const card = objectiveCard.current, root = scope.current;
+    const update = () => root.style.setProperty("--hud-card", `${Math.ceil(card.getBoundingClientRect().height) + 8}px`);
+    const observer = new ResizeObserver(update); observer.observe(card); update();
+    return () => observer.disconnect();
+  }, [!!progress, sheet]);
+  const avatarAura = items.find(
+    (item) => item.equipped && item.slot === "above",
+  )?.color;
+  const live = useRef({ avatarAura });
+  live.current = { avatarAura };
+  const applyProgress = (next: Progress) =>
+    setProgress((old) => {
+      if (!old) return next;
+      return {
+        ...next,
+        inventory: {
+          diamonds: Math.max(old.inventory.diamonds, next.inventory.diamonds),
+          stone: Math.max(old.inventory.stone, next.inventory.stone),
+        },
+        story: {
+          ...(storyOrder[old.story.stage] > storyOrder[next.story.stage] ||
+            (old.story.stage === next.story.stage && old.story.signals.length > next.story.signals.length)
+              ? old.story : next.story),
+          sharedBeaconLit: old.story.sharedBeaconLit || next.story.sharedBeaconLit,
+        },
+        quest:
+          stateOrder[old.quest.state] > stateOrder[next.quest.state]
+            ? old.quest
+            : {
+                ...next.quest,
+                diamonds: Math.max(old.quest.diamonds, next.quest.diamonds),
+              },
+      };
+    });
+  const showError = (failure: unknown) =>
+    setNotice(
+      playFailure(failure),
+    );
 
   useEffect(() => {
-    let active = true;
-    const timers: number[] = [];
+    let active = true,
+      view: LayerEngine | null = null,
+      syncing = false,
+      publishing = false;
+    const timers: ReturnType<typeof setInterval>[] = [];
+    let mutationEpoch = 0;
+    const pending = new AbortController();
     setError("");
-    (async () => {
-      const data = await api<Home>("/layer/home", { layer: layer.id });
-      if (!active || !host.current) return;
-      homeRef.current = data;
-      setHome(data);
-      setProgress(data.progress);
+    setNotice("");
+    setProgress(null);
+    const sync = async () => {
+      if (!active || !view || syncing || acting.current) return;
+      syncing = true;
+      const readEpoch = mutationEpoch;
+      try {
+        const p = view.getState();
+        const data = await api<Snapshot>(
+          `/layer/expedition/state?layer=${encodeURIComponent(layer.id)}&x=${p.x}&z=${p.z}`,
+        );
+        if (active && !acting.current && readEpoch === mutationEpoch) {
+          view.setChanges(data.changes);
+          setTiles(data.tiles);
+          applyProgress(data);
+        }
+      } catch (failure) {
+        if (active) showError(failure);
+      } finally {
+        syncing = false;
+      }
+    };
+    refresh.current = sync;
+    // A lost reply retries exactly the same receipt. Displayed inventory comes
+    // from the authoritative snapshot; a failed request never predicts a grant.
+    const perform = async (route: string, body: Record<string, unknown>) => {
+      if (acting.current) return;
+      mutationEpoch++;
+      acting.current = true;
+      setSaving(true);
+      try {
+        let response: (Progress & { changes: Snapshot["changes"] }) | undefined;
+        for (let count = 0; count < 3; count++) {
+          try {
+            response = await api(`/layer/expedition/${route}`, {
+              layer: layer.id,
+              ...body,
+            });
+            break;
+          } catch (failure) {
+            if (
+              (failure instanceof ApiError && failure.status < 500) ||
+              count === 2
+            )
+              throw failure;
+          }
+        }
+        if (active && response) {
+          for (const [x, y, z, b] of response.changes || [])
+            view?.applyLocal(x, y, z, b);
+          applyProgress(response);
+          setNotice("");
+        }
+      } catch (failure) {
+        if (active) showError(failure);
+      } finally {
+        acting.current = false;
+        if (active) {
+          setSaving(false);
+          void sync();
+        }
+      }
+    };
+    interactRef.current = (body) => void perform("interact", { ...body, requestId: crypto.randomUUID() });
+    void (async () => {
+      const entry = await api<Entry>("/layer/expedition/enter", {
+        layer: layer.id,
+      });
       const { createLayerEngine } = await import("./engine");
       if (!active || !host.current) return;
-      const view = createLayerEngine(host.current, {
+      view = createLayerEngine(host.current, {
         seed: layer.seed,
-        spawn: data.spawn,
-        home: data.plot,
-        outfit: outfitById(outfit),
-        aura,
-        phone,
-        reducedMotion,
-        onEdit: (e) => {
-          pending.current.push(e);
-          setSaving("saving");
+        spawn: entry.spawn,
+        expedition: true,
+        outfit: outfitById("nebula"),
+        aura: live.current.avatarAura,
+        phone: matchMedia("(max-width: 700px)").matches,
+        reducedMotion: matchMedia("(prefers-reduced-motion: reduce)").matches,
+        onEdit: ({ x, y, z, block, previous }: BlockEdit) =>
+          void perform("edit", {
+            x,
+            y,
+            z,
+            block,
+            expected: previous,
+            requestId: crypto.randomUUID(),
+          }),
+        onMineStart: async (target) => {
+          try {
+            return await api("/layer/expedition/mine-start", {
+              layer: layer.id,
+              x: target.x,
+              y: target.y,
+              z: target.z,
+            });
+          } catch (failure) {
+            if (active) showError(failure);
+            throw failure;
+          }
         },
-        onNotice: flash,
+        onMineFinish: (token) =>
+          perform("mine-finish", { token, requestId: crypto.randomUUID() }),
+        onNotice: (reason) =>
+          setNotice(
+            reason === "own-plot"
+              ? tr("Build on the green areas of the public square.")
+              : reason === "too-far"
+                ? tr("Move closer to that block.")
+                : reason === "occupied"
+                  ? tr("You are standing there.")
+                  : tr("That block is outside the building height."),
+          ),
       });
       engine.current = view;
-      view.canvas.setAttribute("aria-label", tr("3D world. Move with W A S D, jump with Space, drag to look around."));
-      const syncPlots = async () => {
-        const s = view.getState();
-        const { plots } = await api<{ plots: LayerPlot[] }>(
-          `/layer/plots?layer=${encodeURIComponent(layer.id)}&x=${Math.round(s.x)}&z=${Math.round(s.z)}`,
-        );
-        const known = new Map(view.knownPlots().map((p) => [p.id, p.revision]));
-        for (const p of plots) {
-          const mine = p.id === data.plot.id;
-          if (known.get(p.id) === p.revision) continue;
-          if (mine && known.has(p.id) && (pending.current.length || inFlight.current || retry.current)) continue;
-          // One failed plot must not keep every other plot stale.
-          const full = await api<{ plot: LayerPlot; blocks: [number, number, number, number][] }>(
-            `/layer/plot?id=${encodeURIComponent(p.id)}`,
-          ).catch(() => null);
-          if (active && full) view.setPlot(full.plot, full.blocks);
+      view.setChanges(entry.changes);
+      setTiles(entry.tiles);
+      applyProgress(entry);
+      view.canvas.setAttribute(
+        "aria-label",
+        tr(
+          "MetaLayer. Use arrows or WASD to walk and turn. Hold to mine, right-click to build.",
+        ),
+      );
+      const publish = async () => {
+        if (!active || !view || publishing) return;
+        publishing = true;
+        try {
+          const p = view.getState();
+          const data = await api<{
+            peers: Peer[];
+            corrected: Entry["spawn"] | null;
+            expedition: Progress;
+          }>("/layer/presence", {
+            layer: layer.id,
+            expedition: true,
+            x: p.x,
+            y: p.y,
+            z: p.z,
+            yaw: p.heading,
+          });
+          if (!active) return;
+          view.setPeers(data.peers);
+          setPeers(data.peers.length);
+          if (data.corrected) view.teleport(data.corrected);
+          if (data.expedition) applyProgress(data.expedition);
+        } catch (failure) {
+          if (active) showError(failure);
+        } finally {
+          publishing = false;
         }
       };
-      await syncPlots();
-      const presence = async (extra: Record<string, unknown> = {}) => {
-        const s = view.getState();
-        const r = await api<{
-          peers: Peer[];
-          corrected: { x: number; y: number; z: number } | null;
-          activated: string | null;
-          progress: Progress;
-        }>("/layer/presence", {
-          layer: layer.id,
-          x: s.x,
-          y: s.y,
-          z: s.z,
-          yaw: s.heading,
-          outfit: outfitRef.current,
-          ...extra,
-        });
-        if (!active) return;
-        view.setPeers(r.peers);
-        setPeerCount(r.peers.length);
-        if (r.corrected) view.teleport(r.corrected);
-        if (r.activated) flash("activated");
-        view.setActiveBeacons(r.progress.beacons);
-        setProgress(r.progress);
-      };
-      homeTrip.current = () => void presence({ home: true }).catch(() => {});
-      await presence().catch(() => {});
+      await publish();
       timers.push(
-        window.setInterval(() => void presence().catch(() => {}), 1000),
-        window.setInterval(() => void syncPlots().catch(() => {}), 5000),
-        window.setInterval(() => void flush(), 300),
-        window.setInterval(() => active && setHud(view.getState()), 250),
+        setInterval(() => {
+          if (active && !document.hidden) void publish();
+        }, 700),
       );
-    })().catch((e) => {
-      if (active) setError(e instanceof ApiError || e instanceof Error ? e.message : tr("The layer could not open."));
+      timers.push(
+        setInterval(() => {
+          if (active && !document.hidden) void sync();
+        }, 2000),
+      );
+      timers.push(
+        setInterval(() => {
+          if (active && view) {
+            const state = view.getState();
+            setHud(state);
+            if (host.current) {
+              host.current.dataset.position = JSON.stringify({
+                x: state.x,
+                y: state.y,
+                z: state.z,
+              });
+              host.current.dataset.target = JSON.stringify(state.target);
+              host.current.dataset.heading = String(state.heading);
+            }
+          }
+        }, 100),
+      );
+      const blur = () => {
+        if (document.hidden) view?.setMove(0, 0);
+      };
+      document.addEventListener("visibilitychange", blur, {
+        signal: pending.signal,
+      });
+    })().catch((failure) => {
+      if (active)
+        setError(
+          failure instanceof Error
+            ? tr(failure.message)
+            : tr("Could not open MetaLayer."),
+        );
     });
-    const hidden = () => document.visibilityState === "hidden" && flushOnLeave();
-    window.addEventListener("pagehide", flushOnLeave);
-    document.addEventListener("visibilitychange", hidden);
     return () => {
       active = false;
-      timers.forEach((t) => clearInterval(t));
-      window.removeEventListener("pagehide", flushOnLeave);
-      document.removeEventListener("visibilitychange", hidden);
-      flushOnLeave();
-      void fetch("/api/layer/leave", {
-        method: "POST",
-        credentials: "same-origin",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ layer: layer.id }),
-        keepalive: true,
-      }).catch(() => {});
-      engine.current?.dispose();
+      pending.abort();
+      timers.forEach(clearInterval);
+      view?.dispose();
       engine.current = null;
+      acting.current = false;
+      void api("/layer/leave", { layer: layer.id }).catch(() => {});
     };
-    // The engine is created once per player, layer and retry.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [player.id, layer.id, attempt]);
+  }, [layer.id, layer.seed, attempt]);
 
   useEffect(() => {
-    outfitRef.current = outfit;
-    writeLocal(OUTFIT_KEY, outfit);
-    engine.current?.setOutfit(outfitById(outfit), aura);
-  }, [outfit, aura]);
-  useEffect(() => engine.current?.setBuild(building), [building, home]);
-  useEffect(() => engine.current?.setBreaking(breaking), [breaking, home]);
-  useEffect(() => engine.current?.setBlock(block), [block, home]);
+    engine.current?.setBuild(building);
+  }, [building, !!progress]);
   useEffect(() => {
-    const keys = (e: KeyboardEvent) => {
-      if (e.target instanceof HTMLInputElement || e.metaKey || e.ctrlKey) return;
-      if (e.key === "b" || e.key === "B") setBuilding((v) => !v);
-      else if (e.key === "x" || e.key === "X") setBreaking((v) => !v);
-      else if (/^[1-9]$/.test(e.key)) setBlock(BUILD_BLOCKS[Number(e.key) - 1] ?? BLOCK.plank);
-      else if (e.key === "Enter" && building) engine.current?.actAtCenter();
+    engine.current?.setBlock(block);
+  }, [block, !!progress]);
+  useEffect(() => {
+    engine.current?.setRunning(run);
+  }, [run, !!progress]);
+  useEffect(() => {
+    if (!progress) return;
+    engine.current?.setActiveBeacons([...(progress.story.sharedBeaconLit ? ["plaza"] : []), ...progress.story.signals]);
+    engine.current?.setBlueprintVisible(progress.story.stage === "marker");
+  }, [progress?.story.sharedBeaconLit, progress?.story.stage, progress?.story.signals.join(",")]);
+  useEffect(() => {
+    engine.current?.setInputEnabled(!sheet);
+    if (sheet) release();
+  }, [sheet, !!progress]);
+  useEffect(() => {
+    engine.current?.setOutfit(outfitById("nebula"), avatarAura);
+  }, [avatarAura, !!progress]);
+  useEffect(() => {
+    if (sheet !== "atlas") return;
+    let active = true;
+    setMapBusy(true);
+    void api<Snapshot>(
+      `/layer/expedition/state?layer=${encodeURIComponent(layer.id)}&x=${mapCenter.x}&z=${mapCenter.z}`,
+    )
+      .then((data) => {
+        if (active) setMapTiles(data.tiles);
+      })
+      .catch(showError)
+      .finally(() => {
+        if (active) setMapBusy(false);
+      });
+    return () => {
+      active = false;
     };
-    window.addEventListener("keydown", keys);
-    return () => window.removeEventListener("keydown", keys);
-  }, [building]);
+  }, [sheet, mapCenter, layer.id]);
 
-  const closeSheet = () => {
-    if (sheet === "help") writeLocal(HELP_KEY, "1");
+  function release() {
+    heldRef.current.clear();
+    setHeld(new Set());
+    engine.current?.setMove(0, 0);
+  }
+  const press = (control: DemoControl, down: boolean) => {
+    if (down) heldRef.current.add(control);
+    else heldRef.current.delete(control);
+    setHeld(new Set(heldRef.current));
+    engine.current?.setMove(
+      Number(heldRef.current.has("right")) -
+        Number(heldRef.current.has("left")),
+      Number(heldRef.current.has("forward")) -
+        Number(heldRef.current.has("back")),
+    );
+  };
+  const startQuest = async () => {
+    try {
+      applyProgress(await api("/layer/expedition/start", { layer: layer.id }));
+      engine.current?.facePoint(MINES[0].entranceX, MINES[0].entranceZ);
+      setSheet(null);
+    } catch (failure) {
+      showError(failure);
+    }
+  };
+  const returnToSquare = async () => {
+    engine.current?.stopMining();
+    release();
+    try {
+      const data = await api<Entry>("/layer/expedition/enter", {
+        layer: layer.id,
+        plaza: true,
+      });
+      engine.current?.teleport(data.spawn);
+      engine.current?.recenter();
+      setNotice("");
+      void refresh.current();
+    } catch (failure) {
+      showError(failure);
+    }
+  };
+  const currentObjective = storyObjective(progress);
+  const position = hud || { x: 0, y: 15, z: 10, heading: 0 };
+  const distance = currentObjective.target ? Math.ceil(Math.hypot(position.x - currentObjective.target.x, position.z - currentObjective.target.z)) : null;
+  const direction = currentObjective.target ? (position.heading - Math.atan2(position.x - currentObjective.target.x, position.z - currentObjective.target.z)) * 180 / Math.PI : 0;
+  const mineHere = MINES.find(m => Math.abs(position.x - m.x) <= m.radius && Math.abs(position.z - m.z) <= m.radius);
+  const stationHere = storySiteAt(position.x, position.z);
+  const here = mineHere ? (mineHere.id === "crystal-hollow" ? tr("Crystal Hollow") : tr("Basalt Quarry"))
+    : stationHere ? siteName(stationHere.id) : inPlaza(position.x, position.z) ? tr("Central square") : tr("Wilderness");
+  const faceObjective = () => {
+    if (currentObjective.target) engine.current?.facePoint(currentObjective.target.x, currentObjective.target.z);
     setSheet(null);
   };
-  const where = hud?.plot
-    ? hud.plot.mine
-      ? tr("Your plot")
-      : tr("Plot of {0}", { 0: hud.plot.ownerName })
-    : hud
-      ? biomeLabel(hud.biome)
-      : "";
+  const buildFreely = () => {
+    if (progress?.story.stage === "marker") {
+      setBlock(BLOCK.wood);
+      if (currentObjective.target) engine.current?.facePoint(currentObjective.target.x, currentObjective.target.z);
+    }
+    setBuilding(true); setSheet(null);
+  };
+  const close = () => setSheet(null);
 
-  // Full-screen: portalled so desktop panel layout cannot clip the world.
   return createPortal(
-    <section className="layer-screen" aria-label={layer.name}>
+    <section ref={scope} className="app-shell layer-screen" data-screen="explore" data-sheet-open={!!sheet} data-building={building} data-tool-ready={building || !!hud?.target?.mineable} aria-label={tr("MetaLayer")}>
       <div className="layer-stage" ref={host} data-testid="layer-stage" />
-      <header className="layer-top">
-        <button className="layer-icon" onClick={onExit} aria-label={tr("Back to QuestLayer")}>
-          <ArrowLeft size={24} />
-        </button>
-        <div className="layer-title">
-          <strong>{layer.name}</strong>
-          <small>
-            {where}
-            {peerCount ? ` · ${tr("Explorers nearby: {0}", { 0: peerCount })}` : ""}
-          </small>
+      <header className="topbar">
+        <WorldSwitcher virtual enabled layerName={layer.name} gameLayer={gameLayer} onChoose={virtual => { if (!virtual) onExit(); }} />
+        <div className="hud-left">
+          <button className="daily-board-chip" onClick={() => { setCommunityView("quests"); setSheet("community"); }} aria-label={tr("Expedition board")}><Compass size={18} /><b>{Math.min(storyOrder[progress?.story.stage || "expedition"], 5)}/5</b></button>
         </div>
-        <button className="layer-icon" onClick={() => setSheet("outfit")} aria-label={tr("Outfit")}>
-          <TShirt size={24} />
-        </button>
-        <button className="layer-icon" onClick={() => setSheet("help")} aria-label={tr("How the layer works")}>
-          <Question size={24} />
-        </button>
+        <div className="topbar-right">
+          <div className="hud-bubble">
+            <button className="profile-pill ml-player" onClick={onProfile} aria-label={tr("Profile")}>
+              <Character items={items} {...player.appearance} compact />
+            </button>
+            <button className="balance-pill ml-pocket" onClick={() => setSheet("inventory")} aria-label={tr("Open resource inventory")}><span className="gold-icon ml-resource-icon"><Diamond size={18} /></span><b>{progress?.inventory.diamonds ?? 0}</b></button>
+          </div>
+          <LayerSettings mapShown={mapShown} onMap={() => setMapShown(v => !v)} onLocate={() => engine.current?.recenter()} onSquare={() => void returnToSquare()} onGuide={() => setSheet("help")} onExit={onExit} />
+        </div>
       </header>
-
-      {progress && (
-        <aside className="layer-goals" aria-label={tr("Today's goals")}>
-          <p>
-            <Cube size={18} aria-hidden="true" />
-            {tr("Build on your plot: {0} of {1}", { 0: Math.min(progress.built, progress.buildGoal), 1: progress.buildGoal })}
-          </p>
-          <p>
-            <NavigationArrow
-              size={18}
-              aria-hidden="true"
-              style={hud?.beacon ? { transform: `rotate(${(-hud.beacon.bearing * 180) / Math.PI + 45}deg)` } : undefined}
-            />
-            {tr("Activate beacons: {0} of {1}", { 0: progress.beacons.length, 1: progress.beaconGoal })}
-            {hud?.beacon && !hud.beacon.active && progress.beacons.length < progress.beaconGoal && (
-              <em>{tr("{0} m", { 0: Math.round(hud.beacon.distance) })}</em>
-            )}
-          </p>
-        </aside>
-      )}
-
-      <p className="layer-notice" role="status" aria-live="polite">
-        {notice ? noticeText(notice) : saving === "saving" ? tr("Saving…") : ""}
-      </p>
-
-      {error && (
-        <div className="layer-error" role="alert">
+      <div className="map-sky-chip ml-location"><strong>{tr("MetaLayer")}</strong><span>{here} · {tr("{0} nearby", { 0: peers })}</span></div>
+      {mapShown && <aside className="ml-map-tools">
+        <button className="ml-atlas-toggle" onClick={() => { setMapCenter({ x: position.x, z: position.z }); setSheet("atlas"); }} aria-label={tr("Open shared atlas")}>
+          <Minimap tiles={tiles} x={position.x} z={position.z} heading={position.heading} />
+        </button>
+      </aside>}
+      {error ? (
+        <div className="ml-failure" role="alert">
           <p>{error}</p>
-          <button className="primary-button" onClick={() => setAttempt((v) => v + 1)}>
+          <button onClick={() => setAttempt((value) => value + 1)}>
             {tr("Try again")}
           </button>
         </div>
+      ) : (
+        !progress && (
+          <div className="ml-loading" role="status">
+            {tr("Opening MetaLayer…")}
+          </div>
+        )
       )}
-      {!home && !error && <p className="layer-loading" role="status">{tr("Opening the layer…")}</p>}
-
-      {home && (
-        <footer className="layer-controls">
-          <Joystick onMove={(x, y) => engine.current?.setMove(x, y)} />
-          {building && (
-            <div className="layer-palette" role="radiogroup" aria-label={tr("Blocks")}>
+      <div className="ml-reticle" aria-hidden="true">
+        <i />
+        <i />
+      </div>
+      {hud && hud.mining > 0 && (
+        <div
+          className="ml-mining"
+          role="progressbar"
+          aria-label={tr("Mining block")}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(hud.mining * 100)}
+        >
+          <span style={{ width: `${hud.mining * 100}%` }} />
+        </div>
+      )}
+      {progress && (
+        <>
+          <DemoControls
+            held={held}
+            running={run}
+            run={run}
+            setRun={setRun}
+            press={press}
+            release={release}
+            steer={(vector) =>
+              engine.current?.setMove(vector?.x ?? 0, vector?.y ?? 0)
+            }
+          />
+          <MapActions actions={[
+            { id: "mine", label: tr("Mine blocks"), icon: Pickaxe, onSelect: () => setBuilding(false) },
+            { id: "build", label: tr("Build"), icon: Cube, onSelect: () => { setBuilding(true); setSheet("materials"); } },
+            { id: "jump", label: tr("Jump"), icon: ArrowFatUp, onSelect: () => engine.current?.jump() },
+            { id: "parcel", label: tr("Land and building"), icon: House, onSelect: () => setSheet("parcel") },
+          ]}>
+            {(building || hud?.target?.mineable) && <div className="ml-action-buttons">
+            {building ? (
               <button
-                role="radio"
-                aria-checked={breaking}
-                className="layer-swatch erase"
-                onClick={() => setBreaking(true)}
-                aria-label={tr("Remove blocks")}
+                className="map-actions-toggle ml-tool-primary"
+                aria-label={tr("Place selected block")}
+                onClick={() => engine.current?.actAtCenter()}
               >
-                <Eraser size={22} />
+                <Cube size={24} />
               </button>
-              {BUILD_BLOCKS.map((b, i) => (
-                <button
-                  key={b}
-                  role="radio"
-                  aria-checked={!breaking && block === b}
-                  className="layer-swatch"
-                  style={{ "--swatch": cssColor(b) } as React.CSSProperties}
-                  onClick={() => {
-                    setBlock(b);
-                    setBreaking(false);
-                  }}
-                  aria-label={blockLabel(b)}
-                  title={`${blockLabel(b)} (${i + 1})`}
-                />
-              ))}
-            </div>
-          )}
-          <div className="layer-actions">
-            <button className="layer-icon" onClick={() => homeTrip.current()} aria-label={tr("Go to your plot")}>
-              <House size={24} />
-            </button>
-            {building && (
-              <button className="layer-icon" onClick={() => engine.current?.actAtCenter()} aria-label={tr("Build at the centre")}>
-                <Crosshair size={24} />
+            ) : (
+              <button
+                className="map-actions-toggle ml-tool-primary"
+                aria-label={tr("Hold to mine the aimed block")}
+                onPointerDown={(event) => {
+                  event.currentTarget.setPointerCapture(event.pointerId);
+                  engine.current?.startMiningAtCenter();
+                }}
+                onPointerUp={() => engine.current?.stopMining()}
+                onPointerCancel={() => engine.current?.stopMining()}
+                onLostPointerCapture={() => engine.current?.stopMining()}
+                onKeyDown={(event) => {
+                  if (
+                    (event.key === " " || event.key === "Enter") &&
+                    !event.repeat
+                  ) {
+                    event.preventDefault();
+                    engine.current?.startMiningAtCenter();
+                  }
+                }}
+                onKeyUp={() => engine.current?.stopMining()}
+              >
+                <Pickaxe size={25} />
               </button>
             )}
-            <button
-              className="layer-icon"
-              aria-pressed={building}
-              onClick={() => setBuilding((v) => !v)}
-              aria-label={building ? tr("Stop building") : tr("Build")}
-            >
-              <Hammer size={24} />
-            </button>
-            <button className="layer-icon jump" onPointerDown={() => engine.current?.jump()} onClick={() => engine.current?.jump()} aria-label={tr("Jump")}>
-              <ArrowFatUp size={28} />
-            </button>
-          </div>
-        </footer>
+            </div>}
+          </MapActions>
+          <div ref={objectiveCard} className="main-panel explore-panel sheet-compact ml-objective-panel"><div className="sheet-peek sheet-peek-selection">
+          <button
+            className="compact-selection ml-objective"
+            onClick={() => setSheet("community")}
+          >
+            <span className="peek-art">
+              {progress.story.stage === "complete" ? <Check size={22} /> : <ArrowUp size={23} style={{ transform: `rotate(${direction}deg)` }} />}
+            </span>
+            <span className="peek-body">
+              <strong>{currentObjective.title}</strong>
+              <small>{progress.quest.state === "available" ? tr("Accept expedition") : progress.story.stage === "expedition" && progress.quest.state === "mine"
+                ? tr("{0} / {1} diamonds", { 0: Math.min(progress.quest.diamonds, progress.quest.goal), 1: progress.quest.goal })
+                : distance !== null ? tr("{0} blocks away", { 0: distance }) : tr("Complete")}</small>
+            </span>
+            <ArrowRight size={20} />
+          </button>
+          </div></div>
+        </>
       )}
-
+      <p className="ml-notice" role="status" aria-live="polite">
+        {!sheet && (notice || (saving ? tr("Saving your action…") : ""))}
+      </p>
+      <nav className="nav-rail ml-nav" aria-label={tr("MetaLayer navigation")}><div className="rail-links">
+        <button className={!sheet ? "active" : ""} onClick={close} aria-current={!sheet ? "page" : undefined}><Compass size={25} /><span>{tr("Explore")}</span></button>
+        <button className={sheet === "inventory" ? "active" : ""} onClick={() => setSheet("inventory")}><Backpack size={25} /><span>{tr("Inventory")}</span></button>
+        <button className={sheet === "community" || sheet === "activity" ? "active" : ""} onClick={() => { setCommunityView("quests"); setSheet("community"); }}><UsersThree size={25} /><span>{tr("Community")}</span></button>
+      </div></nav>
       {sheet && (
-        <div className="layer-sheet" role="dialog" aria-modal="true" aria-label={sheet === "help" ? tr("How the layer works") : tr("Outfit")}>
-          <div className="layer-sheet-card">
-            <header>
-              <h2>{sheet === "help" ? tr("Welcome to {0}", { 0: layer.name }) : tr("Outfit")}</h2>
-              <button className="layer-icon" onClick={closeSheet} aria-label={tr("Close")} autoFocus>
-                <X size={22} />
-              </button>
-            </header>
-            {sheet === "help" ? (
+        <Dialog
+          label={
+            sheet === "atlas"
+              ? tr("Shared atlas")
+              : sheet === "inventory"
+                ? tr("Resource inventory")
+                : sheet === "community"
+                  ? tr("Expedition board")
+                  : sheet === "parcel"
+                    ? tr("Parcel detail")
+                    : sheet === "activity" ? tr("Actions and NEAR proofs") : sheet === "materials" ? tr("Blocks") : tr("MetaLayer field guide")
+          }
+          onClose={close}
+          presentation="map"
+          history={false}
+        >
+          <div className="main-panel explore-panel ml-sheet">
+            <div className="panel-heading">
+              <button className="panel-back" onClick={close} aria-label={tr("Back to map")}><ArrowLeft size={20} /></button>
+              <div><h1>{sheet === "community" || sheet === "activity" ? tr("Community") : sheet === "inventory" ? tr("Inventory") : sheet === "atlas" ? tr("Shared atlas") : sheet === "materials" ? tr("Blocks") : sheet === "parcel" ? tr("Land and building") : tr("MetaLayer field guide")}</h1></div>
+              <button className="panel-close" onClick={close} aria-label={tr("Close")}><X size={18} /></button>
+            </div>
+            {(sheet === "community" || sheet === "activity") && <ScreenTabs sticky={false} withPanel={false} label={tr("Community")} value={sheet === "activity" ? "proofs" : communityView}
+              tabs={[{ id: "quests", label: tr("Quests"), icon: Compass }, { id: "journal", label: tr("Field journal"), icon: Backpack }, { id: "proofs", label: tr("On chain"), icon: Cube }]}
+              onChange={view => { if (view === "proofs") setSheet("activity"); else { setCommunityView(view); setSheet("community"); } }} />}
+            {notice && <p className="ml-sheet-error" role="alert">{notice}</p>}
+            {sheet === "activity" && <LayerActivity layer={layer.id} />}
+            {sheet === "materials" && <div className="ml-palette" role="radiogroup" aria-label={tr("Blocks")}>{BUILD_BLOCKS.map(b => <button className="secondary-button" key={b} role="radio" aria-checked={block === b} aria-label={blockName(b)} onClick={() => { setBlock(b); close(); }}><span style={{ background: cssColor(b) }} /><span>{blockName(b)}</span></button>)}</div>}
+            {sheet === "help" && (
               <>
-                <ul>
-                  <li>{tr("Walk with the stick or W A S D, jump with the arrow button or Space, drag to look around.")}</li>
-                  <li>{tr("Your free home plot has a gold border. Tap Build, pick a block and tap where it goes.")}</li>
-                  <li>{tr("Follow the light pillars to beacons. Stand on one to activate it.")}</li>
-                  <li>{tr("Other explorers walk the same world. You see their plots; only owners can change them.")}</li>
-                </ul>
-                <p className="layer-disclosure">
+                <div className="ml-sheet-hero">
+                  <img src={STARTER_SPRITE} alt="" />
+                  <h2>{tr("Welcome to MetaLayer")}</h2>
+                </div>
+                <p>
                   {tr(
-                    "Each community gets its own layer. This layer's coin is {0}: it will run on QGOLD for tasks you create and complete here. Coins, staking and its treasury are not active yet; nothing here pays or costs anything.",
-                    { 0: layer.coin },
+                    "Meet on the square, build together and follow the beam into Crystal Hollow.",
                   )}
                 </p>
-                <p className="layer-disclosure">{tr("Moving here never counts as GPS movement in QuestLayer.")}</p>
+                <ul>
+                  <li>
+                    {tr(
+                      "Walk with the stick or arrows. Left and right turn your explorer.",
+                    )}
+                  </li>
+                  <li>
+                    {tr(
+                      "Hold on a natural block to mine it. Pick Build to place blocks on the square.",
+                    )}
+                  </li>
+                  <li>
+                    {tr(
+                      "Everyone shares discoveries, tunnels and diamond veins.",
+                    )}
+                  </li>
+                </ul>
+                <button className="primary-button ml-wide" onClick={close}>
+                  {tr("Let's explore")}
+                </button>
               </>
-            ) : (
-              <div className="layer-outfits" role="radiogroup" aria-label={tr("Outfit")}>
-                {OUTFITS.map((o) => (
-                  <button
-                    key={o.id}
-                    role="radio"
-                    aria-checked={outfit === o.id}
-                    onClick={() => setOutfit(o.id)}
-                    style={{ "--suit": o.suit, "--trim": o.trim, "--visor": o.visor } as React.CSSProperties}
-                  >
-                    <i aria-hidden="true" />
-                    {outfitLabel(o.id)}
-                  </button>
-                ))}
-                <p className="layer-disclosure">{tr("Outfits are colours only. Your equipped Aura shows as a halo.")}</p>
-              </div>
             )}
+            {sheet === "community" && progress && <StoryBoard view={communityView} progress={progress} position={position} busy={saving}
+              onStart={() => void startQuest()} onInteract={body => interactRef.current(body)} onFace={faceObjective}
+              onBuild={buildFreely} onActivity={() => setSheet("activity")} />}
+            {sheet === "inventory" && (
+              <>
+                <h2>{tr("Your resources")}</h2>
+                <div className="ml-inventory">
+                  <div>
+                    <Diamond size={32} weight="fill" />
+                    <strong>{progress?.inventory.diamonds ?? 0}</strong>
+                    <span>{tr("Diamonds")}</span>
+                  </div>
+                  <div>
+                    <Cube size={32} weight="fill" />
+                    <strong>{progress?.inventory.stone ?? 0}</strong>
+                    <span>{tr("Basalt")}</span>
+                  </div>
+                </div>
+                <p>
+                  {tr("These resources belong to this MetaLayer play preview.")}
+                </p>
+                <button className="primary-button ml-wide" onClick={() => setSheet("community")}>{tr("Continue the story")}</button>
+                <div className="ml-story-actions">
+                  <button className="secondary-button ml-wide" onClick={() => setSheet("activity")}>{tr("Actions and NEAR proofs")}</button>
+                  <button className="secondary-button ml-wide" onClick={() => setSheet("parcel")}>{tr("Land and building")}</button>
+                </div>
+              </>
+            )}
+            {sheet === "parcel" && (
+              <>
+                <h2>{tr("Parcel detail")}</h2>
+                <p className="ml-coordinate">
+                  {Math.floor(position.x / 16) * 16},{" "}
+                  {Math.floor(position.z / 16) * 16} · 16 × 16
+                </p>
+                <p>
+                  {inPlaza(position.x, position.z)
+                    ? tr(
+                        "Public square. Everyone can build on its green areas.",
+                      )
+                    : tr(
+                        "Open land. Parcel purchases need the MetaLayer contract integration.",
+                      )}
+                </p>
+                <button
+                  className="secondary-button ml-wide"
+                  onClick={() => {
+                    close();
+                    void returnToSquare();
+                  }}
+                >
+                  {tr("Return to the central square")}
+                </button>
+              </>
+            )}
+            {sheet === "atlas" && (
+              <>
+                <h2>{tr("One world, shared discoveries")}</h2>
+                <p>
+                  {tr(
+                    "Every explorer uncovers the same map. Distant journeys keep their own coordinates.",
+                  )}
+                </p>
+                <div className="ml-atlas-large" aria-busy={mapBusy}>
+                  <Minimap
+                    tiles={mapTiles}
+                    x={position.x}
+                    z={position.z}
+                    heading={position.heading}
+                    centerX={mapCenter.x}
+                    centerZ={mapCenter.z}
+                  />
+                </div>
+                <div className="ml-atlas-controls">
+                  <button
+                    className="map-settings-toggle"
+                    onClick={() => setMapCenter((c) => ({ ...c, x: c.x - 96 }))}
+                    aria-label={tr("Look west")}
+                  >
+                    <ArrowLeft />
+                  </button>
+                  <button
+                    className="map-settings-toggle"
+                    onClick={() => setMapCenter((c) => ({ ...c, z: c.z - 96 }))}
+                    aria-label={tr("Look north")}
+                  >
+                    <ArrowUp />
+                  </button>
+                  <button
+                    className="map-settings-toggle"
+                    onClick={() => setMapCenter((c) => ({ ...c, z: c.z + 96 }))}
+                    aria-label={tr("Look south")}
+                  >
+                    <ArrowDown />
+                  </button>
+                  <button
+                    className="map-settings-toggle"
+                    onClick={() => setMapCenter((c) => ({ ...c, x: c.x + 96 }))}
+                    aria-label={tr("Look east")}
+                  >
+                    <ArrowRight />
+                  </button>
+                </div>
+                <div className="ml-atlas-controls">
+                  <button
+                    onClick={() =>
+                      setMapCenter({ x: position.x, z: position.z })
+                    }
+                  >
+                    {tr("My location")}
+                  </button>
+                  <button onClick={() => setMapCenter({ x: 0, z: 0 })}>
+                    {tr("Central square")}
+                  </button>
+                </div>
+                <p className="ml-coordinate">
+                  {Math.round(mapCenter.x)}, {Math.round(mapCenter.z)}
+                </p>
+              </>
+            )}
+            <div className="ml-preview-note"><span className="badge">{tr("Preview")}</span><InfoTip label={tr("MetaLayer")}>{tr("Play preview. MetaGold, XP rewards, parcel NFTs and onchain settlement await integration.")}</InfoTip></div>
           </div>
-        </div>
+        </Dialog>
       )}
     </section>,
     document.body,

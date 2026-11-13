@@ -4224,7 +4224,7 @@ export default function App() {
           tabIndex={-1}
           className={`main-panel ${tab === "explore" ? `explore-panel ${selected ? "zone-explore-panel" : ""} ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
-          {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} onExit={() => setTab("explore")} />}
+          {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} gameLayer={gameLayer} onProfile={() => chooseProfileTab("character")} onExit={() => setTab("explore")} />}
           {tab === "explore" && !sheetExpanded && <div className="objective-dismiss-bar">
             <button className="objective-dismiss" aria-label={tr("Hide objective")} onClick={() => { if (objective === "coach") learning.acknowledge(coachTopic); else if (zoneQuest) learning.acknowledge(questHelpTopic(zoneQuest)); setDismissedObjective(objectiveKey); }}><X size={20} aria-hidden="true" /></button>
           </div>}
