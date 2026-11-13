@@ -141,3 +141,21 @@
   .app-shell[data-area="profile"] .profile-hero-avatar .character-composition { width: 168px; height: 164px; }
   .app-shell[data-area="profile"] .profile-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
+/* Profile → Character on a wide sheet: the appearance fills a column on the
+   left, name, level, messages and totals sit beside it; badges and the story
+   run full width below. Phones keep the single column above. */
+.profile-character { container-type: inline-size; }
+@container (min-width: 640px) {
+  .app-shell[data-area="profile"] .profile-character-grid > * { grid-column: 1 / -1; }
+  .app-shell[data-area="profile"] .profile-character-grid { display: grid; grid-template-columns: minmax(260px, 5fr) minmax(0, 6fr); column-gap: 24px; row-gap: 0; align-items: start; padding-top: 20px; }
+  .app-shell[data-area="profile"] .profile-character-grid > .profile-hero { display: contents; }
+  .app-shell[data-area="profile"] .profile-hero-avatar { grid-column: 1; grid-row: 1 / span 3; align-self: stretch; min-height: 320px; margin-bottom: 16px; align-content: start; }
+  .app-shell[data-area="profile"] .profile-hero-avatar .character-composition { align-self: center; width: 280px; height: 288px; max-width: 100%; }
+  .app-shell[data-area="profile"] .profile-hero-avatar .character-composition > .ghost-art,
+  .app-shell[data-area="profile"] .profile-hero-avatar .character-composition > img { width: 184px; height: 200px; image-rendering: pixelated; }
+  .app-shell[data-area="profile"] .profile-hero-avatar .aura-sprite { width: 248px; }
+  .app-shell[data-area="profile"] .profile-hero-body { grid-column: 2; grid-row: 1; margin-bottom: 16px; }
+  .app-shell[data-area="profile"] .profile-character-grid > .profile-tiles { grid-column: 2; grid-row: 2; }
+  .app-shell[data-area="profile"] .profile-character-grid > .journey-stats { grid-column: 2; grid-row: 3; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .app-shell[data-area="profile"] .profile-character-grid > .journey-stats div { padding: 12px 8px; }
+}

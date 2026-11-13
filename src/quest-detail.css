@@ -151,3 +151,10 @@
 .qe-photo img { width: 100%; max-height: 180px; border-radius: 14px; object-fit: cover; }
 .qe-photo label.secondary-button { display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; font-size: 16px; font-weight: 600; cursor: pointer; }
 .qe-photo label.is-disabled { opacity: 0.5; cursor: default; }
+/* One creator quest opened from its map pin: only the quest, no Community tabs. */
+.game-dialog.game-dialog-map:has(.map-quest-dialog) { width: min(520px, calc(100vw - 32px)); }
+.map-quest-dialog .creator-community { margin: 0; padding: 0; border: 0; }
+.map-quest-dialog .qd { max-width: none; }
+@media (max-width: 600px) {
+  .game-dialog.game-dialog-map:has(.map-quest-dialog) { width: calc(100vw - 16px); }
+}
