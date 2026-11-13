@@ -51,6 +51,8 @@ Prices live in `server/data/gold-spend.json` and are QGOLD (set 5 Nov 2026,
 worth about 0.0004 QGOLD (the day's coin budget split over every coin in
 Czechia) and a cell-zone prize a few hundredths. So a premium emote
 (0.025–0.075) is about one good walk, a frame (0.1–0.3) a few days, NPC gear
+
+Since 11 Nov 2026 prices are whole GOLD (1 GOLD = 1 micro-QGOLD, `gold-spend-v3`). On 13 Nov 2026 the owner cut premium emotes to 40 %: 1,000–3,000 GOLD, about one or two cell-zone prizes (~1,500 GOLD each). Frames, gear and lures are unchanged.
 0.75 (rare) or 2 (epic), a lure 0.01–0.06, a shout 0.005 and a topic 0.01 a day.
 
 | Spend | Rule |

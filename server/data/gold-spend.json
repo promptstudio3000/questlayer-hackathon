@@ -1,6 +1,6 @@
 {
   "version": "gold-spend-v3",
-  "note": "Prices are whole in-game GOLD; 1 GOLD is the smallest QGOLD unit (QGOLD has 6 decimals, so 1 QGOLD = 1,000,000 GOLD; owner, 11 Nov 2026). Retuned 11 Nov 2026 to the live map: a coin is a few GOLD and a cell-zone prize about 1,500 GOLD, so a premium emote costs about one or two zone prizes. Every spend burns the player's own QGOLD on chain (ft_burn, docs/GOLD-SPENDING.md). Spending never creates money and never changes odds.",
+  "note": "Prices are whole in-game GOLD; 1 GOLD is the smallest QGOLD unit (QGOLD has 6 decimals, so 1 QGOLD = 1,000,000 GOLD; owner, 11 Nov 2026). Retuned 11 Nov 2026 to the live map: a coin is a few GOLD and a cell-zone prize about 1,500 GOLD, so a premium emote costs about one or two zone prizes. Every spend burns the player's own QGOLD on chain (ft_burn, docs/GOLD-SPENDING.md). Spending never creates money and never changes odds. Emotes cut to 40 % (1,000–3,000 GOLD) on 13 Nov 2026 (owner): a premium emote now costs less than or about two zone prizes.",
   "emotes": {
     "free": [
       "wave",
@@ -13,43 +13,43 @@
     "premium": [
       {
         "id": "fire",
-        "price": 2500
+        "price": 1000
       },
       {
         "id": "crown",
-        "price": 4000
+        "price": 1600
       },
       {
         "id": "gem",
-        "price": 4000
+        "price": 1600
       },
       {
         "id": "ghost",
-        "price": 2500
+        "price": 1000
       },
       {
         "id": "dragon",
-        "price": 6000
+        "price": 2400
       },
       {
         "id": "rocket",
-        "price": 3000
+        "price": 1200
       },
       {
         "id": "bolt",
-        "price": 2500
+        "price": 1000
       },
       {
         "id": "clover",
-        "price": 3000
+        "price": 1200
       },
       {
         "id": "rainbow",
-        "price": 5000
+        "price": 2000
       },
       {
         "id": "unicorn",
-        "price": 7500
+        "price": 3000
       }
     ],
     "showSeconds": 30
