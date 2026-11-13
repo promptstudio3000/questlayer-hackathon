@@ -2779,31 +2779,12 @@ export default function App() {
         invisible.deviceKey?.accountId ? invisible.deviceKey : null,
     });
   });
-  // Treasury DAO vote (docs/TREASURY-DAO.md): the explorer account approves
-  // one poll option on the Sputnik DAO; sponsored, no deposit, no popup.
-  async function voteTreasury(dao: string, proposalId: number): Promise<boolean> {
+  // Treasury DAO vote (docs/TREASURY-DAO.md): the lazy vote dialog builds act_proposal;
+  // the explorer account signs it, sponsored, no deposit, no popup.
+  async function signTreasury(tx: (accountId: string) => object): Promise<boolean> {
     const result = await action("treasury-vote", async () => {
-      if (!onNearNetwork(dao)) throw Error(tr("The treasury vote is on another network."));
       const { signer, accountId } = await resolveSigner(invisible.accountId || undefined);
-      await signer.send(
-        {
-          network: NEAR_NETWORK,
-          signerId: accountId,
-          receiverId: dao,
-          actions: [
-            {
-              type: "FunctionCall",
-              params: {
-                methodName: "act_proposal",
-                args: { id: proposalId, action: "VoteApprove", proposal: "Vote" },
-                gas: "50000000000000",
-                deposit: "0",
-              },
-            },
-          ],
-        },
-        { playerId: player!.id },
-      );
+      await signer.send(tx(accountId) as Parameters<typeof signer.send>[0], { playerId: player!.id });
       return true;
     });
     return result === true;
@@ -4170,7 +4151,7 @@ export default function App() {
           onMoveEnd={(center, zoom) => setMapCenter(zoom >= 13 ? center : null)}
           // Only game elements sit on the map. Community quests, player tasks
           // and Secrets are reached from the Community button and Nearby.
-          creatorPlaces={MAP_DIALOG_PINS ? creatorPlaces : []}
+          creatorPlaces={creatorPlaces}
           onCreatorPlace={(questId) => {
             setTab("community");
             setCreatorView({ page: "quest", questId });
@@ -4357,7 +4338,7 @@ export default function App() {
           hidden={compactHidden}
           ref={mainPanel}
           tabIndex={-1}
-          className={`main-panel ${tab === "explore" ? `explore-panel ${selected ? "zone-explore-panel" : ""} ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
+          className={`main-panel ${settingsOpen ? "settings-panel " : ""}${tab === "explore" ? `explore-panel ${selected ? "zone-explore-panel" : ""} ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
           {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} onExit={() => setTab("explore")} />}
           {tab === "explore" && !sheetExpanded && <div className="objective-dismiss-bar">
@@ -5519,7 +5500,7 @@ export default function App() {
         <TreasuryVoteDialog
           key={`treasury-${player.id}`}
           account={explorerId || null}
-          vote={voteTreasury}
+          sign={signTreasury}
           notify={notify}
           onClose={() => setTreasuryVoteOpen(false)}
         />

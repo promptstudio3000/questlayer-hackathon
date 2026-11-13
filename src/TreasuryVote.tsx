@@ -9,6 +9,7 @@ import { api, ApiError } from "./api";
 import { tr } from "./i18n";
 import { closesLabel } from "./CommunityBonusVote";
 import { Dialog } from "./Dialog";
+import { NEAR_NETWORK, onNearNetwork } from "./near-network.ts";
 
 export type DaoOption = {
   proposalId: number;
@@ -172,12 +173,22 @@ function mark(p: DaoPoll, poll: string, proposalId: number): DaoPoll {
   };
 }
 
-/** The tour's vote step opens the treasury vote right here: no NPC to walk to. */
-export function TreasuryVoteDialog({ onClose, ...props }: Omit<Parameters<typeof TreasuryVote>[0], "empty"> & { onClose: () => void }) {
+/** The tour's vote step opens the treasury vote right here: no NPC to walk to.
+ *  `sign` signs one transaction with the explorer account (sponsored, no popup). */
+export function TreasuryVoteDialog({ onClose, sign, ...props }: Omit<Parameters<typeof TreasuryVote>[0], "empty" | "vote"> & { onClose: () => void; sign: (tx: (accountId: string) => object) => Promise<boolean> }) {
+  const vote = (dao: string, id: number) => {
+    if (!onNearNetwork(dao)) return Promise.reject(Error(tr("The treasury vote is on another network.")));
+    return sign((signerId) => ({
+      network: NEAR_NETWORK,
+      signerId,
+      receiverId: dao,
+      actions: [{ type: "FunctionCall", params: { methodName: "act_proposal", args: { id, action: "VoteApprove", proposal: "Vote" }, gas: "50000000000000", deposit: "0" } }],
+    }));
+  };
   return (
     <Dialog label={tr("Treasury vote")} onClose={onClose}>
       <div className="tour-vote-dialog">
-        <TreasuryVote {...props} empty={<p className="bonus-vote-note">{tr("No treasury vote is open on this layer right now.")}</p>} />
+        <TreasuryVote {...props} vote={vote} empty={<p className="bonus-vote-note">{tr("No treasury vote is open on this layer right now.")}</p>} />
       </div>
     </Dialog>
   );

@@ -5,7 +5,8 @@ workshop), which is removed. Testnet only, behind a server switch.
 
 ## What a player does
 
-The logo opens the world picker: **QuestLayer** (the GPS game) or the **Space Layer**.
+The logo opens the world picker: **GotchiGO** (the GPS game, the real-world layer of the
+QuestLayer app) or the **Space Layer**.
 The layer is one infinite, shared 3D voxel world in a space style: alien turf,
 spore forests, dust dunes, aether shallows, basalt peaks and crystal fields under a
 starfield with a ringed planet. It is an original design; nothing is copied from

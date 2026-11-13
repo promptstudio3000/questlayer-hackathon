@@ -385,7 +385,7 @@ export function Layer({
     <section className="layer-screen" aria-label={layer.name}>
       <div className="layer-stage" ref={host} data-testid="layer-stage" />
       <header className="layer-top">
-        <button className="layer-icon" onClick={onExit} aria-label={tr("Back to QuestLayer")}>
+        <button className="layer-icon" onClick={onExit} aria-label={tr("Back to GotchiGO")}>
           <ArrowLeft size={24} />
         </button>
         <div className="layer-title">
@@ -515,7 +515,7 @@ export function Layer({
                     { 0: layer.coin },
                   )}
                 </p>
-                <p className="layer-disclosure">{tr("Moving here never counts as GPS movement in QuestLayer.")}</p>
+                <p className="layer-disclosure">{tr("Moving here never counts as GPS movement in GotchiGO.")}</p>
               </>
             ) : (
               <div className="layer-outfits" role="radiogroup" aria-label={tr("Outfit")}>
