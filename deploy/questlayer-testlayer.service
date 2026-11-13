@@ -28,6 +28,7 @@ Environment=SIGNING_VAULT_ORIGIN=https://questlayer-test-signer.promptstudio3000
 # the bots and seed content (docs/TEST-SEED.md) and the compact Plzeň zones.
 Environment=TEST_SEED=1
 Environment=DEMO_ZONES=plzen-compact
+Environment=MAP_PAYOUTS=1
 Environment=LEVEL_ITEM_EDITIONS=1
 Environment=LAYER_ENABLED=1
 Environment=CREATOR_COMMUNITY_ENABLED=1
