@@ -273,3 +273,47 @@ test("template replies stay in character: small talk, then tips for place questi
   const bela = personaFor(BELA);
   assert.notEqual(templateReply(bela, [], { message: "Who are you?" }).say, templateReply(vojtech, [], { message: "Who are you?" }).say);
 });
+
+test("greeting lists the places the NPC knows, nearest first, with distances and its lore", async (t) => {
+  const tip = "Na Spilce in the brewery pours the freshest tank beer.";
+  const { a, view, service } = await fixture(t, {
+    judge: () => ({ verdict: "new", tip, place: "Na Spilce", matches: null, say: "Díky!" }),
+  });
+  // Stand on Republic Square.
+  const actor = { ...BELA, lat: 49.74725, lng: 13.37759 };
+  const greet = service.greet({ player: a, actor, world: view(a) });
+  assert.match(greet.lore.backstory, /archivist/);
+  assert.ok(greet.lore.likes.length > 0);
+  assert.ok(greet.places.length >= 10 && greet.places.length <= 12);
+  assert.equal(greet.places[0].name, "Republic Square");
+  assert.ok(greet.places[0].distanceM < 20);
+  const distances = greet.places.filter((p) => Number.isFinite(p.distanceM)).map((p) => p.distanceM);
+  assert.deepEqual(distances, [...distances].sort((x, y) => x - y));
+  for (const p of greet.places) {
+    assert.ok(p.name && p.topic && p.tip);
+    assert.ok(!("contributor" in p) && !("confirmations" in p));
+  }
+  // One row per place, even when several tips name it.
+  const names = greet.places.map((p) => p.name);
+  assert.equal(new Set(names).size, names.length);
+
+  // A player tip that names a known place shares that place's spot.
+  const vojtech = { ...VOJTECH, lat: 49.74725, lng: 13.37759 };
+  await service.mission({ player: a, actor: vojtech, world: view(a), answer: "Na Spilce, the brewery pub, has the best beer" });
+  const all = service.lore.places({ world: view(a), actor: vojtech, max: 40 });
+  const spilce = all.find((p) => p.name === "Na Spilce");
+  assert.ok(spilce.distanceM > 500 && spilce.distanceM < 1000, String(spilce.distanceM));
+});
+
+test("wikipedia sights keep their coordinates for the NPC's place list", async (t) => {
+  const db = openDatabase(":memory:");
+  t.after(() => db.close());
+  const web = { nearby: async () => [{ ref: "wiki:en:7", place: "Old Bridge", text: "The Old Bridge crosses the river near the old town walls.", spot: { lat: 50.001, lng: 14.0 } }] };
+  const lore = createLoreService(db, { seeds: [], web, clock: () => NOW });
+  const world = { cityId: null };
+  const actor = { id: "x", lat: 50.0, lng: 14.0 };
+  await lore.refreshWeb({ world, actor });
+  const [bridge] = lore.places({ world, actor });
+  assert.equal(bridge.name, "Old Bridge");
+  assert.ok(Math.abs(bridge.distanceM - 111) <= 1, String(bridge.distanceM));
+});

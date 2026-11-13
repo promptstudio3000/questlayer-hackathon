@@ -33,6 +33,19 @@ export interface NpcReply {
   npc?: { id: string; name: string; title: string | null; archetype: string };
   /** The NPC's own question (its mission), on a greeting. */
   mission?: NpcMission;
+  /** Who the character is (its persona card), on a greeting. */
+  lore?: { backstory: string | null; likes: string[] };
+  /** Places it knows from the shared memory, nearest first, on a greeting. */
+  places?: NpcPlace[];
+}
+/** A place an NPC has heard of; distance from the NPC when the spot is known. */
+export interface NpcPlace {
+  name: string;
+  topic: string;
+  tip: string;
+  lat?: number;
+  lng?: number;
+  distanceM?: number;
 }
 /** The question an NPC asks for the shared memory of the place. */
 export interface NpcMission {

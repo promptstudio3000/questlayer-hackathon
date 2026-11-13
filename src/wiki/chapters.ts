@@ -193,6 +193,7 @@ export const CHAPTERS: Chapter[] = [
           "One tap on a quest (in Nearby, in a zone, from an NPC or from Today's board) goes straight to the map: the target is marked, a direction line points to it, other map content dims, and the X on the target chip clears it. The line shows only for a quest or place you started yourself: the chip under the header reads **Guiding you to** with its name, and its X ends the guidance. The nearest-discovery card at the bottom is only a suggestion and draws no line. No reward is reserved or claimed by choosing. At the place the same tap opens one confirm button. A plain map point (a tour stop, for example) can be the target too: it gets a pulsing ring and the same chip with distance and X, and clears itself within 15 m.",
           "Walking into a zone greets you for a few seconds: **Welcome to** with the zone's name and how many quests wait there, once per visit. Then the name stays under the QuestLayer button as plain words over the map (no card); a tap opens the zone dialog. It never starts a quest by itself.",
           "While you walk, the camera that follows you moves closer behind you and steps back a few seconds after you stop. Your own zoom is the level it returns to; with reduced motion on it does not move.",
+          "**Actions** sits in the bottom right corner on every map (Test Layer, GotchiGO and MetaLayer): a round purple button with a white rim and the word ACTIONS under its icon, bigger on desktop. One tap fans out notes, mood, tasks, Secrets and, for creators, new quests.",
           "When a quest, find or character is in reach, the **Open …** button at the bottom gets a gold rim that gently pulses; with reduced motion on, the rim stays and the pulse is off.",
           "A zone dialog is the title, one row of icon facts (tier, open window, done today, XP, QGOLD and Auras left) and a list of one-tap quests.",
           "Notes, shouts and topics sit on the map as closed icons; a tap opens the text, a second tap opens the thread and the X folds it again.",
@@ -427,8 +428,9 @@ export const CHAPTERS: Chapter[] = [
       { h: "Encounters" },
       {
         list: [
-          "A greeting shows up to two current quest offers with a compact portrait; tapping one calls the real accept endpoint and, once confirmed, returns to the map guided to the first stop.",
-          "The full menu, active tasks, trader and keeper surfaces and the chat input sit under More (folded on a phone, open on desktop).",
+          "An encounter is a portrait and three tabs, one job each. **Talk** is the conversation: the greeting and the NPC's own question arrive as chat messages, **Answer** under the question turns your next message into the answer, anything else is ordinary chat.",
+          "**Tasks** holds everything the NPC offers (quests, errands, trades, rolls), rewards ready to collect and the tasks you are doing for it. Tapping an offer calls the real accept endpoint and, once confirmed, returns to the map guided to the first stop. A reward to collect or a trader's counter opens on Tasks, the keeper on Vault.",
+          "**Profile** tells who the character is (its story and what it likes) and lists up to 12 **places it knows** from the shared memory of the place, nearest first, with the distance from the NPC.",
           "Unsent NPC messages are kept as local drafts per explorer, world and actor; they never store tokens or prove anything.",
           "Nearby Open cues only open the encounter; the server still checks location, timing and availability.",
         ],
@@ -436,12 +438,13 @@ export const CHAPTERS: Chapter[] = [
       { h: "NPC missions and shared memory" },
       {
         list: [
-          "Every NPC has its own mission card and asks one question about the place: the best pub, where to eat, what is worth seeing, a hidden corner or the best view. **Answer** opens chat mode.",
+          "Every NPC has its own mission card and asks one question about the place in the Talk tab: the best pub, where to eat, what is worth seeing, a hidden corner or the best view.",
           "NEAR AI turns a useful answer into a short neutral tip for that city (or map cell in the World). Other explorers who ask the NPCs get the best tips back: \"explorers tell me…\". Nobody sees who said what.",
           "A new tip pays **30 XP**, confirming a known tip **10 XP**. At most **3 rewarded answers a day**, one per NPC, and the XP counts toward the daily location XP limit.",
           "Answers with links, contacts, personal details, insults or attempts to change the NPC's rules are refused before any AI sees them, and the tip is checked again afterwards. Without AI an answer waits unseen and pays nothing.",
           "Every NPC has its own voice: a personality card and its own lines for greetings, small talk, jokes and \"I don't know\". When the AI is off or busy the NPC still answers in character and points to explorers' tips when asked about places.",
-          "Plzeň starts with a hand-checked set of tips. An optional Wikipedia lookup (off unless the host turns it on) adds sights near an NPC; it sends only map coordinates, never what a player wrote.",
+          "Plzeň starts with a hand-checked set of tips with map positions. An optional Wikipedia lookup (off unless the host turns it on) adds sights near an NPC with their positions; it sends only map coordinates, never what a player wrote.",
+          "A tip that names a place with a known position shows its distance in the NPC's Profile; a place without one is listed without a distance.",
         ],
       },
       { h: "Monsters" },
