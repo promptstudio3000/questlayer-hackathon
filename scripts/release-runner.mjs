@@ -261,8 +261,20 @@ function queueOps(state, head) {
   const running = Object.entries(state.ops).find(([id, o]) => o.status === "running");
   if (running) {
     if (unitActive(running[0])) return; // one operation at a time: they share the operator key
-    const result = readJson(join(STATUS_DIR, "ops", `${running[0]}.json`), null);
-    state.ops[running[0]] = { ...running[1], status: result?.status === "done" ? "done" : "failed", finishedAt: result?.finishedAt || now(), error: result?.error || (result ? null : "The operation stopped without a result.") };
+    const file = join(STATUS_DIR, "ops", `${running[0]}.json`);
+    const result = readJson(file, null);
+    const died = !result || result.status === "running";
+    const error = died ? "The operation stopped without a result (killed, e.g. out of memory; see journalctl -u " + opUnit(running[0]) + ")." : result.error;
+    state.ops[running[0]] = { ...running[1], status: result?.status === "done" ? "done" : "failed", finishedAt: (!died && result.finishedAt) || now(), error: result?.status === "done" ? null : error };
+    // A killed op never wrote its result: correct the public file too, keeping the steps it saved.
+    if (died) writeJson(file, { ...(result || { id: running[0] }), status: "failed", error, finishedAt: state.ops[running[0]].finishedAt });
+  }
+  // Public files left at "running" by an op that was killed earlier (state already says failed).
+  for (const [id, o] of Object.entries(state.ops)) {
+    if (o.status !== "failed") continue;
+    const file = join(STATUS_DIR, "ops", `${id}.json`);
+    const pub = readJson(file, null);
+    if (pub?.status === "running") writeJson(file, { ...pub, status: "failed", error: o.error || "The operation stopped without a result.", finishedAt: o.finishedAt || now() });
   }
   const names = listing.out.split("\n").filter((n) => n.endsWith(".json")).sort();
   if (!state.opsBaselineAt) {
@@ -282,7 +294,7 @@ function queueOps(state, head) {
       writeJson(join(STATUS_DIR, "ops", `${id}.json`), { id, status: "refused", error: e.message, finishedAt: now() });
       continue;
     }
-    asRoot(["systemd-run", `--unit=${opUnit(id)}`, "--collect", "--property=TimeoutStartSec=infinity", NODE, join(INSTALL, "scripts/release-runner.mjs"), "run-op", id, head]);
+    asRoot(["systemd-run", `--unit=${opUnit(id)}`, "--collect", "--property=TimeoutStartSec=infinity", "--property=MemoryHigh=3G", NODE, join(INSTALL, "scripts/release-runner.mjs"), "run-op", id, head]);
     state.ops[id] = { status: "running", sha: head, startedAt: now() };
     return;
   }
