@@ -729,6 +729,7 @@ async function runDevice(name, servers) {
             const open = window.open.bind(window);
             window.open = (...a) => { const w = open(...a); t.push(`open ${!!w}`); return w; };
             addEventListener("message", (e) => t.push(`msg ${JSON.stringify(e.data).slice(0, 140)}`));
+            new MutationObserver(() => { const x = document.querySelector(".toast")?.textContent?.trim(); if (x && t.at(-1) !== `toast ${x}`) t.push(`toast ${x.slice(0, 120)}`); }).observe(document.body, { subtree: true, childList: true, characterData: true });
           });
           context.on("request", onRequest);
           const [secure] = await Promise.all([
