@@ -41,6 +41,7 @@
     "poi:classify": "node server/poi/cli.mjs",
     "poi:validate": "node scripts/poi/validate-release.mjs",
     "world:coverage": "node scripts/world-coverage.mjs",
+    "world:sample-check": "node scripts/poi-sample-check.mjs",
     "ai:flavour": "node server/cli/ai-flavour.mjs",
     "ai:compare": "node server/cli/ai-compare.mjs",
     "i18n:keys": "node scripts/i18n-keys.mjs",
