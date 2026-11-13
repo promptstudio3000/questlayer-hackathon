@@ -38,8 +38,11 @@ Lurkers (60 m) and the wandering rare (300 m) are only listed for a player alrea
   Pocket Wisp lurkers. The loader rejects traders, keepers, guardians and bosses in the generic file (treasury or
   reviewed zones), fixed coordinates, and more instances than the per-cell cap.
 - `homeFrom: "poi"` (NPCs only, generic file only) resolves a home at plan time from `server/actors/pois.mjs`:
-  CityPack candidate parks, today's open zones, sources added with `registerPoiSource` (the W6 POI DB plugs in here),
-  and path junctions as the fallback every mapped cell has. Closed and excluded places are dropped; the home snaps to
+  CityPack candidate parks, today's open zones, sources added with `registerPoiSource`, and path junctions as the
+  fallback every mapped cell has. Wave 2 (13 Nov 2026): the server registers the W3 POI file
+  (`server/actors/poi-file-source.mjs`), so generic NPCs stand at real, named, safety-`ok` places on a public path
+  (the street cell, or an auto city's centre cell and its six neighbours; the 60 most notable). `ACTOR_POI_HOMES=off`
+  turns it off; with no POI file nothing changes. Closed and excluded places are dropped; the home snaps to
   the path graph within 250 m, and generic NPCs stay 150 m apart.
 - `DENSITY_CAP_PER_CELL` (`server/actors/definitions.mjs`) is shared by all layers: per cell at most 1 quest giver,
   1 storyteller, 1 wandering rare, 1 roamer, 2 lurkers.

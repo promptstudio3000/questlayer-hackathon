@@ -33,6 +33,21 @@ What it measures:
 
 Same file and seed give the same report. Large outputs stay out of git (`output/qa/` reports are fine when small).
 
+## Automatic field check: `npm run world:sample-check`
+
+```
+npm run world:sample-check -- [--poi /var/lib/questlayer-poi/current.sqlite] [--sample 50] [--seed text]
+                              [--out output/qa/poi-sample-check] [--delay-ms 2000]
+```
+
+Nobody walks the quest sample by hand. The check (`server/poi/sample-check.mjs`) takes a seeded sample of
+quest-ready OpenStreetMap places from the POI file, asks Overpass once per cell (one request at a time, with a
+pause) and runs the answer through the same taxonomy and safety filter as the import. Each place is
+`confirmed`, `renamed` (still fine, name changed), `moved` (check-in point more than 30 m away), `now-excluded`
+(with the new reason codes), `gone` (no longer in OpenStreetMap) or `unchecked` (request failed). Output:
+`report.json` (schema `questlayer.poi-sample-check/1`) and `report.md` with OpenStreetMap links, in
+`<out>/<POI version>/`. It is read-only; the next weekly import picks up the changes it reports.
+
 ## `/api/health` → `poiWorld`
 
 | status | Meaning |

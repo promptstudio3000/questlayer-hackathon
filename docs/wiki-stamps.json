@@ -1,7 +1,7 @@
 {
   "note": "Written by npm run wiki:stamp (docs/WIKI.md). Do not edit by hand.",
   "docs": {
-    "docs/ACTORS-API.md": "5f4808d6a6cc5b63",
+    "docs/ACTORS-API.md": "994b0b8f1abfcfbd",
     "docs/AI-QUEST-DRAFTS.md": "03c41a3c34e89c58",
     "docs/ARCHITECTURE.md": "839d5faccdf915d5",
     "docs/ASSET-CATALOG.md": "f6ba2d912f985da4",
@@ -65,7 +65,7 @@
     "docs/PLAYER-CARDS.md": "f63809ced36257df",
     "docs/PLAYER-INBOX.md": "917ba90a36a557b0",
     "docs/POI-PIPELINE.md": "b9458dc133e95f3f",
-    "docs/POI-SAFETY.md": "737f03a888948740",
+    "docs/POI-SAFETY.md": "13751bd3beea7e43",
     "docs/QGOLD-ESCROW.md": "4a9976353f6fb0b3",
     "docs/QGOLD-MARKET.md": "aec605ed08dded2c",
     "docs/QGOLD-VAULT.md": "cf7fc2fdee9f367e",
@@ -88,10 +88,10 @@
     "docs/TREASURY-PAGE.md": "89ead823b8677908",
     "docs/TREASURY-WORKERS-VPS.md": "219dba8be647836c",
     "docs/VPS-RELEASE-RUNNER.md": "3fa5252936ace3c0",
-    "docs/WORLD-COVERAGE.md": "f91fed2566aaa415",
+    "docs/WORLD-COVERAGE.md": "13b60fb5a6f113af",
     "docs/WORLD-GENERATION.md": "55854f094cb01175",
     "docs/WORLD-WORKER.md": "fc4e280dc58919e4",
-    "docs/WORLDS-PLAN.md": "c67e840ca25df6fd",
+    "docs/WORLDS-PLAN.md": "b43384dd0ec56951",
     "docs/YIELD-VAULT-PLAN.md": "0ee14820abac58a5",
     "docs/YIELD-VAULT.md": "9337f8e366c42d91"
   }

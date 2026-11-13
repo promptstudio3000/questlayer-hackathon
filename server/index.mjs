@@ -195,6 +195,8 @@ import { worldQuery } from "./spatial/world-query.mjs";
 import * as game from "./game.mjs";
 import { createActorRoutes } from "./actors/routes.mjs";
 import { actorsAllDay, actorsEnabled, createActorService } from "./actors/service.mjs";
+import { registerPoiSource } from "./actors/pois.mjs";
+import { poiFileActorSource } from "./actors/poi-file-source.mjs";
 import { testSeedMode as readTestSeedMode } from "./test-seed/config.mjs";
 import { demoZoneMode } from "./demo-zones.mjs";
 import { createTestSeed } from "./test-seed/seed.mjs";
@@ -631,6 +633,8 @@ const actorService =
         },
       })
     : null;
+// Generic actors live at real POIs from the W3 file (ACTOR_POI_HOMES=off: path junctions only).
+if (actorService && process.env.ACTOR_POI_HOMES !== "off") registerPoiSource(poiFileActorSource());
 const actorRoutes = createActorRoutes(actorService);
 // Today's city plans are built off the request path after a restart, so the
 // first /api/actors call does not stall the server (docs/PERFORMANCE-BUDGET.md).

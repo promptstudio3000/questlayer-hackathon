@@ -407,7 +407,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "actor-dialog",
     status: "live",
     updated: "2026-11-13",
-    sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/come-back.ts", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/npc/service.mjs", "server/npc/lore.mjs", "server/npc/agents.mjs", "src/NpcChat.tsx", "docs/NPC-MEMORY.md"],
+    sources: ["src/MonsterChallenge.tsx", "src/BossFight.tsx", "src/ChallengeExample.tsx", "docs/NPC-PLAN.md", "src/NpcSheet.tsx", "src/come-back.ts", "src/ActorPortrait.tsx", "src/nearby-action.ts", "src/useFormDraft.ts", "docs/ACTORS-API.md", "docs/MONSTER-CHALLENGES.md", "docs/MONSTER-HUNT.md", "docs/NPC-GAMES.md", "docs/NPC-TRADERS.md", "docs/KEEPER-VAULT.md", "server/actors/service.mjs", "server/actors/poi-file-source.mjs", "server/npc/service.mjs", "server/npc/lore.mjs", "server/npc/agents.mjs", "src/NpcChat.tsx", "docs/NPC-MEMORY.md"],
     blocks: [
       { h: "Who walks the map" },
       {
@@ -423,7 +423,7 @@ export const CHAPTERS: Chapter[] = [
           ],
         },
       },
-      { p: "Reviewed cities have a hand-cast list; every other city and cell gets a generic cast (quest giver, storyteller, wandering rare, one roamer, two lurkers). Day and night casts switch with the real sun." },
+      { p: "Reviewed cities have a hand-cast list; every other city and cell gets a generic cast (quest giver, storyteller, wandering rare, one roamer, two lurkers). Its NPCs stand at real named places from the checked place database (a park, a castle, a viewpoint on a public path), or at a path junction where a cell has none. Day and night casts switch with the real sun." },
       { h: "Encounters" },
       {
         list: [
@@ -1328,7 +1328,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "Faster than about 15 km/h (on foot or by bike, `FAIR_PLAY_MAX_SPEED_KMH`) returns `422 IMPLAUSIBLE_MOVE` (wait capped at 2 h).",
           "XP caps: the claim still succeeds, extra XP is trimmed and the response says so.",
-          "Rate limits on sign-up and APIs; all quests sit on safety-filtered public places. Places tagged or named as staff, members or residents only (for example \"Staff only\", \"Untuk Kakitangan Sahaja\", \"関係者以外\") never become quests.",
+          "Rate limits on sign-up and APIs; all quests sit on safety-filtered public places. Places tagged or named as staff, members or residents only (for example \"Staff only\", \"Untuk Kakitangan Sahaja\", \"関係者以外\") never become quests. A place the filter would once have sent to a human reviewer (church exterior, cemetery, memorial, skate park, unnamed place) is left out entirely too: nobody reviews places by hand.",
           "Map notes, place messages, places and creator quests have reports, blocks and moderators.",
           "Money paths use database transactions with exactly-once ids; contracts keep their own invariants independent of the server.",
           "GPS can be spoofed: the server validates physical evidence, and the contracts bound what a compromised validator could do.",

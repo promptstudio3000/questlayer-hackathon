@@ -52,14 +52,17 @@ inside).
 
 ## Safety states and reasons
 
-Every record is `ok`, `review` or `excluded`, and every non-ok record carries reason codes from
-`SAFETY_REASONS`:
+Every record is `ok` or `excluded`, and every excluded record carries reason codes from `SAFETY_REASONS`.
+Since `poi-safety-v2` (13 Nov 2026) nobody reviews places by hand: a review-level reason (church exterior,
+cemetery, memorial, skate park, unnamed or uncategorised place) excludes the place exactly like a hard reason.
+The game only wants clear, public places. `levelOf` still labels each code `review` or `excluded` for reports,
+and the file schema still accepts `review` so older releases load; new releases never write it.
 
 | Kind | Codes |
 | --- | --- |
 | Own tags, excluded | `school`, `kindergarten`, `playground`, `hospital`, `care-home`, `prison`, `military`, `private-access`, `railway`, `motorway`, `quarry`, `construction`, `embassy`, `police`, `aerodrome`, `bar`, `adult-venue`, `disused` |
 | Own tags, review | `worship-exterior`, `cemetery`, `sensitive-memorial` (Stolpersteine, ghost bikes) |
-| Inside grounds | `inside-<code>` for a POI that sits in (or a polygon fully inside) grounds; review grounds give review |
+| Inside grounds | `inside-<code>` for a POI that sits in (or a polygon fully inside) grounds; review grounds exclude too |
 | Category | `uncategorised`, `unnamed`, `category-review`, `low-confidence` (Overture < 0.5) |
 | Path | `no-public-path`, `water-no-path`, `target-excluded` |
 | Operator | `operator-closure` |
@@ -78,7 +81,7 @@ The check-in target is the nearest point on a mapped public path within **40 m**
 prefers path points inside it. A candidate point is skipped when it lies inside excluded grounds, or within
 **25 m** (`CHILD_BUFFER_M`) of a school, kindergarten or playground. If every nearby point is skipped the POI is
 excluded with `target-excluded`; if none is in reach, `no-public-path` (`water-no-path` for rivers and lakes).
-Points inside review grounds (a path through a cemetery) give `review`, never `ok`.
+Points inside review grounds (a path through a cemetery) are excluded, never `ok`.
 
 Public paths: footways, paths, pedestrian streets, living and residential streets, cycleways (unless
 `foot=no`), steps, bridleways, tracks and unclassified roads; service roads only with `foot=yes` or a sidewalk;
@@ -116,6 +119,6 @@ The import does its own path and grounds lookup in SQLite and calls the per-POI 
   is `{ lat, lng, distanceM, wayId }` or `null` (more than 40 m also counts as none). `exclusion` is
   `{ kind, id }` when that path point lies in forbidden grounds. Kinds are the reason codes above, and
   `care_home` is also accepted; `cemetery` gives `review`. `closures` is a `Set` of closed POI ids. `reason`
-  is the first blocking code (or the first review code), `null` when ok. `target` is `null` when excluded.
+  is the first hard code (or the first review-level code), `null` when ok. `target` is `null` when excluded.
 
 Both paths give the same reason codes, so reports from either can be compared.
