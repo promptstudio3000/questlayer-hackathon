@@ -769,7 +769,7 @@ export const CHAPTERS: Chapter[] = [
           head: ["Tier", "What", "Content", "Money"],
           rows: [
             ["A · reviewed city", "Hand-checked city pack (Plzeň)", "Six city zones, cast NPCs, POI quests", "Funded NEAR days"],
-            ["B · auto city", "GeoNames towns ≥ 15,000 people in Czechia (85 cities) and demo cities abroad (28 from New York to Sydney, plus the capital of every country and every US state)", "Zones with an Unverified map notice, generic cast, POI quests, street coins", "No funded NEAR days"],
+            ["B · auto city", "GeoNames towns ≥ 15,000 people in Czechia, Slovakia and Austria (about 160 cities) and demo cities abroad (28 from New York to Sydney, plus the capital of every country and every US state)", "Zones with an Unverified map notice, generic cast, POI quests, street coins", "No funded NEAR days"],
             ["C · street cell", "Every H3 res-7 cell", "Up to 6 POI quests, generic cast, cell zones", "Map rewards plan"],
           ],
         },
@@ -778,7 +778,7 @@ export const CHAPTERS: Chapter[] = [
       { viz: "poi-pipeline" },
       {
         list: [
-          "A weekly worker builds a SQLite file from OpenStreetMap (ODbL), Overture (CDLA-P-2.0) and Wikidata (CC0). The first Czech import held about 290,000 places, 198,000 of them quest-ready.",
+          "A weekly worker builds a SQLite file from OpenStreetMap (ODbL), Overture (CDLA-P-2.0) and Wikidata (CC0). The first Czech import held about 290,000 places, 198,000 of them quest-ready. Slovakia and Austria followed on 13 Nov: about 620,000 places in the three countries, 443,000 of them quest-ready.",
           "Every place is snapped within 40 m of a public path and kept 25 m from excluded areas (schools, private grounds, dangerous sites), with stable reason codes.",
           "The game reads the file read-only; a missing file simply means no POI quests.",
           "The worker builds a country in tiles of about 28 × 18 km: each tile's places are snapped, merged and checked, written to the file, and released from memory. Memory therefore stays about the same for a small or a large country, so more countries can follow Czechia.",
@@ -798,7 +798,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "With a connected geographic catalog, a background worker prepares mapped zones and Atlas quests for today and tomorrow before players load them. Only a completely imported UTC day opens; an interrupted import resumes without duplicates.",
-          "Everywhere on Earth the normal street world takes over whenever no prepared day covers the spot. Outside Czechia its places come live from OpenStreetMap: one query per cell, the same taxonomy and safety filter as the import, kept for a week. `GLOBAL_STREET_FALLBACK=czechia` limits this to Czechia, `=off` disables it.",
+          "Everywhere on Earth the normal street world takes over whenever no prepared day covers the spot. Outside the imported countries (Czechia, Slovakia, Austria) its places come live from OpenStreetMap: one query per cell, the same taxonomy and safety filter as the import, kept for a week. `GLOBAL_STREET_FALLBACK=czechia` limits this to Czechia, `=off` disables it.",
           "Atlas visits and three-stop hunts use the normal GPS checks and give personal XP. Without a separately confirmed financial day they promise no money or item.",
           "The launch selection covers European and US extracts with national-capital footprints elsewhere (Russia, North Korea and Iran excluded). The first active phase is EU-only: all 27 member countries. Completing it never reports a complete planet.",
           "A bulk collector continues from verified map downloads to real polygon selection and isolated checks, and reports unsafe or oversized areas instead of dropping them. This is map-derived coverage, not field verification.",

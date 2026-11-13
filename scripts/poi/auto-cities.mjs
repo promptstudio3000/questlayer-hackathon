@@ -101,13 +101,18 @@ export function selectAutoCities(
     reviewed = [],
     pinned = [],
     reservedIds = [],
+    // Boxes of demo cities built in another part: a GeoNames place whose
+    // centre lies inside one belongs to that demo city (Vienna, Bratislava
+    // once Austria and Slovakia are imported as countries).
+    reservedBoxes = [],
   } = {},
 ) {
   const wanted = new Set(countries.map((c) => c.toUpperCase())),
     reviewedIds = new Set(reviewed.map((r) => r.id)),
     used = new Set([...reviewedIds, ...reservedIds]),
     cities = [],
-    skipped = [];
+    skipped = [],
+    claimed = [];
   // Demo cities (demo-cities.mjs) come first with their own clip box; they
   // need no GeoNames row. A reviewed city still wins.
   for (const p of pinned) {
@@ -163,8 +168,18 @@ export function selectAutoCities(
     }
     // GeoNames lists city districts (Žižkov, Brno-střed, ...) as places of
     // their own; a centre inside a larger city's box belongs to that city.
-    if (cities.some((c) => inBox([r.lng, r.lat], c.coverage))) {
+    if (
+      cities.some((c) => inBox([r.lng, r.lat], c.coverage)) ||
+      claimed.some((b) => inBox([r.lng, r.lat], b))
+    ) {
       skip("inside-larger-city");
+      continue;
+    }
+    if (reservedBoxes.some((b) => inBox([r.lng, r.lat], b))) {
+      // The place itself is the demo city, but its own districts still fold
+      // into it rather than becoming towns of their own.
+      claimed.push(coverageFor(center, r.population));
+      skip("inside-demo-city");
       continue;
     }
     if (!r.timezone) {
@@ -462,6 +477,7 @@ export async function buildAutoCityPacks({
   zonesFor = null,
   pinned = [],
   reservedIds = [],
+  reservedBoxes = [],
   // chunk: { from, to } builds only cities[from..to) of the selection (the
   // report then lists the selection's skipped places only for from = 0).
   chunk = null,
@@ -475,6 +491,7 @@ export async function buildAutoCityPacks({
     reviewed,
     pinned,
     reservedIds,
+    reservedBoxes,
   });
   const cities = chunk
       ? selection.cities.slice(chunk.from, chunk.to)
@@ -484,7 +501,7 @@ export async function buildAutoCityPacks({
     `auto cities: ${cities.length} of ${selection.cities.length} selected, ${skipped.length} skipped`,
   );
   const bins = await binFeatures(selection.cities, sources, {
-    reviewedBoxes: reviewed.map((r) => r.coverage),
+    reviewedBoxes: [...reviewed.map((r) => r.coverage), ...reservedBoxes],
     only: chunk ? new Set(cities.map((c) => c.id)) : null,
   });
   const packs = [],
@@ -804,6 +821,7 @@ export async function runAutoCities({
       rows,
       countries: countries || countryIds.map((r) => r.toUpperCase()),
       reservedIds: pinnedIds,
+      reservedBoxes: pinned.map((c) => [...c.bbox]),
       sampleDays,
     };
     const total = selectAutoCities(rows, {
@@ -812,6 +830,7 @@ export async function runAutoCities({
       reviewed,
       pinned: [],
       reservedIds: pinnedIds,
+      reservedBoxes: countryArgs.reservedBoxes,
     }).cities.length;
     const size = Math.max(1, Number(process.env.AUTO_CITY_CHUNK) || 40);
     for (let from = 0; from < Math.max(total, 1); from += size)
