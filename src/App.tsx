@@ -3113,6 +3113,9 @@ export default function App() {
     });
     return ok === true;
   }
+  // A map refresh in the background never locks the account and wallet
+  // buttons: they act on the account, not on the world being loaded.
+  const accountBusy = busy === "world" ? "" : busy;
   async function exportWalletWords() {
     const ok = await action("wallet-words", async () => {
       const deviceKey = invisible.deviceKey;
@@ -5134,7 +5137,7 @@ export default function App() {
                     accountId={invisible.accountId}
                     keys={invisible.keys}
                     localPublicKey={invisible.publicKey}
-                    busy={busy}
+                    busy={accountBusy}
                     onSetupRecovery={setupRecoveryPasskey}
                     onRevoke={revokeDevice}
                     onRestore={restoreThisDevice}
@@ -5163,7 +5166,7 @@ export default function App() {
                       accountId={invisible.accountId}
                       keys={invisible.keys}
                       localPublicKey={invisible.publicKey}
-                      busy={busy}
+                      busy={accountBusy}
                       onSetupRecovery={setupRecoveryPasskey}
                       onRevoke={revokeDevice}
                       onRestore={restoreThisDevice}

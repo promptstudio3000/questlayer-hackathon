@@ -713,9 +713,15 @@ async function runDevice(name, servers) {
           const intro = page.getByRole("dialog", { name: "Open in a wallet" });
           await intro.getByText("Whoever has the words has the account").waitFor();
           await capture(page, "wallet-intro", intro);
+          // Continue must be usable now; a failure says why the window did not open.
+          const go = intro.getByRole("button", { name: "Continue", exact: true });
+          await waitFor(() => go.isEnabled(), "Continue enabled in the wallet intro");
           const [secure] = await Promise.all([
-            context.waitForEvent("page"),
-            intro.getByRole("button", { name: "Continue", exact: true }).click(),
+            context.waitForEvent("page", { timeout: 30_000 }).catch(async (error) => {
+              const shown = await page.locator(".toast, [role=alert], [role=status]").allInnerTexts().catch(() => []);
+              throw Error(`${error.message}; on screen: ${shown.join(" | ").slice(0, 300) || "nothing"}`);
+            }),
+            go.click(),
           ]);
           await secure.getByRole("heading", { name: "Get 12 words for a wallet?" }).waitFor();
           await secure.getByText(state.account.accountId).waitFor();
