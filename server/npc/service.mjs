@@ -35,7 +35,7 @@ import { ACTORS_SCHEMA } from "../actors/schema.mjs";
 import { checkGate, playerStakerAccess } from "../staker-gates.mjs";
 import { PILGRIM_LINES, awardEditionOnce, ensureEarnedEditions } from "../earned-editions.mjs";
 import { missionFor } from "./agents.mjs";
-import { createLoreService, createNearAiLoreProvider } from "./lore.mjs";
+import { createLoreService, createNearAiLoreProvider, topicOfQuestion } from "./lore.mjs";
 import { webSearchFor } from "./lore-web.mjs";
 import { PATRON_AURA_GATE, PATRON_EDITION, PATRON_PATH_LINES, completedPatronLines, isPatronRow, npcMenuCounts, patronStoryFor } from "./patron-path.mjs";
 
@@ -163,10 +163,8 @@ export function createNpcService(
     const text = clean(message);
     const { persona, menu, locked, level, now, rows } = context(player, actor, world, encounter?.menu);
     const own = missionFor(persona);
-    const facts = [
-      ...npcFacts({ persona, world, menu, level, now }),
-      ...memory.facts({ placeKey: memory.placeKeyFor(world, actor), topic: own.topic, message: text }),
-    ];
+    const tips = memory.facts({ placeKey: memory.placeKeyFor(world, actor), topic: own.topic, message: text });
+    const facts = [...npcFacts({ persona, world, menu, level, now }), ...tips];
     const factsHash = hash(JSON.stringify(facts));
     const mh = menuHash(menu);
     const notes = store.memory(player, actor.id);
@@ -208,7 +206,9 @@ export function createNpcService(
         }
       }
     }
-    if (!result) result = templateReply(persona, menu, { message: text, lang: languageOf(text) });
+    // Without the model, only a question about places gets a tip.
+    if (!result)
+      result = templateReply(persona, menu, { message: text, lang: languageOf(text), tips: topicOfQuestion(text) ? tips : [] });
     if (result.remember) store.remember(player, actor.id, result.remember);
     const receipt = outcome === "answered" && used?.source === "near-ai" ? used.receipt : null;
     const auditId = store.audit({

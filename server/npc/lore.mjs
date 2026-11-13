@@ -128,11 +128,11 @@ export function similarity(a, b) {
 
 // Which topic a question is about (for picking tips in a conversation).
 const TOPIC_WORDS = [
-  ["pub", /\b(pub|pubs|bar|bars|beer|taproom|drink|pivo|piv[aeuo]|pivnic\p{L}*|hospod\p{L}*|bar\p{L}*|výčep\p{L}*)\b/iu],
-  ["food", /\b(eat|food|lunch|dinner|breakfast|restaurant\p{L}*|meal|jíd\p{L}*|jíst|najíst|najist|oběd\p{L}*|večeř\p{L}*|restaurac\p{L}*|bistr\p{L}*)\b/iu],
-  ["secret", /\b(secret|hidden|tajn\p{L}*|skryt\p{L}*|zákout\p{L}*|zakout\p{L}*)\b/iu],
-  ["view", /\b(view|views|viewpoint|výhled\p{L}*|vyhled\p{L}*|rozhled\p{L}*)\b/iu],
-  ["sights", /\b(see|sight\p{L}*|visit|interesting|museum|zajímav\p{L}*|zajimav\p{L}*|vidět|navštív\p{L}*|muze\p{L}*|památk\p{L}*)\b/iu],
+  ["pub", /(?<![\p{L}\p{N}])(pub|pubs|bar|bars|beer|taproom|drink|pivo|piv[aeuo]|pivnic\p{L}*|hospod\p{L}*|bar\p{L}*|výčep\p{L}*)(?![\p{L}\p{N}])/iu],
+  ["food", /(?<![\p{L}\p{N}])(eat|food|lunch|dinner|breakfast|restaurant\p{L}*|meal|jíd\p{L}*|jíst|najíst|najist|oběd\p{L}*|večeř\p{L}*|restaurac\p{L}*|bistr\p{L}*)(?![\p{L}\p{N}])/iu],
+  ["secret", /(?<![\p{L}\p{N}])(secret|hidden|tajn\p{L}*|skryt\p{L}*|zákout\p{L}*|zakout\p{L}*)(?![\p{L}\p{N}])/iu],
+  ["view", /(?<![\p{L}\p{N}])(view|views|viewpoint|výhled\p{L}*|vyhled\p{L}*|rozhled\p{L}*)(?![\p{L}\p{N}])/iu],
+  ["sights", /(?<![\p{L}\p{N}])(see|sight\p{L}*|visit|interesting|museum|zajímav\p{L}*|zajimav\p{L}*|vidět|navštív\p{L}*|muze\p{L}*|památk\p{L}*)(?![\p{L}\p{N}])/iu],
 ];
 export const topicOfQuestion = (message) => TOPIC_WORDS.find(([, r]) => r.test(message || ""))?.[0] || null;
 
