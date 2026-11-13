@@ -381,14 +381,19 @@ export function Inventory({
     setSelling(false);
     setListingError("");
   };
+  // The tour's "Show me" opens an Aura's own card. The list may still be loading when the
+  // screen opens, so the request waits until there is an Aura to show.
   const tourRevision = tourFocus?.revision;
+  const tourShown = useRef(0);
+  const tourPick = entries.find((e) => (e.type === "aura" || e.type === "secured") && !e.worn) ??
+    entries.find((e) => e.type === "aura" || e.type === "secured");
+  const tourPickKey = tourPick?.key;
   useEffect(() => {
-    if (!tourFocus) return;
-    const auras = entries.filter((e) => e.type === "aura" || e.type === "secured");
-    const pick = tourFocus.mode === "sell" ? auras.find((e) => !e.worn) ?? auras[0] : auras.find((e) => !e.worn) ?? auras[0];
-    if (pick) openItem(pick.key);
+    if (!tourRevision || tourShown.current === tourRevision || !tourPickKey) return;
+    tourShown.current = tourRevision;
+    openItem(tourPickKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tourRevision]);
+  }, [tourRevision, tourPickKey]);
   const closeItem = () => {
     setSelectedKey(null);
     setSelling(false);

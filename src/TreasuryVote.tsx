@@ -158,7 +158,7 @@ export function TreasuryVote({
         );
       })}
       <p className="bonus-vote-note">
-        <a href="/treasury#dao">{tr("See the treasury DAO")}</a>
+        <a href="/treasury#dao">{tr("Treasury")}</a>
       </p>
     </details>
   );

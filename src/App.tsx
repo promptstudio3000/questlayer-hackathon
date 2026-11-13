@@ -3893,6 +3893,8 @@ export default function App() {
     setDemoTarget(null);
     setStreetFindTarget(null);
     setPointTarget(null);
+    // The card of the place just finished ("Completed · 0 m away") would sit under the next step.
+    setSelected(null);
   }
   function tourResolve(t: TourTarget) {
     if (t.kind === "coin" || t.kind === "find") {

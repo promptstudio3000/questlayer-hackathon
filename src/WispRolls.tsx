@@ -133,7 +133,7 @@ export function WispRolls({
       )}
       {won && (
         <p className="monster-rewards">
-          {tr("The wisp gave you")}{" "}{rewardText(won)}{tr(". Secure it on NEAR below.")}{" "}
+          {tr("The wisp gave you")}{" "}{rewardText(won)}{"."}{" "}
           <ChainLink label chain={{ id: `roll:${won.rollId}` }} />
         </p>
       )}

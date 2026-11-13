@@ -38,7 +38,9 @@ export function tourMark(db, player, step, now = Date.now()) {
   ensure(db);
   db.prepare("INSERT OR IGNORE INTO tour_marks(player_id,step,at) VALUES(?,?,?)").run(player, step, now);
 }
-const mark = (step) => (db, p) => one(db, "SELECT 1 FROM tour_marks WHERE player_id=? AND step=?", p, step);
+// Every check takes `since`, the moment this run of the tour began: only what the
+// explorer did after it counts, so a tour always starts at its first step.
+const mark = (step) => (db, p, since = 0) => one(db, "SELECT 1 FROM tour_marks WHERE player_id=? AND step=? AND at>=?", p, step, since);
 
 const tableExists = (db, name) =>
   !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name);
@@ -49,23 +51,24 @@ const one = (db, sql, ...args) => {
     return false; // a module that is not configured on this server has no table
   }
 };
-const action = (kinds) => (db, p) =>
-  one(db, `SELECT 1 FROM chain_actions WHERE player_id=? AND kind IN (${kinds.map(() => "?").join(",")}) LIMIT 1`, p, ...kinds);
-const relay = (methods, like = null) => (db, p) =>
+const action = (kinds) => (db, p, since = 0) =>
+  one(db, `SELECT 1 FROM chain_actions WHERE player_id=? AND at>=? AND kind IN (${kinds.map(() => "?").join(",")}) LIMIT 1`, p, since, ...kinds);
+const relay = (methods, like = null) => (db, p, since = 0) =>
   one(
     db,
-    `SELECT 1 FROM relay_jobs WHERE player_id=? AND state!='failed' AND method_name IN (${methods.map(() => "?").join(",")})${like ? " AND call LIKE ?" : ""} LIMIT 1`,
+    `SELECT 1 FROM relay_jobs WHERE player_id=? AND created_at>=? AND state!='failed' AND method_name IN (${methods.map(() => "?").join(",")})${like ? " AND call LIKE ?" : ""} LIMIT 1`,
     p,
+    since,
     ...methods,
     ...(like ? [like] : []),
   );
-const burn = (kinds) => (db, p) =>
-  one(db, `SELECT 1 FROM gold_burns WHERE player_id=? AND kind IN (${kinds.map(() => "?").join(",")}) LIMIT 1`, p, ...kinds);
-const any = (...checks) => (db, p) => checks.some((c) => c(db, p));
+const burn = (kinds) => (db, p, since = 0) =>
+  one(db, `SELECT 1 FROM gold_burns WHERE player_id=? AND created_at>=? AND kind IN (${kinds.map(() => "?").join(",")}) LIMIT 1`, p, since, ...kinds);
+const any = (...checks) => (db, p, since = 0) => checks.some((c) => c(db, p, since));
 // The history feed records the same moments where the on-chain ledger is not
 // configured (local runs); the ledger stays the first source.
-const hist = (kind, where = "", ...args) => (db, p) =>
-  one(db, `SELECT 1 FROM history WHERE player_id=? AND kind=?${where} LIMIT 1`, p, kind, ...args);
+const hist = (kind, where = "", ...args) => (db, p, since = 0) =>
+  one(db, `SELECT 1 FROM history WHERE player_id=? AND created_at>=? AND kind=?${where} LIMIT 1`, p, since, kind, ...args);
 
 // What a step costs in QGOLD, from the game's own price list, so the helper can
 // say how much is missing instead of leading into a dialog that refuses.
@@ -81,24 +84,24 @@ const TASK_MINIMUM = 100; // server/tasks: the smallest task reward
 export const TOUR_STEPS = Object.freeze([
   { id: "coin", chapter: "start", target: { kind: "coin" }, say: "Grab the gold coin.", next: "Coins go straight to your QGOLD." , done: any(action(["coin"]), hist("coin", " AND title=?", "Street coin")) },
   { id: "find", chapter: "start", target: { kind: "find" }, say: "Open the sparkle nearby.", next: "Street finds give XP and sometimes an item.", done: any(action(["find"]), hist("coin", " AND title=?", "Street find")) },
-  { id: "visit", chapter: "start", target: { kind: "quest", quest: "visit" }, say: "Visit this place.", near: "You're here. Tap Confirm visit.", next: "Place quests are everywhere on the map.", done: any(action(["quest"]), hist("quest")) },
+  { id: "visit", chapter: "start", target: { kind: "quest", quest: "visit" }, say: "Visit this place.", near: "You're here. Open it and confirm your visit.", next: "Place quests are everywhere on the map.", done: any(action(["quest"]), hist("quest")) },
   { id: "chest", chapter: "start", target: { kind: "quest", quest: "chest" }, say: "Open the zone chest.", near: "You're here. Tap Open chest.", next: "Chests give an Aura.", done: any(action(["chest"]), hist("quest", " AND json_extract(meta,'$.item') IS NOT NULL")) },
   // The Aura secures itself in the background (src/App.tsx auto-secure), so there is no step for it.
   { id: "wear", chapter: "start", target: { kind: "screen", screen: "inventory" }, say: "Try your Aura on.", hint: "Tap your Aura, then Try it on.", next: "Everyone on the map sees what you wear.", done: any(relay(["equip_aura"]), (db, p) => one(db, "SELECT 1 FROM inventory WHERE player_id=? AND equipped=1 AND kind!='avatar' LIMIT 1", p)) },
   { id: "errand", chapter: "npcs", target: { kind: "actor", role: "quest-giver" }, say: "Ráda has an errand. Do it.", hint: "Show me marks her on the map. Walk up and tap her.", next: "Characters give quest lines with an Aura at the end.", done: any(action(["errand"]), hist("npc-quest")) },
-  { id: "trail", chapter: "npcs", target: { kind: "quest", quest: "route" }, say: "Walk a trail.", hint: "Reach each stop in order.", near: "You're at a stop. Tap Confirm.", next: "Trails lead you around a zone.", done: (db, p) => one(db, "SELECT 1 FROM quest_claims c JOIN quests q ON q.id=c.quest_id WHERE c.player_id=? AND q.kind='route' LIMIT 1", p) },
+  { id: "trail", chapter: "npcs", target: { kind: "quest", quest: "route" }, say: "Walk a trail.", hint: "Reach each stop in order.", near: "You're at a stop. Tap Confirm.", next: "Trails lead you around a zone.", done: (db, p, since = 0) => one(db, "SELECT 1 FROM quest_claims c JOIN quests q ON q.id=c.quest_id WHERE c.player_id=? AND c.created_at>=? AND q.kind='route' LIMIT 1", p, since) },
   { id: "monster", chapter: "monsters", target: { kind: "actor", role: "monster" }, say: "Beat a Lickquidator.", hint: "Show me marks it on the map. Walk up and tap it.", next: "Skill wins, never money. Losing costs only time.", done: any(action(["monster", "boss"]), hist("monster")) },
   // Pocket Wisps (lurkers) hide at street finds and show within 60 m; a quiz win gives a roll ticket.
-  { id: "ticket", chapter: "monsters", target: { kind: "find" }, say: "Beat a Pocket Wisp for a roll ticket.", hint: "Wisps hide at sparkles. Win their quiz.", next: "You won a roll ticket. A roll is free.", done: (db, p) => one(db, "SELECT 1 FROM monster_rewards WHERE player_id=? AND kind='roll' LIMIT 1", p) },
+  { id: "ticket", chapter: "monsters", target: { kind: "find" }, say: "Beat a Pocket Wisp for a roll ticket.", hint: "Wisps hide at sparkles. Win their quiz.", next: "You won a roll ticket. A roll is free.", done: (db, p, since = 0) => one(db, "SELECT 1 FROM monster_rewards WHERE player_id=? AND created_at>=? AND kind='roll' LIMIT 1", p, since) },
   { id: "roll", chapter: "monsters", target: { kind: "screen", screen: "rolls" }, say: "Roll your ticket at the wisp.", hint: "Tap Roll at the wisp.", next: "The odds are the same for everyone.", done: relay(["start_roll"]) },
-  { id: "sell", chapter: "trade", target: { kind: "screen", screen: "sell" }, say: "Sell an Aura on the market.", hint: "Tap an Aura, then Sell.", next: "A buyer picks it up in under a minute.", done: any(relay(["nft_transfer_call"], '%market%'), (db, p) => one(db, "SELECT 1 FROM listings WHERE seller=? LIMIT 1", p)) },
+  { id: "sell", chapter: "trade", target: { kind: "screen", screen: "sell" }, say: "Sell an Aura on the market.", hint: "Tap an Aura, then Sell.", next: "A buyer picks it up in under a minute.", done: any(relay(["nft_transfer_call"], '%market%'), (db, p, since = 0) => one(db, "SELECT 1 FROM listings WHERE seller=? AND created_at>=? LIMIT 1", p, since)) },
   { id: "trade", chapter: "trade", target: { kind: "actor", role: "trader" }, say: "Trade with Vojtěch.", hint: "Show me marks him on the map. Walk up and tap him.", next: "Traders buy and sell Auras for QGOLD.", done: relay(["add_public_key", "ft_transfer_call", "nft_transfer_call"], '%intents%') },
   { id: "shop", chapter: "trade", target: { kind: "screen", screen: "shop" }, needs: CHEAPEST_EMOTE, say: "Buy an emote with QGOLD.", next: "Emotes pop up above your ghost.", done: burn(["emote", "cosmetic", "gear", "lure"]) },
-  { id: "note", chapter: "community", target: { kind: "action", action: "note" }, say: "Leave a note on the map.", next: "Notes stay for others to find.", done: any(relay(["set"], '%notes%'), (db, p) => one(db, "SELECT 1 FROM messages WHERE player_id=? LIMIT 1", p)) },
+  { id: "note", chapter: "community", target: { kind: "action", action: "note" }, say: "Leave a note on the map.", next: "Notes stay for others to find.", done: any(relay(["set"], '%notes%'), (db, p, since = 0) => one(db, "SELECT 1 FROM messages WHERE player_id=? AND created_at>=? LIMIT 1", p, since)) },
   { id: "shout", chapter: "community", target: { kind: "action", action: "shout" }, needs: priceU(GOLD_SPEND.places.shoutPerDay), say: "Shout something on the map.", next: "Shouts show as a bubble here for a day.", done: burn(["shout"]) },
   { id: "topic", chapter: "community", target: { kind: "action", action: "topic" }, needs: priceU(GOLD_SPEND.places.topicPerDay), say: "Start a topic at this place.", next: "Others can reply to it here.", done: burn(["topic"]) },
-  { id: "task", chapter: "community", target: { kind: "action", action: "task" }, needs: TASK_MINIMUM, say: "Post a task with a QGOLD reward.", next: "The reward waits safely until the task is done.", done: (db, p) => one(db, "SELECT 1 FROM mk_tasks WHERE poster=? LIMIT 1", p) },
-  { id: "wave", chapter: "people", target: { kind: "actor", role: "companion" }, say: "Wave at Ondra, who walks with you.", hint: "Tap Wave on his card.", next: "Waves are quick hellos between explorers.", done: (db, p) => one(db, "SELECT 1 FROM player_waves WHERE from_id=? LIMIT 1", p) },
+  { id: "task", chapter: "community", target: { kind: "action", action: "task" }, needs: TASK_MINIMUM, say: "Post a task with a QGOLD reward.", next: "The reward waits safely until the task is done.", done: (db, p, since = 0) => one(db, "SELECT 1 FROM mk_tasks WHERE poster=? AND created_at>=? LIMIT 1", p, since) },
+  { id: "wave", chapter: "people", target: { kind: "actor", role: "companion" }, say: "Wave at Ondra, who walks with you.", hint: "Tap Wave on his card.", next: "Waves are quick hellos between explorers.", done: (db, p, since = 0) => one(db, "SELECT 1 FROM player_waves WHERE from_id=? AND created_at>=? LIMIT 1", p, since) },
   { id: "message", chapter: "people", target: { kind: "actor", role: "companion" }, say: "Send Ondra a message.", hint: "Tap Message on his card.", next: "Only the two of you can read your messages.", done: any(relay(["set"], '%inbox%'), mark("message")) },
   { id: "stake", chapter: "stake", target: { kind: "actor", role: "keeper" }, say: "Stake at the Gate Keeper.", hint: "Show me marks him on the map. Walk up and tap him.", next: "Your stake earns a share of the daily yield.", done: relay(["create_position", "deposit_and_stake"]) },
   // Voting opens at level 3, a day after joining: a fresh explorer finishes the tour by looking.
@@ -141,7 +144,7 @@ export function tourState(db, player, { enabled }) {
   const steps = TOUR_STEPS.map((s) => {
     let done = false;
     try {
-      done = s.done(db, player);
+      done = started && s.done(db, player, r.started_at);
     } catch {
       done = false;
     }
@@ -190,9 +193,12 @@ export function tourAction(db, player, input, now = Date.now()) {
   const act = String(input?.action || "");
   const r = row(db, player);
   if (act === "start" || act === "restart") {
+    // "restart" (also sent once on every page load while the tour runs) begins a new run at
+    // step one; "start" keeps a run that is already going.
     db.prepare(
-      "INSERT INTO tour_progress(player_id,started_at,skipped,hidden,updated_at) VALUES(?,?,'[]',0,?) ON CONFLICT(player_id) DO UPDATE SET started_at=CASE WHEN tour_progress.started_at>0 THEN tour_progress.started_at ELSE excluded.started_at END,skipped='[]',hidden=0,finished_at=NULL,updated_at=excluded.updated_at",
+      `INSERT INTO tour_progress(player_id,started_at,skipped,hidden,updated_at) VALUES(?,?,'[]',0,?) ON CONFLICT(player_id) DO UPDATE SET started_at=${act === "restart" ? "excluded.started_at" : "CASE WHEN tour_progress.started_at>0 THEN tour_progress.started_at ELSE excluded.started_at END"},skipped='[]',hidden=0,finished_at=NULL,updated_at=excluded.updated_at`,
     ).run(player, now, now);
+    if (act === "restart") db.prepare("DELETE FROM tour_marks WHERE player_id=?").run(player);
     return;
   }
   // Settings switches Pip on and off, also before the tour began.

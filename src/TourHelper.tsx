@@ -103,6 +103,8 @@ const TX_LABELS: Record<string, () => string> = {
 const txLabel = (kind: string) => TX_LABELS[kind]?.() ?? kind.replace(/_/g, " ");
 const txTime = (at: number) => new Date(at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
+let restartedThisLoad = false;
+
 export default function TourHelper({
   position,
   heading,
@@ -136,7 +138,15 @@ export default function TourHelper({
   const [fresh, setFresh] = useState(false);
   const load = useCallback(async () => {
     try {
-      const s = await api<TourState>("/tour");
+      let s = await api<TourState>("/tour");
+      // Every page load begins the running tour at step one again (once per load).
+      if (!restartedThisLoad && s.enabled) {
+        restartedThisLoad = true;
+        if (s.started && !s.hidden && !s.finished) {
+          await api("/tour", { action: "restart" });
+          s = await api<TourState>("/tour");
+        }
+      }
       setState(s);
       if (lastDone.current !== null && (s.done ?? 0) > lastDone.current) {
         setFresh(true);
@@ -223,11 +233,11 @@ export default function TourHelper({
             <p className="tour-line">{tr("Tour done!")}</p>
             <p className="tour-score">
               <span><b>{state.done}</b>/{state.total} {tr("steps")}</span>
-              <span><b>{list.length}</b> {tr("on NEAR")}</span>
+              <span><b>{list.length}</b> {tr("recorded")}</span>
             </p>
             {list.length > 0 && (
               <>
-                <p className="tour-sub">{tr("Everything you did is recorded. Tap one to see it.")}</p>
+                <p className="tour-sub">{tr("Tap a line to see its proof.")}</p>
                 <ol className="tour-txs">
                   {list.map((t, i) => (
                     <li key={i}>
@@ -274,6 +284,8 @@ export default function TourHelper({
       : step.hint;
   const count = <span className="tour-count">{step.number ?? (state.done ?? 0) + 1}/{state.total}</span>;
   // Inventory, Shop or Community is open: one line at the bottom keeps the instruction in sight.
+  // Only for a step that happens on a screen; a walking step has nothing to say inside a panel.
+  if (!onMap && step.target.kind !== "screen") return null;
   if (!onMap)
     return (
       <aside className="tour-helper tour-strip" aria-label={tr("Tour")} aria-live="polite">
