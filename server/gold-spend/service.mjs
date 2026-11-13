@@ -324,5 +324,10 @@ export function createGoldSpend(db, { actors = null, poiSource = null, now = () 
     return r ? { luredUntil: r.ends_at } : null;
   });
 
-  return { shop, buy, equip, emote, lookOf, buyGear, lureQuote, setLure, luresNear, burns: () => burnTotals(db, now()), GOLD };
+  /** The game balance; with the QGOLD vault open the routes replace it with the wallet. */
+  const wallet = (player) => {
+    assert(player, "Sign in first.", 401, "AUTH");
+    return { realm: "practice", balanceU: balance(player) };
+  };
+  return { shop, wallet, buy, equip, emote, lookOf, buyGear, lureQuote, setLure, luresNear, burns: () => burnTotals(db, now()), GOLD };
 }
