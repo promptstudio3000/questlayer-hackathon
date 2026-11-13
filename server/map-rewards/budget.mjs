@@ -51,10 +51,14 @@ export function recordMapBudget(
   now = Date.now(),
 ) {
   ensure(db);
-  const coin = positive(coinYocto),
-    zone = positive(zoneYocto),
+  // A yield-backed day may honestly have nothing to spend: zero is recorded
+  // then, so the last sponsor-funded report does not stand in for it.
+  const zeroOk = source === "realized_yield";
+  const amount = (v) => positive(v) ?? (zeroOk && /^0+$/.test(String(v)) ? 0n : null);
+  const coin = amount(coinYocto),
+    zone = amount(zoneYocto),
     rate = positive(rateYocto);
-  if (!coin || !zone || !rate) return false;
+  if (coin == null || zone == null || !rate) return false;
   db.prepare(
     "INSERT INTO map_budget VALUES('latest',?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET coin_yocto=excluded.coin_yocto,zone_yocto=excluded.zone_yocto,rate_yocto=excluded.rate_yocto,source=excluded.source,updated_at=excluded.updated_at",
   ).run(String(coin), String(zone), String(rate), source, now);
@@ -92,4 +96,50 @@ export function mapDayBudget(db, env = process.env) {
     rateYocto: String(rate),
     source: row ? row.source : "default",
   };
+}
+
+/**
+ * yoctoNEAR of realized yield that yield-backed map days have taken: every
+ * map payout item since the first yield-backed map day, plus today's whole
+ * budget while today is yield-backed (counted twice for what is already paid
+ * today, so the estimate errs on the safe side). City days subtract this
+ * from the free yield (server/native/allocation.mjs realizedYieldBacking).
+ */
+export function mapYieldCommitted(db, now = Date.now()) {
+  let days = [];
+  try {
+    days = db
+      .prepare("SELECT day,summary,created_at FROM map_reward_days ORDER BY day")
+      .all();
+  } catch {
+    return 0n;
+  }
+  const yieldDays = days.filter((d) => {
+    try {
+      return JSON.parse(d.summary)?.budget?.source === "realized_yield";
+    } catch {
+      return false;
+    }
+  });
+  if (!yieldDays.length) return 0n;
+  let total = 0n;
+  try {
+    for (const r of db
+      .prepare("SELECT amount_yocto FROM payout_items WHERE created_at>=?")
+      .all(yieldDays[0].created_at))
+      total += positive(r.amount_yocto) ?? 0n;
+  } catch {
+    // no payouts yet
+  }
+  const latest = yieldDays[yieldDays.length - 1];
+  const budget = JSON.parse(latest.summary).budget || {};
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Europe/Prague",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(now);
+  if (latest.day === today)
+    total += (positive(budget.coinYocto) ?? 0n) + (positive(budget.zoneYocto) ?? 0n);
+  return total;
 }
