@@ -103,11 +103,14 @@ test("a GPS coin claim far from the last accepted fix is refused; arena coins sk
     const player = createPlayer(db, "Spoofer");
     // Pinned clock: the generated world depends on the local date.
     const gps = await ensureWorld(db, HOME, false, NOW);
-    const coins = worldView(db, gps.id, player, { now: NOW }).coins;
+    // A cell holds 10 coins spread over the day's waves: claim late in the
+    // local day, when every wave is open.
+    const t = NOW + 11.75 * 3600_000;
+    const coins = worldView(db, gps.id, player, { now: t }).coins;
     const a = coins[0];
-    const b = coins.find((c) => distance(c, a) > 500);
-    assert.ok(b, "fixture needs two coins at least 500 m apart");
-    const t = NOW;
+    // Any two coins 150 m apart, two seconds apart, are far faster than walking.
+    const b = coins.find((c) => distance(c, a) > 150);
+    assert.ok(b, "fixture needs two coins at least 150 m apart");
     claimCoin(db, player, a.id, fix(a, t), t);
     assert.throws(
       () => claimCoin(db, player, b.id, fix(b, t + 2000), t + 2000),

@@ -21,6 +21,7 @@ import {
   publicationArgs,
   storedNativeManifest,
 } from "./reward-manifest.mjs";
+import { mapYieldCommitted } from "../map-rewards/budget.mjs";
 import {
   allocateDailyBudget,
   YIELD_DRIP_DAYS,
@@ -79,6 +80,7 @@ export async function readYieldBacking(native) {
       yieldDays: yieldBackedManifests(native.db, native.contractId),
       rewardsId: native.contractId,
       dripDays: native.yieldDripDays ?? YIELD_DRIP_DAYS,
+      extraCommitted: mapYieldCommitted(native.db),
     }),
   };
 }

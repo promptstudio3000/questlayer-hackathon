@@ -4,10 +4,11 @@
 // (budget.mjs: the map's share of the rewards contract's per-date cap, in
 // micro-QGOLD) and lays it over every res-7 cell of Czechia:
 //
-// Coins: every coin on the map is backed and worth the same. Each cell holds
-//   CELL_COINS shares (a pioneer cell, nobody there for 30 days, twice that),
-//   one coin = coin budget / all shares. Cells with fewer paths place fewer
-//   coins; their shares stay in the treasury.
+// Coins: every coin on the map is backed and worth the same. The coin budget
+//   is priced for COIN_TARGET coins (one coin = budget / target); an opened
+//   cell places CELL_COINS of them (a pioneer cell's first opening doubles
+//   their value), and placement stops when the day's budget is placed
+//   (service.mjs coinRoom). Unplaced budget stays in the treasury.
 // Zones: the zone budget follows the formula
 //   votes     up to 50 %  (stream 7; unused share goes to the others)
 //   demand        20 %    distinct players who collected there, last 7 days
@@ -35,12 +36,12 @@ import {
   CELL_CAP_BPS,
   CELL_COINS,
   CELL_ZONE_STEPS,
+  COIN_TARGET,
   DEMAND_DAYS,
   FORMULA,
   MAP_REWARDS_POLICY,
   MAX_CELL_ZONES,
   PIONEER_DAYS,
-  PIONEER_MULT,
   RANDOM_CELLS_BPS,
   STAKE_DAYS,
 } from "./policy.mjs";
@@ -75,13 +76,18 @@ export function zonesForPotential(pois = 0) {
   return Math.min(MAX_CELL_ZONES, n);
 }
 
+/** Coins one day's budget is priced for (MAP_COIN_TARGET, default COIN_TARGET). */
+export function coinTarget(env = process.env) {
+  const n = Number(env.MAP_COIN_TARGET);
+  return Number.isInteger(n) && n >= 1 && n <= 1_000_000 ? n : COIN_TARGET;
+}
+
 /**
- * One coin's value: the coin budget split into equal shares, CELL_COINS per
- * cell and twice that for a pioneer cell. Integer micro-QGOLD, rounded down.
+ * One coin's value: the coin budget split into `target` equal coins.
+ * Integer micro-QGOLD, rounded down.
  */
-export function coinValue(coinsU, cellCount, pioneerCount) {
-  const shares = CELL_COINS * (cellCount + pioneerCount * (PIONEER_MULT - 1));
-  return shares > 0 ? Math.floor(Math.max(0, coinsU) / shares) : 0;
+export function coinValue(coinsU, target = coinTarget()) {
+  return target > 0 ? Math.floor(Math.max(0, coinsU) / target) : 0;
 }
 
 /**
@@ -165,9 +171,9 @@ export function buildDayPlan({
   potential = new Map(),
   votes = new Map(),
   pioneers = new Set(),
+  target = coinTarget(),
 }) {
-  const pioneerCount = cells.filter((c) => pioneers.has(c)).length;
-  const valueU = coinValue(coinsU, cells.length, pioneerCount),
+  const valueU = coinValue(coinsU, target),
     cellCoinsU = CELL_COINS * valueU;
   const {random,used,share,weights}=zoneAllocationWeights({seed,cells,demand,stake,potential,votes});
   const zones = capped(
@@ -203,14 +209,12 @@ export function buildDayPlan({
     rows.push(row);
   }
   const { root } = merkle(rows.map((r) => r.leaf));
-  const spentCoins = rows.reduce((n, r) => n + r.coinsU, 0),
+  // Leaves say what one opened cell may hold; the day never pays more than
+  // its coin budget because placement stops once that is placed (pioneer
+  // doubles included), so the whole budget is the day's coin commitment.
+  const spentCoins = valueU > 0 ? coinsU : 0,
     spentZones = rows.reduce((n, r) => n + r.zonesU, 0),
-    // A pioneer cell's coins are worth double: the contract pays such a cell
-    // up to twice its leaf, so the day reserves that extra share too.
-    pioneerU = rows.reduce(
-      (n, r) => n + (r.pioneer ? r.coinsU * (PIONEER_MULT - 1) : 0),
-      0,
-    );
+    pioneerU = 0;
   return {
     day,
     policy: MAP_REWARDS_POLICY,
@@ -234,8 +238,9 @@ export function buildDayPlan({
       budget: { coinsU, zonesU },
       coinValueU: valueU,
       coinsPerCell: CELL_COINS,
+      coinTarget: target,
       unplacedU: {
-        coins: coinsU - spentCoins - pioneerU,
+        coins: spentCoins,
         zones: zonesU - spentZones,
       },
     },

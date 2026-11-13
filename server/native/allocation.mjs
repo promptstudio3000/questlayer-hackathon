@@ -201,6 +201,7 @@ export function realizedYieldBacking({
   yieldDays,
   rewardsId,
   dripDays = 1,
+  extraCommitted = 0n,
 }) {
   assert(
     Number.isInteger(dripDays) && dripDays >= 1 && dripDays <= MAX_YIELD_DRIP_DAYS,
@@ -230,6 +231,9 @@ export function realizedYieldBacking({
     const awarded = m.awarded == null ? cost : yocto(m.awarded, "awarded");
     committed += min(cost, awarded);
   }
+  // Yield the map days already took (server/map-rewards/budget.mjs
+  // mapYieldCommitted): city days and map coins share one realized yield.
+  committed += yocto(BigInt(extraCommitted || 0), "map committed");
   const free = paid > committed ? paid - committed : 0n;
   // One day's drip. Integer division rounds down, so a day never takes more
   // than its share and the remainder stays free for the following days.
