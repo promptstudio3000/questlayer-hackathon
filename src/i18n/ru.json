@@ -2769,7 +2769,6 @@
   "3D world. Move with W A S D, jump with Space, drag to look around.": "3D-мир. Двигайтесь клавишами W A S D, прыжок — пробел, перетаскивайте, чтобы осмотреться.",
   "Activate beacons: {0} of {1}": "Активируйте маяки: {0} из {1}",
   "Aether shallows": "Эфирные отмели",
-  "Back to QuestLayer": "Назад в QuestLayer",
   "Basalt": "Базальт",
   "Basalt peaks": "Базальтовые пики",
   "Beacon activated!": "Маяк активирован!",
@@ -2794,7 +2793,6 @@
   "Lumen plains": "Светящиеся равнины",
   "Moss": "Мох",
   "Move closer to build there.": "Подойдите ближе, чтобы строить там.",
-  "Moving here never counts as GPS movement in QuestLayer.": "Движение здесь никогда не считается перемещением по GPS в QuestLayer.",
   "Nebula": "Туманность",
   "Opening the layer…": "Открываем слой…",
   "Other explorers walk the same world. You see their plots; only owners can change them.": "Другие исследователи ходят по тому же миру. Вы видите их участки; менять их могут только владельцы.",
@@ -3167,5 +3165,7 @@
   "Pip, your guide": "Пип, твой проводник",
   "Restore your account on this device: Settings → Account.": "Восстанови аккаунт на этом устройстве: Настройки → Аккаунт.",
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Сначала сохрани passkey или свои 12 слов. Без них этот исследователь не сможет вернуться.",
-  "Shows your next step on the map": "Показывает твой следующий шаг на карте"
+  "Shows your next step on the map": "Показывает твой следующий шаг на карте",
+  "Back to GotchiGO": "Назад в GotchiGO",
+  "Moving here never counts as GPS movement in GotchiGO.": "Движение здесь никогда не считается перемещением по GPS в GotchiGO."
 }

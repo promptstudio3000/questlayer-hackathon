@@ -2769,7 +2769,6 @@
   "3D world. Move with W A S D, jump with Space, drag to look around.": "3D svět. Pohyb W A S D, skok mezerníkem, tažením se rozhlížíš.",
   "Activate beacons: {0} of {1}": "Aktivuj majáky: {0} z {1}",
   "Aether shallows": "Éterová mělčina",
-  "Back to QuestLayer": "Zpět do QuestLayeru",
   "Basalt": "Čedič",
   "Basalt peaks": "Čedičové štíty",
   "Beacon activated!": "Maják aktivován!",
@@ -2794,7 +2793,6 @@
   "Lumen plains": "Zářivé pláně",
   "Moss": "Mech",
   "Move closer to build there.": "Pojď blíž, abys tam mohl stavět.",
-  "Moving here never counts as GPS movement in QuestLayer.": "Pohyb tady se v QuestLayeru nikdy nepočítá jako pohyb podle GPS.",
   "Nebula": "Mlhovina",
   "Opening the layer…": "Otevírám vrstvu…",
   "Other explorers walk the same world. You see their plots; only owners can change them.": "Ostatní průzkumníci chodí stejným světem. Vidíš jejich pozemky; měnit je smí jen majitelé.",
@@ -3167,5 +3165,7 @@
   "Pip, your guide": "Pip, tvůj průvodce",
   "Restore your account on this device: Settings → Account.": "Obnov účet na tomto zařízení: Nastavení → Účet.",
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Nejdřív si ulož passkey nebo svých 12 slov. Bez nich se tento průzkumník nedá vrátit.",
-  "Shows your next step on the map": "Ukazuje tvůj další krok na mapě"
+  "Shows your next step on the map": "Ukazuje tvůj další krok na mapě",
+  "Back to GotchiGO": "Zpět do GotchiGO",
+  "Moving here never counts as GPS movement in GotchiGO.": "Pohyb tady se v GotchiGO nikdy nepočítá jako pohyb podle GPS."
 }

@@ -2769,7 +2769,6 @@
   "3D world. Move with W A S D, jump with Space, drag to look around.": "3D दुनिया। W A S D से चलें, स्पेस से कूदें, चारों ओर देखने के लिए खींचें।",
   "Activate beacons: {0} of {1}": "बीकन सक्रिय करें: {1} में से {0}",
   "Aether shallows": "ईथर उथला पानी",
-  "Back to QuestLayer": "QuestLayer पर वापस",
   "Basalt": "बेसाल्ट",
   "Basalt peaks": "बेसाल्ट चोटियाँ",
   "Beacon activated!": "बीकन सक्रिय हुआ!",
@@ -2794,7 +2793,6 @@
   "Lumen plains": "प्रकाश मैदान",
   "Moss": "काई",
   "Move closer to build there.": "वहाँ बनाने के लिए पास आएँ।",
-  "Moving here never counts as GPS movement in QuestLayer.": "यहाँ चलना QuestLayer में कभी GPS चाल नहीं गिना जाता।",
   "Nebula": "नीहारिका",
   "Opening the layer…": "परत खुल रही है…",
   "Other explorers walk the same world. You see their plots; only owners can change them.": "दूसरे खोजकर्ता भी इसी दुनिया में चलते हैं। आप उनके प्लॉट देखते हैं; उन्हें केवल मालिक बदल सकते हैं।",
@@ -3167,5 +3165,7 @@
   "Pip, your guide": "पिप, आपका गाइड",
   "Restore your account on this device: Settings → Account.": "इस डिवाइस पर अपना खाता वापस लाएँ: सेटिंग्स → खाता।",
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "पहले पासकी या अपने 12 शब्द सहेजें। इनके बिना यह एक्सप्लोरर वापस नहीं आ सकता।",
-  "Shows your next step on the map": "नक्शे पर आपका अगला कदम दिखाता है"
+  "Shows your next step on the map": "नक्शे पर आपका अगला कदम दिखाता है",
+  "Back to GotchiGO": "GotchiGO पर वापस",
+  "Moving here never counts as GPS movement in GotchiGO.": "यहाँ चलना GotchiGO में कभी GPS चाल नहीं गिना जाता।"
 }

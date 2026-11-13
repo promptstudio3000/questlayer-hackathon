@@ -2769,7 +2769,6 @@
   "3D world. Move with W A S D, jump with Space, drag to look around.": "عالم ثلاثي الأبعاد. تحرّك بـ W A S D، واقفز بالمسافة، واسحب للنظر حولك.",
   "Activate beacons: {0} of {1}": "فعّل المنارات: {0} من {1}",
   "Aether shallows": "ضحاضح الأثير",
-  "Back to QuestLayer": "العودة إلى QuestLayer",
   "Basalt": "بازلت",
   "Basalt peaks": "قمم البازلت",
   "Beacon activated!": "تم تفعيل المنارة!",
@@ -2794,7 +2793,6 @@
   "Lumen plains": "سهول الضياء",
   "Moss": "طحلب",
   "Move closer to build there.": "اقترب أكثر لتبني هناك.",
-  "Moving here never counts as GPS movement in QuestLayer.": "الحركة هنا لا تُحتسب أبدًا حركةً بنظام GPS في QuestLayer.",
   "Nebula": "سديم",
   "Opening the layer…": "جارٍ فتح الطبقة…",
   "Other explorers walk the same world. You see their plots; only owners can change them.": "يسير مستكشفون آخرون في العالم نفسه. ترى قطعهم؛ ولا يغيّرها إلا أصحابها.",
@@ -3167,5 +3165,7 @@
   "Pip, your guide": "بيب، مرشدك",
   "Restore your account on this device: Settings → Account.": "استعد حسابك على هذا الجهاز: الإعدادات ← الحساب.",
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "احفظ مفتاح مرور أو كلماتك الـ12 أولاً. بدونها لا يمكن لهذا المستكشف أن يعود.",
-  "Shows your next step on the map": "يعرض خطوتك التالية على الخريطة"
+  "Shows your next step on the map": "يعرض خطوتك التالية على الخريطة",
+  "Back to GotchiGO": "العودة إلى GotchiGO",
+  "Moving here never counts as GPS movement in GotchiGO.": "الحركة هنا لا تُحتسب أبدًا حركةً بنظام GPS في GotchiGO."
 }

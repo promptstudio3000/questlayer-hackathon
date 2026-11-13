@@ -2769,7 +2769,6 @@
   "3D world. Move with W A S D, jump with Space, drag to look around.": "3D 世界。用 W A S D 移动，空格跳跃，拖动环顾四周。",
   "Activate beacons: {0} of {1}": "激活信标：{0}/{1}",
   "Aether shallows": "以太浅滩",
-  "Back to QuestLayer": "返回 QuestLayer",
   "Basalt": "玄武岩",
   "Basalt peaks": "玄武岩峰",
   "Beacon activated!": "信标已激活！",
@@ -2794,7 +2793,6 @@
   "Lumen plains": "流光平原",
   "Moss": "苔藓",
   "Move closer to build there.": "走近一些才能在那里建造。",
-  "Moving here never counts as GPS movement in QuestLayer.": "在这里移动永远不会算作 QuestLayer 中的 GPS 移动。",
   "Nebula": "星云",
   "Opening the layer…": "正在打开图层…",
   "Other explorers walk the same world. You see their plots; only owners can change them.": "其他探险者也在同一个世界行走。你能看到他们的地块；只有主人可以修改。",
@@ -3167,5 +3165,7 @@
   "Pip, your guide": "向导 Pip",
   "Restore your account on this device: Settings → Account.": "在此设备上恢复你的账户：设置 → 账户。",
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "请先保存通行密钥或你的 12 个单词。没有它们，这位探险家就无法找回。",
-  "Shows your next step on the map": "在地图上显示你的下一步"
+  "Shows your next step on the map": "在地图上显示你的下一步",
+  "Back to GotchiGO": "返回 GotchiGO",
+  "Moving here never counts as GPS movement in GotchiGO.": "在这里移动永远不会算作 GotchiGO 中的 GPS 移动。"
 }
