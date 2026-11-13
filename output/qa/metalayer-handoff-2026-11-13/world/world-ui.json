@@ -1,0 +1,48 @@
+{
+  "status": "passed",
+  "lang": "en",
+  "checks": [
+    "fresh solo entry",
+    "direct rendered-guide tap",
+    "nearby physical Nera greeting",
+    "quest acceptance",
+    "real keyboard travel",
+    "inactive visible treasury",
+    "independent personal discoveries",
+    "workshop Build action",
+    "physical cave quest board",
+    "locked later chapter",
+    "ten-place directory",
+    "reload persistence"
+  ],
+  "fixtures": [],
+  "captures": [
+    "390-arrival-guide-and-demo.png",
+    "360-arrival-guide-and-demo.png",
+    "landscape-arrival.png",
+    "desktop-arrival.png",
+    "390-nera-greeting.png",
+    "390-independent-tour.png",
+    "390-golden-vault-world.png",
+    "390-treasury-inactive.png",
+    "390-luma-workshop-world.png",
+    "390-workshop-building.png",
+    "390-physical-hollow-board.png",
+    "390-hollow-quest-at-location.png",
+    "390-place-directory.png",
+    "390-later-chapter-state.png"
+  ],
+  "scans": [
+    {
+      "name": "Nera greeting",
+      "violations": []
+    },
+    {
+      "name": "Treasury inactive",
+      "violations": []
+    }
+  ],
+  "errors": [],
+  "hardware": false,
+  "liveNearTransaction": false
+}

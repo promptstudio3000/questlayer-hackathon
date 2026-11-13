@@ -10,24 +10,27 @@ import {
   forEachFeature,
   hash,
 } from "./world";
+import { DIAMOND_ORE, expeditionBlock, inExpeditionRegion } from "../../server/layer/expedition-world.mjs";
 
 export const PAD = CHUNK + 2;
 export const vIndex = (lx: number, y: number, lz: number) =>
   lx + 1 + (lz + 1) * PAD + y * PAD * PAD;
 
 /** Natural voxels (terrain and features) of a chunk plus a one-block border. */
-export function chunkVoxels(seed: number, cx: number, cz: number) {
+export function chunkVoxels(seed: number, cx: number, cz: number, expedition = false) {
   const vox = new Uint8Array(PAD * PAD * HEIGHT);
   const x0 = cx * CHUNK,
     z0 = cz * CHUNK;
   for (let lx = -1; lx <= CHUNK; lx++)
     for (let lz = -1; lz <= CHUNK; lz++) {
       const col = column(seed, x0 + lx, z0 + lz);
-      const top = Math.max(col.height, 11);
-      for (let y = 0; y <= top && y < HEIGHT; y++) vox[vIndex(lx, y, lz)] = columnBlock(col, y);
+      const special = expedition && inExpeditionRegion(x0 + lx, z0 + lz);
+      const top = special ? 28 : Math.max(col.height, 11);
+      for (let y = 0; y <= top && y < HEIGHT; y++)
+        vox[vIndex(lx, y, lz)] = (special ? expeditionBlock(seed, x0 + lx, y, z0 + lz) : undefined) ?? columnBlock(col, y);
     }
   forEachFeature(seed, x0 - 1, z0 - 1, x0 + CHUNK + 1, z0 + CHUNK + 1, (x, y, z, b) => {
-    if (y >= 0 && y < HEIGHT) vox[vIndex(x - x0, y, z - z0)] = b;
+    if (y >= 0 && y < HEIGHT && !(expedition && inExpeditionRegion(x, z))) vox[vIndex(x - x0, y, z - z0)] = b;
   });
   return vox;
 }
@@ -58,11 +61,12 @@ export const BLOCK_COLORS: Record<number, [number, number, number]> = {
   [BLOCK.forest]: hex(0x3aa88a),
   [BLOCK.bloom]: hex(0xb490ff),
   [BLOCK.cactus]: hex(0x5ccf7a),
+  [DIAMOND_ORE]: hex(0x66f4ef),
 };
 export const cssColor = (b: number) =>
   "#" + (BLOCK_COLORS[b] ?? [1, 1, 1]).map((c) => Math.round(c * 255).toString(16).padStart(2, "0")).join("");
 
-const GLOW = new Set([BLOCK.lantern, BLOCK.crystal]);
+const GLOW = new Set([BLOCK.lantern, BLOCK.crystal, DIAMOND_ORE]);
 const CLEAR = new Set([BLOCK.water, BLOCK.glass]);
 const opaque = (b: number) => b !== BLOCK.air && !CLEAR.has(b);
 
