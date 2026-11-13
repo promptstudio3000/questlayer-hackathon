@@ -453,6 +453,12 @@ export default function App() {
       .then((c) => {
         setVirtualLayer(c.layer?.layers?.[0] ?? null);
         setGameLayer(c.gameLayer ?? null);
+        // Until launch World opens the Test Layer; "?world=1" (from its picker) keeps World for good.
+        const g = c.gameLayer, key = "questlayer.stayWorld";
+        try {
+          if (/[?&]world=1/.test(location.search)) { localStorage.setItem(key, "1"); history.replaceState(null, "", location.pathname + location.hash); }
+          else if (g?.defaultTest && g.testLayerUrl && !localStorage.getItem(key)) location.replace(g.testLayerUrl);
+        } catch {}
         if (c.gameLayer?.test) document.documentElement.dataset.testLayer = "1";
       })
       .catch(() => {});
@@ -2740,31 +2746,12 @@ export default function App() {
         invisible.deviceKey?.accountId ? invisible.deviceKey : null,
     });
   });
-  // Treasury DAO vote (docs/TREASURY-DAO.md): the explorer account approves
-  // one poll option on the Sputnik DAO; sponsored, no deposit, no popup.
-  async function voteTreasury(dao: string, proposalId: number): Promise<boolean> {
+  // Treasury DAO vote (docs/TREASURY-DAO.md): the lazy vote dialog builds act_proposal;
+  // the explorer account signs it, sponsored, no deposit, no popup.
+  async function signTreasury(tx: (accountId: string) => object): Promise<boolean> {
     const result = await action("treasury-vote", async () => {
-      if (!onNearNetwork(dao)) throw Error(tr("The treasury vote is on another network."));
       const { signer, accountId } = await resolveSigner(invisible.accountId || undefined);
-      await signer.send(
-        {
-          network: NEAR_NETWORK,
-          signerId: accountId,
-          receiverId: dao,
-          actions: [
-            {
-              type: "FunctionCall",
-              params: {
-                methodName: "act_proposal",
-                args: { id: proposalId, action: "VoteApprove", proposal: "Vote" },
-                gas: "50000000000000",
-                deposit: "0",
-              },
-            },
-          ],
-        },
-        { playerId: player!.id },
-      );
+      await signer.send(tx(accountId) as Parameters<typeof signer.send>[0], { playerId: player!.id });
       return true;
     });
     return result === true;
@@ -3855,14 +3842,6 @@ export default function App() {
       const tabs: Record<string, Tab> = { inventory: "inventory", rolls: "inventory", market: "market", shop: "shop", stake: "fund" };
       setTab(tabs[t.screen] || "explore");
       setSheetExpanded(true);
-      // The wisp roll sits in Inventory's "Secured on NEAR" fold: open it and scroll there.
-      if (t.screen === "rolls")
-        window.setTimeout(() => {
-          const rolls = document.querySelector<HTMLElement>(".wisp-rolls");
-          const fold = rolls?.closest("details");
-          if (fold) fold.open = true;
-          rolls?.scrollIntoView({ behavior: "smooth", block: "center" });
-        }, 600);
     } else if (t.kind === "action") {
       if (t.action === "task") openNearbyForm("task");
       else if (t.action === "note" || t.action === "topic" || t.action === "shout") setQuickCreate(t.action);
@@ -5421,7 +5400,7 @@ export default function App() {
         <TreasuryVoteDialog
           key={`treasury-${player.id}`}
           account={explorerId || null}
-          vote={voteTreasury}
+          sign={signTreasury}
           notify={notify}
           onClose={() => setTreasuryVoteOpen(false)}
         />

@@ -326,6 +326,9 @@ const gameLayerConfig = Object.freeze({
   // The other world, for the picker: World links to the Test Layer only on testnet.
   testLayerUrl: TEST_LAYER || NETWORK !== "testnet" ? null : linkOrigin(process.env.TEST_LAYER_ORIGIN),
   worldUrl: TEST_LAYER ? linkOrigin(process.env.WORLD_ORIGIN) : null,
+  // Until launch (Lubos, 13 Nov 2026) World sends a new visitor to the Test Layer; the picker
+  // switches back to World and remembers it. DEFAULT_TEST_LAYER=1 on World, removed at launch.
+  defaultTest: !TEST_LAYER && NETWORK === "testnet" && process.env.DEFAULT_TEST_LAYER === "1" && !!linkOrigin(process.env.TEST_LAYER_ORIGIN),
 });
 const deploymentManifestPath = existsSync(
   resolve(APP_ROOT, `public/${MANIFEST_SET}-deployment.json`),
@@ -1598,6 +1601,8 @@ async function api(req, res, url) {
         ? auditSummary(publicAudit(nativeRewards.lastAudit))
         : { status: "not-configured" },
       yieldBackedDays: nativeRewards?.yieldBackedDays === true,
+      // Dates the publisher could not fund (docs/GLOBAL-TREASURY.md).
+      unfundedDays: nativeRewards?.unfundedDays || {},
       relayer: relayer ? relayer.workerStatus() : { status: "not-configured" },
       creatorMoney: creatorMoney
         ? creatorMoney.workerStatus()

@@ -83,8 +83,8 @@ install -m 644 "deploy/$APP_NAME.service" "$UNIT"
 systemctl daemon-reload
 systemctl enable "$APP_NAME" >/dev/null
 systemctl restart "$APP_NAME"
-for i in {1..25}; do if curl -fsS "http://127.0.0.1:$APP_PORT/api/health" >/dev/null; then break; fi; sleep 1; done
-curl -fsS "http://127.0.0.1:$APP_PORT/api/health"
+for i in {1..25}; do if curl -fsS --max-time 10 "http://127.0.0.1:$APP_PORT/api/health" >/dev/null; then break; fi; sleep 1; done
+curl -fsS --max-time 10 "http://127.0.0.1:$APP_PORT/api/health"
 # W5: the World worker builds auto CityPacks after each POI import. When a POI
 # release exists but no auto city index yet, start one worker run now (it reuses
 # the downloaded inputs) instead of waiting for Sunday's timer.
@@ -92,7 +92,7 @@ if [[ "$TARGET" != mainnet && -f /etc/systemd/system/questlayer-poi.service && -
  systemctl start --no-block questlayer-poi.service && echo "Started questlayer-poi to build auto cities (journalctl -u questlayer-poi)."
 fi
 if [[ "$TARGET" == mainnet ]]; then
- curl -fsS "http://127.0.0.1:$APP_PORT/api/health" | python3 -c 'import json,sys; h=json.load(sys.stdin); assert h["network"]=="mainnet", h["network"]; print("network:", h["network"], "features:", h["features"])'
+ curl -fsS --max-time 10 "http://127.0.0.1:$APP_PORT/api/health" | python3 -c 'import json,sys; h=json.load(sys.stdin); assert h["network"]=="mainnet", h["network"]; print("network:", h["network"], "features:", h["features"])'
 fi
 if [[ -f "$STATE_DIR/award-attestor.pem" && ! -f "$BACKUP_DIR/award-attestor.pem" ]]; then cp -a "$STATE_DIR/award-attestor.pem" "$BACKUP_DIR/award-attestor.pem"; fi
 if [[ "$TARGET" == mainnet || "$TARGET" == testlayer ]]; then
@@ -145,6 +145,7 @@ PY
 fi
 caddy validate --config /etc/caddy/Caddyfile >/dev/null
 systemctl reload caddy
-curl -fsS --retry 3 --retry-delay 1 "https://$APP_DOMAIN/api/health"
+# A new domain (Test Layer, mainnet) waits for its first certificate from Caddy.
+curl -fsS --max-time 15 --retry 18 --retry-delay 5 --retry-all-errors "https://$APP_DOMAIN/api/health"
 trap - ERR
 printf '\nDeployed release: %s\nBackup: %s\n' "$RELEASE_DIR" "$BACKUP_DIR"

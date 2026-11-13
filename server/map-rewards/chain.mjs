@@ -288,7 +288,7 @@ export function queueMapClaims(db, { signer, contractId, day, now = Date.now() }
  */
 export async function runMapChainWorker(
   db,
-  { call, view = null, signer, contractId, now = Date.now(), maxClaims = 20, qgoldRate = null, budgetOnly = false },
+  { call, view = null, signer, contractId, now = Date.now(), maxClaims = 20, qgoldRate = null, budgetOnly = false, yieldLimit = null },
 ) {
   ensureMapChainSchema(db);
   const result = { published: null, queued: 0, sent: 0, closed: 0, failed: 0, budget: false };
@@ -298,7 +298,21 @@ export async function runMapChainWorker(
   if (view && qgoldRate) {
     try {
       const [caps, rate] = await Promise.all([mapDayCaps(view, today), qgoldRate()]);
-      result.budget = recordMapBudget(db, { coinYocto: caps.coinCap, zoneYocto: caps.zoneCap, rateYocto: rate }, now);
+      // Yield-backed days (NATIVE_YIELD_BACKED_DAYS=1): the map spends only
+      // its drip of realized staking yield, never more than the chain cap.
+      const limit = yieldLimit ? await yieldLimit() : null;
+      const lower = (cap, max) =>
+        max == null ? cap : cap == null || BigInt(cap) > BigInt(max) ? String(max) : cap;
+      result.budget = recordMapBudget(
+        db,
+        {
+          coinYocto: lower(caps.coinCap, limit?.coinYocto),
+          zoneYocto: lower(caps.zoneCap, limit?.zoneYocto),
+          rateYocto: rate,
+          source: limit ? "realized_yield" : "chain",
+        },
+        now,
+      );
     } catch {
       // keep the last report
     }
