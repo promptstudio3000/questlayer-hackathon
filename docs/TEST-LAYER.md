@@ -53,7 +53,11 @@ Same code, one switch: `QL_LAYER=test` (server, `server/native/network.mjs`) and
   World unit when the Test Layer goes live, which also purges the seed rows from World. `MAP_PAYOUTS=1` is set
   here too: map coins, finds and zone prizes are minted as Test QGOLD in payout rounds (every
   `PAYOUT_ROUND_MINUTES`, default 5) from the Test Layer's rewards contract, so a new explorer can pay the
-  tour's shop, shout, topic and task steps. Its liquid backing (about 1.6 test NEAR on 13 Nov 2026) caps how
+  tour's shop, shout, topic and task steps. Coins alone stay below one payout leaf (10 Test QGOLD) for a new
+  explorer, so `TEST_STARTER_QGOLD=300` (with `TEST_STARTER_DAILY=200` explorers a day) adds a one-time welcome grant
+  to the next round after an explorer's first coin, paid from the zone pool (`grantStarters` in
+  server/payouts/worker.mjs; World never grants). POI quests are open all day here (`playWindow` in
+  server/poi-quests.mjs), so an evening visitor still has quests. Its liquid backing (about 1.6 test NEAR on 13 Nov 2026) caps how
   much Test QGOLD all explorers together can receive; top it up when it runs low.
 - **Demo first.** The Test Layer opens in the Plzeň demo for every visitor, also with location allowed far
   from Plzeň (`src/play-here.ts`). GPS starts only after the visitor taps Use GPS there; that choice is

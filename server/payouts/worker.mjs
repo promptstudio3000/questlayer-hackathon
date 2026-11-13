@@ -20,7 +20,7 @@
 // payouts are on, so a coin is never paid twice.
 import { atomic } from "../database.mjs";
 import { randomUUID } from "node:crypto";
-import { NETWORK } from "../native/network.mjs";
+import { NETWORK, TEST_LAYER } from "../native/network.mjs";
 import {
   registerModuleSchema,
   ensureModuleVersion,
@@ -56,11 +56,20 @@ export const PAYOUT_SETTLEMENT_SCHEMA = registerModuleSchema({
 CREATE TABLE IF NOT EXISTS payout_confirmations(day_id TEXT NOT NULL,idx INTEGER NOT NULL,confirmed_at INTEGER NOT NULL,PRIMARY KEY(day_id,idx));
 CREATE TABLE IF NOT EXISTS payout_worker_lease(id INTEGER PRIMARY KEY CHECK(id=1),owner TEXT,until_ms INTEGER NOT NULL DEFAULT 0)`,
 });
+// Test Layer welcome grant: one per explorer, paid from the zone pool like a
+// zone prize (ref starter:<player>), so a new explorer can try the shop and
+// the tour's spend steps even when their first coins are below one payout.
+export const STARTER_GRANTS_SCHEMA = registerModuleSchema({
+  name: "starter-grants",
+  version: 1,
+  sql: `CREATE TABLE IF NOT EXISTS starter_grants(player_id TEXT PRIMARY KEY, units TEXT NOT NULL, day TEXT NOT NULL, granted_at INTEGER NOT NULL)`,
+});
 const ready = new WeakSet();
 export function ensurePayoutSchema(db) {
   if (ready.has(db)) return;
   ensureModuleVersion(db, MAP_PAYOUTS_SCHEMA);
   ensureModuleVersion(db, PAYOUT_SETTLEMENT_SCHEMA);
+  ensureModuleVersion(db, STARTER_GRANTS_SCHEMA);
   db.prepare("INSERT OR IGNORE INTO payout_worker_lease(id) VALUES(1)").run();
   ready.add(db);
 }
@@ -90,6 +99,37 @@ function dayRate(db, day, cache) {
     cache.set(day, yoctoPerUnit(rate || DEFAULT_QGOLD_RATE_YOCTO));
   }
   return cache.get(day);
+}
+
+/**
+ * Test Layer only (TEST_STARTER_QGOLD > 0, off by default): every explorer
+ * with a NEAR account who has picked up a map coin gets TEST_STARTER_QGOLD
+ * once, at most TEST_STARTER_DAILY (default 20) explorers per local day.
+ * World never grants. Returns how many grants were written.
+ */
+export function grantStarters(db, before, env = process.env, testLayer = TEST_LAYER) {
+  const qgold = Number(env.TEST_STARTER_QGOLD || 0);
+  if (!testLayer || !(Number.isSafeInteger(qgold) && qgold > 0 && qgold <= 10_000)) return 0;
+  const cap = Number(env.TEST_STARTER_DAILY || 20);
+  ensurePayoutSchema(db);
+  if (!has(db, "coins") || !has(db, "wallet_links")) return 0;
+  const day = localDay(before);
+  const used = db.prepare("SELECT COUNT(*) n FROM starter_grants WHERE day=?").get(day).n;
+  const room = Math.max(0, (Number.isSafeInteger(cap) ? cap : 20) - used);
+  if (!room) return 0;
+  const players = db
+    .prepare(
+      `SELECT DISTINCT c.claimant p FROM coins c
+       WHERE c.claimant IS NOT NULL AND c.claimed_at<?
+         AND EXISTS(SELECT 1 FROM wallet_links w WHERE w.player_id=c.claimant)
+         AND NOT EXISTS(SELECT 1 FROM starter_grants g WHERE g.player_id=c.claimant)
+       LIMIT ?`,
+    )
+    .all(before, room);
+  const units = String(qgold); // game QGOLD = the token's smallest unit
+  const insert = db.prepare("INSERT OR IGNORE INTO starter_grants VALUES(?,?,?,?)");
+  for (const { p } of players) insert.run(p, units, day, before - 1);
+  return players.length;
 }
 
 /**
@@ -150,6 +190,24 @@ export function unpaidRewards(db, before, { unlinked = false } = {}) {
       accountId: acc,
       units: BigInt(q.gold_u),
       amountYocto: BigInt(q.gold_u) * dayRate(db, q.day, rates),
+    });
+  }
+  for (const g of db
+    .prepare(
+      `SELECT g.player_id,g.units,g.day FROM starter_grants g
+       WHERE g.granted_at<? AND NOT EXISTS(SELECT 1 FROM payout_items p WHERE p.ref='starter:'||g.player_id)
+       ORDER BY g.granted_at,g.player_id`,
+    )
+    .all(before)) {
+    const acc = account(g.player_id);
+    if (!acc && !unlinked) continue;
+    out.push({
+      kind: "zone",
+      ref: `starter:${g.player_id}`,
+      player: g.player_id,
+      accountId: acc,
+      units: BigInt(g.units),
+      amountYocto: BigInt(g.units) * dayRate(db, g.day, rates),
     });
   }
   return out;
@@ -229,6 +287,7 @@ function storePayoutDay(
     if (db.prepare("SELECT 1 FROM payout_days WHERE date=?").get(label))
       return null;
     const dayId = nextDayId(db, date);
+    grantStarters(db, before);
     const items = unpaidRewards(db, before);
     const carry = db.prepare("SELECT * FROM payout_carry").all();
     const carriedItems = db

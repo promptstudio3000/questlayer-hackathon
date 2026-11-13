@@ -10,3 +10,6 @@
 .funds-help-buttons .secondary-button { padding: 0 14px; }
 
 .funds-help-address { display: block; padding: 8px 10px; border-radius: 10px; background: var(--surface-soft, #f5f0ff); font-size: 13px; overflow-wrap: anywhere; }
+.funds-help-options { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+.funds-help-options li { display: grid; gap: 4px; font-size: 15px; line-height: 1.45; }
+.funds-help-options b { display: inline-flex; align-items: center; gap: 6px; }

@@ -97,7 +97,9 @@ holds all 10 methods. Each pass:
    nothing and the rewards wait for a later round. With `PAYOUT_ROUND_MINUTES=0`
    it is yesterday's day once after midnight (local Europe/Prague date). A round
    or day takes every claimed map coin (`map_coin_meta`) and funded cell-zone
-   prize (`cellZone` quests), of a GPS world or of the city demo (the demo pays
+   prize (`cellZone` quests) and, on the Test Layer only, each explorer's one-time
+   welcome grant (`starter_grants`, ref `starter:<player>`, kind zone, `TEST_STARTER_QGOLD`),
+   of a GPS world or of the city demo (the demo pays
    the same backed coins; only movement differs), collected before the cutoff, with a value,
    not in `payout_items` and not already sent as `claim_map`, by a player with a
    `wallet_links` account. Each is priced at `value_u × R / 10⁶` yoctoNEAR, R
