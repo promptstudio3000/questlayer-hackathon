@@ -58,7 +58,7 @@ The page is a vertical story of nine chapters plus a hero and a closing call to 
 | ID | Use case | Flow | Done when |
 | --- | --- | --- | --- |
 | U1 | Newcomer wants to understand before naming the ghost | Welcome screen → "How it works" link → reads → "Start exploring" | They are back on the welcome screen with focus on the name field, nothing lost |
-| U2 | Player already in the game wants a refresher | Profile → Settings → "How it works" (or direct `/how-it-works`) → "Back to the game" | They return to the map as they left it (a normal page navigation; the app restores its tab from history) |
+| U2 | Player already in the game wants a refresher | Settings (gear) → "How it works" (or direct `/how-it-works`) → "Back to the game" | They return to the map as they left it (a normal page navigation; the app restores its tab from history) |
 | U3 | Someone opens a shared link | `/how-it-works` cold load | The page renders without an account, without the map bundle, and starts on the hero |
 | U4 | Big screen, keyboard only | Arrow Down / Page Down / Space step chapter by chapter; Home and End jump; rail dots are links | Each step lands a chapter at the top and its animation plays once |
 | U5 | Reduced motion | System setting or in-game Motion = reduce | All scenes render in their final state, no autoplay movement, the page is still complete |
@@ -99,7 +99,7 @@ utility glyphs. No emoji.
   renders the page instead of the app.
 - **Bundle**: the page is a lazily imported chunk (`src/how-it-works/HowItWorks.tsx` + `how-it-works.css`), so the
   welcome screen budget (`npm run budget`) is unchanged.
-- **Links in**: the welcome screen ("How it works", next to the start note) and Profile → Settings.
+- **Links in**: the welcome screen ("How it works", next to the start note) and Settings (the gear).
 - **Links out**: "Start exploring" and "Back to the game" go to `/`.
 - **Data**: the level ladder reads the bundled level table (`DEFAULT_LEVEL_TABLE` in `src/levels.ts`), the staker
   ladder reads `server/data/staker-gates.json` at build time, so numbers follow the rules files.

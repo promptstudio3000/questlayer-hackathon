@@ -53,6 +53,8 @@ Czechia) and a cell-zone prize a few hundredths. So a premium emote
 (0.025–0.075) is about one good walk, a frame (0.1–0.3) a few days, NPC gear
 0.75 (rare) or 2 (epic), a lure 0.01–0.06, a shout 0.005 and a topic 0.01 a day.
 
+Since 11 Nov 2026 prices are whole GOLD (1 GOLD = 1 micro-QGOLD, `gold-spend-v3`). On 13 Nov 2026 the owner cut premium emotes to 40 % and then every price to 1/20, because active testers held only a few hundred GOLD on chain: emotes 50–150, frames 500–1,500, gear 3,750 / 10,000, lures 50–300, altar 125 / 250, shouts 25 and topics 50 a day. The top bar and every price check show one balance, the QGOLD on the NEAR account (`GET /api/gold/balance`); the game's `players.gold_u` counter also holds demo and test rewards that are never paid out, so it is not shown as money.
+
 | Spend | Rule |
 | --- | --- |
 | Emotes above the character | 6 basic emotes are free for everyone. 10 premium emotes are unlocked once. An emote shows to nearby players for 30 s (presence carries it). |
@@ -102,7 +104,7 @@ do not change and the first player to win takes it under the usual rules.
 
 ## UI
 
-- Inventory → **Shop** tab: balance, emotes, frames, lures, the gear list.
+- Inventory → **Shop** tab: balance ("Ready to spend" on the NEAR account, plus QGOLD on the way with the next payout), emotes, frames, lures, the gear list. A card that cannot be bought yet says why under its price (`src/gold-shop-reason.ts`): no NEAR account, "Arrives soon" (the payout covers it) or how much more is needed. If the balance read fails the buttons stay usable; the burn checks on chain. The linked account with the most QGOLD pays.
 - Map toolbar → **Emotes** button: quick picker of owned emotes.
 - Trader sheet: premium gear buttons.
 - Community → **Places** tab: compose, feed, topic view with replies.

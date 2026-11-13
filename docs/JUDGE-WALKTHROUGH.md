@@ -54,7 +54,7 @@ all day).
 | B6 | Explore → **Nearby** | Player tasks and Secrets with rewards held in the QGOLD escrow contract |
 | B7 | With a second browser or phone and a second explorer: both wave at each other (or **Ask to message** → **Accept**), then **Write a message** | "End-to-end encrypted. Only you and the other explorer can read a message." The message is stored as ciphertext under the sender's NEAR Social account ([PLAYER-INBOX.md](PLAYER-INBOX.md)) |
 | B8 | Open **/treasury#dao**, then Community → Quests → **Treasury vote** (an explorer at level 3+ who played this week) and vote | The DAO account with council 2 of 3, this week's mix options with their votes (the recommended one carries the automatic vote), the mix in force and today's approved run; your vote lands as `act_proposal` from your explorer account on https://testnet.nearblocks.io/address/questlayer-treasury.sputnik-v2.testnet | Treasury decisions on Sputnik DAO with Trezu roles, player votes without a wallet popup |
-| B8 | Optional, with an Ethereum wallet that holds Aavegotchis: Profile → Settings → **Account and devices** → **Ethereum wallets** | The wallet signs a readable message only; the explorer then wears your highest-rarity gotchi and Inventory → Items lists **Your Aavegotchis** |
+| B8 | Optional, with an Ethereum wallet that holds Aavegotchis: Settings (gear) → **Advanced** → **Ethereum wallets** | The wallet signs a readable message only; the explorer then wears your highest-rarity gotchi and Inventory → Items lists **Your Aavegotchis** |
 
 ## Path C: verify the economy yourself (about 5 minutes, terminal)
 

@@ -760,9 +760,7 @@ export function MapNotes({
         )}
         <p className="map-notes-secondary quick-create-fine">
           <MapPin size={16} weight="fill" aria-hidden="true" />{" "}
-          {tr("Public at this pin ({0}) with its time and photo. Photo metadata is removed. Stored by QuestLayer only.", {
-            0: `${anchor.lat.toFixed(5)}, ${anchor.lng.toFixed(5)}`,
-          })}
+          {tr("Public at this pin with its time and photo. Photo metadata is removed.")}
         </p>
         {draft.restored && !pending && (
           <button type="button" className="quick-create-link" disabled={locked} onClick={discardDraft}>

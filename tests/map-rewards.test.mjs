@@ -292,3 +292,56 @@ test("a cell drop follows the stored plan, proves its leaf and opens coins in wa
     db.close();
   }
 });
+
+test("Plzeň's reviewed zones take their prize from the daily zone budget, once per cell a day", async () => {
+  setPotentialSource(() => new Map());
+  const db = openDatabase(":memory:");
+  try {
+    const w = await ensureWorld(db, PLZEN, false, NOW);
+    const day = dayKey(NOW, "Europe/Prague"),
+      cell = latLngToCell(PLZEN.lat, PLZEN.lng, 7),
+      leaf = readCell(db, day, cell);
+    const inCell = w.zones.filter((z) => z.source !== "poi" && z.source !== "pioneer" && latLngToCell(z.lat, z.lng, 7) === cell);
+    const funded = db
+      .prepare("SELECT gold_u,metadata FROM quests WHERE world_id=? AND json_extract(metadata,'$.cellZone.reviewed')=1")
+      .all(w.id);
+    // No prize from the game treasury anywhere.
+    assert.equal(db.prepare("SELECT reserved_u FROM treasury WHERE bucket='zones'").get().reserved_u, 0);
+    if (leaf?.zones && leaf.zonesU > 0 && inCell.length) {
+      const n = Math.min(leaf.zones, inCell.length);
+      assert.equal(funded.length, n);
+      assert.ok(funded.every((q) => q.gold_u === Math.floor(leaf.zonesU / n)));
+      const drop = db.prepare("SELECT zones_u FROM map_cell_drops WHERE world_id=? AND cell=?").get(w.id, cell);
+      assert.equal(drop.zones_u, leaf.zonesU);
+      // Every shown zone prize is a backed one.
+      const shown = worldView(db, w.id).quests.filter((q) => q.gold_u > 0);
+      assert.equal(shown.length, n);
+    } else assert.equal(funded.length, 0);
+    // The demo opens the same cell later the same day: it does not spend the budget again.
+    const demo = await ensureWorld(db, PLZEN, true, NOW);
+    const demoFunded = db
+      .prepare("SELECT 1 FROM quests WHERE world_id=? AND json_extract(metadata,'$.cellZone.reviewed')=1")
+      .all(demo.id);
+    assert.equal(demoFunded.length, 0);
+  } finally {
+    setPotentialSource(null);
+    db.close();
+  }
+});
+
+test("a world built earlier releases zone prizes the game treasury reserved", async () => {
+  setPotentialSource(() => new Map());
+  const db = openDatabase(":memory:");
+  try {
+    const w = await ensureWorld(db, PLZEN, false, NOW);
+    const q = db.prepare("SELECT id FROM quests WHERE world_id=? AND claimant IS NULL AND json_extract(metadata,'$.cellZone.cell') IS NULL LIMIT 1").get(w.id);
+    db.prepare("UPDATE quests SET gold_u=5000 WHERE id=?").run(q.id);
+    db.prepare("UPDATE treasury SET available_u=available_u-5000,reserved_u=reserved_u+5000 WHERE bucket='zones'").run();
+    await ensureWorld(db, PLZEN, false, NOW + 1000);
+    assert.equal(db.prepare("SELECT gold_u FROM quests WHERE id=?").get(q.id).gold_u, 0);
+    assert.equal(db.prepare("SELECT reserved_u FROM treasury WHERE bucket='zones'").get().reserved_u, 0);
+  } finally {
+    setPotentialSource(null);
+    db.close();
+  }
+});

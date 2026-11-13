@@ -337,3 +337,4 @@ button.shop-card { cursor: pointer; }
   font-weight: 700;
   color: var(--action);
 }
+.shop-card-why { font-size: 11px; line-height: 1.2; color: var(--ink-soft, var(--ink)); }

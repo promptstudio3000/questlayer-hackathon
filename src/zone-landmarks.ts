@@ -205,9 +205,9 @@ type Feature = {
     | { type: "LineString"; coordinates: Ring };
 };
 
-/** Presentation-only tint of the existing maximum chest rarity (not a reward promise). */
+/** Presentation-only tier tint: Tier 1 green, Tier 2 yellow, Tier 3 red (not a reward promise). */
 export function zoneAuraColor(tier: number) {
-  return {common: "#45d6a0", rare: "#45d6a0", epic: "#ae77ff", legendary: "#ffd25a"}[zoneRarity(tier)];
+  return tier >= 3 ? "#ff5d6c" : tier === 2 ? "#ffd25a" : "#45d6a0";
 }
 
 /** Boundary paths for open sky curtains. No filled polygon, roof or offset footprint. */
@@ -219,10 +219,14 @@ export function zoneWallFeatures(zones: readonly Zone[], quests: readonly Quest[
     // cleared zones keep a low, dimmed wall instead of disappearing.
     if (phase === "unknown") continue;
     const spent = phase === "closed" || phase === "done";
-    const height = (WALL_HEIGHT[z.tier] || WALL_HEIGHT[1]) * (phase === "open" ? 1 : spent ? .5 : .82);
+    // Tier 2 and 3 open for a short window only: outside it they keep the
+    // full wall and colour, so the rarer zones can be seen all day. A zone
+    // the player cleared still steps back.
+    const lit = phase === "open" || (z.tier >= 2 && phase !== "done");
+    const height = (WALL_HEIGHT[z.tier] || WALL_HEIGHT[1]) * (lit ? 1 : spent ? .5 : .82);
     for (const poly of zonePolygons(z)) for (const ring of poly) {
       if (ring.length < 4) continue;
-      out.push({type:"Feature",properties:{id:z.id,color:zoneAuraColor(z.tier),height,halo:height*WALL_HALO,dim:phase!=="open",rarity:zoneRarity(z.tier)},geometry:{type:"LineString",coordinates:ring}});
+      out.push({type:"Feature",properties:{id:z.id,color:zoneAuraColor(z.tier),height,halo:height*WALL_HALO,dim:!lit,rarity:zoneRarity(z.tier)},geometry:{type:"LineString",coordinates:ring}});
     }
   }
   return out;
@@ -244,8 +248,8 @@ export function zoneTotemFeatures(
     const h = ({1:42,2:56,3:72} as Record<number,number>)[z.tier] || 42,
       visualScale = totemHeight(z.tier) / h,
       kind = zoneObjectPresentation(z, quests, context).kind;
-    const spent = phase === "closed" || phase === "done" || phase === "unknown";
-    const color = spent ? "#a59aa9" : z.color;
+    const spent = phase === "done" || phase === "unknown" || (phase === "closed" && z.tier < 2);
+    const color = spent ? "#a59aa9" : zoneAuraColor(z.tier);
     const part = (
       r: number,
       sides: number,

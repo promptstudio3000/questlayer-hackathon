@@ -11,7 +11,7 @@ import { ScreenTabs, type ScreenTab } from "./ScreenTabs";
 // (open tasks, the keeper's vault, the character profile) lives in tabs.
 import { NpcGear } from "./NpcGear";
 import { comeBackLine } from "./come-back";
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ReactNode } from "react";
 import {
   BookOpen,
   CheckCircle,
@@ -34,6 +34,7 @@ import {
   keeperView,
   npcAccept,
   npcGreet,
+  npcMission,
   npcTalk,
   npcTurnIn,
   tradeAccept,
@@ -49,6 +50,8 @@ import { chainTradesReady, explorerTxUrl, fillOnChain, handOverOnChain, secureTr
 import { InnerVault, StakeTodayCard, seenCeremony, seenRank } from "./StakeToday";
 import "./npc-sheet.css";
 
+// Chat mode loads only when a player writes or answers (src/NpcChat.tsx).
+const NpcChat = lazy(() => import("./NpcChat"));
 const EMOTE: Record<string, string> = { wave: "👋", think: "🤔", laugh: "😄", shrug: "🤷", none: "" };
 const isTrade = (offer: ActorOffer) => offer.kind.startsWith("trade_");
 const ICON: Record<string, ReactNode> = {
@@ -78,7 +81,7 @@ function Portrait({ model, label, emote }: { model: string; label: string; emote
 const roomyDialog = () =>
   typeof matchMedia === "function" && matchMedia("(min-width: 901px) and (min-height: 700px)").matches;
 
-export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onClose, onQuest }: { onQuest?: (questId: string) => void; playerId: string; draftRealm: string; actorId: string; encounter: ActorEncounter; onClose: () => void }) {
+export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onClose, onQuest, keeperPanel }: { keeperPanel?: ReactNode; onQuest?: (questId: string) => void; playerId: string; draftRealm: string; actorId: string; encounter: ActorEncounter; onClose: () => void }) {
   const t = npcStrings();
   const learning = useLearning(playerId);
   const [reply, setReply] = useState<NpcReply | null>(null);
@@ -93,6 +96,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
   const [trades, setTrades] = useState<Record<string, NpcTrade>>({});
   const [vault, setVault] = useState<KeeperView | null>(null);
   const [tab, setTab] = useState<Tab>("talk");
+  const [chat, setChat] = useState<null | { mode: "mission" | "talk"; text?: string }>(null);
   const [flow, setFlow] = useState<"greeting" | "choices" | "offer" | "accepted">("greeting");
   const [selectedOffer, setSelectedOffer] = useState<ActorOffer | null>(null);
   const flowHost = useRef<HTMLDivElement>(null);
@@ -185,18 +189,28 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
     });
   const handOver = (offerId: string) => run(() => settleTradeUp(offerId, trades[offerId]));
   const proofs = Object.values(trades).flatMap((x) => x.txHashes || (x.txHash ? [x.txHash] : []));
+  // Writing to an NPC switches the dialog to chat mode.
   const send = (event: React.FormEvent) => {
     event.preventDefault();
     const text = message.trim();
     const draftRevision = draft.revision;
     if (!text) return;
-    run(async () => {
-      const r = await npcTalk(actorId, token, text);
-      setReply((old) => ({ ...r, npc: r.npc ?? old?.npc }));
-      if (latestMessage.current.trim() === text) draft.discard(draftRevision);
-      setNotice("");
-    });
+    setChat({ mode: "talk", text });
+    if (latestMessage.current.trim() === text) draft.discard(draftRevision);
+    setNotice("");
   };
+  const chatTalk = async (text: string) => {
+    const r = await npcTalk(actorId, token, text);
+    setReply((old) => ({ ...r, npc: r.npc ?? old?.npc, mission: old?.mission }));
+    return r;
+  };
+  const chatAnswer = async (text: string) => {
+    const r = await npcMission(actorId, token, text);
+    setReply((old) => (old ? { ...old, mission: r.mission } : old));
+    if (r.xp > 0) learning.acknowledge("npc");
+    return r;
+  };
+  const mission = reply?.mission;
 
   const archetype = reply?.npc?.archetype || encounter.actor.archetype;
   const title = reply?.npc?.title || encounter.actor.title;
@@ -207,7 +221,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
   const tabs: ScreenTab<Tab>[] = [
     { id: "talk", label: t.tabTalk, icon: Sparkle },
     { id: "tasks", label: t.tabTasks, icon: ListChecks, count: active.length || undefined },
-    ...(vault ? [{ id: "vault" as Tab, label: t.tabVault, icon: Vault }] : []),
+    ...(vault || keeperPanel ? [{ id: "vault" as Tab, label: t.tabVault, icon: Vault }] : []),
     { id: "about", label: t.tabAbout, icon: IdentificationCard },
   ];
 
@@ -227,7 +241,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
   // Nothing to choose in the greeting (traders, keepers): their counter is
   // open right away, without a Continue step.
   const direct = !!reply && !questOffers.length && !active.length;
-  useEffect(() => { if (direct) openServices(vault ? "vault" : "talk"); }, [direct]);
+  useEffect(() => { if (direct) openServices(vault || keeperPanel ? "vault" : "talk"); }, [direct]);
   const offerSteps = selectedOffer && Array.isArray(selectedOffer.terms.steps)
     ? selectedOffer.terms.steps.filter((step): step is { title: string } => !!step && typeof step === "object" && typeof step.title === "string")
     : [];
@@ -252,9 +266,23 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
           </div>
         </header>
 
-        <p className="npc-bubble" aria-live="polite">
-          {flow === "accepted" ? notice : reply ? reply.say : t.thinking}
-        </p>
+        {chat ? (
+          <Suspense fallback={<p className="npc-bubble">{t.thinking}</p>}>
+            <NpcChat name={name} mission={mission} start={chat} onTalk={chatTalk} onAnswer={chatAnswer} />
+          </Suspense>
+        ) : (
+          <p className="npc-bubble" aria-live="polite">
+            {flow === "accepted" ? notice : reply ? reply.say : t.thinking}
+          </p>
+        )}
+        {!chat && mission && !mission.answered && mission.left > 0 && flow !== "accepted" && (
+          <div className="npc-mission-ask">
+            <p>{mission.ask}</p>
+            <button type="button" className="primary-button" disabled={busy} onClick={() => setChat({ mode: "mission" })}>
+              {tr("Answer · +{0} XP", { 0: mission.xp })}
+            </button>
+          </div>
+        )}
 
         {reply && flow === "greeting" && (ready.length > 0 || active.length > 0) && <button className="primary-button npc-continue" disabled={busy} onClick={() => openServices("tasks")}>{tr("Your tasks")}<ArrowRight aria-hidden="true" /></button>}
         {reply && (flow === "greeting" || flow === "choices") && questOffers.length > 0 && <section className="npc-story-step" aria-label={tr("Choose a quest")}>
@@ -359,36 +387,38 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
           </div>
         )}
 
-        {tab === "vault" && vault && (
+        {tab === "vault" && (vault || keeperPanel) && (
           <div className="npc-panel npc-vault" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
-            {vault.stake && (
+            {vault?.stake && (
               <>
                 <StakeTodayCard
-                  card={vault.stake}
+                  card={vault!.stake!}
                   onSeen={(id) =>
                     void seenCeremony(id).finally(() =>
                       setVault((v) => (v?.stake ? { ...v, stake: { ...v.stake, ceremonies: v.stake.ceremonies.filter((c) => c.id !== id) } } : v)),
                     )
                   }
                   onRankSeen={() => {
-                    const r = vault.stake?.rank?.rankUp?.rank;
+                    const r = vault?.stake?.rank?.rankUp?.rank;
                     if (r)
                       void seenRank(r).finally(() =>
                         setVault((v) => (v?.stake?.rank ? { ...v, stake: { ...v.stake, rank: { ...v.stake.rank, rankUp: null } } } : v)),
                       );
                   }}
                 />
-                <InnerVault card={vault.stake} />
+                <InnerVault card={vault!.stake!} />
               </>
             )}
-            <section aria-label={t.vaultBalance}>
-              <h3>{t.vaultBalance}</h3>
-              <ul className="npc-keeper">
-                {vault.lines.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            </section>
+            {keeperPanel || (vault && (
+              <section aria-label={t.vaultBalance}>
+                <h3>{t.vaultBalance}</h3>
+                <ul className="npc-keeper">
+                  {vault.lines.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </section>
+            ))}
           </div>
         )}
 
@@ -423,7 +453,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
             ))}
           </p>
         )}
-        <form className="npc-chat" onSubmit={send}>
+        {!chat && <form className="npc-chat" onSubmit={send}>
           <input
             value={message}
             maxLength={300}
@@ -435,7 +465,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
           <button type="submit" disabled={busy || !message.trim()} aria-label={t.send}>
             <PaperPlaneRight weight="fill" />
           </button>
-        </form>
+        </form>}
         </details>
       </div>
     </Dialog>

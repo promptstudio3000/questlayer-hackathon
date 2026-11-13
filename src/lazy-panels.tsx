@@ -116,9 +116,9 @@ export const NativeExpeditions = lazyNamed(
   () => import("./NativeExpeditions"),
   "NativeExpeditions",
 );
-export const NativeEconomyPanel = lazyNamed(
-  () => import("./NativeEconomyPanel"),
-  "NativeEconomyPanel",
+export const GameEconomy = lazyNamed(
+  () => import("./GameEconomy"),
+  "GameEconomy",
 );
 const rewardFunding = () => import("./RewardFunding");
 export const RewardFundingPage = lazyNamed(rewardFunding, "RewardFundingPage");
@@ -128,6 +128,7 @@ const mapHud = () => import("./map-hud-controls");
 export const MapSettings = lazyNamed(mapHud, "MapSettings", true);
 export const MapActions = lazyNamed(mapHud, "MapActions", true);
 export const InfoTip = lazyNamed(mapHud, "InfoTip", true);
+export const SettingsScreen = lazyNamed(() => import("./SettingsScreen"), "SettingsScreen");
 export const SecureAndShare = lazyNamed(
   () => import("./SecureAndShare"),
   "SecureAndShare",
@@ -167,7 +168,6 @@ export const AutoSocialProfile = lazyNamed(chainProof, "AutoSocialProfile", true
 // Practice wallet, fund and bounty screens (split from App.tsx).
 const walletScreens = () => import("./WalletScreens");
 export const WalletPanel = lazyNamed(walletScreens, "WalletPanel");
-export const FundPanel = lazyNamed(walletScreens, "FundPanel");
 export const Bounties = lazyNamed(walletScreens, "Bounties");
 // Explorer · Nearby: player tasks, Secrets and conditional sends.
 export const NearbyList = lazyNamed(() => import("./NearbyList"), "NearbyList");

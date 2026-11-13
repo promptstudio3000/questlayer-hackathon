@@ -70,7 +70,7 @@ try {
     await quiet.locator(".map-loading").waitFor({state:"hidden",timeout:30000});
     await quiet.screenshot({path:join(shots,`${name}-skipped-map.png`)});
     await quiet.reload();await quiet.locator(".topbar .profile-pill").waitFor();assert.equal(await quiet.locator(".game-intro").count(),0);
-    await quiet.locator(".topbar .profile-pill").click();await quiet.getByRole("tab",{name:t("Settings"),exact:true}).click();
+    await quiet.locator(".map-settings-toggle").click();await quiet.locator(".settings-screen").waitFor();
     const help=quiet.getByRole("button",{name:t("How to play"),exact:true});await help.click();
     await quiet.locator(".game-intro").waitFor();await quiet.keyboard.press("Escape");
     assert.equal(await help.evaluate(el=>el===document.activeElement),true,"Manual help returns focus to its trigger");
@@ -94,8 +94,7 @@ try {
   await interruptedPage.locator(".topbar .profile-pill").waitFor();
   assert.equal((await learningState(interruptedPage)).enabled,false,"Unfinished introduction never opts into teaching on restore");
   assert.equal((await learningState(interruptedPage)).intro,"done");
-  await interruptedPage.locator(".topbar .profile-pill").click();
-  await interruptedPage.getByRole("tab",{name:t("Settings"),exact:true}).click();
+  await interruptedPage.locator(".map-settings-toggle").click();
   await interruptedPage.getByRole("button",{name:t("How to play"),exact:true}).waitFor();
   assert.equal(await interruptedPage.locator(".game-intro").count(),0,"Restoring an unfinished introduction leaves the UI usable");
   assert.equal(await interruptedPage.locator(".first-session").count(),0);

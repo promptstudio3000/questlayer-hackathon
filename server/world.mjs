@@ -250,6 +250,21 @@ export function streetFallbackScope(env = process.env) {
   if (env.GLOBAL_CZECHIA_FALLBACK === "off" || env.GLOBAL_STREET_FALLBACK === "off") return "off";
   return env.GLOBAL_STREET_FALLBACK === "czechia" ? "czechia" : "world";
 }
+// A world built before 13 Nov 2026 may still hold zone prizes reserved from
+// the game treasury. They are never paid out on chain, so with map rewards
+// on they are released: zone prizes come only from the daily zone budget.
+function releaseTreasuryZonePrizes(db, worldId) {
+  const unbacked =
+    "world_id=? AND claimant IS NULL AND gold_u>0 AND NOT (json_valid(metadata) AND json_extract(metadata,'$.cellZone.cell') IS NOT NULL)";
+  atomic(db, () => {
+    const n = db.prepare(`SELECT COALESCE(SUM(gold_u),0) n FROM quests WHERE ${unbacked}`).get(worldId).n;
+    if (!n) return;
+    db.prepare(`UPDATE quests SET gold_u=0 WHERE ${unbacked}`).run(worldId);
+    db.prepare(
+      "UPDATE treasury SET available_u=available_u+?,reserved_u=MAX(0,reserved_u-?) WHERE bucket='zones'",
+    ).run(n, n);
+  });
+}
 export async function ensureWorld(
   db,
   location = HOME,
@@ -278,6 +293,7 @@ export async function ensureWorld(
     }
   }
   const world = await ensureBaseWorld(db, location, arena, now, { mapData });
+  if (world.mapRewards) releaseTreasuryZonePrizes(db, world.id);
   if (!world.cityId && arena) return world;
   // A searched spot must lie in the same city; otherwise the player's own cell.
   const at =
@@ -450,7 +466,10 @@ async function ensureBaseWorld(
       for (const z of [...zones].sort(
         (a, b) => a.tier - b.tier || a.slot - b.slot,
       )) {
-        const desired = auto
+        // With map rewards on, a zone prize comes only from the daily zone
+        // budget when its cell opens (map-rewards/service.mjs), so it is paid
+        // out on chain; the game treasury never funds a prize there.
+        const desired = auto || manifest.mapRewards
           ? 0
           : z.tier === 3
             ? 5000 * GOLD

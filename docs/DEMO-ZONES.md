@@ -68,5 +68,5 @@ covers Czechia for now).
 The game starts in that world (`src/play-here.ts`): after sign-in it asks for
 location and loads the player's own cell right away. The Plzeň city demo is the
 fallback when location is refused or unavailable, and when the player picks
-Demo in Map settings (`questlayer.playMode=demo` in localStorage, kept until
+Demo in Settings → Map (`questlayer.playMode=demo` in localStorage, kept until
 they pick Use GPS again). A refused start-up request shows no warning.

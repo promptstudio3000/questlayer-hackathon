@@ -18,6 +18,7 @@ import "./gold-spend.css";
 import { EmptyState } from "./EmptyState";
 import { InfoTip } from "./InfoTip";
 import { AuraSprite } from "./aura-art";
+import { buyBlock } from "./gold-shop-reason";
 
 // GOLD shop (QGOLD stream 4): everything here burns GOLD. Nothing pays another
 // player or changes odds. With the QGOLD vault open each purchase burns the
@@ -79,8 +80,19 @@ export function GoldShop({
       <EmptyState art="coin" title={tr("Shop")} action={{ label: tr("Try again"), onClick: () => { setLoadError(""); void load(); } }}>{loadError}</EmptyState>
     </div>
   ) : <EmptyState art="coin" title={tr("Opening the shop…")} status />;
-  const can = (price: number) => shop.balanceU >= Math.round(price * GOLD);
-  const priceTag = (price: number) => tr("{0} QGOLD", { 0: price });
+  const block = (price: number) => buyBlock(shop, Math.round(price * GOLD));
+  const can = (price: number) => !block(price);
+  const priceTag = (price: number) => tr("{0} QGOLD", { 0: gold(price) });
+  // Price, and under it why it cannot be bought yet (instead of a bare grey card).
+  const priceLine = (price: number) => {
+    const why = block(price);
+    return (
+      <>
+        <small className="shop-card-price">{priceTag(price)}</small>
+        {why && <small className="shop-card-why" title={why.title}>{why.label}</small>}
+      </>
+    );
+  };
   const showEmote = (id: string) =>
     run(`show:${id}`, async () => {
       const r = await goldEmote(id);
@@ -91,7 +103,9 @@ export function GoldShop({
     <div className="gold-shop">
       <p className="gold-shop-balance">
         <span>
-          {tr("Your QGOLD")}: <b>{gold(shop.balanceU, shop.realm === "qgold" ? 6 : 0)}</b>
+          {shop.realm === "qgold" ? tr("Ready to spend") : tr("Your QGOLD")}:{" "}
+          <b>{shop.realm === "qgold" && shop.balanceKnown === false ? "…" : gold(shop.balanceU)}</b>
+          {!!shop.pendingU && <small> · {tr("+{0} on the way", { 0: gold(shop.pendingU) })}</small>}
         </span>
         <InfoTip label={tr("Shop")}>
           {tr("Spending burns QGOLD: it leaves the game for good, so every QGOLD left is backed a little better.")}{" "}
@@ -112,12 +126,12 @@ export function GoldShop({
               className={`shop-card${e.owned ? " owned" : ""}`}
               disabled={!!busy || (!e.owned && !can(e.price))}
               onClick={() => (e.owned ? showEmote(e.id) : run(`buy:${e.id}`, () => goldBuy(`emote:${e.id}`)))}
-              aria-label={`${e.owned ? tr("Show emote {0}", { 0: e.id }) : tr("Unlock emote {0} for {1} QGOLD", { 0: e.id, 1: e.price })}, ${e.free ? tr("Free") : e.owned ? tr("Yours") : priceTag(e.price)}`}
+              aria-label={`${e.owned ? tr("Show emote {0}", { 0: e.id }) : tr("Unlock emote {0} for {1} QGOLD", { 0: e.id, 1: e.price })}, ${e.free ? tr("Free") : e.owned ? tr("Yours") : priceTag(e.price)}${!e.owned && block(e.price) ? `, ${block(e.price)!.label}` : ""}`}
             >
               <span className="shop-card-art gold-emote-glyph" aria-hidden="true">
                 {EMOTE_GLYPH[e.id]}
               </span>
-              <small className="shop-card-price">{e.free ? tr("Free") : e.owned ? tr("Yours") : priceTag(e.price)}</small>
+              {e.free || e.owned ? <small className="shop-card-price">{e.free ? tr("Free") : tr("Yours")}</small> : priceLine(e.price)}
             </button>
           ))}
         </div>
@@ -145,7 +159,7 @@ export function GoldShop({
                 <span className="gold-frame-swatch" style={{ borderColor: FRAME_COLOR[c.id] }} />
               </span>
               <strong>{FRAME_NAME[c.id]?.() || c.id}</strong>
-              <small className="shop-card-price">{c.owned ? (c.equipped ? tr("Take off") : tr("Wear")) : priceTag(c.price)}</small>
+              {c.owned ? <small className="shop-card-price">{c.equipped ? tr("Take off") : tr("Wear")}</small> : priceLine(c.price)}
             </button>
           ))}
         </div>
@@ -222,7 +236,7 @@ export function GoldShop({
                   {o.name ? ` · ${o.name}` : ""}
                   {o.distanceM ? ` · ${o.distanceM} m` : ""}
                 </span>
-                <small>{o.price === null ? o.reason || tr("Not available now") : priceTag(o.price)}</small>
+                <small>{o.price === null ? o.reason || tr("Not available now") : block(o.price)?.label ? `${priceTag(o.price)} · ${block(o.price)!.label}` : priceTag(o.price)}</small>
               </button>
             ))}
           </div>

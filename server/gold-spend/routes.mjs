@@ -1,5 +1,6 @@
 // HTTP routes for GOLD spending and place messages (docs/GOLD-SPENDING.md):
 //   GET  /api/gold/shop                       catalog, prices, what the player owns
+//   GET  /api/gold/balance                    spendable QGOLD (wallet) + on the way
 //   POST /api/gold/buy {sku}                  unlock a premium emote or a cosmetic (burn)
 //   POST /api/gold/equip {frame}              wear an unlocked marker frame (null = none)
 //   POST /api/gold/emote {emote}              show an emote above the character
@@ -70,15 +71,31 @@ export function createGoldSpendRoutes(
     short.details = { needU, haveU, purchaseReleased: id };
     throw short;
   }
+  // The linked NEAR account that holds the most QGOLD pays (a player can
+  // link a second wallet, and the newest link may still be empty).
+  async function spendable(player) {
+    if (qgold.spendable) return qgold.spendable(player);
+    return { accountId: qgold.accountIds(player)[0] ?? null, balanceU: await qgold.balanceU(player) };
+  }
   async function withBalance(player, view) {
     if (!onChain()) return view;
-    let balanceU = 0;
+    let balanceU = 0,
+      balanceKnown = true,
+      accountId = qgold.accountIds(player)[0] ?? null;
     try {
-      balanceU = await qgold.balanceU(player);
+      ({ balanceU, accountId } = await spendable(player));
     } catch {
-      /* the shop still opens; the burn itself checks the balance on chain */
+      // The shop still opens and the buttons stay usable: the burn itself
+      // checks the balance on chain.
+      balanceKnown = false;
     }
-    return { ...view, realm: "qgold", balanceU };
+    let pendingU = 0;
+    try {
+      pendingU = Math.max(0, Number(qgold.pendingU?.(player)) || 0);
+    } catch {
+      /* nothing on the way is shown */
+    }
+    return { ...view, realm: "qgold", balanceU, balanceKnown, pendingU, hasAccount: !!accountId };
   }
   function limit(key, max, assert) {
     const k = `${key}:${Math.floor(Date.now() / 60_000)}`,
@@ -108,13 +125,21 @@ export function createGoldSpendRoutes(
         assert(p, "Purchase not found.", 404, "PURCHASE_NOT_FOUND");
         respond(res, { accountId: p.account_id, contractId: p.contract_id, amount: String(p.amount_u), memo: p.memo, state: p.state }); return true;
       }
+      // The one balance every price check and the top bar show: QGOLD on the
+      // player's NEAR account (the richest linked one) plus what the next
+      // payout brings. The game's own counter is not money.
+      if (path === "/api/gold/balance" && method === "GET") return respond(res, await withBalance(player, gold.wallet(player))), true;
       if (path === "/api/gold/shop" && method === "GET") return respond(res, await withBalance(player, gold.shop(player))), true;
       if (path === "/api/gold/burn/prepare" && method === "POST") {
         assert(onChain(), "QGOLD spending is not open here.", 503, "QGOLD_DISABLED");
         const i = await body(req);
         const pending = purchaseRow(db, player, i.purchaseId);
         const accounts = qgold.accountIds(player);
-        const accountId = pending.account_id ?? accounts[0] ?? null;
+        let accountId = pending.account_id ?? null;
+        if (!accountId) {
+          try { accountId = (await spendable(player)).accountId; } catch { /* fall back to the newest link */ }
+          if (!accounts.includes(accountId)) accountId = accounts[0] ?? null;
+        }
         assert(accounts.includes(accountId), "This purchase account is not linked.", 403, "BURN_SIGNER");
         if (pending.relay_job_id && pending.state === "prepared") {
           const job = db.prepare("SELECT transaction_hash,state FROM relay_jobs WHERE id=?").get(pending.relay_job_id);

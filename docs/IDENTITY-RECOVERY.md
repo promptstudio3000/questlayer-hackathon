@@ -103,7 +103,7 @@ Limits: every key is a NEAR full-access key, so a device that is still in a thie
 
 ## Wallet words: opening the account in a NEAR wallet (12 November 2026)
 
-Profile → Settings → Account and devices → **Open in a wallet** gives the player a standard NEAR seed
+Settings (gear) → Account → **Open in a wallet** gives the player a standard NEAR seed
 phrase for their existing account, so it can be imported into Meteor, Intear or any wallet that
 accepts a 12-word phrase. The account had no phrase before: each device holds a random key in the signing
 origin. Instead of exporting that key, the signing origin generates twelve new BIP-39 words, derives the

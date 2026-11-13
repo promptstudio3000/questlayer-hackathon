@@ -40,8 +40,11 @@ export function AccountSessions({
   onSecure,
   onRevoke,
   busy,
+  part,
   readSessions = readCurrentSessions,
 }: {
+  /** Settings shows the save step under Account ("main") and the rest under Advanced. */
+  part?: "main" | "advanced";
   readSessions?: () => Promise<SessionView>;
   player: Player;
   onConnect: () => void;
@@ -76,6 +79,37 @@ export function AccountSessions({
   useEffect(() => {
     void refresh();
   }, [player.id, player.wallets.map((w) => w.account_id).join(",")]);
+  const save = state && (
+    <>
+      <p className="play-hint">
+        {state.recovery.nearAccounts.length
+          ? tr("Your linked account brings this explorer back on any device.")
+          : state.recovery.demoPasskeys
+            ? tr("Your passkey brings this explorer back on this device or any device that syncs it.")
+            : tr("This explorer lives in this browser. Add a passkey to come back from another device.")}
+      </p>
+      {!state.recovery.demoPasskeys && onSecure && (
+        <button
+          className="secondary-button"
+          onClick={onSecure}
+          disabled={!!busy}
+        >
+          <ShieldCheck size={20} /> {" "}{tr("Secure with a passkey")}</button>
+      )}
+    </>
+  );
+  if (part === "main")
+    return (
+      <section className="play-native account-save" aria-label={tr("Sign-in and recovery")}>
+        {error && (
+          <p className="inline-error" role="alert">
+            {error}
+          </p>
+        )}
+        {!state && !error && <p role="status">{tr("Loading sessions…")}</p>}
+        {save}
+      </section>
+    );
   return (
     <section
       className="play-native account-sessions"
@@ -101,21 +135,7 @@ export function AccountSessions({
       {!state && !error && <p role="status">{tr("Loading sessions…")}</p>}
       {state && (
         <>
-          <p className="play-hint">
-            {state.recovery.nearAccounts.length
-              ? tr("Your linked account brings this explorer back on any device.")
-              : state.recovery.demoPasskeys
-                ? tr("Your passkey brings this explorer back on this device or any device that syncs it.")
-                : tr("This explorer lives in this browser. Add a passkey to come back from another device.")}
-          </p>
-          {!state.recovery.demoPasskeys && onSecure && (
-            <button
-              className="secondary-button"
-              onClick={onSecure}
-              disabled={!!busy}
-            >
-              <ShieldCheck size={20} /> {" "}{tr("Secure with a passkey")}</button>
-          )}
+          {part !== "advanced" && save}
           {!state.recovery.nearAccounts.length && (
             <details className="native-extras">
               <summary>
