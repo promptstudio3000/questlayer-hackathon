@@ -202,3 +202,13 @@ Geofabrik, VPS only): 25 auto cities, 6 zones a day in most, Lisbon 4, Zug 2,
 Mumbai 3; Lagos has too few mapped parks and footways for zones and stays a
 street world with POI quests and coins. Build 28 s and 531 MB RSS for the
 POI file, about 25 s per auto city.
+
+Local check of the memory-bounded worker (13 Nov, 169 clips that BBBike and
+openstreetmap.fr serve; the 148 Geofabrik ones only run on the VPS): POI build
+in 5 parts peaked at 750 MB (one build had peaked at 1.6 GB), auto cities in
+their own process at 994 MB, osmium about 2 GB per call. 140 of 169 clips
+became auto cities (zones per day 1-6, mean 4.3); the rest are small islands
+(e.g. Funafuti, Majuro) or Lagos and stay street worlds. In an API probe of
+143 capitals with a fresh player each: 115 auto cities (72 with a Tier 3
+zone), 142 with quests, 141 with street coins, and the first quest claimed
+in 117 (the rest were closed at that local hour or Tier 3 only).

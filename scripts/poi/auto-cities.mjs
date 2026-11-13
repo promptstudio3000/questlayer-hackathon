@@ -764,16 +764,23 @@ export async function runAutoCities({
   // Demo cities one at a time, each from its own clip only: memory stays at
   // one city's paths (300 cities in one bin set needed several GB). Three
   // sample days keep the report honest at a third of the planner time.
+  // Only the pack text is kept between cities (the parsed pack is ~10x it).
+  const slim = (part) => {
+    for (const p of part.packs) delete p.pack;
+    return part;
+  };
   for (const city of pinned)
     parts.push(
-      await buildAutoCityPacks({
-        ...common,
-        rows: [],
-        sources: streamsFor([city.id]),
-        countries: [],
-        pinned: [city],
-        sampleDays: Math.min(sampleDays, 3),
-      }),
+      slim(
+        await buildAutoCityPacks({
+          ...common,
+          rows: [],
+          sources: streamsFor([city.id]),
+          countries: [],
+          pinned: [city],
+          sampleDays: Math.min(sampleDays, 3),
+        }),
+      ),
     );
   const pinnedIds = pinned.map((c) => c.cityId);
   if (countryIds.length)
