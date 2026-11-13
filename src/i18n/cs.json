@@ -3167,5 +3167,13 @@
   "Pip, your guide": "Pip, tvůj průvodce",
   "Restore your account on this device: Settings → Account.": "Obnov účet na tomto zařízení: Nastavení → Účet.",
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Nejdřív si ulož passkey nebo svých 12 slov. Bez nich se tento průzkumník nedá vrátit.",
-  "Shows your next step on the map": "Ukazuje tvůj další krok na mapě"
+  "Shows your next step on the map": "Ukazuje tvůj další krok na mapě",
+  "Account and devices": "Účet a zařízení",
+  "Add a recovery passkey so you can bring this explorer to a new phone or laptop, even if this device is lost. Your password manager keeps the passkey; QuestLayer only learns its public key.": "Přidej obnovovací přístupový klíč, ať si průzkumníka přeneseš na nový telefon nebo notebook, i když toto zařízení ztratíš. Klíč drží tvůj správce hesel; QuestLayer zná jen jeho veřejnou část.",
+  "Back to profile": "Zpět do profilu",
+  "Help & guide": "Nápověda a průvodce",
+  "Show first steps again": "Znovu ukázat první kroky",
+  "Map settings": "Nastavení mapy",
+  "Live on the map within about 1.5 km": "Živě na mapě do zhruba 1,5 km",
+  "Restore your account on this device: Profile → Account and devices.": "Obnov účet na tomto zařízení: Profil → Účet a zařízení."
 }

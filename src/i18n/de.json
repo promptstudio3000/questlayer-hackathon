@@ -3167,5 +3167,13 @@
   "Pip, your guide": "Pip, dein Begleiter",
   "Restore your account on this device: Settings → Account.": "Stelle dein Konto auf diesem Gerät wieder her: Einstellungen → Konto.",
   "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Sichere zuerst einen Passkey oder deine 12 Wörter. Ohne sie kommt dieser Entdecker nicht zurück.",
-  "Shows your next step on the map": "Zeigt deinen nächsten Schritt auf der Karte"
+  "Shows your next step on the map": "Zeigt deinen nächsten Schritt auf der Karte",
+  "Account and devices": "Konto und Geräte",
+  "Add a recovery passkey so you can bring this explorer to a new phone or laptop, even if this device is lost. Your password manager keeps the passkey; QuestLayer only learns its public key.": "Füge einen Wiederherstellungs-Passkey hinzu, damit du diesen Entdecker auf ein neues Handy oder einen Laptop mitnehmen kannst, auch wenn dieses Gerät verloren geht. Dein Passwortmanager verwahrt den Passkey; QuestLayer kennt nur seinen öffentlichen Schlüssel.",
+  "Back to profile": "Zurück zum Profil",
+  "Help & guide": "Hilfe & Guide",
+  "Show first steps again": "Erste Schritte erneut zeigen",
+  "Map settings": "Karteneinstellungen",
+  "Live on the map within about 1.5 km": "Live auf der Karte im Umkreis von etwa 1,5 km",
+  "Restore your account on this device: Profile → Account and devices.": "Stelle dein Konto auf diesem Gerät wieder her: Profil → Konto und Geräte."
 }
