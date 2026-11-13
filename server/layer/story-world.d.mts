@@ -4,3 +4,10 @@ export type SignalSite = Readonly<{ id: string; x: number; z: number; symbol: st
 export const SIGNAL_SITES: readonly SignalSite[];
 export const MARKER: Readonly<{ x: number; z: number; blocks: readonly Readonly<{ x: number; y: number; z: number; material: string }>[] }>;
 export function storySiteAt(x: number, z: number): SignalSite | undefined;
+export type WorldPlaceId = "nera" | "treasury" | "workshop" | "hollow" | "quarry" | "garden" | "arch" | "observatory" | "marker" | "beacon";
+export type WorldPlace = Readonly<{ id: WorldPlaceId; kind: "guide" | "treasury" | "workshop" | "quest"; x: number; z: number }>;
+export const PLACE_REACH: number;
+export const WORLD_PLACES: readonly WorldPlace[];
+export function placeById(id: string): WorldPlace | undefined;
+export function nearbyPlace(x: number, y: number, z: number): WorldPlace | null;
+export function protectedPlace(x: number, z: number): boolean;

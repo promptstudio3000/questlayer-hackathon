@@ -53,7 +53,7 @@ try {
   const stick = await page.locator(".layer-screen .demo-pad").boundingBox();
   assert.ok(stick && stick.x < 100,"the canonical QuestLayer joystick is on the left");
   await shot("390-arrival");
-  await page.locator(".ml-objective").click();
+  await page.locator(".layer-screen .daily-board-chip").click();
   await page.getByRole("heading",{name:"The Quiet Beacon",exact:true}).waitFor();
   await shot("390-story-start");await axe("story-start");
   await page.getByRole("button",{name:"Accept expedition",exact:true}).click();
@@ -69,7 +69,7 @@ try {
     db.prepare("UPDATE ml_explorers SET x=?,y=15,z=?,seen_at=? WHERE player_id=?").run(x,z,Date.now(),actor.id);
     await page.waitForFunction(({x,z})=>{const p=JSON.parse(document.querySelector('[data-testid="layer-stage"]').dataset.position||"{}");return Math.abs(p.x-x)<.2&&Math.abs(p.z-z)<.2;},{x,z},{timeout:15000});
   }
-  const board=async()=>{if(!await page.getByRole("dialog",{name:"Expedition board",exact:true}).isVisible())await page.locator(".ml-objective").click();};
+  const board=async()=>{if(!await page.getByRole("dialog",{name:"Expedition board",exact:true}).isVisible())await page.locator(".layer-screen .daily-board-chip").click();};
   await pose(-28,18);await board();
   await page.getByRole("button",{name:"Star",exact:true}).click();
   await page.getByText("That symbol does not match the inscription.",{exact:true}).waitFor();

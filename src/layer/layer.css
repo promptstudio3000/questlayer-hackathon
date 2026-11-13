@@ -60,6 +60,11 @@
 .ml-coordinate { font-family: monospace; color: var(--ink-secondary); font-size: var(--text-meta); }
 .ml-station-list { list-style: none; padding: 0; }
 .ml-station-list li { display: flex; align-items: center; gap: 6px; padding: 8px; }
+.ml-place-list { list-style: none; padding: 0; display: grid; gap: 6px; }
+.ml-place-list button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 48px; text-align: start; }
+.ml-place-list button > svg { flex: none; }
+.ml-place-list button > span { flex: 1; min-width: 0; }
+.ml-place-list button > small { font-size: var(--text-note); color: var(--ink-secondary); }
 .ml-story-complete { display: flex; align-items: center; gap: 10px; color: var(--success); }
 .ml-story-complete > svg { flex: none; }
 .ml-inventory { display: grid; gap: 8px; margin: 12px 0; }

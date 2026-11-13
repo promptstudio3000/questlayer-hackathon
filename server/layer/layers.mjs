@@ -30,4 +30,5 @@ export const publicLayer = (layer) => ({
   seed: layer.seed,
   coin: layer.coin.symbol,
   economyActive: layer.economy.active,
+  demoActors: process.env.LAYER_DEMO_ACTORS === "1",
 });

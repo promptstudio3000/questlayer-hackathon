@@ -11,14 +11,16 @@ export type ExpeditionProgress = {
   inventory: { diamonds: number; stone: number };
   quest: { state: "available" | "discover" | "mine" | "complete"; diamonds: number; goal: number };
   story: StoryState;
+  discoveries?: string[];
   settlement: "not-configured";
 };
 export const siteName = (id: string) => id === "garden" ? tr("Spore Garden") : id === "arch" ? tr("Tide Arch") : tr("Star Observatory");
 export function storyObjective(p: ExpeditionProgress | null) {
   const s = p?.story;
   if (!s || s.stage === "expedition") {
+    if (!p || p.quest.state === "available") return { title: tr("Keeper Nera"), hint: tr("Meet Nera beside the arrival path."), target: {x:12.5,z:-6.5}, ready:false };
     return { title: p?.quest.state === "mine" ? tr("Mine 10 diamonds") : p?.quest.state === "discover" ? tr("Find Crystal Hollow") : tr("Your first expedition"),
-      hint: p?.quest.state === "mine" ? tr("Hold the pickaxe on glowing diamond ore.") : p?.quest.state === "discover" ? tr("Follow the cyan beam north of the square.") : tr("Visit the board and accept your first quest."),
+      hint: p?.quest.state === "mine" ? tr("Hold the pickaxe on glowing diamond ore.") : tr("Follow the cyan beam north of the square."),
       target: { x: 0, z: -47 }, ready: false };
   }
   if (s.stage === "quarry") return { title: tr("Echoes in basalt"), hint: tr("Visit the quarry and mine 6 basalt blocks."), target: { x: 53, z: -16 }, ready: false };

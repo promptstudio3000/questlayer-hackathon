@@ -24,7 +24,7 @@ const child = spawn(process.execPath, ["server/index.mjs"], {
     APP_ORIGIN: "http://127.0.0.1:7099", DATABASE_PATH: join(state, "preview.sqlite"),
     DISABLE_NATIVE_ATTESTATIONS: "1", DISABLE_BACKGROUND_WORKERS: "1", DISABLE_RELAYER: "1",
     NPC_TRADER_ENABLED: "0", QGOLD_KEEPER_ENABLED: "0", QGOLD_KEEPER_EXECUTE: "0",
-    NEAR_RPC_URL: "http://127.0.0.1:9", NODE_ENV: "test", LAYER_ENABLED: "1", NODE_OPTIONS: `--import=${guard}`,
+    NEAR_RPC_URL: "http://127.0.0.1:9", NODE_ENV: "test", LAYER_ENABLED: "1", LAYER_DEMO_ACTORS: "1", NODE_OPTIONS: `--import=${guard}`,
   }, stdio: ["ignore", "inherit", "inherit"],
 });
 console.log("MetaLayer preview: http://127.0.0.1:7099/?lang=cs");

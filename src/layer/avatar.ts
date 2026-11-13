@@ -127,7 +127,7 @@ export function createAvatar(outfit: Outfit, aura?: string): Avatar {
 }
 
 /** Name tag sprite drawn on a canvas. */
-export function nameTag(text: string, accent = "#ffffff") {
+export function nameTag(text: string, accent = "#ffffff", limit = 18) {
   const canvas = document.createElement("canvas");
   canvas.width = 256;
   canvas.height = 64;
@@ -137,10 +137,13 @@ export function nameTag(text: string, accent = "#ffffff") {
   ctx.roundRect(4, 8, 248, 48, 22);
   ctx.fill();
   ctx.fillStyle = accent;
-  ctx.font = "600 26px system-ui, sans-serif";
+  const label = text.slice(0,limit);
+  let size = 26;
+  do { ctx.font = `600 ${size}px system-ui, sans-serif`; size--; }
+  while (ctx.measureText(label).width > 230 && size >= 12);
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(text.slice(0, 18), 128, 33);
+  ctx.fillText(label, 128, 33, 230);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   const sprite = new THREE.Sprite(

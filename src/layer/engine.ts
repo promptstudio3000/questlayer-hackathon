@@ -3,7 +3,8 @@
 // building on the explorer's own plot, peers, plot borders and beacons.
 // The server stays authoritative for plots, edits and beacon activations.
 import * as THREE from "three";
-import { MARKER, SIGNAL_SITES } from "../../server/layer/story-world.mjs";
+import { MARKER, SIGNAL_SITES, nearbyPlace, type WorldPlaceId } from "../../server/layer/story-world.mjs";
+import { createWorldPlaces } from "./world-places";
 import {
   MINES,
   clearMiningRay,
@@ -81,6 +82,7 @@ export type EngineState = {
   ready: boolean;
   fps: number;
   mining: number;
+  place: WorldPlaceId | null;
   target: {
     x: number;
     y: number;
@@ -92,8 +94,11 @@ export type EngineState = {
 export type EngineOptions = {
   seed: number;
   spawn: { x: number; y: number; z: number };
+  facing?: { x: number; z: number };
   home?: LayerPlot;
   expedition?: boolean;
+  demoActors?: boolean;
+  onPlace?: (id: WorldPlaceId) => void;
   outfit: Outfit;
   aura?: string;
   phone: boolean;
@@ -260,6 +265,8 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
     if (c) return c.vox[vIndex(x - cx * CHUNK, y, z - cz * CHUNK)];
     return overrideAt(x, y, z) ?? naturalAt(x, y, z);
   }
+  const places = options.expedition ? createWorldPlaces(scene, !!options.demoActors, (x,z) =>
+    blockAt(Math.floor(x),15,Math.floor(z)) === BLOCK.air && blockAt(Math.floor(x),16,Math.floor(z)) === BLOCK.air) : null;
   /** Writes a voxel into every loaded chunk whose padded copy holds it. */
   function setVoxel(x: number, y: number, z: number, b: number) {
     for (let ox = -1; ox <= 1; ox++)
@@ -411,12 +418,13 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
     options.spawn.z,
   );
   const vel = new THREE.Vector3();
+  const arrivalYaw = options.facing ? Math.atan2(pos.x-options.facing.x,pos.z-options.facing.z) : 0;
   let onGround = false,
     lastGround = false,
-    camYaw = 0,
+    camYaw = arrivalYaw,
     camPitch = 0.45,
     camDist = phone ? 7 : 6.5,
-    faceYaw = Math.PI,
+    faceYaw = options.expedition ? arrivalYaw : Math.PI,
     running = true,
     follow = false,
     inputEnabled = true;
@@ -653,6 +661,13 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
     }
     return null;
   }
+  function pickPlace(clientX: number, clientY: number) {
+    if (!places) return;
+    const voxel = pick(clientX,clientY);
+    const collision = voxel ? ray.ray.intersectBox(new THREE.Box3(
+      new THREE.Vector3(voxel.x,voxel.y,voxel.z),new THREE.Vector3(voxel.x+1,voxel.y+1,voxel.z+1)),new THREE.Vector3()) : null;
+    return places.pick(ray, collision ? collision.distanceTo(ray.ray.origin) : 30);
+  }
   function buildTarget(clientX: number, clientY: number) {
     const hit = pick(clientX, clientY);
     if (!hit) return null;
@@ -801,7 +816,7 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
       sy: e.clientY,
       t: performance.now(),
     });
-    if (options.expedition && pointers.size === 1 && e.button === 0)
+    if (options.expedition && pointers.size === 1 && e.button === 0 && !pickPlace(e.clientX,e.clientY))
       miningTimer = setTimeout(() => startMining(e.clientX, e.clientY), 180);
     if (pointers.size === 2) {
       stopMining();
@@ -845,8 +860,11 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
     const tap =
       Math.hypot(e.clientX - p.sx, e.clientY - p.sy) < 10 &&
       performance.now() - p.t < 400;
-    if (tap && building && e.button !== 2 && e.type === "pointerup")
-      act(e.clientX, e.clientY);
+    if (tap && e.button !== 2 && e.type === "pointerup") {
+      const place = !building && pickPlace(e.clientX,e.clientY);
+      if (place) options.onPlace?.(place);
+      else if (building) act(e.clientX, e.clientY);
+    }
   };
   const context = (e: MouseEvent) => {
     e.preventDefault();
@@ -899,7 +917,11 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
       if (k === "enter" && !e.repeat && options.expedition) {
         const point = centerPoint();
         if (building) act(point.x, point.y);
-        else startMining(point.x, point.y);
+        else {
+          const place = pickPlace(point.x,point.y);
+          if (place) options.onPlace?.(place);
+          else startMining(point.x, point.y);
+        }
       }
     }
   };
@@ -1113,6 +1135,7 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
     }
     const moving = hasGround ? step(dt) : false;
     me.animate(dt, moving, now / 1000);
+    places?.update(dt, now/1000, pos, options.reducedMotion);
     for (const peer of peers.values()) {
       const g = peer.avatar.group,
         t = peer.target;
@@ -1197,6 +1220,7 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
       z: pos.z,
       heading: faceYaw,
       mining: miningProgress,
+      place: options.expedition ? nearbyPlace(pos.x,pos.y,pos.z)?.id ?? null : null,
       target,
       biome: biomeAt(seed, pos.x, pos.z),
       plot,
@@ -1232,6 +1256,7 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
     },
     setInputEnabled: (value: boolean) => {
       inputEnabled = value;
+      places?.setLabelsVisible(value);
       if (!value) blur();
     },
     recenter: () => {
@@ -1251,6 +1276,7 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
     setPeers,
     setActiveBeacons,
     setBlueprintVisible: (value: boolean) => { blueprint.visible = value; },
+    setObjectivePlace: (id: WorldPlaceId | null) => places?.setObjective(id),
     teleport,
     applyLocal,
     setMove: (x: number, y: number) => {
@@ -1292,6 +1318,7 @@ export function createLayerEngine(host: HTMLElement, options: EngineOptions) {
       for (const c of [...chunks.values()]) unloadChunk(c);
       setPeers([]);
       me.dispose();
+      places?.dispose();
       scene.traverse((n) => {
         if (
           n instanceof THREE.Mesh ||

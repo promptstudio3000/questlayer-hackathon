@@ -680,14 +680,21 @@ export const CHAPTERS: Chapter[] = [
     ],
     status: "partial",
     updated: "2026-11-13",
-    sources: ["docs/LAYER.md", "server/layer/world.mjs", "server/layer/store.mjs", "server/layer/routes.mjs", "server/layer/layers.mjs", "server/layer/expedition.mjs", "server/layer/expedition-world.mjs", "src/layer/Layer.tsx", "src/layer/engine.ts", "src/layer/Minimap.tsx", "src/WorldSwitcher.tsx", "server/layer/story.mjs", "server/layer/story-world.mjs", "server/layer/activity.mjs", "src/layer/StoryBoard.tsx", "src/layer/LayerActivity.tsx", "docs/METALAYER-INTEGRATION.md"],
+    sources: ["docs/LAYER.md", "server/layer/world.mjs", "server/layer/store.mjs", "server/layer/routes.mjs", "server/layer/layers.mjs", "server/layer/expedition.mjs", "server/layer/expedition-world.mjs", "src/layer/Layer.tsx", "src/layer/engine.ts", "src/layer/Minimap.tsx", "src/WorldSwitcher.tsx", "server/layer/story.mjs", "server/layer/story-world.mjs", "server/layer/activity.mjs", "src/layer/StoryBoard.tsx", "src/layer/LayerActivity.tsx", "src/layer/PlacePanel.tsx", "src/layer/world-places.ts", "docs/METALAYER-INTEGRATION.md"],
     blocks: [
       { h: "First expedition" },
       { list: [
         "Enter from the world picker when the testnet host enables MetaLayer. Start on the public square. Everyone can build on its green areas; the central altar, crossings and walking floor stay protected.",
-        "Community opens the board. Accept the first expedition, follow the cyan beam into Crystal Hollow and hold a pickaxe on ten natural diamond blocks. The server checks mining duration, reach, exposed sight line and exclusive extraction. Decorative crystals do not count as ore.",
+        "Meet Keeper Nera beside the arrival path. Tap her or open the nearby action to accept the first expedition. Community also opens the board. Follow the cyan beam into Crystal Hollow and hold a pickaxe on ten natural diamond blocks. The server checks mining duration, reach, exposed sight line and exclusive extraction. Decorative crystals do not count as ore.",
         "The same resource block disappears for everyone. Natural diamonds renew after fifteen minutes, while dug stone corridors stay open. The backpack shows confirmed resources. Completion is saved once and survives reconnecting.",
         "The minimap shares every explorer's discoveries. The atlas loads only the chosen window, so a distant journey never shrinks the central square. Return to the square is an explicit jump and reveals no line between the two places.",
+      ] },
+      { h: "Places and preview explorers" },
+      { list: [
+        "Physical quest boards mark Crystal Hollow, Basalt Quarry, the three signals, the trail marker and the central beacon. A nearby place replaces the compact objective with one contextual action; tap a visible guide or sign to read it. Distant and locked chapters explain the next step without claiming completion.",
+        "Nera offers a short independent tour of the treasury, workshop, cave entrance and garden. Validated visits save personal field-journal discoveries once, even before accepting the expedition. The journal and expanded atlas have a directory of all ten authored places.",
+        "The golden vault near the centre is an inactive treasury landmark, not collectible MetaGold. The backpack links to its status. No funded coins, spendable balance or token reward exists yet.",
+        "The local preview enables three labelled demo explorers: Tavi near arrival, Luma at the workshop and Omi in the cave. They are cosmetic demonstrations, never online accounts, reward recipients or part of the real nearby-player count. Reduced motion freezes their routes. The ordinary host shows them only when LAYER_DEMO_ACTORS=1 is explicitly enabled.",
       ] },
       { h: "The Quiet Beacon" },
       { list: [

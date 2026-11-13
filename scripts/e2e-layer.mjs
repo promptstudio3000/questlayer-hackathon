@@ -125,7 +125,7 @@ try {
   await newExplorer(phone, "Mira");
   await enterLayer(phone);
   await phone.screenshot({ path: join(out, "phone-390-arrival.png") });
-  await phone.locator(".ml-objective").click();
+  await phone.locator(".layer-screen .daily-board-chip").click();
   await phone
     .getByRole("button", { name: "Accept expedition", exact: true })
     .click();
@@ -184,7 +184,7 @@ try {
   await newExplorer(desktop, "Tomas");
   await enterLayer(desktop);
   await desktop.screenshot({ path: join(out, "desktop-world.png") });
-  await desktop.locator(".ml-objective").click();
+  await desktop.locator(".layer-screen .daily-board-chip").click();
   await desktop
     .getByRole("button", { name: "Accept expedition", exact: true })
     .click();

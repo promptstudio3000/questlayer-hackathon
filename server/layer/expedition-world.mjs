@@ -1,7 +1,7 @@
 // Shared rules for the MetaLayer first-expedition preview. These are spatial
 // and resource rules only. No currency, XP, NFT or settlement is issued here.
 import { BLOCK, BUILD_BLOCKS, column, columnBlock } from "./world.mjs";
-import { storySiteAt } from "./story-world.mjs";
+import { storySiteAt, protectedPlace } from "./story-world.mjs";
 
 export const DIAMOND_ORE = 20;
 export const PLAZA = Object.freeze({ x0: -48, z0: -48, size: 96, y: 14 });
@@ -48,7 +48,7 @@ export const inPlaza = (x, z) =>
 export const protectedPlaza = (x, z) =>
   Math.abs(x) <= 3 ||
   Math.abs(z) <= 3 ||
-  (Math.abs(x) <= 8 && Math.abs(z) <= 8) || !!storySiteAt(x, z);
+  (Math.abs(x) <= 8 && Math.abs(z) <= 8) || !!storySiteAt(x, z) || protectedPlace(x, z);
 export const inExpeditionRegion = (x, z) => inPlaza(x, z) || !!mineAt(x, z);
 
 // The cave and quarry have one stable floor. Only natural stone and ore above
@@ -101,6 +101,14 @@ export function expeditionBlock(seed, x, y, z) {
       return y === 18 ? BLOCK.lantern : BLOCK.stone;
     if (site.id === "arch" && Math.abs(dx) <= 2 && dz === 2 && y === 19) return BLOCK.plank;
     if (site.id === "garden" && Math.abs(dx) === 3 && dz === -2 && y === 15) return BLOCK.leaves;
+  }
+  // Luma's small demonstration shelter. It is authored scenery, never a player
+  // building claim; its open centre leaves a clear place to meet and practise.
+  const wx = x + 23, wz = z - 32;
+  if (Math.abs(wx) <= 3 && Math.abs(wz) <= 3) {
+    if (Math.abs(wx) === 3 && Math.abs(wz) === 3 && y <= 18) return BLOCK.wood;
+    if (y === 19) return BLOCK.plank;
+    if (wx === 0 && wz === 0 && y === 18) return BLOCK.lantern;
   }
   // A protected altar and four corner lamps make the square readable at ground level.
   if (Math.abs(x) <= 2 && Math.abs(z) <= 2 && y === 15) return BLOCK.brick;

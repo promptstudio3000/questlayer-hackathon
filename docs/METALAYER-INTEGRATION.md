@@ -1,10 +1,11 @@
 # MetaLayer integration contract and owner handoff
 
 13 November 2026. Task branch `weekend/m1-metalayer-first-expedition`, source base
-`ebefd852e6b511db4b6416a79aaa08bbf683b995`. This document describes the running
+`18dffa97c8cc260c99e0243a5aba5e21f1a5fcb2`. This document describes the running
 local slice and the remaining owner integration. It does not activate a contract,
-financial obligation, XP credit or NFT ownership. The current source patch includes
-the first expedition and this continuation; do not apply the older patch as well.
+financial obligation, XP credit or NFT ownership. Use this branch as the review
+source, not the older local transfer patches. Start with the short
+[Claude brief](CLAUDE-METALAYER-BRIEF.md), then this detail.
 
 ## Player loop and design choice
 
@@ -12,6 +13,14 @@ The opening needs a reason to keep mining after one counter fills. **The Quiet
 Beacon** gives the collected material a purpose, different physical actions and
 one public result. The sequence is deliberately solo-completable; another player
 can help with the shared construction without taking away personal story progress.
+
+The final discoverability pass adds the physical Keeper Nera, ten authored place
+props, a visible inactive treasury and three explicitly labelled cosmetic demo
+explorers in the local preview. Nearby actions reuse the single compact objective.
+Nera's independent four-place tour saves visits in the field journal; a requested
+directory leads to the cave, quarry, three clues, shared marker and finale. These
+are playable locations, not another permanent phone overlay. The earlier preview
+had the story only in a board panel and no real guide/demo actors in the scene.
 
 | Chapter | Player action | Confirmed result |
 | --- | --- | --- |
@@ -30,7 +39,7 @@ minimize the phone world view. The previous independent MetaLayer cards and
 navigation appearance were removed. The implementation uses the current shared
 `WorldSwitcher`, `Character`, HUD bubble/navigation classes, map settings pattern,
 `DemoControls`, `MapActions`, `ScreenTabs`, buttons and native map-dialog chrome.
-The only `App.tsx` edit passes world configuration and its existing Profile callback
+The only `App.tsx` edit passes world configuration and its existing navigation
 into the Layer mount; no city interaction or financial logic is changed.
 
 The joystick stays on the left. Actions stay on the right; the held tool appears there only when building or
@@ -38,9 +47,9 @@ aiming at a mineable block.
 The atlas is folded until requested; block materials appear only while choosing
 one. The default world view has one short objective/status line. Community opens
 the quests, journal and onchain tabs, and detailed prose stays behind disclosures.
-The current UI baseline is the fetched integration commit `ebefd852`; the public
-health observation earlier in the run reported `07ddcf1b`. These are source
-checkpoints, not a deployment of this MetaLayer task.
+The source baseline is the fetched integration commit `18dffa97`. Upstream tour,
+World/Test Layer selection and deployment records are retained as merged. Their
+presence in the base is not a deployment or activation of MetaLayer.
 
 ## Capabilities now and next
 
@@ -48,6 +57,7 @@ checkpoints, not a deployment of this MetaLayer task.
 | --- | --- | --- |
 | Identity | Same authenticated platform explorer and online presence | Bind the same native account to the separate MetaLayer domain |
 | World and story | Shared blocks, ore, atlas, five chapters, durable isolated receipts | Onchain event storage and a clean indexer reconstruction |
+| Wayfinding | Physical Nera, boards, independent visit tour, world directory, demo actors | Further UI work, richer quests and physical-phone review |
 | Transaction evidence | Domain-separated hashes and a strict read-only NEAR verifier | Reviewed receiver/code/recorder configuration and actual submitted transactions |
 | Proof UI | Shared ChainLink and separately labelled platform account feed | Automatic polling/outbox refs when real submissions exist |
 | MetaXP | No city XP writes, no fake balance | Dedicated MetaXP contract/namespace and reviewed award rules |
@@ -160,5 +170,16 @@ projection keeps the character above the controls. Landscape inherits the shared
 QuestLayer rail, left joystick and compact objective placement. Verification failures stay beside the form and
 scroll into view while preserving the selected action and transaction reference. UI fixture prerequisite skips
 and a dormant verifier-form fixture are named separately from actual gameplay.
-No production access, keys, contract build, commit, PR publication or VPS deployment
-is included. The intended review target remains `claude/upbeat-gauss-5czir7`.
+No production access, keys, contract build or VPS deployment is included. The user
+authorized committing and pushing only this separate task branch; the review
+target remains `claude/upbeat-gauss-5czir7`. The owner still merges and releases.
+The committed [review evidence](../output/qa/metalayer-handoff-2026-11-13/README.md)
+separates actual browser journeys from story prerequisites and inactive chain UI.
+
+This is an integration candidate, not a finished game. The user still expects
+substantial UI correction: direct touch picking, 3D label occlusion/readability,
+camera/cave interaction, expanded-text/keyboard behavior, full wardrobe rendering
+and the latest shared QuestLayer flows need another authored pass. Do not treat
+screenshots, static demo actors or passing browser tests as mobile usability signoff.
+P2P, player tasks/topics/comments, land expansion, tradable build instances,
+MetaGold tips and any combat remain unimplemented, not features hidden in a menu.

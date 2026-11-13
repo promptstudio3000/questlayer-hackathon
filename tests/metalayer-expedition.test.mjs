@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { openDatabase } from "../server/database.mjs";
 import { createExpeditionStore } from "../server/layer/expedition.mjs";
 import { LAYER_REGISTRY } from "../server/layer/layers.mjs";
-import { SIGNAL_SITES, MARKER } from "../server/layer/story-world.mjs";
+import { SIGNAL_SITES, MARKER, WORLD_PLACES, placeById } from "../server/layer/story-world.mjs";
 import { BLOCK } from "../server/layer/world.mjs";
 import {
   DIAMOND_ORE,
@@ -73,6 +73,37 @@ test("all explorers enter one square and share atlas discoveries without sharing
     "mine",
     "already discovered cave remains a useful accepted objective",
   );
+});
+
+test("world visits create personal, durable discoveries without starting a quest or granting an asset", (t) => {
+  const {db, clock, store, actors:[alice,bob], walk} = fixture(t);
+  const treasury=placeById("treasury");
+  walk(alice,{x:12.5,z:-9.5});
+  walk(alice,{x:treasury.x,z:-9.5});
+  walk(alice,treasury);
+  const first=store.snapshot(alice);
+  assert.ok(first.discoveries.includes("nera"));
+  assert.ok(first.discoveries.includes("treasury"));
+  assert.equal(first.quest.state,"available");
+  assert.ok(!store.snapshot(bob).discoveries.includes("treasury"));
+  walk(alice,{x:treasury.x+1,z:treasury.z}); walk(alice,treasury);
+  const visits=db.prepare("SELECT COUNT(*) AS n FROM ml_actions WHERE layer='space' AND player_id=? AND kind='place-found' AND json_extract(envelope,'$.data.place')='treasury'").get(alice.id);
+  assert.equal(visits.n,1,"repeated presence keeps one discovery receipt");
+  const reopened=createExpeditionStore(db,{now:()=>clock.at});
+  assert.deepEqual(reopened.snapshot(alice).discoveries,first.discoveries);
+  assert.deepEqual(reopened.snapshot(alice).inventory,{diamonds:0,stone:0});
+  assert.equal(db.prepare("SELECT xp FROM players WHERE id=?").get(alice.id).xp,0);
+  assert.ok(store.move(alice,undefined,{x:-22.5,y:15,z:32.5}).corrected);
+  assert.ok(!store.snapshot(alice).discoveries.includes("workshop"),"rejected teleports cannot discover a place");
+});
+
+test("the guide, signs and demo workshop have protected clear approaches", () => {
+  const seed=LAYER_REGISTRY[0].seed;
+  for(const place of WORLD_PLACES) {
+    if (place.id !== "quarry") assert.ok(protectedPlaza(Math.floor(place.x),Math.floor(place.z)),place.id);
+    for(const y of [15,16]) assert.equal(naturalExpeditionBlock(seed,Math.floor(place.x),y,Math.floor(place.z)),BLOCK.air,place.id);
+  }
+  assert.equal(protectedPlaza(MARKER.x,MARKER.z),false,"protect the sign beside the editable shared-marker site");
 });
 
 test("public square edits are shared, compare their previous block and retry exactly once", (t) => {

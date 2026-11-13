@@ -1,4 +1,4 @@
-import { Check, Circle, Diamond, NavigationArrow, Cube, Lamp, Star, Waves, Leaf } from "@phosphor-icons/react";
+import { Check, Compass, Diamond, NavigationArrow, Cube, Lamp, Star, Waves, Plant } from "@phosphor-icons/react";
 import { InfoTip } from "../InfoTip";
 import { Details } from "../ScreenTabs";
 import "../daily-board.css";
@@ -19,7 +19,7 @@ export function StoryBoard({ view = "quests", progress: p, position, busy, onSta
   const chapter = ["expedition", "quarry", "signals", "marker", "beacon", "complete"].indexOf(s.stage);
   if (view === "journal") return <section className="daily-board-sheet">
     <h2>{tr("Field journal")}</h2>
-    <ul aria-label={tr("Story progress")}>{chapters.map((title, i) => <li key={title} className={chapter > i ? "done" : undefined}><div className="daily-board-go">{chapter > i ? <Check size={20} /> : <Circle size={20} />}<span><b>{title}</b></span><small>{i + 1}/5</small></div></li>)}</ul>
+    <ul aria-label={tr("Story progress")}>{chapters.map((title, i) => <li key={title} className={chapter > i ? "done" : undefined}><div className="daily-board-go">{chapter > i ? <Check size={20} /> : <Compass size={20} />}<span><b>{title}</b></span><small>{i + 1}/5</small></div></li>)}</ul>
     <Details summary={tr("Three forgotten signals")}><ul className="ml-station-list">{SIGNAL_SITES.map(site => <li key={site.id}>{s.signals.includes(site.id) && <Check size={16} />}<span>{siteName(site.id)}</span></li>)}</ul></Details>
   </section>;
   return <section className="daily-board-sheet">
@@ -44,7 +44,7 @@ export function StoryBoard({ view = "quests", progress: p, position, busy, onSta
     {s.stage === "signals" && <>
       <fieldset className="landmark-clue ml-runes"><legend>{signalClue(SIGNAL_SITES[s.signals.length].id)}</legend>
         {([
-          ["spore", tr("Spore"), Leaf], ["tide", tr("Tide"), Waves], ["star", tr("Star"), Star],
+          ["spore", tr("Spore"), Plant], ["tide", tr("Tide"), Waves], ["star", tr("Star"), Star],
         ] as const).map(([symbol, label, Icon]) => <button className="clue-option" key={symbol} disabled={!nearby || busy} onClick={() => onInteract({ action: "signal", site: SIGNAL_SITES[s.signals.length].id, symbol })}><Icon size={20} /><span>{label}</span></button>)}
       </fieldset>
       <p className="ml-story-note">{nearby ? tr("Choose the sign described by the inscription.") : tr("Walk closer to tune this signal.")}</p>

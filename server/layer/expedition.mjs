@@ -7,7 +7,7 @@ import {
   registerModuleSchema,
 } from "../schema-compatibility.mjs";
 import { createStoryStore } from "./story.mjs";
-import { MARKER } from "./story-world.mjs";
+import { MARKER, WORLD_PLACES, PLACE_REACH } from "./story-world.mjs";
 import { createLayerActivity } from "./activity.mjs";
 import { layerById, DEFAULT_LAYER } from "./layers.mjs";
 import { BLOCK, BUILD_BLOCKS, HEIGHT } from "./world.mjs";
@@ -149,6 +149,8 @@ export function createExpeditionStore(db, { now = () => Date.now(), near } = {})
         goal: DIAMOND_GOAL,
       },
       story: story.state(actor, layer, row),
+      discoveries: db.prepare("SELECT envelope FROM ml_actions WHERE layer=? AND player_id=? AND kind='place-found' ORDER BY at,rowid")
+        .all(layer.id, actor.id).map(action => JSON.parse(action.envelope).data.place),
       settlement: "not-configured",
     };
   }
@@ -273,6 +275,10 @@ export function createExpeditionStore(db, { now = () => Date.now(), near } = {})
       const revealed = db.prepare("INSERT OR IGNORE INTO ml_atlas VALUES(?,?,?)").run(layer.id, ...tile);
       if (revealed.changes) activity.record(actor, layer, `tile:${tile}`, "atlas-revealed", { tile });
       story.visit(actor, layer, { x, y, z });
+      if (Math.abs(y - 15) <= 3)
+        for (const place of WORLD_PLACES)
+          if (Math.hypot(x - place.x, z - place.z) <= PLACE_REACH)
+            activity.record(actor, layer, place.id, "place-found", { place: place.id });
       const mine = MINES[0];
       if (
         Math.hypot(x - mine.entranceX, z - mine.entranceZ) <= 8 &&

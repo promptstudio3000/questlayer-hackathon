@@ -1,5 +1,5 @@
 import { ATLAS_CELL, MINES } from "../../server/layer/expedition-world.mjs";
-import { SIGNAL_SITES, MARKER } from "../../server/layer/story-world.mjs";
+import { SIGNAL_SITES, MARKER, WORLD_PLACES } from "../../server/layer/story-world.mjs";
 import { tr } from "../i18n";
 
 export function Minimap({
@@ -78,6 +78,10 @@ export function Minimap({
       {[...SIGNAL_SITES, { id: "marker", ...MARKER }].map(site => {
         const [px,pz] = project(site.x,site.z);
         return <rect key={site.id} x={px-3} y={pz-3} width={6} height={6} fill="#fa9de7" stroke="#17112a" strokeWidth={1.5} />;
+      })}
+      {WORLD_PLACES.filter(place => place.kind !== "quest").map(place => {
+        const [px,pz] = project(place.x,place.z);
+        return <circle key={place.id} cx={px} cy={pz} r={place.kind === "treasury" ? 3.5 : 2.8} fill={place.kind === "treasury" ? "#ffe1a2" : "#ffffff"} stroke="#151124" strokeWidth={1.5} />;
       })}
       <path
         d={`M${homeX} ${homeZ - 5}l5 5v5h-10v-5z`}

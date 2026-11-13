@@ -28,7 +28,7 @@ import { DemoControls } from "../DemoControls";
 import { Character } from "../Character";
 import { WorldSwitcher, type GameLayerConfig } from "../WorldSwitcher";
 import { MapActions } from "../MapActions";
-import { ScreenTabs } from "../ScreenTabs";
+import { ScreenTabs, Details } from "../ScreenTabs";
 import { InfoTip } from "../InfoTip";
 import { LayerSettings } from "./LayerSettings";
 import type { DemoControl } from "../useDemoWalk";
@@ -40,9 +40,11 @@ import { BLOCK, BUILD_BLOCKS, outfitById } from "./world";
 import { MINES, inPlaza } from "../../server/layer/expedition-world.mjs";
 import { Minimap } from "./Minimap";
 import { StoryBoard } from "./StoryBoard";
+import { PlacePanel, PlaceDirectory } from "./PlacePanel";
+import { objectivePlace, placeName, placeTarget } from "./place-ui";
 import { LayerActivity } from "./LayerActivity";
 import { storyObjective, siteName, playFailure, type ExpeditionProgress } from "./story-ui";
-import { storySiteAt } from "../../server/layer/story-world.mjs";
+import { storySiteAt, type WorldPlaceId } from "../../server/layer/story-world.mjs";
 import type { BlockEdit, EngineState, LayerEngine, Peer } from "./engine";
 import "./layer.css";
 
@@ -53,6 +55,7 @@ export type PublicLayer = {
   seed: number;
   coin: string;
   economyActive: boolean;
+  demoActors?: boolean;
 };
 type Progress = ExpeditionProgress;
 type Snapshot = Progress & {
@@ -60,7 +63,7 @@ type Snapshot = Progress & {
   tiles: [number, number][];
 };
 type Entry = Snapshot & { spawn: { x: number; y: number; z: number } };
-type Sheet = "help" | "inventory" | "community" | "atlas" | "parcel" | "activity" | "materials" | null;
+type Sheet = "help" | "inventory" | "community" | "atlas" | "parcel" | "activity" | "materials" | "place" | null;
 const blockName = (b: number) =>
   ({
     [BLOCK.plank]: tr("Plank"),
@@ -81,17 +84,17 @@ export function Layer({
   player,
   items,
   layer,
-  onExit,
-  onProfile,
+  onNavigate,
   gameLayer,
 }: {
   player: Player;
   items: Item[];
   layer: PublicLayer;
-  onExit: () => void;
-  onProfile: () => void;
+  onNavigate: (view: { tab: "explore" } | { tab: "settings"; profileView: "character" }) => void;
   gameLayer?: GameLayerConfig | null;
 }) {
+  const onExit = () => onNavigate({ tab: "explore" });
+  const onProfile = () => onNavigate({ tab: "settings", profileView: "character" });
   const scope = useRef<HTMLElement>(null), objectiveCard = useRef<HTMLDivElement>(null);
   const [mapShown, setMapShown] = useState(false), [communityView, setCommunityView] = useState<"quests" | "journal">("quests");
   const host = useRef<HTMLDivElement>(null),
@@ -112,6 +115,8 @@ export function Layer({
   const [held, setHeld] = useState<Set<DemoControl>>(() => new Set()),
     [run, setRun] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [place, setPlace] = useState<WorldPlaceId>("nera");
+  const openPlace = (id: WorldPlaceId) => { setPlace(id); setNotice(""); setSheet("place"); };
   const heldRef = useRef(new Set<DemoControl>()),
     acting = useRef(false);
   const interactRef = useRef<(body: Record<string, unknown>) => void>(() => {});
@@ -137,6 +142,7 @@ export function Layer({
           diamonds: Math.max(old.inventory.diamonds, next.inventory.diamonds),
           stone: Math.max(old.inventory.stone, next.inventory.stone),
         },
+        discoveries: [...new Set([...(old.discoveries || []), ...(next.discoveries || [])])],
         story: {
           ...(storyOrder[old.story.stage] > storyOrder[next.story.stage] ||
             (old.story.stage === next.story.stage && old.story.signals.length > next.story.signals.length)
@@ -239,7 +245,10 @@ export function Layer({
       view = createLayerEngine(host.current, {
         seed: layer.seed,
         spawn: entry.spawn,
+        facing: storyObjective(entry).target || undefined,
         expedition: true,
+        demoActors: layer.demoActors,
+        onPlace: id => { setPlace(id); setNotice(""); setSheet("place"); },
         outfit: outfitById("nebula"),
         aura: live.current.avatarAura,
         phone: matchMedia("(max-width: 700px)").matches,
@@ -341,6 +350,7 @@ export function Layer({
               });
               host.current.dataset.target = JSON.stringify(state.target);
               host.current.dataset.heading = String(state.heading);
+              host.current.dataset.nearbyPlace = state.place || "";
             }
           }
         }, 100),
@@ -383,7 +393,8 @@ export function Layer({
     if (!progress) return;
     engine.current?.setActiveBeacons([...(progress.story.sharedBeaconLit ? ["plaza"] : []), ...progress.story.signals]);
     engine.current?.setBlueprintVisible(progress.story.stage === "marker");
-  }, [progress?.story.sharedBeaconLit, progress?.story.stage, progress?.story.signals.join(",")]);
+    engine.current?.setObjectivePlace(objectivePlace(progress));
+  }, [progress?.story.sharedBeaconLit, progress?.story.stage, progress?.story.signals.join(","), progress?.quest.state]);
   useEffect(() => {
     engine.current?.setInputEnabled(!sheet);
     if (sheet) release();
@@ -463,6 +474,12 @@ export function Layer({
     if (currentObjective.target) engine.current?.facePoint(currentObjective.target.x, currentObjective.target.z);
     setSheet(null);
   };
+  const facePlace = (id: WorldPlaceId) => {
+    const target = placeTarget(id);
+    engine.current?.facePoint(target.x,target.z); setSheet(null);
+  };
+  const contextualPlace = !building ? hud?.place : null;
+  const showQuests = () => { setCommunityView("quests"); setSheet("community"); };
   const buildFreely = () => {
     if (progress?.story.stage === "marker") {
       setBlock(BLOCK.wood);
@@ -584,14 +601,14 @@ export function Layer({
           <div ref={objectiveCard} className="main-panel explore-panel sheet-compact ml-objective-panel"><div className="sheet-peek sheet-peek-selection">
           <button
             className="compact-selection ml-objective"
-            onClick={() => setSheet("community")}
+            onClick={() => contextualPlace ? openPlace(contextualPlace) : progress.quest.state === "available" ? openPlace("nera") : showQuests()}
           >
             <span className="peek-art">
-              {progress.story.stage === "complete" ? <Check size={22} /> : <ArrowUp size={23} style={{ transform: `rotate(${direction}deg)` }} />}
+              {contextualPlace ? contextualPlace === "nera" ? <UsersThree size={22} /> : <Compass size={22} /> : progress.story.stage === "complete" ? <Check size={22} /> : <ArrowUp size={23} style={{ transform: `rotate(${direction}deg)` }} />}
             </span>
             <span className="peek-body">
-              <strong>{currentObjective.title}</strong>
-              <small>{progress.quest.state === "available" ? tr("Accept expedition") : progress.story.stage === "expedition" && progress.quest.state === "mine"
+              <strong>{contextualPlace ? placeName(contextualPlace) : currentObjective.title}</strong>
+              <small>{contextualPlace ? contextualPlace === "nera" ? tr("Talk to Nera") : tr("Read this place") : progress.quest.state === "available" ? tr("Talk to Nera") : progress.story.stage === "expedition" && progress.quest.state === "mine"
                 ? tr("{0} / {1} diamonds", { 0: Math.min(progress.quest.diamonds, progress.quest.goal), 1: progress.quest.goal })
                 : distance !== null ? tr("{0} blocks away", { 0: distance }) : tr("Complete")}</small>
             </span>
@@ -619,7 +636,7 @@ export function Layer({
                   ? tr("Expedition board")
                   : sheet === "parcel"
                     ? tr("Parcel detail")
-                    : sheet === "activity" ? tr("Actions and NEAR proofs") : sheet === "materials" ? tr("Blocks") : tr("MetaLayer field guide")
+                    : sheet === "activity" ? tr("Actions and NEAR proofs") : sheet === "materials" ? tr("Blocks") : sheet === "place" ? placeName(place) : tr("MetaLayer field guide")
           }
           onClose={close}
           presentation="map"
@@ -628,7 +645,7 @@ export function Layer({
           <div className="main-panel explore-panel ml-sheet">
             <div className="panel-heading">
               <button className="panel-back" onClick={close} aria-label={tr("Back to map")}><ArrowLeft size={20} /></button>
-              <div><h1>{sheet === "community" || sheet === "activity" ? tr("Community") : sheet === "inventory" ? tr("Inventory") : sheet === "atlas" ? tr("Shared atlas") : sheet === "materials" ? tr("Blocks") : sheet === "parcel" ? tr("Land and building") : tr("MetaLayer field guide")}</h1></div>
+              <div><h1>{sheet === "community" || sheet === "activity" ? tr("Community") : sheet === "inventory" ? tr("Inventory") : sheet === "atlas" ? tr("Shared atlas") : sheet === "materials" ? tr("Blocks") : sheet === "parcel" ? tr("Land and building") : sheet === "place" ? tr("MetaLayer") : tr("MetaLayer field guide")}</h1></div>
               <button className="panel-close" onClick={close} aria-label={tr("Close")}><X size={18} /></button>
             </div>
             {(sheet === "community" || sheet === "activity") && <ScreenTabs sticky={false} withPanel={false} label={tr("Community")} value={sheet === "activity" ? "proofs" : communityView}
@@ -636,6 +653,9 @@ export function Layer({
               onChange={view => { if (view === "proofs") setSheet("activity"); else { setCommunityView(view); setSheet("community"); } }} />}
             {notice && <p className="ml-sheet-error" role="alert">{notice}</p>}
             {sheet === "activity" && <LayerActivity layer={layer.id} />}
+            {sheet === "place" && progress && <PlacePanel id={place} progress={progress} position={position} busy={saving} demoActors={!!layer.demoActors}
+              onFace={facePlace} onPlace={openPlace} onStory={showQuests} onStart={() => void startQuest()} onInteract={body => interactRef.current(body)}
+              onObjective={faceObjective} onBuild={buildFreely} onActivity={() => setSheet("activity")} />}
             {sheet === "materials" && <div className="ml-palette" role="radiogroup" aria-label={tr("Blocks")}>{BUILD_BLOCKS.map(b => <button className="secondary-button" key={b} role="radio" aria-checked={block === b} aria-label={blockName(b)} onClick={() => { setBlock(b); close(); }}><span style={{ background: cssColor(b) }} /><span>{blockName(b)}</span></button>)}</div>}
             {sheet === "help" && (
               <>
@@ -673,6 +693,7 @@ export function Layer({
             {sheet === "community" && progress && <StoryBoard view={communityView} progress={progress} position={position} busy={saving}
               onStart={() => void startQuest()} onInteract={body => interactRef.current(body)} onFace={faceObjective}
               onBuild={buildFreely} onActivity={() => setSheet("activity")} />}
+            {sheet === "community" && communityView === "journal" && progress && <Details summary={tr("Places in this world")}><PlaceDirectory progress={progress} onPlace={openPlace} /></Details>}
             {sheet === "inventory" && (
               <>
                 <h2>{tr("Your resources")}</h2>
@@ -695,6 +716,7 @@ export function Layer({
                 <div className="ml-story-actions">
                   <button className="secondary-button ml-wide" onClick={() => setSheet("activity")}>{tr("Actions and NEAR proofs")}</button>
                   <button className="secondary-button ml-wide" onClick={() => setSheet("parcel")}>{tr("Land and building")}</button>
+                  <button className="secondary-button ml-wide" onClick={() => openPlace("treasury")}>{tr("MetaGold treasury")}</button>
                 </div>
               </>
             )}
@@ -788,6 +810,7 @@ export function Layer({
                 <p className="ml-coordinate">
                   {Math.round(mapCenter.x)}, {Math.round(mapCenter.z)}
                 </p>
+                {progress && <Details summary={tr("Places in this world")}><PlaceDirectory progress={progress} onPlace={openPlace} /></Details>}
               </>
             )}
             <div className="ml-preview-note"><span className="badge">{tr("Preview")}</span><InfoTip label={tr("MetaLayer")}>{tr("Play preview. MetaGold, XP rewards, parcel NFTs and onchain settlement await integration.")}</InfoTip></div>

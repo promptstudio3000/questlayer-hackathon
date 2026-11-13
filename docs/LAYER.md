@@ -13,7 +13,11 @@ centre. New explorers arrive on separate free spots of the protected crossing,
 so arrivals stay clear and player models remain readable. Cyan beams lead to Crystal Hollow and the Basalt Quarry. Both are part of
 the same landscape, visible to every explorer.
 
-Community opens the expedition board. Accept the first expedition, discover
+Keeper Nera stands beside the arrival path at 12.5, -6.5. The first objective points
+to her. Tap a visible guide or sign, press Enter when aiming at it, or use the
+nearby place action in the compact objective. Her greeting offers the expedition;
+if too far away, Face this place turns the explorer toward her. Community also
+opens the expedition board. Accept the first expedition, discover
 Crystal Hollow, then mine ten natural diamonds. An explorer who found the mine
 before accepting can start with the mining step. The backpack displays confirmed
 diamonds and basalt. Completion retains the resources and completes the objective;
@@ -32,6 +36,33 @@ Resources are kept: these chapter requirements do not spend currency or change
 an existing price, reward, fee or XP rule. The completion is a field-journal entry,
 not an NFT badge or a token award. The square and mines remain playable afterward.
 
+## Places players can find
+
+Ten authored places now have visible props and nearby actions. Quest boards stand
+at the cave, quarry, three signal stations, marker site and central beacon. They
+show that location's requirement, current chapter or a clear prerequisite. A later
+board never pretends its quest is active. The journal and expanded atlas contain
+a requested place directory with coordinates and personal discovery checks.
+
+Nera's **Meet the square** tour is independent of the five-chapter campaign: visit
+the treasury, Luma's workshop, Crystal Hollow and Spore Garden. Validated movement
+saves each personal visit once in `ml_actions` (`place-found`); rejected teleports
+and stale/invalid positions cannot create discoveries. These entries survive a
+restart and do not award money, XP or an item. Everyone still shares one atlas.
+
+The golden vault at -5.5, -5.5 is a visible **inactive MetaGold treasury**. Its status
+also opens from the backpack. It contains no funded coin drop and offers no
+spendable balance. This makes the missing financial integration discoverable
+without presenting a decorative coin as an earned asset.
+
+The local launcher explicitly sets `LAYER_DEMO_ACTORS=1`. Tavi walks near arrival,
+Luma visits the authored workshop and Omi explores the cave corridor. Each name
+includes **Demo**. These are cosmetic preview actors, not accounts or real online
+players; they never publish presence, edit blocks, consume resources or gain an
+asset. They do not affect the nearby-player count. Routes avoid occupied blocks;
+reduced motion freezes them. Without the explicit switch, the normal host renders
+the guide and place props with no demo explorers.
+
 MetaLayer inherits the current QuestLayer shell: `WorldSwitcher`, `Character`,
 HUD bubble, map settings flyout, `DemoControls` on the left, `MapActions` on the
 right, the existing navigation rail, `ScreenTabs` and native map dialogs. The app
@@ -41,7 +72,8 @@ No independent colour palette or navigation appearance is introduced.
 On phones, the shared atlas starts folded. Request it from Map settings, then tap
 the small minimap to expand the atlas. Tool switching and Jump live under Actions.
 Build opens the material picker on request; the held tool appears only in Build mode or when an aimed block is mineable. The default objective is a compact shared peek with its title and one short
-status line. Story details, journal and NEAR history stay in the Community panel.
+status line. A nearby place temporarily uses that same line and action, adding no
+permanent HUD panel. Story details, journal and NEAR history stay in requested sheets.
 
 The objective shows its target direction and distance in **blocks**. Its board
 keeps the current action, chapter progress and replayable journal together. Wrong
@@ -160,7 +192,8 @@ when restarting it. This launcher does not enable transaction submission or sign
 
 `tests/metalayer-expedition.test.mjs` checks shared discoveries, shared CAS edits,
 mining contention, duration, renewal, blocked/far/stale attempts, exact ten-diamond
-completion, reopening and separation from QuestLayer XP and items.
+completion, reopening, authored-place protection, idempotent personal visits and
+separation from QuestLayer XP and items.
 
 `npm run e2e:layer` uses the built App with two authenticated explorers and disposable
 loopback state. It exercises normal entry, quest acceptance, atlas controls, held
@@ -176,3 +209,9 @@ and checkpoint positions are explicit UI fixtures; the full campaign is separate
 verified through the authenticated store. The dormant proof form uses a capability
 fixture to check enlarged text, reduced keyboard space and preserved failed input.
 No UI fixture is a real NEAR transaction.
+
+`node scripts/e2e-metalayer-places.mjs` uses a fresh explorer with no state fixture.
+It walks through Nera, the treasury, workshop and cave using normal keyboard input,
+opens physical-place actions and a locked later chapter, then reloads the personal
+discoveries. `E2E_LANG=cs` repeats the same journey in Czech. Screenshots include
+360/390 portrait, short landscape and desktop. Real phone acceptance remains open.

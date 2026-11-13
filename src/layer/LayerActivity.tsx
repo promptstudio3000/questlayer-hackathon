@@ -15,6 +15,7 @@ const title = (kind: string) => ({
   "atlas-revealed": tr("Atlas tile discovered"), "signal-tuned": tr("Signal tuned"),
   "marker-built": tr("Trail marker built"), "marker-checked": tr("Trail marker checked"),
   "beacon-restored": tr("Beacon restored"),
+  "place-found": tr("World place discovered"),
 })[kind] || tr("World action");
 
 export function LayerActivity({ layer }: { layer: string }) {
