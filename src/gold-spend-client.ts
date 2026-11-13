@@ -22,6 +22,12 @@ export type Shop = {
   version: string;
   realm: "practice" | "qgold";
   balanceU: number;
+  /** QGOLD realm: false when the NEAR account could not be read just now. */
+  balanceKnown?: boolean;
+  /** QGOLD realm: collected on the map, minted by the next payout. */
+  pendingU?: number;
+  /** QGOLD realm: the player has a linked NEAR account. */
+  hasAccount?: boolean;
   emotes: ShopEmote[];
   cosmetics: ShopCosmetic[];
   gear: { perDay: number; boughtToday: number; items: GearItem[] };

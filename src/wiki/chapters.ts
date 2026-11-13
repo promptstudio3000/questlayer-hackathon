@@ -1011,7 +1011,7 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "fees",
     status: "partial",
-    updated: "2026-11-11",
+    updated: "2026-11-13",
     sources: ["docs/GOLD-SPENDING.md", "docs/TASK-MARKET.md", "docs/QGOLD-ESCROW.md", "docs/CREATOR-BONUS-VOTE.md", "server/data/creator-xp.json", "server/creators/creator-xp.mjs", "docs/NATIVE-TASK-ESCROW.md", "docs/NATIVE-TASKS-UI.md", "CREATOR-ECONOMY-PLAN.md", "server/data/gold-spend.json", "src/signing-vault/policy.ts", "src/GameMap.tsx"],
     blocks: [
       { h: "What QGOLD buys (every spend is a burn)" },
@@ -1023,6 +1023,7 @@ export const CHAPTERS: Chapter[] = [
           `Lures: ${GOLD.lures.minutes} minutes, GPS only, ${GOLD.lures.hours.join("–")}, at least ${GOLD.lures.spacingM} m apart, snapped to a safe place within ${GOLD.lures.poiSnapM} m. They attract actors and never change odds.`,
           "Place messages: paid shouts live up to 7 days; a topic with posts from 6 distinct authors becomes free and is archived after 90 days without activity.",
           "Every spend calls `ft_burn` from your own account (sponsored, no pop-up), the server verifies it on chain, and only then the purchase happens. One saved reference follows each purchase from quote to delivery; retries return the saved result.",
+          "The shop spends QGOLD that is already on your NEAR account (\"Ready to spend\"); coins collected on the map show as \"on the way\" until the next payout. With several linked accounts the one holding the most QGOLD pays. A card you cannot buy yet says why under its price (\"Arrives soon\", \"1,500 more needed\"); if the balance cannot be read the buttons stay usable and the burn checks on chain.",
         ],
       },
       { h: "Tasks, Secrets and conditional sends" },

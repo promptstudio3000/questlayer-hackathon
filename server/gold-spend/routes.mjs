@@ -70,15 +70,31 @@ export function createGoldSpendRoutes(
     short.details = { needU, haveU, purchaseReleased: id };
     throw short;
   }
+  // The linked NEAR account that holds the most QGOLD pays (a player can
+  // link a second wallet, and the newest link may still be empty).
+  async function spendable(player) {
+    if (qgold.spendable) return qgold.spendable(player);
+    return { accountId: qgold.accountIds(player)[0] ?? null, balanceU: await qgold.balanceU(player) };
+  }
   async function withBalance(player, view) {
     if (!onChain()) return view;
-    let balanceU = 0;
+    let balanceU = 0,
+      balanceKnown = true,
+      accountId = qgold.accountIds(player)[0] ?? null;
     try {
-      balanceU = await qgold.balanceU(player);
+      ({ balanceU, accountId } = await spendable(player));
     } catch {
-      /* the shop still opens; the burn itself checks the balance on chain */
+      // The shop still opens and the buttons stay usable: the burn itself
+      // checks the balance on chain.
+      balanceKnown = false;
     }
-    return { ...view, realm: "qgold", balanceU };
+    let pendingU = 0;
+    try {
+      pendingU = Math.max(0, Number(qgold.pendingU?.(player)) || 0);
+    } catch {
+      /* nothing on the way is shown */
+    }
+    return { ...view, realm: "qgold", balanceU, balanceKnown, pendingU, hasAccount: !!accountId };
   }
   function limit(key, max, assert) {
     const k = `${key}:${Math.floor(Date.now() / 60_000)}`,
@@ -114,7 +130,11 @@ export function createGoldSpendRoutes(
         const i = await body(req);
         const pending = purchaseRow(db, player, i.purchaseId);
         const accounts = qgold.accountIds(player);
-        const accountId = pending.account_id ?? accounts[0] ?? null;
+        let accountId = pending.account_id ?? null;
+        if (!accountId) {
+          try { accountId = (await spendable(player)).accountId; } catch { /* fall back to the newest link */ }
+          if (!accounts.includes(accountId)) accountId = accounts[0] ?? null;
+        }
         assert(accounts.includes(accountId), "This purchase account is not linked.", 403, "BURN_SIGNER");
         if (pending.relay_job_id && pending.state === "prepared") {
           const job = db.prepare("SELECT transaction_hash,state FROM relay_jobs WHERE id=?").get(pending.relay_job_id);

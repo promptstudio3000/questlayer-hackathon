@@ -102,7 +102,7 @@ do not change and the first player to win takes it under the usual rules.
 
 ## UI
 
-- Inventory → **Shop** tab: balance, emotes, frames, lures, the gear list.
+- Inventory → **Shop** tab: balance ("Ready to spend" on the NEAR account, plus QGOLD on the way with the next payout), emotes, frames, lures, the gear list. A card that cannot be bought yet says why under its price (`src/gold-shop-reason.ts`): no NEAR account, "Arrives soon" (the payout covers it) or how much more is needed. If the balance read fails the buttons stay usable; the burn checks on chain. The linked account with the most QGOLD pays.
 - Map toolbar → **Emotes** button: quick picker of owned emotes.
 - Trader sheet: premium gear buttons.
 - Community → **Places** tab: compose, feed, topic view with replies.
