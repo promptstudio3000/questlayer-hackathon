@@ -89,7 +89,7 @@ export const TOUR_STEPS = Object.freeze([
   { id: "task", chapter: "community", target: { kind: "action", action: "task" }, say: "Post a task with a QGOLD reward.", next: "The reward waits in escrow until it's done.", done: (db, p) => one(db, "SELECT 1 FROM mk_tasks WHERE poster=? LIMIT 1", p) },
   { id: "wave", chapter: "people", target: { kind: "actor", role: "companion" }, say: "Wave at Ondra, who walks with you.", next: "Waves are quick hellos between explorers.", done: (db, p) => one(db, "SELECT 1 FROM player_waves WHERE from_id=? LIMIT 1", p) },
   { id: "message", chapter: "people", target: { kind: "actor", role: "companion" }, say: "Send Ondra a message.", next: "Between real explorers, messages are encrypted on NEAR.", done: any(relay(["set"], '%inbox%'), mark("message")) },
-  { id: "stake", chapter: "stake", target: { kind: "screen", screen: "stake" }, say: "Stake at the Gate Keeper.", next: "Your stake earns a share of the daily yield.", done: relay(["create_position", "deposit_and_stake"]) },
+  { id: "stake", chapter: "stake", target: { kind: "actor", role: "keeper" }, say: "Stake at the Gate Keeper.", next: "Your stake earns a share of the daily yield.", done: relay(["create_position", "deposit_and_stake"]) },
   { id: "vote", chapter: "stake", target: { kind: "screen", screen: "treasury" }, say: "Vote on the treasury mix.", next: "Stakers decide where the treasury earns.", done: relay(["act_proposal"]) },
 ]);
 export const TOUR_CHAPTERS = Object.freeze(["start", "npcs", "monsters", "trade", "community", "people", "stake"]);

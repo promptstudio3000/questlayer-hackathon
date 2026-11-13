@@ -27,7 +27,6 @@ import {
   GasWatch,
   ChainSettings,
   WalletPanel,
-  FundPanel,
   AutoSocialProfile,
   ChainLink,
   CreatorCommunity,
@@ -43,7 +42,7 @@ import {
   NativeMarketPanel,
   MarketBoard,
   NativeExpeditions,
-  NativeEconomyPanel,
+  GameEconomy,
   RewardFundingPage,
   TodaysPot,
   PotRow,
@@ -1092,7 +1091,10 @@ export default function App() {
     else if (t.kind === "coin") goToStreetFind(t.coin);
     else notify(t.text, true);
   }
-  function showActor(match: ActorFocusMatch) {
+  // `missing` runs when nobody like that is out nearby (e.g. the tour's keeper outside reviewed cities).
+  const actorMissing = useRef<(() => void) | undefined>(undefined);
+  function showActor(match: ActorFocusMatch, missing?: () => void) {
+    actorMissing.current = missing;
     setOverview(false);
     setSheetExpanded(false);
     setActorFocus({ revision: Date.now(), match });
@@ -3824,7 +3826,10 @@ export default function App() {
     } else if (t.kind === "actor") {
       // The walking companion bot of the Test Layer (server/test-seed): its card has Wave and Message.
       if (t.role === "companion") setCardPlayer(TOUR_COMPANION);
-      else if (TOUR_ACTORS[t.role]) showActor({ kinds: TOUR_ACTORS[t.role] });
+      else if (TOUR_ACTORS[t.role]) {
+        setTab("explore");
+        showActor({ kinds: TOUR_ACTORS[t.role] }, t.role === "keeper" ? () => { setTab("fund"); setSheetExpanded(true); } : undefined);
+      }
       else { setTab("community"); setSheetExpanded(true); }
     } else if (t.kind === "screen") {
       const tabs: Record<string, Tab> = { inventory: "inventory", market: "market", shop: "shop", stake: "fund", treasury: "fund" };
@@ -3885,6 +3890,17 @@ export default function App() {
         }[tab] ||
         "QuestLayer";
   const nearbyHome = tab === "explore" && !detailZone && !nativePlay;
+  // One stake form in three places: Profile → Stake, Game economy and the Gate Keeper's dialog.
+  const stakeProps = player && {
+    player,
+    account: invisible.status === "ready" && invisible.accountId ? invisible.accountId : player.wallets[0]?.account_id || "",
+    managed: invisible.status === "ready" && !!invisible.accountId,
+    explorerStatus: invisible.status,
+    cityName: world?.cityName,
+    onConnect: activateExplorer,
+    onLinkWallet: () => connectNear(),
+    onTransaction: operateNativeVault,
+  };
   return (
     <div
       className={`app-shell${player && tab !== "explore" ? " sheet-open" : ""}${player && mapFullOn ? " map-full" : ""}${player && !hudReady ? " hud-loading" : ""}`}
@@ -4011,7 +4027,12 @@ export default function App() {
           actorReports={npcTasks && npcTasks.worldId === world?.id ? npcTasks.tasks.filter((t) => t.ready).map((t) => t.actorId) : []}
           actorFocus={actorFocus}
           pointTarget={pointTarget}
-          onActorFocus={(text, found) => notify(text, !found)}
+          onActorFocus={(text, found) => {
+            const missing = actorMissing.current;
+            actorMissing.current = undefined;
+            if (!found && missing) missing();
+            else notify(text, !found);
+          }}
           marketPins={MAP_DIALOG_PINS && !!player && !arena && !nativePlay}
           onMarketPin={() => {
             setTab("explore");
@@ -5044,30 +5065,11 @@ export default function App() {
           )}
           {tab === "fuel" && (
             <ScreenTabPanel idBase="profile" value="stake">
-              <FuelTheCity
-                player={player}
-                account={
-                  invisible.status === "ready" && invisible.accountId
-                    ? invisible.accountId
-                    : player.wallets[0]?.account_id || ""
-                }
-                managed={invisible.status === "ready" && !!invisible.accountId}
-                explorerStatus={invisible.status}
-                cityName={world?.cityName}
-                onConnect={activateExplorer}
-                onLinkWallet={() => connectNear()}
-                onTransaction={operateNativeVault}
-              />
+              <FuelTheCity {...stakeProps!} />
             </ScreenTabPanel>
           )}
           {tab === "fund" && (
-            <>
-              <NativeEconomyPanel />
-              <details className="play-details">
-                <summary>{tr("Practice economy simulation")}</summary>
-                <FundPanel />
-              </details>
-            </>
+            <GameEconomy {...stakeProps!} />
           )}
           {tab === "community" && (
             <ScreenTabPanel idBase="community" value={communityTab}>
@@ -5582,6 +5584,7 @@ export default function App() {
             showActor({ actorId: id });
           }}
           onClose={() => setActorOpen(null)}
+          keeperPanel={actorOpen.archetype === "keeper" && stakeProps ? <GameEconomy {...stakeProps} /> : undefined}
         />
       )}
       {showNpc && (

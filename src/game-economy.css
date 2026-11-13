@@ -1,0 +1,107 @@
+/* Game economy dialog (13 Nov 2026): four small pictures, then the stake form. Lazy chunk. */
+.game-eco { display: grid; gap: 10px; }
+.game-eco-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.game-eco-steps li {
+  display: grid;
+  grid-template-columns: 56px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 18px;
+  background: var(--surface-soft, #f2ebff);
+}
+.game-eco-art {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(160deg, #3a1a7a, #1d0f4a);
+}
+.game-eco-collect .game-eco-art { background: linear-gradient(160deg, #6a3a12, #3a1a7a); }
+.game-eco-stake .game-eco-art { background: linear-gradient(160deg, #245a6a, #1d0f4a); }
+.game-eco-unlock .game-eco-art { background: linear-gradient(160deg, #7a1a6a, #1d0f4a); }
+.game-eco-art > i {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  color: #2a0f5c;
+  font-style: normal;
+  font-size: 11px;
+  font-weight: 800;
+}
+.game-eco .game-eco-art img { width: 52px; height: 52px; object-fit: contain; }
+.game-eco .game-eco-art .game-object-art { width: 40px; height: 40px; }
+.game-eco-art .ghost-art { position: relative; width: 34px; height: 42px; }
+.game-eco-art .ghost-art img { width: 100%; height: 100%; }
+.game-eco-streets { position: absolute; inset: 0; width: 100%; height: 100%; }
+.game-eco-streets path { fill: none; stroke: #7d5bd6; stroke-width: 5; stroke-linecap: round; opacity: 0.7; }
+.game-eco-pin { position: absolute; right: 6px; top: 8px; color: #ff5fd2; }
+.game-eco-lock { position: absolute; right: 8px; bottom: 8px; color: #ffd76a; }
+.game-eco .game-eco-art .game-eco-coin { position: absolute; right: 5px; top: 8px; width: 24px; height: 24px; }
+.game-eco .game-eco-art .game-eco-coin.two { right: auto; left: 22px; top: 4px; width: 18px; height: 18px; }
+.game-eco-copy { display: grid; gap: 2px; font-size: 13px; line-height: 1.3; color: var(--ink-secondary); }
+.game-eco-copy b { font-size: 16px; color: var(--ink); }
+@media (min-width: 760px) {
+  .game-eco-steps { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .game-eco-steps li { grid-template-columns: 1fr; justify-items: center; text-align: center; padding: 12px 10px; }
+  .game-eco-art { width: 88px; height: 88px; }
+  .game-eco .game-eco-art img { width: 80px; height: 80px; }
+  .game-eco .game-eco-art .game-object-art { width: 56px; height: 56px; }
+  .game-eco .game-eco-art .game-eco-coin { width: 30px; height: 30px; }
+  .game-eco .game-eco-art .game-eco-coin.two { width: 22px; height: 22px; left: 26px; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .game-eco-coin { animation: game-eco-bob 2.4s ease-in-out infinite; }
+  .game-eco-coin.two { animation-delay: 0.6s; }
+  @keyframes game-eco-bob { 50% { transform: translateY(-4px); } }
+}
+/* Inside the keeper's dialog the cards stay two per row. */
+.npc-vault .game-eco-steps { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.npc-vault .game-eco-steps li { grid-template-columns: 56px minmax(0, 1fr); justify-items: start; text-align: start; padding: 6px; }
+.npc-vault .game-eco-art { width: 56px; height: 56px; }
+.npc-vault .game-eco .game-eco-art img { width: 52px; height: 52px; }
+.npc-vault .game-eco .game-eco-art .game-object-art { width: 40px; height: 40px; }
+.npc-vault .game-eco .game-eco-art .game-eco-coin { width: 24px; height: 24px; }
+.npc-vault .game-eco .game-eco-art .game-eco-coin.two { width: 18px; height: 18px; left: 22px; }
+
+/* Tier choice above the Stake button (also on Profile → Stake). */
+.fuel-tiers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fuel-tiers button {
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  min-height: 60px;
+  padding: 8px 4px;
+  border: 2px solid var(--decorative-border, #d7cbe9);
+  border-radius: 16px;
+  background: var(--surface-raised, #fff);
+  font: inherit;
+  color: var(--ink);
+  cursor: pointer;
+}
+.fuel-tiers button b { font-size: 15px; }
+.fuel-tiers button span { font-size: 13px; font-weight: 600; color: var(--ink-secondary); }
+.fuel-tiers button[aria-checked="true"] { border-color: var(--action, #672eeb); background: var(--surface-soft, #f2ebff); }
+.fuel-tiers button[aria-checked="true"] span { color: var(--action, #672eeb); }
+.fuel-tiers button:disabled { cursor: default; opacity: 0.6; }
+/* The dialog fits a phone screen: the pictures say what the three numbers and the long story say on Profile → Stake. */
+.game-eco .fuel { display: grid; gap: 10px; }
+.game-eco .fuel > * { margin: 0; }
+.game-eco .tier-card-numbers { display: none; }
+.game-eco .tier-card { padding: 12px; }

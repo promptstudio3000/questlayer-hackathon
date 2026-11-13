@@ -11,6 +11,7 @@ import { prefersReducedMotion } from "./feedback";
 import { tr } from "./i18n";
 import type { StakeCard } from "./StakeToday";
 import { formatGold } from "./gold-units";
+import { qgoldOfNear } from "./qgold-display";
 import "./profile-journey.css";
 import "./stake-story.css";
 
@@ -314,7 +315,7 @@ export function StakeWallet({ refreshKey, staked }: { refreshKey: string; staked
           <dt>
             <Flame size={14} weight="duotone" aria-hidden="true" /> {tr("From your stake")}
           </dt>
-          <dd>{kept === null ? "–" : `${kept.toLocaleString("en-US", { maximumFractionDigits: 3 })} NEAR`}</dd>
+          <dd>{kept === null ? "–" : `${qgoldOfNear(kept)} QGOLD`}</dd>
         </div>
       )}
     </dl>
