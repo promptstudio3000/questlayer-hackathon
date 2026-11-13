@@ -447,7 +447,8 @@ export default function App() {
     // Test Layer or QuestLayer World (docs/TEST-LAYER.md).
     [gameLayer, setGameLayer] = useState<GameLayerConfig | null>(null),
     [pipHidden, setPipHidden] = useState(false),
-    [tourRunning, setTourRunning] = useState(false);
+    [tourRunning, setTourRunning] = useState(false),
+    [inventoryFocus, setInventoryFocus] = useState<{ mode: "wear" | "sell"; revision: number } | null>(null);
   useEffect(() => {
     void api<{ layer?: { layers?: PublicLayer[] } | null; gameLayer?: GameLayerConfig | null }>("/config")
       .then((c) => {
@@ -1115,6 +1116,8 @@ export default function App() {
   }
   // `missing`: with nobody like that out nearby, open Game economy (the tour's keeper outside reviewed cities).
   const actorMissing = useRef(false);
+  // Kinds to try next when the first choice is not out (the tour's monster step).
+  const actorFallback = useRef<string[] | null>(null);
   function showActor(match: ActorFocusMatch, missing = false) {
     actorMissing.current = missing;
     setOverview(false);
@@ -3698,7 +3701,8 @@ export default function App() {
     if (lockedHereId === lockedShown.current) return;
     lockedShown.current = lockedHereId;
     const zone = lockedHereId ? world?.zones.find((z) => z.id === lockedHereId) : null;
-    if (zone) setLockedZoneDialog(zone);
+    // The guided tour never asks for a stake in passing.
+    if (zone && !tourRunning) setLockedZoneDialog(zone);
   }, [lockedHereId, world]);
   const recommendation = world
     ? nearestDiscovery({
@@ -3857,7 +3861,8 @@ export default function App() {
   };
   // Guided tour (docs/GUIDED-TOUR.md): where a step points, and how to open it.
   const TOUR_COMPANION = "seed-p-ondra";
-  const TOUR_ACTORS: Record<string, string[]> = { "quest-giver": ["quest_giver"], monster: ["roamer", "guardian", "boss"], trader: ["trader"], keeper: ["keeper"] };
+  // A plain roaming Lickquidator first: guardians and the boss are harder (GameMap picks the nearest of the kinds).
+  const TOUR_ACTORS: Record<string, string[]> = { "quest-giver": ["quest_giver"], monster: ["roamer"], trader: ["trader"], keeper: ["keeper"] };
   function tourQuest(kind: string) {
     let best: Quest | null = null;
     for (const q of world?.quests || []) {
@@ -3866,9 +3871,32 @@ export default function App() {
     }
     return best;
   }
+  // The tour never leads into a zone the explorer cannot enter yet.
+  function tourCoin(find: boolean) {
+    const tier = player?.tier || 1;
+    const lockedZones = (world?.zones || []).filter((z) => z.tier > tier);
+    let best: World["coins"][number] | null = null;
+    for (const c of world?.coins || []) {
+      if (c.claimant || !!c.find !== find) continue;
+      if (lockedZones.some((z) => zoneInteriorMargin(z, c) !== null)) continue;
+      if (!best || meters(position, c) < meters(position, best)) best = c;
+    }
+    return best ?? nearestCoin(find);
+  }
+  // Pip hears about a finished step at once: any change to the explorer's record re-reads the tour.
+  const tourPulse = player ? `${player.xp}:${player.gold_u}:${player.inventory.length}:${player.inventory.filter((i) => i.equipped).length}` : "";
+  useEffect(() => {
+    if (tourPulse && gameLayer?.tour) window.dispatchEvent(new Event("questlayer:tour-refresh"));
+  }, [tourPulse, gameLayer?.tour]);
+  // A new step starts clean: the last step's route and arrow go away.
+  function clearTourGuidance() {
+    setDemoTarget(null);
+    setStreetFindTarget(null);
+    setPointTarget(null);
+  }
   function tourResolve(t: TourTarget) {
     if (t.kind === "coin" || t.kind === "find") {
-      const c = nearestCoin(t.kind === "find");
+      const c = tourCoin(t.kind === "find");
       return c ? { lat: c.lat, lng: c.lng, label: t.kind === "find" ? tr("Street find") : undefined } : null;
     }
     if (t.kind === "quest") {
@@ -3878,29 +3906,40 @@ export default function App() {
     // Characters walk: "Show me" focuses the map on the nearest one instead of a fixed arrow.
     return null;
   }
-  function tourGo(t: TourTarget) {
+  function tourGo(t: TourTarget, stepId?: string) {
     if (t.kind === "coin" || t.kind === "find") {
-      const c = nearestCoin(t.kind === "find");
+      const c = tourCoin(t.kind === "find");
       if (c) goToStreetFind(c);
       else notify(t.kind === "find" ? tr("No street find is left near you today.") : tr("No coin is left near you right now. More appear in the next wave."), true);
     } else if (t.kind === "quest") {
       const q = tourQuest(t.quest);
       if (q) guideToQuest(q);
-      else void showGoal("quest");
+      else notify(tr("Nothing like that is open near you right now. You can skip this step."), true);
     } else if (t.kind === "actor") {
       // The walking companion bot of the Test Layer (server/test-seed): its card has Wave and Message.
-      if (t.role === "companion") setCardPlayer(TOUR_COMPANION);
-      else if (TOUR_ACTORS[t.role]) {
+      if (t.role === "companion") {
+        // The message step opens the chat itself; the wave step opens his card.
+        if (stepId === "message") window.dispatchEvent(new CustomEvent("questlayer:inbox-open" /* INBOX_OPEN_EVENT, src/inbox/Inbox.tsx (lazy) */, { detail: { playerId: TOUR_COMPANION, name: "Ondra" } }));
+        else setCardPlayer(TOUR_COMPANION);
+      } else if (TOUR_ACTORS[t.role]) {
         setTab("explore");
+        actorFallback.current = t.role === "monster" ? ["roamer", "guardian", "boss"] : null;
         showActor({ kinds: TOUR_ACTORS[t.role] }, t.role === "keeper");
       }
       else { setTab("community"); setSheetExpanded(true); }
     } else if (t.kind === "screen" && t.screen === "treasury") {
       setTreasuryVoteOpen(true);
+      // Looking at the vote finishes the step: voting itself opens at level 3.
+      void api("/tour", { action: "seen", step: "vote" })
+        .then(() => window.dispatchEvent(new Event("questlayer:tour-refresh")))
+        .catch(() => {});
     } else if (t.kind === "screen") {
-      const tabs: Record<string, Tab> = { inventory: "inventory", rolls: "inventory", market: "market", shop: "shop", stake: "fund" };
+      const tabs: Record<string, Tab> = { inventory: "inventory", rolls: "inventory", sell: "inventory", market: "market", shop: "shop", stake: "fund" };
       setTab(tabs[t.screen] || "explore");
       setSheetExpanded(true);
+      // Wearing and selling start in an Aura's own card: open it.
+      if (t.screen === "inventory" || t.screen === "sell")
+        setInventoryFocus({ mode: t.screen === "sell" ? "sell" : "wear", revision: Date.now() });
       // The wisp roll sits in the open in Inventory while there is a ticket: scroll to it.
       if (t.screen === "rolls")
         window.setTimeout(() => {
@@ -4161,7 +4200,11 @@ export default function App() {
           actorFocus={actorFocus}
           pointTarget={pointTarget}
           onActorFocus={(text, found) => {
-            if (!found && actorMissing.current) {
+            if (!found && actorFallback.current) {
+              const kinds = actorFallback.current;
+              actorFallback.current = null;
+              showActor({ kinds });
+            } else if (!found && actorMissing.current) {
               setTab("fund");
               setSheetExpanded(true);
             } else notify(text, !found);
@@ -4557,7 +4600,7 @@ export default function App() {
                 >
                   {tr("New discoveries open with the next day. Coins on the streets still count while you walk.")}</EmptyState>
               )}
-              {showObjective("find") && !coachStep &&
+              {showObjective("find") && !coachStep && !tourRunning &&
                 recommendedFind &&
                 !nativeTarget &&
                 !adventureNotice &&
@@ -4584,7 +4627,7 @@ export default function App() {
                   </button>
                   </div>
                 )}
-              {showObjective("quest") && !coachStep &&
+              {showObjective("quest") && !coachStep && !tourRunning &&
                 recommended &&
                 recommendedZone &&
                 !nativeTarget &&
@@ -4711,6 +4754,7 @@ export default function App() {
                     />
                   ) : undefined
                 }
+                tourFocus={inventoryFocus}
                 rolls={
                   <WispRolls
                     accountId={
@@ -5324,8 +5368,11 @@ export default function App() {
               </button>
             </div>
           )}
-          {tab === "explore" && !globe && gameLayer?.tour && player && (
+          {!globe && gameLayer?.tour && player && (
             <TourHelper
+              onMap={tab === "explore"}
+              balance={wallet && !(wallet.realm === "qgold" && wallet.balanceKnown === false) ? wallet.balanceU : null}
+              onStep={clearTourGuidance}
               position={position}
               heading={arena && !nativePlay ? demoWalk.heading : (gpsCourse ?? undefined)}
               resolve={tourResolve}

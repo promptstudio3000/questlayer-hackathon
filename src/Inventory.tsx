@@ -186,6 +186,7 @@ export function Inventory({
   nativeContent,
   nativeExtras,
   rolls,
+  tourFocus,
   adventureResults,
   busy,
   onEquip,
@@ -216,6 +217,8 @@ export function Inventory({
   nativeExtras?: ReactNode;
   /** The wisp roll: shown in the open, above the folds, while there is a ticket. */
   rolls?: ReactNode;
+  /** The guided tour opens an Aura's card: one to wear, or one that can be sold. */
+  tourFocus?: { mode: "wear" | "sell"; revision: number } | null;
   adventureResults?: ReactNode;
   busy: string;
   onEvm: () => Promise<void>;
@@ -378,6 +381,14 @@ export function Inventory({
     setSelling(false);
     setListingError("");
   };
+  const tourRevision = tourFocus?.revision;
+  useEffect(() => {
+    if (!tourFocus) return;
+    const auras = entries.filter((e) => e.type === "aura" || e.type === "secured");
+    const pick = tourFocus.mode === "sell" ? auras.find((e) => !e.worn) ?? auras[0] : auras.find((e) => !e.worn) ?? auras[0];
+    if (pick) openItem(pick.key);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tourRevision]);
   const closeItem = () => {
     setSelectedKey(null);
     setSelling(false);
