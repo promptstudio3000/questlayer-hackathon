@@ -164,7 +164,7 @@ walkable public square or park). For each one the worker:
 1. downloads the smallest public extract that contains it (BBBike city extract,
    download.openstreetmap.fr, or Geofabrik for Bolivia and Taiwan), skipping the
    download when Last-Modified/ETag are unchanged;
-2. cuts an 8 × 8 km clip (`osmium extract -s smart`, `clipOsm`), keeps only the
+2. cuts an 8 × 8 km clip (`osmium extract -s simple`, `clipOsm`, about 2 GB peak), keeps only the
    clip and deletes the source extract;
 3. runs the same osmium filters as a country (`osm-city-<id>-*.geojsonseq`), so the
    places, paths and exclusions go into the same `current.sqlite`. No Overture
@@ -176,8 +176,23 @@ server answers a cell abroad from the file when the file mapped it
 (`hasCell`), otherwise from live Overpass as before. Auto city rules are
 unchanged: unverified notice, zone gold 0, coins from the global daily budget.
 
-`WORLD_CITIES` picks the set: `demo` (default, all), `off`, `wave1`..`wave3` or
-ids. A city whose source fails is skipped and reported in `last-run.json`
+Wave 4 (`scripts/poi/demo-capitals.json`, 289 entries) adds the capital of
+every country (GeoNames `PPLC`, largest per country; RU, KP, IR left out like
+the launch scope, Czechia comes from the country import), the capital of every
+US state (Denver is already a demo city) and the main city of split capitals
+(La Paz, Abidjan, Dar es Salaam, Cotonou, Malabo, Cape Town, Johannesburg,
+Tel Aviv, Jerusalem, Ramallah, Yangon, Istanbul, Almaty, Karachi, Casablanca,
+São Paulo, Rio de Janeiro). A review moved seven centres to the walkable
+centre (Jakarta, Astana, Muscat, Brasília; Kolonia for Palikir, Koror for
+Ngerulmud, Brades for Plymouth). Capital clips are 6 × 6 km. The source is the
+smallest BBBike or openstreetmap.fr extract whose published polygon holds the
+clip (up to 600 MB), otherwise `geofabrik:auto`: on the VPS the worker reads
+Geofabrik's `index-v1.json` (cached 7 days) and takes the smallest extract
+that holds the clip (`scripts/poi/geofabrik-index.mjs`). A clip younger than
+`DEMO_CITY_REFRESH_DAYS` (28) is reused without contacting its source.
+
+`WORLD_CITIES` picks the set: `demo` (default, all), `off`, `wave1`..`wave4`,
+`capitals` or ids. A city whose source fails is skipped and reported in `last-run.json`
 (`demoCities.skipped`); its previous clip stays in use. The version gets
 `-c<count>`. After a deploy, `scripts/vps-activate-release.sh` starts one worker
 run when the release lacks a listed city (`scripts/poi/demo-cities-stale.mjs`).

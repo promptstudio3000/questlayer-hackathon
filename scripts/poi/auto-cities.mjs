@@ -100,11 +100,12 @@ export function selectAutoCities(
     minPopulation = AUTO_MIN_POPULATION,
     reviewed = [],
     pinned = [],
+    reservedIds = [],
   } = {},
 ) {
   const wanted = new Set(countries.map((c) => c.toUpperCase())),
     reviewedIds = new Set(reviewed.map((r) => r.id)),
-    used = new Set(reviewedIds),
+    used = new Set([...reviewedIds, ...reservedIds]),
     cities = [],
     skipped = [];
   // Demo cities (demo-cities.mjs) come first with their own clip box; they
@@ -459,6 +460,7 @@ export async function buildAutoCityPacks({
   firstDay = new Date().toISOString().slice(0, 10),
   zonesFor = null,
   pinned = [],
+  reservedIds = [],
   log = () => {},
 }) {
   if (!/^[a-z0-9][a-z0-9.-]{0,80}$/.test(version || ""))
@@ -468,6 +470,7 @@ export async function buildAutoCityPacks({
     minPopulation,
     reviewed,
     pinned,
+    reservedIds,
   });
   log(`auto cities: ${cities.length} selected, ${skipped.length} skipped`);
   const bins = await binFeatures(cities, sources, {
@@ -577,6 +580,44 @@ export async function buildAutoCityPacks({
     cities: perCity,
   };
   return { packs, report };
+}
+
+/** One { packs, report } from several builds (demo cities, then countries). */
+export function combineBuilds(parts, version) {
+  if (parts.length === 1) return parts[0];
+  const packs = parts.flatMap((p) => p.packs),
+    cities = parts.flatMap((p) => p.report.cities),
+    published = cities.filter((c) => c.published),
+    zoneDays = published.flatMap((c) => c.zonesPerDay),
+    last = parts.at(-1)?.report || {};
+  return {
+    packs,
+    report: {
+      schema: "questlayer.auto-city-report/1",
+      version,
+      builder: AUTO_CITY_BUILDER_VERSION,
+      countries: [...new Set(parts.flatMap((p) => p.report.countries))],
+      minPopulation: last.minPopulation,
+      sampleDays: last.sampleDays,
+      selected: parts.reduce((n, p) => n + p.report.selected, 0),
+      published: published.length,
+      notPublished: parts.flatMap((p) => p.report.notPublished),
+      skipped: parts.flatMap((p) => p.report.skipped),
+      emptySectors: published.reduce((n, c) => n + c.emptySectors.length, 0),
+      sectorSlots: published.length * SECTOR_COUNT,
+      zones: zoneDays.length
+        ? {
+            min: Math.min(...zoneDays),
+            max: Math.max(...zoneDays),
+            mean:
+              Math.round(
+                (zoneDays.reduce((a, b) => a + b, 0) / zoneDays.length) * 100,
+              ) / 100,
+          }
+        : null,
+      cities,
+    },
+  };
 }
 
 export function indexFor(packs, version) {
@@ -698,29 +739,55 @@ export async function runAutoCities({
     id: c.id,
     coverage: c.coverage,
   }));
-  const stream = (kind) =>
-    (async function* () {
-      for (const r of regionIds)
-        yield* readJsonLines(`${workDir}/osm-${r}-${kind}.geojsonseq`);
-    })();
-  const version = `${manifest.version}-a${AUTO_CITY_BUILDER_VERSION}`;
-  const built = await buildAutoCityPacks({
-    rows,
-    sources: {
+  const streamsFor = (ids) => {
+    const stream = (kind) =>
+      (async function* () {
+        for (const r of ids)
+          yield* readJsonLines(`${workDir}/osm-${r}-${kind}.geojsonseq`);
+      })();
+    return {
       pois: stream("pois"),
       paths: stream("paths"),
       exclusions: stream("exclusions"),
-    },
+    };
+  };
+  const version = `${manifest.version}-a${AUTO_CITY_BUILDER_VERSION}`;
+  const common = {
     reviewed,
-    countries: countries || countryIds.map((r) => r.toUpperCase()),
-    pinned,
     minPopulation,
     version,
     importedAt: manifest.builtAt || new Date().toISOString(),
-    sampleDays,
     zonesFor: (pack, day) => buildCityZones(pack, day).length,
     log,
-  });
+  };
+  const parts = [];
+  // Demo cities one at a time, each from its own clip only: memory stays at
+  // one city's paths (300 cities in one bin set needed several GB). Three
+  // sample days keep the report honest at a third of the planner time.
+  for (const city of pinned)
+    parts.push(
+      await buildAutoCityPacks({
+        ...common,
+        rows: [],
+        sources: streamsFor([city.id]),
+        countries: [],
+        pinned: [city],
+        sampleDays: Math.min(sampleDays, 3),
+      }),
+    );
+  const pinnedIds = pinned.map((c) => c.cityId);
+  if (countryIds.length)
+    parts.push(
+      await buildAutoCityPacks({
+        ...common,
+        rows,
+        sources: streamsFor(countryIds),
+        countries: countries || countryIds.map((r) => r.toUpperCase()),
+        reservedIds: pinnedIds,
+        sampleDays,
+      }),
+    );
+  const built = combineBuilds(parts, version);
   const { dir, index } = publishAutoCities(workDir, built, version);
   writeFileSync(
     `${dir}/manifest.json`,

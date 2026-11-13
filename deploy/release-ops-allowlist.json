@@ -1,5 +1,5 @@
 {
-  "_doc": "VPS release runner allowlist (docs/VPS-RELEASE-RUNNER.md). Installed from main only. execute: the flag the runner adds after a read-only plan run, or null for scripts that act directly. wasm: an upgrade must name its reviewed wasm and sha256. contracts: build contracts/target reproducibly first. env: the only variables an operation may set. keyDirs: where installKeys may copy key files. runtimeEnv: the only runtime.env keys an operation may set, per service (non-secret values). deployTargets: services besides World that a job with deployTarget builds and activates (keys and runtimeEnv are installed first).",
+  "_doc": "VPS release runner allowlist (docs/VPS-RELEASE-RUNNER.md). Installed from main only. execute: the flag the runner adds after a read-only plan run, or null for scripts that act directly. wasm: an upgrade must name its reviewed wasm and sha256. contracts: build contracts/target reproducibly first. env: the only variables an operation may set. keyDirs: where installKeys may copy key files. runtimeEnv: the only runtime.env keys an operation may set, per service (non-secret values). deployTargets: services besides World that a job with deployTarget builds and activates (keys and runtimeEnv are installed first). startUnits: oneshot units a job with startUnit may start as root (--no-block), nothing else.",
   "scripts": {
     "scripts/upgrade-collectibles-editions-testnet.mjs": {
       "execute": "--execute",
@@ -275,5 +275,8 @@
         "port": 7094
       }
     }
-  }
+  },
+  "startUnits": [
+    "questlayer-poi"
+  ]
 }
