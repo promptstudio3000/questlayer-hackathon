@@ -19,6 +19,10 @@ CREATE TABLE IF NOT EXISTS ml_payouts(
 );
 CREATE INDEX IF NOT EXISTS ml_payouts_due ON ml_payouts(status,next_at);
 CREATE INDEX IF NOT EXISTS ml_payouts_player ON ml_payouts(layer,player_id);
+` });
+// Parcel owners read from the contract (building rights). Its own module, so the
+// payout module keeps the shape already recorded in live databases.
+export const PARCEL_SCHEMA = registerModuleSchema({ name: "metalayer-parcels", version: 1, sql: `
 CREATE TABLE IF NOT EXISTS ml_parcels(
  x0 INTEGER NOT NULL,z0 INTEGER NOT NULL,owner TEXT NOT NULL,checked_at INTEGER NOT NULL,PRIMARY KEY(x0,z0)
 );
@@ -89,6 +93,7 @@ export function createMetaLayerChain({ provider, contractId, keyPath, loadAccoun
 
 export function createMetaLayerEconomy(db, { chain = null, linkedAccount = () => null, now = Date.now, log = console } = {}) {
   ensureModuleVersion(db, PAYOUT_SCHEMA);
+  ensureModuleVersion(db, PARCEL_SCHEMA);
   /** Called by activity.record for every newly saved action. */
   function onRecord({ id, layer, playerId, actor, kind, evidenceHash }) {
     const reward = METALAYER_REWARDS[kind];
