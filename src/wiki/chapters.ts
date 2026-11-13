@@ -780,7 +780,7 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "map-formula",
     status: "live",
-    updated: "2026-11-11",
+    updated: "2026-11-13",
     sources: ["docs/MAP-REWARDS.md", "docs/GLOBAL-TREASURY.md", "server/map-rewards/policy.mjs", "server/map-rewards/budget.mjs", "server/map-rewards/chain.mjs"],
     blocks: [
       { h: "How a day is planned" },
@@ -789,6 +789,7 @@ export const CHAPTERS: Chapter[] = [
           "At the first request of a local day the server builds the plan once from the **real daily budget**: the map's share of the rewards contract's per-date cap, priced in micro-QGOLD at the vault's rate R.",
           "**One coin = coin budget ÷ all shares.** At a 0.05 NEAR map budget and R = 0.001 NEAR that is 50 QGOLD tokens (50,000,000 in game units) over 6.5–13 million shares, a few QGOLD per coin on screen. The value grows with the treasury; shares a cell cannot hold stay in the treasury.",
           "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area; what a capped cell cannot take goes to the others.",
+          "**Every zone prize is paid out on chain.** Plzeň's reviewed zones share their cell's zone budget as the first-finisher prize (only the first world to open the cell that day funds it, so GPS and the demo never spend it twice); the game treasury funds no prize.",
           "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest.",
           "The city demo pays the same backed coins. Outside Czechia a street cell gets up to 400 coins of the same value, drawn from the day's unplaced coin budget until it is spent, and paid through the payout rounds (`MAP_WORLD_COINS=off` stops it). Funded cell zones and pioneer bonuses stay in Czechia.",
         ],
