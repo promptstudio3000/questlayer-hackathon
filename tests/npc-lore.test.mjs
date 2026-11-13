@@ -97,8 +97,11 @@ test("model output is validated; a near copy becomes a confirmation", () => {
   const twin = validateLoreOutput({ verdict: "new", tip: "Na Spilce pours really fresh beer", place: "Na Spilce", matches: null, say: "Thanks!" }, known);
   assert.equal(twin.value.verdict, "same");
   assert.equal(twin.value.matches, "k0");
-  const fake = validateLoreOutput({ verdict: "same", tip: null, place: null, matches: "k9", say: "Yes" }, known);
+  const fake = validateLoreOutput({ verdict: "same", tip: null, place: null, matches: "k9", say: "Yes" }, known, "The zoo is nice");
   assert.equal(fake.value.verdict, "off_topic");
+  // A loose or missing id still finds the tip the answer names.
+  assert.equal(validateLoreOutput({ verdict: "same", tip: null, place: null, matches: "k0: Na Spilce", say: "Yes" }, known).value.matches, "k0");
+  assert.equal(validateLoreOutput({ verdict: "same", tip: null, place: null, matches: null, say: "Yes" }, known, "na spilce v pivovaru").value.matches, "k0");
   // A reply that mentions rewards or numbers is replaced by the template line.
   const quiet = validateLoreOutput({ verdict: "off_topic", tip: null, place: null, matches: null, say: "You win 50 XP!" }, known);
   assert.equal(quiet.value.say, null);
