@@ -115,10 +115,12 @@ test("the start-up warm-up yields to the event loop between plans", async () => 
   db.exec("CREATE TABLE IF NOT EXISTS worlds(id TEXT PRIMARY KEY, day TEXT, region TEXT, timezone TEXT, manifest TEXT, created_at INTEGER)");
   const plzen = { id: `demo:arena-city-plzen:${DAY2}:v2`, day: DAY2, region: "city-plzen", cityId: "plzen", timezone: "Europe/Prague", arena: true, endsAt: dayStart + 86_400_000, zones: [] };
   db.prepare("INSERT INTO worlds VALUES(?,?,?,?,?,?)").run(plzen.id, DAY2, plzen.region, "Europe/Prague", JSON.stringify(plzen), noon - 1000);
+  const auto = { ...plzen, id: `demo:city-brno:${DAY2}:v2`, region: "city-brno", cityId: "brno", cityStatus: "auto", arena: false };
+  db.prepare("INSERT INTO worlds VALUES(?,?,?,?,?,?)").run(auto.id, DAY2, auto.region, "Europe/Prague", JSON.stringify(auto), noon - 1000);
   let ticked = false;
   setImmediate(() => (ticked = true));
   const built = await service.warmInBackground(noon);
-  assert.equal(built, 1);
+  assert.equal(built, 1, "Plzeň only: the auto city waits for its first visit");
   assert.ok(ticked, "another task ran before the warm-up finished");
   assert.equal(await service.warmInBackground(noon), 0, "already warm");
 });
