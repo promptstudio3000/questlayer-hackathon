@@ -2,7 +2,7 @@ import { readFileSync, statSync } from "node:fs";
 import { Account, KeyPairSigner } from "near-api-js";
 import { atomic } from "../database.mjs";
 import { assert, id, hash } from "../domain.mjs";
-import { publishNativeDays } from "./day-publication.mjs";
+import { publishNativeDays, readYieldBacking } from "./day-publication.mjs";
 import { auditDistribution } from "./distribution.mjs";
 import {
   nativePublicationMatches,
@@ -486,6 +486,13 @@ export function startRewardWorker(
             contractId: native.contractId,
             qgoldRate,
             budgetOnly: payouts,
+            // City days and map coins on yield only: the map takes its drip.
+            yieldLimit: native.yieldBackedDays
+              ? async () => {
+                  const b = await readYieldBacking(native);
+                  return { coinYocto: b.limit.coins, zoneYocto: b.limit.zones };
+                }
+              : null,
           }).catch((error) =>
             console.error("Map chain worker:", String(error.message).slice(0, 200)),
           );

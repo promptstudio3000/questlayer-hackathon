@@ -78,7 +78,7 @@ function Portrait({ model, label, emote }: { model: string; label: string; emote
 const roomyDialog = () =>
   typeof matchMedia === "function" && matchMedia("(min-width: 901px) and (min-height: 700px)").matches;
 
-export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onClose, onQuest }: { onQuest?: (questId: string) => void; playerId: string; draftRealm: string; actorId: string; encounter: ActorEncounter; onClose: () => void }) {
+export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onClose, onQuest, keeperPanel }: { keeperPanel?: ReactNode; onQuest?: (questId: string) => void; playerId: string; draftRealm: string; actorId: string; encounter: ActorEncounter; onClose: () => void }) {
   const t = npcStrings();
   const learning = useLearning(playerId);
   const [reply, setReply] = useState<NpcReply | null>(null);
@@ -207,7 +207,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
   const tabs: ScreenTab<Tab>[] = [
     { id: "talk", label: t.tabTalk, icon: Sparkle },
     { id: "tasks", label: t.tabTasks, icon: ListChecks, count: active.length || undefined },
-    ...(vault ? [{ id: "vault" as Tab, label: t.tabVault, icon: Vault }] : []),
+    ...(vault || keeperPanel ? [{ id: "vault" as Tab, label: t.tabVault, icon: Vault }] : []),
     { id: "about", label: t.tabAbout, icon: IdentificationCard },
   ];
 
@@ -227,7 +227,7 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
   // Nothing to choose in the greeting (traders, keepers): their counter is
   // open right away, without a Continue step.
   const direct = !!reply && !questOffers.length && !active.length;
-  useEffect(() => { if (direct) openServices(vault ? "vault" : "talk"); }, [direct]);
+  useEffect(() => { if (direct) openServices(vault || keeperPanel ? "vault" : "talk"); }, [direct]);
   const offerSteps = selectedOffer && Array.isArray(selectedOffer.terms.steps)
     ? selectedOffer.terms.steps.filter((step): step is { title: string } => !!step && typeof step === "object" && typeof step.title === "string")
     : [];
@@ -359,36 +359,38 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
           </div>
         )}
 
-        {tab === "vault" && vault && (
+        {tab === "vault" && (vault || keeperPanel) && (
           <div className="npc-panel npc-vault" role="tabpanel" id={`npc-${actorId}-panel`} aria-labelledby={`npc-${actorId}-tab-${tab}`}>
-            {vault.stake && (
+            {vault?.stake && (
               <>
                 <StakeTodayCard
-                  card={vault.stake}
+                  card={vault!.stake!}
                   onSeen={(id) =>
                     void seenCeremony(id).finally(() =>
                       setVault((v) => (v?.stake ? { ...v, stake: { ...v.stake, ceremonies: v.stake.ceremonies.filter((c) => c.id !== id) } } : v)),
                     )
                   }
                   onRankSeen={() => {
-                    const r = vault.stake?.rank?.rankUp?.rank;
+                    const r = vault?.stake?.rank?.rankUp?.rank;
                     if (r)
                       void seenRank(r).finally(() =>
                         setVault((v) => (v?.stake?.rank ? { ...v, stake: { ...v.stake, rank: { ...v.stake.rank, rankUp: null } } } : v)),
                       );
                   }}
                 />
-                <InnerVault card={vault.stake} />
+                <InnerVault card={vault!.stake!} />
               </>
             )}
-            <section aria-label={t.vaultBalance}>
-              <h3>{t.vaultBalance}</h3>
-              <ul className="npc-keeper">
-                {vault.lines.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-            </section>
+            {keeperPanel || (vault && (
+              <section aria-label={t.vaultBalance}>
+                <h3>{t.vaultBalance}</h3>
+                <ul className="npc-keeper">
+                  {vault.lines.map((line) => (
+                    <li key={line}>{line}</li>
+                  ))}
+                </ul>
+              </section>
+            ))}
           </div>
         )}
 

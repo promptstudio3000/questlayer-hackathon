@@ -325,7 +325,7 @@ function PhoneHud() {
           <b>Coins collect themselves</b> when you pass them. A confirmed coin flies to the QGOLD counter.
         </li>
         <li>
-          <b>Direction guide</b> to the next target. A straight line with an X to hide it, never a walking route.
+          <b>Direction guide</b> to a target you chose. A straight line with its name and an X to stop it, never a walking route.
         </li>
         <li>
           <b>Joystick</b> (city demo only): up walks the way you face, sideways turns, down steps back. Arrows and WASD work too.

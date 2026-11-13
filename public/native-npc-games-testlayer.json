@@ -1,0 +1,55 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-12T14:04:48.399Z",
+  "contractId": "npc-games-tl1112.questlayer-dev-20261101.testnet",
+  "codeHash": "BT7rA3P2aYxKPmmsREkMb6aBtRdPPK3Rm7vJFcisBbUn",
+  "wasmSha256": "9b45b67aaff757361f328c1ba75eb79775c6f09e728b32615caa73a8d5026723",
+  "ticketSignerPublicKey": "KQCdTO1TyeqZnJglgzECu6my1efTitXOlDWS29LepD4=",
+  "timeoutBlocks": 600,
+  "minRevealDelayBlocks": 3,
+  "tables": {
+    "wisp-v1": {
+      "tiers": [
+        {
+          "prize": "trader-voucher",
+          "weight": 60,
+          "daily_cap": null
+        },
+        {
+          "prize": "aura-rare",
+          "weight": 30,
+          "daily_cap": null
+        },
+        {
+          "prize": "aura-epic",
+          "weight": 9,
+          "daily_cap": 20
+        },
+        {
+          "prize": "aura-legendary-wisp",
+          "weight": 1,
+          "daily_cap": 2
+        }
+      ],
+      "minimum": 0
+    }
+  },
+  "wagering": false,
+  "capabilities": [
+    "earned-tickets-only",
+    "commit-reveal",
+    "random-seed",
+    "timeout-minimum",
+    "daily-caps"
+  ],
+  "transactions": [
+    {
+      "step": "create npc-games-tl1112.questlayer-dev-20261101.testnet, deploy and init npc-games",
+      "transaction": "7gJmfP8fQfsbW4rvttjUMdL186T6716UKcDxyTPHsFgU"
+    },
+    {
+      "step": "publish prize table wisp-v1",
+      "transaction": "6bC6UL3u462EDDbPfwuQ5ySRvtR7S1apgx2NoDV5QDNw"
+    }
+  ]
+}

@@ -326,6 +326,9 @@ const gameLayerConfig = Object.freeze({
   // The other world, for the picker: World links to the Test Layer only on testnet.
   testLayerUrl: TEST_LAYER || NETWORK !== "testnet" ? null : linkOrigin(process.env.TEST_LAYER_ORIGIN),
   worldUrl: TEST_LAYER ? linkOrigin(process.env.WORLD_ORIGIN) : null,
+  // Until launch (Lubos, 13 Nov 2026) World sends a new visitor to the Test Layer; the picker
+  // switches back to World and remembers it. DEFAULT_TEST_LAYER=1 on World, removed at launch.
+  defaultTest: !TEST_LAYER && NETWORK === "testnet" && process.env.DEFAULT_TEST_LAYER === "1" && !!linkOrigin(process.env.TEST_LAYER_ORIGIN),
 });
 const deploymentManifestPath = existsSync(
   resolve(APP_ROOT, `public/${MANIFEST_SET}-deployment.json`),
@@ -905,10 +908,23 @@ const goldSpendRoutes = createGoldSpendRoutes({
         contract: qgoldConfig.manifest?.tokenContract || qgoldConfig.contract,
         accountIds: playerAccounts,
         async balanceU(player) {
-          const account = playerAccounts(player)[0];
-          if (!account) return 0;
-          return Number((await qgoldVault.account(account)).balance || 0);
+          return (await this.spendable(player)).balanceU;
         },
+        // The linked account with the most QGOLD (newest first on a tie).
+        async spendable(player) {
+          const accounts = playerAccounts(player).slice(0, 4);
+          if (!accounts.length) return { accountId: null, balanceU: 0 };
+          const reads = await Promise.allSettled(accounts.map((a) => qgoldVault.account(a)));
+          if (reads.every((r) => r.status === "rejected")) throw reads[0].reason;
+          let best = { accountId: accounts[0], balanceU: 0 };
+          reads.forEach((r, i) => {
+            const balanceU = r.status === "fulfilled" ? Number(r.value.balance || 0) : 0;
+            if (balanceU > best.balanceU) best = { accountId: accounts[i], balanceU };
+          });
+          return best;
+        },
+        // QGOLD collected on the map that the next payout still has to mint.
+        pendingU: (player) => pendingPayout(db, player).units,
         txStatus: (hash, account) => provider.viewTransactionStatusWithReceipts({ txHash: hash, accountId: account, waitUntil: "FINAL" }),
         relayerId: relayer?.relayerId,
       }
@@ -1585,6 +1601,8 @@ async function api(req, res, url) {
         ? auditSummary(publicAudit(nativeRewards.lastAudit))
         : { status: "not-configured" },
       yieldBackedDays: nativeRewards?.yieldBackedDays === true,
+      // Dates the publisher could not fund (docs/GLOBAL-TREASURY.md).
+      unfundedDays: nativeRewards?.unfundedDays || {},
       relayer: relayer ? relayer.workerStatus() : { status: "not-configured" },
       creatorMoney: creatorMoney
         ? creatorMoney.workerStatus()

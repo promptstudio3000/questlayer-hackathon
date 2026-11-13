@@ -24,7 +24,7 @@ import { join, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
-import { closeOpenSheet, openScreen } from "./lib/e2e-nav.mjs";
+import { closeOpenSheet, openScreen, openSettings } from "./lib/e2e-nav.mjs";
 import { fixedDayOffset, shiftBrowserClock } from "./lib/e2e-clock.mjs";
 
 const require = createRequire(import.meta.url);
@@ -574,10 +574,7 @@ async function runDevice(name, server) {
     console.log(`  ${vibrations} haptic cues`);
 
     console.log("7. Sound, vibration and motion settings");
-    await page.locator(".topbar .profile-pill").click();
-    await page.getByRole("tab", { name: "Settings" }).click();
-    const settings = page.getByRole("tabpanel");
-    await settings.scrollIntoViewIfNeeded();
+    const settings = await openSettings(page);
     const sound = settings.getByRole("switch", { name: /Sound/ });
     if ((await sound.getAttribute("aria-checked")) !== "true") await sound.click();
     const vibration = settings.getByRole("switch", { name: /Vibration/ });

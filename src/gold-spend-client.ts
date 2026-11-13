@@ -22,6 +22,12 @@ export type Shop = {
   version: string;
   realm: "practice" | "qgold";
   balanceU: number;
+  /** QGOLD realm: false when the NEAR account could not be read just now. */
+  balanceKnown?: boolean;
+  /** QGOLD realm: collected on the map, minted by the next payout. */
+  pendingU?: number;
+  /** QGOLD realm: the player has a linked NEAR account. */
+  hasAccount?: boolean;
   emotes: ShopEmote[];
   cosmetics: ShopCosmetic[];
   gear: { perDay: number; boughtToday: number; items: GearItem[] };
@@ -103,6 +109,9 @@ async function send<T>(path: string, method: string, data?: unknown): Promise<T>
 }
 
 export const goldShop = () => api<Shop>("/gold/shop");
+/** The one honest balance: QGOLD on the NEAR account plus what is on its way. */
+export type WalletBalance = Pick<Shop, "realm" | "balanceU" | "balanceKnown" | "pendingU" | "hasAccount">;
+export const goldBalance = () => api<WalletBalance>("/gold/balance");
 export const goldBuy = (sku: string) =>
   withQgoldBurn<{ sku: string; balanceU: number | null }>("/gold/buy", { sku });
 export const goldEquip = (frame: string | null) => api("/gold/equip", { frame });

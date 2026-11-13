@@ -25,7 +25,7 @@ export type TourState = {
   finished?: boolean;
   done?: number;
   total?: number;
-  current?: { id: string; chapter: string; say: string; next: string; target: TourTarget } | null;
+  current?: { id: string; chapter: string; say: string; hint?: string; next: string; target: TourTarget } | null;
   last?: { id: string; next: string } | null;
   transactions?: { count: number; kinds: number; list: TourTx[] };
 };
@@ -70,6 +70,16 @@ export function Pip({ mood = "talk" }: { mood?: "talk" | "point" | "cheer" }) {
   );
 }
 
+// The wisp roll sits in Inventory's "Secured on NEAR" fold: open it and scroll there.
+function openRolls(t: TourTarget) {
+  if (t.kind !== "screen" || t.screen !== "rolls") return;
+  window.setTimeout(() => {
+    const rolls = document.querySelector<HTMLElement>(".wisp-rolls");
+    const fold = rolls?.closest("details");
+    if (fold) fold.open = true;
+    rolls?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 600);
+}
 export default function TourHelper({
   position,
   heading,
@@ -110,7 +120,13 @@ export default function TourHelper({
     const t = window.setInterval(() => {
       if (document.visibilityState === "visible") void load();
     }, 5000);
-    return () => window.clearInterval(t);
+    // Settings switches Pip on and off (src/SettingsScreen.tsx).
+    const refresh = () => void load();
+    window.addEventListener("questlayer:tour-refresh", refresh);
+    return () => {
+      window.clearInterval(t);
+      window.removeEventListener("questlayer:tour-refresh", refresh);
+    };
   }, [load]);
   useEffect(() => {
     if (!fresh) return;
@@ -184,6 +200,7 @@ export default function TourHelper({
         <div className="tour-body">
           {fresh && state.last && <p className="tour-sub tour-happened">{say(state.last.next)}</p>}
           <p className="tour-line">{say(step.say)}</p>
+          {step.hint && <p className="tour-sub">{say(step.hint)}</p>}
           {spot && distance !== null && distance > 15 && (
             <p className="tour-where">
               <ArrowUp size={16} weight="bold" style={{ transform: `rotate(${turn ?? 0}deg)` }} aria-hidden="true" />
@@ -191,7 +208,7 @@ export default function TourHelper({
             </p>
           )}
           <div className="tour-buttons">
-            <button type="button" className="tour-go" onClick={() => { onGo(step.target); void load(); }}>{tr("Show me")}</button>
+            <button type="button" className="tour-go" onClick={() => { onGo(step.target); openRolls(step.target); void load(); }}>{tr("Show me")}</button>
             <button type="button" className="tour-quiet" disabled={busy} onClick={() => void act("skip", step.id)}>{tr("Skip")}</button>
           </div>
         </div>

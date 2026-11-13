@@ -6,35 +6,19 @@
 import { api } from "./api";
 import { EXPLORER_BASE } from "./near-network";
 import type { NpcTrade } from "./npc-client";
-import type { PlayerKeyRecord } from "./player-key";
 import type { IntentsAccount, IntentsConfig } from "./intents-order";
 
-export type ChainCall = {
-  receiverId: string;
-  methodName: string;
-  args: Record<string, unknown>;
-  deposit: string;
-  gas: string;
-};
-type Sender = (accountId: string, call: ChainCall) => Promise<string | null>;
-let sender: Sender | null = null;
-let secure: ((itemId: string) => Promise<boolean>) | null = null;
-let intentsKey: (() => PlayerKeyRecord | null) | null = null;
+export { registerChainTrades, type ChainCall } from "./chain-trades-registry";
+import { chainSigners, type ChainCall } from "./chain-trades-registry";
 
-export function registerChainTrades(
-  next: { send: Sender; secureItem: (itemId: string) => Promise<boolean>; intentsKey?: () => PlayerKeyRecord | null } | null,
-) {
-  sender = next?.send ?? null;
-  secure = next?.secureItem ?? null;
-  intentsKey = next?.intentsKey ?? null;
-}
-export const chainTradesReady = () => !!sender;
+export const chainTradesReady = () => !!chainSigners.sender;
 export const explorerTxUrl = (hash: string) => `${EXPLORER_BASE}/txns/${encodeURIComponent(hash)}`;
 
 const GAS = "200000000000000";
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 async function send(accountId: string, call: ChainCall) {
+  const sender = chainSigners.sender;
   if (!sender) throw Error("Your NEAR account is not ready yet.");
   return sender(accountId, call);
 }
@@ -76,7 +60,7 @@ export async function handOverOnChain(trade: NpcTrade, onStep?: (done: number) =
 export async function fillOnChain(trade: NpcTrade) {
   const terms = trade.intents;
   if (!terms) throw Error("This trade cannot settle on NEAR Intents.");
-  const key = intentsKey?.();
+  const key = chainSigners.intentsKey?.();
   if (!key?.accountId) throw Error("Trades with characters use your explorer account on this device.");
   const accountId = key.accountId;
   if (terms.side === "sell" && trade.accountId && trade.accountId !== accountId)
@@ -125,4 +109,4 @@ export async function fillOnChain(trade: NpcTrade) {
 }
 
 /** Secure the Aura a trade-up paid out (award claim → NFT on the player's account). */
-export const secureTradeAura = (itemId: string) => (secure ? secure(itemId) : Promise.resolve(false));
+export const secureTradeAura = (itemId: string) => (chainSigners.secure ? chainSigners.secure(itemId) : Promise.resolve(false));

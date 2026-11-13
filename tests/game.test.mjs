@@ -166,19 +166,28 @@ test("tier access matures, withdrawals remove it, decreases apply immediately", 
   assert.equal(positionTier(p, now + 63_001), 0);
   db.close();
 });
+function fundZone(db, questId, prizeU) {
+  db.prepare(
+    "UPDATE quests SET gold_u=?,metadata=json_set(COALESCE(metadata,'{}'),'$.cellZone',json(?)) WHERE id=?",
+  ).run(prizeU, JSON.stringify({ policy: "test", cell: "test", prizeU }), questId);
+}
 test("a funded quest has one GOLD payout while everyone can still earn personal XP", async () => {
   const { db, a, b } = setup();
   const w = await ensureWorld(db, HOME, true, now),
     q = worldView(db, w.id).quests.find((q) => q.tier === 2);
+  // A zone prize comes only from the daily zone budget (a funded cell zone),
+  // never from the game treasury (owner, 13 Nov 2026).
+  assert.equal(q.gold_u, 0);
+  fundZone(db, q.id, 1500);
   // Tier places are open to everyone until launch (owner decision 8 Nov).
   const r = claimQuest(db, a, q.id, q, now + 31_000),
     r2 = claimQuest(db, b, q.id, q, now + 32_000);
-  assert.equal(r.reward, 1000 * GOLD);
+  assert.equal(r.reward, 1500);
   assert.equal(r2.reward, 0);
   assert.equal(r2.xp, q.xp);
   assert.equal(
     db.prepare("SELECT paid_u FROM treasury WHERE bucket='zones'").get().paid_u,
-    1000 * GOLD,
+    0,
   );
   db.close();
 });

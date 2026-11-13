@@ -132,9 +132,8 @@ try {
       const hide=page.getByRole("button",{name:"Hide objective",exact:true});
       if(await hide.isVisible()) {
         await hide.click();
-        await page.locator(".topbar .profile-pill").click();
-        await page.getByRole("tab",{name:"Settings",exact:true}).click();
-        await page.getByRole("button",{name:"Show first steps again",exact:true}).click();
+        await page.locator(".map-settings-toggle").click();
+        await page.getByRole("switch",{name:/First-time tips/}).click();
         await page.locator(".first-session").waitFor();
         assert.ok(await page.locator(".main-panel").isVisible(),"Settings restores a dismissed guide without resetting progress");
         await check("guide-restored");

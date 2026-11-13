@@ -75,8 +75,8 @@
       "backstory": "A stone golem with a glowing core who guards the city vault gate.",
       "likes": ["patience", "staking", "safe paths"],
       "greeting": {
-        "cs": "Stojím u brány trezoru. Brzy ti s ním pomohu.",
-        "en": "I stand at the vault gate. Soon I will help you with it."
+        "cs": "Hlídám trezor. Stakuj u mě a otevřou se ti další místa.",
+        "en": "I guard the vault. Stake here and more places open."
       },
       "refusal": {
         "cs": "Brána se řídí pravidly, ne slovy.",
