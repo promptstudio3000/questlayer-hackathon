@@ -21,6 +21,11 @@ conversations. Plan: https://claude.ai/artifact/UDffrVXsT3NKpjBNLjUstG
 ## API
 
 - `POST /api/actors/:id/greet` now returns `mission: {topic, ask, answered, xp, left}`.
+  It also returns `lore: {backstory, likes}` (the persona card) and `places`: up to 12 places
+  named in the shared memory of the NPC's place, `{name, topic, tip, lat?, lng?, distanceM?}`,
+  nearest to the NPC first. Positions live in `npc_lore_places` (module `npc-lore-places`):
+  seed coordinates from `server/data/npc-lore/*.json` (`lat`/`lng` per entry) and Wikipedia
+  GeoSearch points. A player tip that names a known place shares its position; others have none.
 - `POST /api/actors/:id/mission {encounter, answer}` → `{outcome, say, xp, note?, mission}`.
   Outcomes: `new`, `confirmed`, `duplicate`, `off_topic`, `rejected`, `pending`, `limited`.
 - `POST /api/actors/:id/talk` adds up to four `tip-N` facts ("Explorers say …") for the place.

@@ -1,20 +1,24 @@
-// Chat mode of an NPC conversation (lazy chunk, loaded only once a player
-// writes to an NPC or answers its question). The NPC can open the thread with
-// its mission question; an answer goes to the shared memory of the place
-// (server/npc/lore.mjs) and a useful one earns XP once per NPC and day.
+// The Talk tab of an NPC conversation (lazy chunk). The NPC greets the
+// player and asks its mission question as a chat message; an answer goes to
+// the shared memory of the place (server/npc/lore.mjs) and a useful one earns
+// XP once per NPC and day. Anything else written is ordinary conversation.
 import { useEffect, useRef, useState } from "react";
 import { PaperPlaneRight } from "@phosphor-icons/react";
 import { tr } from "./i18n";
 import type { NpcMission, NpcMissionResult } from "./npc-client";
 import "./npc-chat.css";
 
-type Line = { from: "me" | "npc" | "note"; text: string };
+type Line = { from: "me" | "npc" | "note" | "ask"; text: string };
 
 export interface NpcChatProps {
   name: string;
+  /** The NPC's greeting, the first line of the thread. */
+  greeting: string;
   mission?: NpcMission | null;
-  /** "mission": the first message answers the NPC's question. */
-  start: { mode: "mission" | "talk"; text?: string };
+  /** The text box keeps an unsent message (useFormDraft in NpcSheet). */
+  text: string;
+  onText: (text: string) => void;
+  onSent?: (text: string) => void;
   onTalk: (text: string) => Promise<{ say: string }>;
   onAnswer: (text: string) => Promise<NpcMissionResult>;
 }
@@ -28,21 +32,21 @@ export const missionNote = (r: NpcMissionResult) =>
         ? tr("No more XP for tips today.")
         : r.note || "";
 
-export default function NpcChat({ name, mission, start, onTalk, onAnswer }: NpcChatProps) {
-  const answering = start.mode === "mission" && !!mission && !mission.answered;
-  const [lines, setLines] = useState<Line[]>(() => (mission && !mission.answered ? [{ from: "npc", text: mission.ask }] : []));
-  const [mode, setMode] = useState<"mission" | "talk">(answering ? "mission" : "talk");
-  const [text, setText] = useState("");
+export default function NpcChat({ name, greeting, mission, text, onText, onSent, onTalk, onAnswer }: NpcChatProps) {
+  const open = !!mission && !mission.answered && mission.left > 0;
+  const [lines, setLines] = useState<Line[]>(() => [{ from: "npc", text: greeting }, ...(open ? [{ from: "ask" as const, text: mission!.ask }] : [])]);
+  // Answering is a choice: the question waits in the thread with its button.
+  const [mode, setMode] = useState<"mission" | "talk">("talk");
   const [busy, setBusy] = useState(false);
   const list = useRef<HTMLOListElement>(null);
   const input = useRef<HTMLInputElement>(null);
-  const started = useRef(false);
 
   const send = async (message: string) => {
     const said = message.trim();
     if (!said || busy) return;
     setLines((all) => [...all, { from: "me", text: said }]);
-    setText("");
+    onText("");
+    onSent?.(said);
     setBusy(true);
     try {
       if (mode === "mission") {
@@ -64,24 +68,31 @@ export default function NpcChat({ name, mission, start, onTalk, onAnswer }: NpcC
   };
 
   useEffect(() => {
-    if (started.current) return;
-    started.current = true;
-    if (start.text) void send(start.text);
-    else input.current?.focus({ preventScroll: true });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-  useEffect(() => {
     const el = list.current;
-    if (el) el.scrollTop = el.scrollHeight;
+    if (el && lines.length > 2) el.scrollTop = el.scrollHeight;
   }, [lines, busy]);
+  const answered = !!mission?.answered;
 
   return (
     <section className="npc-thread" aria-label={tr("Chat with {0}", { 0: name })}>
       <ol ref={list} className="npc-thread-lines" aria-live="polite">
         {lines.map((line, i) => (
-          <li key={i} className={`npc-line ${line.from}`}>
-            {line.from === "npc" && <span className="npc-line-name">{name}</span>}
+          <li key={i} className={`npc-line ${line.from === "ask" ? "npc ask" : line.from}`}>
+            {line.from !== "me" && line.from !== "note" && <span className="npc-line-name">{name}</span>}
             {line.text}
+            {line.from === "ask" && mode === "talk" && !answered && mission && (
+              <button
+                type="button"
+                className="npc-ask-answer"
+                disabled={busy}
+                onClick={() => {
+                  setMode("mission");
+                  input.current?.focus({ preventScroll: true });
+                }}
+              >
+                {tr("Answer · +{0} XP", { 0: mission.xp })}
+              </button>
+            )}
           </li>
         ))}
         {busy && <li className="npc-line npc typing" aria-label={tr("{0} is typing", { 0: name })}>…</li>}
@@ -98,7 +109,7 @@ export default function NpcChat({ name, mission, start, onTalk, onAnswer }: NpcC
           ref={input}
           value={text}
           maxLength={300}
-          onChange={(e) => setText(e.target.value)}
+          onChange={(e) => onText(e.target.value)}
           placeholder={mode === "mission" ? tr("Your answer…") : tr("Say something to {0}…", { 0: name })}
           aria-label={tr("Message to {0}", { 0: name })}
           enterKeyHint="send"
