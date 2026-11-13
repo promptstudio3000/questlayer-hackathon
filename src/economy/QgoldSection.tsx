@@ -5,6 +5,7 @@
 // only, never invented numbers.
 import { useEffect, useMemo, useState } from "react";
 import { shortHash, shortNear } from "./format";
+import { qgoldCount, QGOLD_B_TOKENS } from "./treasury-model";
 import { scrollRegionKeys } from "../scroll-region";
 import { type ExitPath } from "./qgold-quote";
 import QgoldExchange from "./QgoldExchange";
@@ -49,17 +50,14 @@ export type QgoldData = {
   chart: { at: string; rate: string; price: string | null }[];
 };
 
-const QG = 10n ** 6n;
-/** QGOLD base units → short label. */
-export function qgoldLabel(units?: string | null, digits = 2): string {
+/** QGOLD smallest units → "1.45B" (the game's one QGOLD unit, 1 NEAR ≈ 1B QGOLD). */
+export function qgoldLabel(units?: string | null, _digits = 2): string {
   if (!units || !/^\d+$/.test(units)) return "—";
-  const v = BigInt(units);
-  const whole = v / QG,
-    frac = (v % QG).toString().padStart(6, "0").slice(0, digits).replace(/0+$/, "");
-  return `${whole.toLocaleString("en-US")}${frac ? "." + frac : ""}`;
+  return qgoldCount(units);
 }
 const bps = (b: number) => `${(b / 100).toLocaleString("en-US", { maximumFractionDigits: 2 })} %`;
-const nearPrice = (yocto?: string | null) => shortNear(yocto, 6);
+/** NEAR for 1B QGOLD from a rate per whole token (1B QGOLD = 1,000 tokens). */
+const nearPrice = (yocto?: string | null) => (yocto && /^\d+$/.test(yocto) ? shortNear((BigInt(yocto) * BigInt(QGOLD_B_TOKENS)).toString(), 4) : "—");
 const KIND_LABEL: Record<string, string> = {
   sale: "Sale above 1.1 R",
   "inverse-buy-burn": "Bought below R and burned",
@@ -69,7 +67,7 @@ const KIND_LABEL: Record<string, string> = {
 
 function Chart({ points }: { points: QgoldData["chart"] }) {
   const series = useMemo(() => {
-    const rows = points.map((p) => ({ t: Date.parse(p.at), r: Number(BigInt(p.rate)) / 1e24, p: p.price ? Number(BigInt(p.price)) / 1e24 : null }));
+    const rows = points.map((p) => ({ t: Date.parse(p.at), r: (Number(BigInt(p.rate)) / 1e24) * QGOLD_B_TOKENS, p: p.price ? (Number(BigInt(p.price)) / 1e24) * QGOLD_B_TOKENS : null }));
     if (rows.length < 2) return null;
     const values = rows.flatMap((x) => (x.p != null ? [x.r, x.p] : [x.r]));
     const lo = Math.min(...values) * 0.98,
@@ -93,7 +91,7 @@ function Chart({ points }: { points: QgoldData["chart"] }) {
         {series.p ? <path d={series.p} className="qg-line-p" /> : null}
       </svg>
       <figcaption>
-        <span className="qg-key qg-key-r">R (backing per QGOLD)</span>
+        <span className="qg-key qg-key-r">R (backing per 1B QGOLD)</span>
         {series.p ? <span className="qg-key qg-key-p">Rhea pool price</span> : null}
         <span className="eco-muted">
           {series.lo.toPrecision(4)}–{series.hi.toPrecision(4)} NEAR
@@ -132,7 +130,7 @@ export default function QgoldSection() {
       {v ? (
         <>
           <div className="eco-stats qg-stats">
-            <div className="eco-stat"><span className="eco-stat-label">Backing rate R</span><span className="eco-stat-value">{nearPrice(v.rate)} <small>NEAR</small></span><span className="eco-stat-note">per QGOLD{v.rPeak ? ` · peak ${nearPrice(v.rPeak)}` : ""}</span></div>
+            <div className="eco-stat"><span className="eco-stat-label">Backing rate R</span><span className="eco-stat-value">{nearPrice(v.rate)} <small>NEAR</small></span><span className="eco-stat-note">per 1B QGOLD{v.rPeak ? ` · peak ${nearPrice(v.rPeak)}` : ""}</span></div>
             <div className="eco-stat"><span className="eco-stat-label">Buy · Sell at the vault</span><span className="eco-stat-value">{nearPrice(v.buyPrice)} · {nearPrice(v.sellPrice)}</span><span className="eco-stat-note">R + {bps(data.rules.buyFeeBps)} · R − {bps(data.rules.sellFeeBps)}</span></div>
             <div className="eco-stat"><span className="eco-stat-label">Supply</span><span className="eco-stat-value">{qgoldLabel(v.supply, 0)}</span><span className="eco-stat-note">{qgoldLabel(v.burned, 0)} burned so far</span></div>
             <div className="eco-stat"><span className="eco-stat-label">Backing</span><span className="eco-stat-value">{shortNear(v.backing)} <small>NEAR</small></span><span className="eco-stat-note">insurance {shortNear(v.insurance)} NEAR</span></div>
@@ -142,8 +140,8 @@ export default function QgoldSection() {
         </>
       ) : (
         <p className="eco-note">
-          The QGOLD vault is not deployed on testnet yet. Until then the game pays practice amounts. It starts at R = 0.001 NEAR
-          per QGOLD (1 NEAR = 1,000 QGOLD).
+          The QGOLD vault is not deployed on testnet yet. Until then the game pays practice amounts. It starts at 1 NEAR
+          per 1B QGOLD.
         </p>
       )}
 

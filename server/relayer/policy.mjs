@@ -7,6 +7,12 @@ import { isNativeEdition } from "../aura-catalog.mjs";
 
 export const SOCIAL_CONTRACT = SOCIAL_CONTRACT_ID;
 export const STORAGE_DEPOSIT = 50000000000000000000000n; // 0.05 NEAR
+// SocialDB storage that already covers a game record: below it a write
+// carries STORAGE_DEPOSIT, at or above it 1 yocto. The record prepare
+// (server/native/social-records.mjs) and relay admission must agree, or a
+// record prepared with a deposit is refused at send (map note "Keep on NEAR
+// Social", 12 Nov 2026: 0.01-0.02 NEAR free storage hit exactly that gap).
+export const SOCIAL_STORAGE_FLOOR = 2n * 10n ** 22n; // 0.02 NEAR
 /**
  * Escrow storage deposits (contracts/qgold-escrow `storage_deposit`) are
  * relayed on a ladder of 0.05 NEAR steps up to 0.5 NEAR (a 50-slot task needs

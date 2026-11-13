@@ -23,6 +23,8 @@ import { BURN_KINDS, spendRealm } from "./ledger.mjs";
 import { confirmQgoldBurn, ensureQgoldBurns, prepareQgoldBurn } from "./qgold-burn.mjs";
 
 import { runPurchase, purchaseRow } from "./purchases.mjs";
+import { atomic } from "../database.mjs";
+import { GameError } from "../domain.mjs";
 
 const ONE = /^\/api\/places\/((?:place|post)_[a-f0-9-]{36}|seed-pt-[a-z0-9-]{1,40})(?:\/(extend|posts|report|social\/prepare|social\/confirm))?$/;
 
@@ -34,8 +36,40 @@ export function createGoldSpendRoutes(
   if (db) ensureQgoldBurns(db);
   // QGOLD realm: balances are the player's QGOLD on chain, spends are burns.
   const onChain = () => spendRealm() === "qgold" && qgold;
-  const purchase = (req, player, path, input, work) => onChain()
-    ? runPurchase(db, { player, id: req.headers["x-questlayer-purchase"], path, input }, work) : work();
+  const purchase = async (req, player, path, input, work) => {
+    if (!onChain()) return work();
+    const id = req.headers["x-questlayer-purchase"];
+    try {
+      return await runPurchase(db, { player, id, path, input }, work);
+    } catch (error) {
+      if (error.code === "QGOLD_BURN") await refuseShortBurn(player, id, error);
+      throw error;
+    }
+  };
+  // A burn the player's QGOLD cannot cover only fails on chain, so the
+  // shortfall is caught before anything is signed and the purchase released.
+  async function refuseShortBurn(player, id, error) {
+    const needU = Number(error.details?.amountU), purchase = error.details?.purchaseId;
+    if (!Number.isSafeInteger(needU) || needU <= 0 || !purchase) return;
+    let haveU;
+    try {
+      haveU = await qgold.balanceU(player);
+    } catch {
+      return; // the burn itself still checks the balance on chain
+    }
+    if (!Number.isFinite(haveU) || haveU >= needU) return;
+    const released = atomic(db, () => {
+      const p = db.prepare("SELECT * FROM qgold_purchases WHERE id=? AND player_id=?").get(purchase, player);
+      if (!p || p.state !== "new" || p.memo || p.relay_job_id || p.tx_hash) return false;
+      db.prepare("DELETE FROM qgold_purchase_aliases WHERE purchase_id=?").run(p.id);
+      db.prepare("DELETE FROM qgold_purchases WHERE id=?").run(p.id);
+      return true;
+    });
+    if (!released) return;
+    const short = new GameError("Not enough QGOLD in your account.", 402, "QGOLD_SHORT");
+    short.details = { needU, haveU, purchaseReleased: id };
+    throw short;
+  }
   async function withBalance(player, view) {
     if (!onChain()) return view;
     let balanceU = 0;

@@ -6,6 +6,8 @@ const NEAR = 10n ** 24n;
 export const MIN_STAKE_YOCTO = 10n ** 21n;
 /** Gas the app attaches to every vault/factory call (server/native/vaults.mjs prepare). */
 export const APP_GAS = 280n * 10n ** 12n;
+/** Balance NEAR locks for 280 TGas at the pessimistic gas price (10^9 yocto/gas). */
+export const PREPAID_GAS_YOCTO = APP_GAS * 10n ** 9n;
 /** Gas the factory gives the child's `new` (contracts/vault-factory create_position). */
 export const NEW_GAS_TGAS = 25;
 /** Fields the v3 vault adds to get_state (contracts/vault get_state, docs/NATIVE-REWARDS-AND-VAULT.md). */
@@ -28,7 +30,10 @@ export function smokeAccountId(operatorId, label = "vault-smoke-v3") {
  * existing account with `balance` (0 when it already has enough).
  */
 export function smokeFunding({ setupDeposit, stake = MIN_STAKE_YOCTO, margin = NEAR / 10n, balance = 0n, positionExists = false }) {
-  const need = (positionExists ? 0n : BigInt(setupDeposit)) + BigInt(stake) + BigInt(margin);
+  // The signer must also hold the prepaid gas of the call at the pessimistic
+  // price: create_position (3.52 NEAR + 280 TGas) failed with NotEnoughBalance
+  // on 10 Nov when only the deposit, stake and margin were funded.
+  const need = (positionExists ? 0n : BigInt(setupDeposit)) + BigInt(stake) + BigInt(margin) + PREPAID_GAS_YOCTO;
   const have = BigInt(balance);
   return { fund: need, topUp: have >= need ? 0n : need - have };
 }

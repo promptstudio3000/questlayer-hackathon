@@ -10,7 +10,7 @@ import { Ghost } from "./Ghost";
 import { prefersReducedMotion } from "./feedback";
 import { tr } from "./i18n";
 import type { StakeCard } from "./StakeToday";
-import { goldCompact, potView, refreshRewardFunding, useRewardFunding } from "./reward-funding";
+import { formatGold } from "./gold-units";
 import "./profile-journey.css";
 import "./stake-story.css";
 
@@ -246,9 +246,17 @@ export function StakeWallet({ refreshKey, staked }: { refreshKey: string; staked
   const [pending, setPending] = useState<PendingQgold | null>(null),
     [balance, setBalance] = useState<number | null>(null),
     [kept, setKept] = useState<number | null>(null);
-  const pot = potView(useRewardFunding());
+  // Same number as /treasury → Today on the map → Coins (owner, 13 Nov 2026).
+  const [onMap, setOnMap] = useState<number | null>(null);
   useEffect(() => {
-    void refreshRewardFunding();
+    let live = true;
+    void api<{ coinsU?: number }>("/map/rewards/day").then(
+      (d) => live && setOnMap(Number.isFinite(d.coinsU) ? d.coinsU! : null),
+      () => undefined,
+    );
+    return () => {
+      live = false;
+    };
   }, []);
   useEffect(() => {
     let live = true;
@@ -284,8 +292,6 @@ export function StakeWallet({ refreshKey, staked }: { refreshKey: string; staked
       live = false;
     };
   }, [refreshKey, staked]);
-  const today = pot.kind === "ready" ? pot.today : null;
-  const onMap = today?.coinsFunded ?? today?.coinsLeft ?? null;
   return (
     <dl className="stake-wallet">
       <div>
@@ -301,7 +307,7 @@ export function StakeWallet({ refreshKey, staked }: { refreshKey: string; staked
         <dt>
           <MapTrifold size={14} weight="duotone" aria-hidden="true" /> {tr("On the map today")}
         </dt>
-        <dd>{onMap === null ? "–" : `${goldCompact(onMap)} QGOLD`}</dd>
+        <dd>{onMap === null ? "–" : `${formatGold(onMap)} QGOLD`}</dd>
       </div>
       {staked && (
         <div>
