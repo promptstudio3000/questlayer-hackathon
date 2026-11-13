@@ -1182,7 +1182,12 @@ export default function App() {
     retryAt: new Map<string, number>(),
     levelsAt: 0,
     avatarAt: 0,
+    // First securing attempt per Aura: a later retry puts it back on only
+    // when the player has not changed the outfit since then.
+    firstTry: new Map<string, number>(),
   });
+  // Last time the player put an Aura on or took one off themselves.
+  const wardrobeTouchedAt = useRef(0);
   const [autoSecureTick, setAutoSecureTick] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => setAutoSecureTick((t) => t + 1), 60_000);
@@ -1235,11 +1240,15 @@ export default function App() {
           }
         } else if (item) {
           const worn = !!item.equipped && (item.slot === "above" || item.slot === "below") ? item.slot : null;
+          if (!state.firstTry.has(item.id)) state.firstTry.set(item.id, Date.now());
           try {
             if (await secureAuraOnChain(item, managed, managed.accountId)) {
               secured++;
               state.retryAt.delete(item.id);
-              if (worn) await wearSecured(item.id, worn, managed).catch(() => {});
+              // Taken off (or changed) meanwhile: the player's choice wins.
+              if (worn && wardrobeTouchedAt.current < (state.firstTry.get(item.id) ?? 0))
+                await wearSecured(item.id, worn, managed).catch(() => {});
+              state.firstTry.delete(item.id);
             } else state.retryAt.set(item.id, Date.now() + 2 * 60_000);
           } catch {
             state.retryAt.set(item.id, Date.now() + 15 * 60_000);
@@ -1276,7 +1285,7 @@ export default function App() {
     const data = await refreshNative(true);
     const account = data.accounts.find((a) => a.accountId === signer.accountId);
     const token = account?.items.find((i) => i.tokenId === tokenId);
-    if (!account?.starterOwned || !token) return;
+    if (!account?.starterOwned || !token || account.equipment[slot]) return;
     if (!(await sendNativeWardrobe("equip_aura", signer, signer.accountId, token, slot))) return;
     const r = await api<{ player: Player }>("/native/outfit", { enabled: true, accountId: signer.accountId });
     updateOwnedPlayer(r.player);
@@ -2281,7 +2290,7 @@ export default function App() {
         setFix(f);
         gpsFacing.current = initialGpsFacing();
         turn(p, f);
-        rememberMode("gps");
+        rememberMode("gps", !quiet);
         setArena(false);
         setFollow(true);
         setGlobe(false);
@@ -3477,6 +3486,7 @@ export default function App() {
     item?: NativeItem,
     slot?: "above" | "below",
   ) {
+    if (method !== "mint_avatar") wardrobeTouchedAt.current = Date.now();
     await action("native-transaction", async () => {
       const { signer, accountId } = await resolveSigner(account);
       if (
@@ -3885,9 +3895,13 @@ export default function App() {
   // A plain roaming Lickquidator first: guardians and the boss are harder (GameMap picks the nearest of the kinds).
   const TOUR_ACTORS: Record<string, string[]> = { "quest-giver": ["quest_giver"], monster: ["roamer"], trader: ["trader"], keeper: ["keeper"] };
   function tourQuest(kind: string) {
+    const tier = player?.tier || 1;
+    const lockedZones = (world?.zones || []).filter((z) => z.tier > tier);
     let best: Quest | null = null;
     for (const q of world?.quests || []) {
       if (q.completed || q.kind !== kind || q.opens_at > now || q.closes_at <= now) continue;
+      // Never a chest or stop the explorer's tier cannot open yet.
+      if ((q.tier || 1) > tier || lockedZones.some((z) => zoneInteriorMargin(z, questPoint(q)) !== null)) continue;
       if (!best || meters(position, questPoint(q)) < meters(position, questPoint(best))) best = q;
     }
     return best;
@@ -4031,7 +4045,10 @@ export default function App() {
     modeAria: arena || nativePlay ? tr("Use GPS, my location") : tr("Demo, back to city demo"),
     onModeSwitch: () => {
       backToMap();
-      void (arena || nativePlay ? locate() : returnToArena());
+      if (arena || nativePlay) return void locate();
+      // GotchiGO has no demo of its own: Demo opens the Plzeň demo in the Test Layer.
+      if (gameLayer && !gameLayer.test && gameLayer.testLayerUrl) return location.assign(gameLayer.testLayerUrl);
+      returnToArena();
     },
     onLocate: () => {
       backToMap();
@@ -4871,7 +4888,8 @@ export default function App() {
                     notify(tr("New look equipped."));
                   });
                 }}
-                onEquip={(item) =>
+                onEquip={(item) => {
+                  wardrobeTouchedAt.current = Date.now();
                   void action("equip", async () => {
                     const r = await api<{ player: Player }>("/equip", {
                       itemId: item.id,
@@ -4883,8 +4901,8 @@ export default function App() {
                         ? tr("Aura taken off.")
                         : tr("Equipped. Your new glow is on the map."),
                     );
-                  })
-                }
+                  });
+                }}
                 onSell={async (item, priceYocto) => {
                   // Every Aura trade is on NEAR: secure the Aura as an NFT
                   // (relayed, no fee), then list it like a secured one.

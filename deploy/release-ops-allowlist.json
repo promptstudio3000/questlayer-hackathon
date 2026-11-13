@@ -246,6 +246,13 @@
       "env": [
         "NEAR_METALAYER_ACCOUNT"
       ]
+    },
+    "scripts/fund-testlayer-rewards.mjs": {
+      "execute": "--execute",
+      "contracts": false,
+      "env": [
+        "FUND_NEAR"
+      ]
     }
   },
   "keyDirs": {
