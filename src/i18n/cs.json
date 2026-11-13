@@ -3324,13 +3324,14 @@
   "Buying…": "Kupuji…",
   "Buy land for {0} MetaGold": "Koupit pozemek za {0} MetaGold",
   "Space": "Mezerník",
-  "1 task waiting": "Čeká 1 úkol",
-  "{0} tasks waiting": "Čeká úkolů: {0}",
-  "Food": "Jídlo",
-  "Pub": "Hospoda",
+  "This rock is too hard. Dig in Crystal Hollow or Basalt Quarry, or on blocks built on the square.": "Tahle skála je moc tvrdá. Kopej v Krystalové dutině, v Čedičovém lomu nebo do bloků postavených na náměstí.",
+  "City demo: {0}": "Ukázka města: {0}",
   "Sight": "Památka",
-  "Likes: {0}": "Má rád: {0}",
-  "Places I know": "Místa, která znám",
+  "Pub": "Hospoda",
   "No places yet. Tell me about one in Talk.": "Zatím žádná místa. Pověz mi o nějakém v rozhovoru.",
-  "City demo: {0}": "Ukázka města: {0}"
+  "Places I know": "Místa, která znám",
+  "Likes: {0}": "Má rád: {0}",
+  "Food": "Jídlo",
+  "1 task waiting": "Čeká 1 úkol",
+  "{0} tasks waiting": "Čeká úkolů: {0}"
 }

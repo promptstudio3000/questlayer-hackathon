@@ -110,10 +110,13 @@ the story and to action receipts.
   and below height 40 accept shared edits. No private plot is automatically claimed
   by this entry. The existing plot endpoints remain available for their current
   callers while the parcel-contract slice is reviewed.
-- **Mine:** hold on a natural mine block, hold the pickaxe action button, or hold
-  Enter while the canvas is focused. A stone block takes 600 ms, diamond ore
-  1,200 ms. Moving the aiming pointer away, releasing it, opening a dialog or
-  leaving the foreground cancels the local attempt. The server checks duration,
+- **Mine:** click or tap a mine block (or a block built on the square), press and
+  hold it, hold the pickaxe action button, or hold Enter while the canvas is
+  focused. A click or tap keeps digging after release: the explorer turns to the
+  block and swings the pickaxe until it breaks. A stone block takes 600 ms, diamond
+  ore 1,200 ms. Dragging the view, walking more than about a block away, opening a
+  dialog or leaving the foreground cancels the local attempt. Tapping hard rock
+  outside the mines says where digging works. The server checks duration,
   recent position, reach, exposed line of sight and the exact block again before
   awarding a resource. Natural diamond ore is distinct from the decorative Crystal
   build block. Two explorers targeting one block produce one resource grant.

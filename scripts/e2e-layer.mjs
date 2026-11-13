@@ -290,11 +290,15 @@ try {
   );
   let after = before;
   for (const point of chosen) {
+    // One ordinary click digs: the dig continues after release, with the
+    // pickaxe swing, until the block breaks.
     await desktop.mouse.move(point.x, point.y);
     await desktop.mouse.down();
-    await sleep(2200);
+    await sleep(80);
     await desktop.mouse.up();
-    await sleep(300);
+    await sleep(500);
+    await desktop.screenshot({ path: join(out, "desktop-dig-swing.png") });
+    await sleep(1900);
     after = await desktop.evaluate(async () =>
       (await fetch("/api/layer/expedition/state?x=0&z=-50")).json(),
     );
@@ -304,7 +308,7 @@ try {
   assert.equal(
     after.inventory.diamonds,
     before.inventory.diamonds + 1,
-    `holding a rendered ore face grants one diamond; ${JSON.stringify({ miningResponses, target, position })}`,
+    `clicking a rendered ore face digs it and grants one diamond; ${JSON.stringify({ miningResponses, target, position })}`,
   );
   assert.ok(
     after.changes.some(

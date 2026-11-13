@@ -702,7 +702,7 @@ export const CHAPTERS: Chapter[] = [
       { h: "First expedition" },
       { list: [
         "Enter from the world picker when the testnet host enables MetaLayer. Start on the public square. Everyone can build on its green areas; the central altar, crossings and walking floor stay protected.",
-        "Meet Keeper Nera beside the arrival path. Tap her or open the nearby action to accept the first expedition. Community also opens the board. Follow the cyan beam into Crystal Hollow and hold a pickaxe on ten natural diamond blocks. The server checks mining duration, reach, exposed sight line and exclusive extraction. Decorative crystals do not count as ore.",
+        "Meet Keeper Nera beside the arrival path. Tap her or open the nearby action to accept the first expedition. Community also opens the board. Follow the cyan beam into Crystal Hollow and dig ten natural diamond blocks with a click or tap. The server checks mining duration, reach, exposed sight line and exclusive extraction. Decorative crystals do not count as ore.",
         "The same resource block disappears for everyone. Natural diamonds renew after fifteen minutes, while dug stone corridors stay open. The backpack shows confirmed resources. Completion is saved once and survives reconnecting.",
         "The minimap shares every explorer's discoveries. The atlas loads only the chosen window, so a distant journey never shrinks the central square. Return to the square is an explicit jump and reveals no line between the two places.",
       ] },
@@ -727,7 +727,7 @@ export const CHAPTERS: Chapter[] = [
       ] },
       { h: "Controls and proof" },
       { list: [
-        "Use the same accessible stick as the city demonstration: forward, back and turns, with Run and Jump. Hold a mine block to extract it; choose Build to place on the square. Desktop right-click places a block. Modals keep movement keys for their own controls.",
+        "Use the same accessible stick as the city demonstration: forward, back and turns, with Run and Jump. Click or tap a mine block to dig it: the explorer turns to it and swings the pickaxe until it breaks, and walking away or dragging the view stops. Pressing and holding works too. Hard rock outside the mines says where to dig. Choose Build to place on the square. Desktop right-click places a block. Modals keep movement keys for their own controls.",
         "The first preview uses an Aavegotchi starter ghost and the equipped Aura. Full verified-original 3D outfits remain a renderer integration. Movement in MetaLayer never counts as real GPS evidence.",
         "Block edits, discoveries, extraction receipts and resource inventories are stored in the dedicated MetaLayer module. This preview issues no QuestLayer items, XP or money. The Actions and NEAR proofs panel (Settings → Advanced) separates locally saved actions from verified chain references and offers the existing platform account feed as separately labelled history.",
       ] },

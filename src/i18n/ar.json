@@ -3324,13 +3324,14 @@
   "Buying…": "جارٍ الشراء…",
   "Buy land for {0} MetaGold": "اشترِ الأرض مقابل {0} MetaGold",
   "Space": "مسافة",
-  "1 task waiting": "مهمة واحدة بانتظارك",
-  "{0} tasks waiting": "{0} مهام بانتظارك",
-  "Food": "طعام",
-  "Pub": "حانة",
+  "This rock is too hard. Dig in Crystal Hollow or Basalt Quarry, or on blocks built on the square.": "هذه الصخرة صلبة جدًا. احفر في كهف البلور أو محجر البازلت، أو في الكتل المبنية في الساحة.",
+  "City demo: {0}": "عرض المدينة التجريبي: {0}",
   "Sight": "معلم",
-  "Likes: {0}": "يحب: {0}",
-  "Places I know": "أماكن أعرفها",
+  "Pub": "حانة",
   "No places yet. Tell me about one in Talk.": "لا أماكن بعد. أخبرني عن واحد في المحادثة.",
-  "City demo: {0}": "عرض المدينة التجريبي: {0}"
+  "Places I know": "أماكن أعرفها",
+  "Likes: {0}": "يحب: {0}",
+  "Food": "طعام",
+  "1 task waiting": "مهمة واحدة بانتظارك",
+  "{0} tasks waiting": "{0} مهام بانتظارك"
 }
