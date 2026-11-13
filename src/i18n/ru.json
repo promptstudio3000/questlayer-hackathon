@@ -3218,5 +3218,6 @@
  "0.001–1 test NEAR · 1 NEAR = {0} QGOLD": "0,001–1 тестового NEAR · 1 NEAR = {0} QGOLD",
  "Choose a price between 1M and 1,000B QGOLD.": "Выбери цену от 1M до 1 000B QGOLD.",
  "Practice QGOLD is play money with no value.": "Тренировочный QGOLD — игровые деньги без ценности.",
- "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "Ответ проверяет рецензент, до 3 попыток. При старте за тобой сохраняется эта версия квеста. Награда в XP, предметах или QGOLD не назначена, GPS и личное посещение никто не проверяет."
+ "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "Ответ проверяет рецензент, до 3 попыток. При старте за тобой сохраняется эта версия квеста. Награда в XP, предметах или QGOLD не назначена, GPS и личное посещение никто не проверяет.",
+ "The reward must be at least {0} QGOLD per completion.": "Награда должна быть не меньше {0} QGOLD за одно выполнение."
 }
