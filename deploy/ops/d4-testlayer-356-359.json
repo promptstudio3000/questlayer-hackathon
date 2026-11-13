@@ -2,5 +2,5 @@
   "id": "d4-testlayer-356-359",
   "deployTarget": "testlayer",
   "installKeys": [],
-  "note": "Test Layer at the World release with #356 (vault window timing) and #359 (NPCs speak rich English)."
+  "note": "Test Layer at the World release with #356 (vault window timing), #359 (NPCs speak rich English) and #360 (zoom out to the globe)."
 }
