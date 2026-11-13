@@ -188,7 +188,7 @@ export function createNearAiLoreProvider(config) {
 const SAY_RULES = ["link-or-contact", "markup", "unsafe-instruction", "credential-request", "promise", "instruction-leak", "reward-claim", "currency"];
 
 /** Check the model's judgement; returns a safe value or { reason }. */
-export function validateLoreOutput(output, known) {
+export function validateLoreOutput(output, known, answer = "") {
   if (!output || typeof output !== "object" || Array.isArray(output)) return { reason: "schema-not-object" };
   const verdict = ["new", "same", "off_topic", "unsafe"].includes(output.verdict) ? output.verdict : null;
   if (!verdict) return { reason: "schema-verdict" };
@@ -206,8 +206,15 @@ export function validateLoreOutput(output, known) {
     return { value: { verdict, tip, place, say } };
   }
   if (verdict === "same") {
-    const match = known.find((k) => k.id === output.matches);
-    return match ? { value: { verdict, matches: match.id, say } } : { value: { verdict: "off_topic", say } };
+    // Models cite the id loosely ("k1: …", "[k1]") or not at all; fall back
+    // to the known tip whose place the answer names, then to word overlap.
+    const cited = typeof output.matches === "string" ? /\bk\d+\b/.exec(output.matches)?.[0] : null;
+    const plain = (t) => String(t || "").toLowerCase().normalize("NFD").replace(/\p{M}/gu, "");
+    const match =
+      known.find((k) => k.id === cited) ||
+      known.find((k) => k.place && plain(answer).includes(plain(k.place))) ||
+      [...known].sort((x, y) => similarity(y.text, answer) - similarity(x.text, answer)).find((k) => similarity(k.text, answer) >= 0.2);
+    return match ? { value: { verdict, matches: match.id, say } } : { value: { verdict: "off_topic", say: null } };
   }
   return { value: { verdict, say } };
 }
@@ -324,7 +331,7 @@ export function createLoreService(db, { env = process.env, provider = null, cloc
       reason = null;
     if (provider) {
       try {
-        const checked = validateLoreOutput(await provider.judge({ persona, mission, known, answer: text }), known);
+        const checked = validateLoreOutput(await provider.judge({ persona, mission, known, answer: text }), known, text);
         if (checked.value) judged = checked.value;
         else reason = checked.reason;
       } catch (error) {
