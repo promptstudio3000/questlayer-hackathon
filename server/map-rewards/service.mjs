@@ -57,10 +57,10 @@ const circle = (p, radius, steps = 20) =>
   organicRing(p, radius, `${p.lat},${p.lng}:${radius}`, steps);
 
 /** Promote 1-3 of the cell's POI quests to funded cell zones. Returns zone ids. */
-function promoteCellZones(db, world, cell, count, zonesU, seed) {
+function promoteCellZones(db, world, cell, count, zonesU, seed, firstToday = true) {
   if (count < 1) return [];
   const reviewed = !!world.cityId && world.cityStatus !== "auto";
-  if (reviewed) return []; // Plzeň keeps its six reviewed city zones.
+  if (reviewed) return fundReviewedZones(db, world, cell, count, zonesU, seed, firstToday);
   const candidates = (world.zones || [])
     .filter(
       (z) =>
@@ -101,6 +101,40 @@ function promoteCellZones(db, world, cell, count, zonesU, seed) {
     z.prizeU = prize;
   }
   return candidates.map((z) => z.id);
+}
+
+/**
+ * Plzeň keeps its six reviewed city zones (no POI cell zones there), and
+ * their prizes come from the same daily zone budget as every cell zone
+ * (owner, 13 Nov 2026: every prize the game shows is paid out on chain).
+ * The cell's zone budget is split over up to `count` reviewed zones in the
+ * cell, Tier 3 first; only the first world that opens the cell today funds
+ * them, so the GPS city and the demo never spend the same budget twice.
+ */
+function fundReviewedZones(db, world, cell, count, zonesU, seed, firstToday) {
+  if (!firstToday || zonesU <= 0) return [];
+  const candidates = (world.zones || [])
+    .filter((z) => z.source !== "poi" && z.source !== "pioneer" && !z.cellZone && Number.isFinite(z.lat) && cellOf(z) === cell)
+    .sort((a, b) => (b.tier || 1) - (a.tier || 1) || unit(seed, `zone:${a.id}`) - unit(seed, `zone:${b.id}`))
+    .slice(0, count);
+  if (!candidates.length) return [];
+  const prize = Math.floor(zonesU / candidates.length);
+  if (prize <= 0) return [];
+  const funded = [];
+  for (const z of candidates) {
+    const q = db
+      .prepare("SELECT id,metadata FROM quests WHERE zone_id=? AND claimant IS NULL ORDER BY id LIMIT 1")
+      .get(z.id);
+    if (!q) continue;
+    const meta = JSON.parse(q.metadata || "{}");
+    if (meta.activity)
+      meta.activity.rewardConstraint = `Personal XP for everyone who finishes; the first explorer also takes ${prize.toLocaleString("en-US")} QGOLD from this area's daily budget.`;
+    meta.cellZone = { policy: MAP_REWARDS_POLICY, cell, prizeU: prize, reviewed: true };
+    db.prepare("UPDATE quests SET gold_u=?,metadata=? WHERE id=?").run(prize, JSON.stringify(meta), q.id);
+    z.prizeU = prize;
+    funded.push(z.id);
+  }
+  return funded;
 }
 
 function chestActivity(spot) {
@@ -256,6 +290,7 @@ export async function materializeCellRewards(
       leaf?.zones ?? 0,
       leaf?.zonesU || 0,
       seed,
+      firstToday,
     );
     const extra = [];
     if (pioneer) {

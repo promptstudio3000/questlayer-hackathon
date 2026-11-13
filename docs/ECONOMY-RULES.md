@@ -35,7 +35,7 @@ instead of the source; developers change the value here and in the pointed file 
 | Rule | Value | Source |
 | --- | --- | --- |
 | Daily zones in Plzeň | 6 slots, 3 Free / 2 Tier 2 / 1 Tier 3, disjoint polygons | `docs/WORLD-GENERATION.md`, `server/world-planner.mjs` |
-| Shared zone prize (practice) | Tier 3: 5,000 GOLD; Tier 2: 1,000 GOLD; Free: 0 GOLD, only if the zone bucket can back it | `server/world.mjs:179-187` |
+| Shared zone prize | With map rewards on (default): the cell's daily zone budget, split over Plzeň's reviewed zones in the cell or the cell's POI zones, paid out on chain (owner, 13 Nov 2026). Only with `MAP_REWARDS=off` the old practice prizes (Tier 3 5,000, Tier 2 1,000 GOLD) apply | `server/map-rewards/service.mjs`, `server/world.mjs` |
 | Personal XP per activity | from the quest template (visit 50 XP; route and chest per template) | `server/quest-templates.mjs` |
 | Shared prize vs personal XP | personal XP once per account; the shared prize pays once, to the first valid receipt | `docs/GAME-RULES.md` E14, E15 |
 | Activity windows | all-day, three-hour and one-hour openings in one published schedule | `server/spatial/calendar.mjs` |

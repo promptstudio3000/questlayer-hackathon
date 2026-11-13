@@ -453,6 +453,12 @@ export default function App() {
       .then((c) => {
         setVirtualLayer(c.layer?.layers?.[0] ?? null);
         setGameLayer(c.gameLayer ?? null);
+        // Until launch World opens the Test Layer; "?world=1" (from its picker) keeps World for good.
+        const g = c.gameLayer, key = "questlayer.stayWorld";
+        try {
+          if (/[?&]world=1/.test(location.search)) { localStorage.setItem(key, "1"); history.replaceState(null, "", location.pathname + location.hash); }
+          else if (g?.defaultTest && g.testLayerUrl && !localStorage.getItem(key)) location.replace(g.testLayerUrl);
+        } catch {}
         if (c.gameLayer?.test) document.documentElement.dataset.testLayer = "1";
       })
       .catch(() => {});
@@ -4098,6 +4104,8 @@ export default function App() {
           frame={myFrame}
           goldMap={goldMapData}
           selectedQuestId={selectedQuestId}
+          guideLabel={selected ? (zoneQuest ? questDisplayTitle(zoneQuest.title) : selected.name) : undefined}
+          onGuideStop={selected ? closeZone : findTarget ? () => setStreetFindTarget(null) : undefined}
           guideRequest={guideRequest && guideRequest.worldId === world?.id && guideRequest.playerId === player?.id && selected && zoneQuest?.id === guideRequest.questId && zoneQuests.some(q => q.id === guideRequest.questId && !q.completed && q.opens_at <= now && q.closes_at > now) ? guideRequest : null}
           route={questRoute}
           onPlacePin={(id) => {
@@ -4253,7 +4261,7 @@ export default function App() {
         </div>
       </header>
       </>)}
-      {player && zonePresence && !selected && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => { const q = world?.quests.find(x => x.id === zonePresence.questId); if (q) startQuest(q); else selectZone(zonePresence.zone); }} />}
+      {player && zonePresence && !selected && mapInteractive && !mapFullOn && <ZonePresence presence={zonePresence} arena={arena} onOpen={() => selectZone(zonePresence.zone)} />}
       {player && tab !== "explore" && (
         // Desktop: Inventory, Community and Profile open as a card over the
         // map; a click beside the card closes it like the panel's close button.

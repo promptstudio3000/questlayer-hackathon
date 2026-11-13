@@ -194,6 +194,10 @@ test("zero-item chests and another player's shared prize retain their exact inde
   assert.equal(empty.result.itemCurrent.status, "none");
   assert.equal(empty.result.reward.xp, chest.xp);
   const funded = quests.find((q) => q.tier === 2 && q.kind === "visit");
+  // Zone prizes come from the daily zone budget (a funded cell zone).
+  db.prepare(
+    "UPDATE quests SET gold_u=1500,metadata=json_set(COALESCE(metadata,'{}'),'$.cellZone',json('{\"cell\":\"test\",\"prizeU\":1500}')) WHERE id=?",
+  ).run(funded.id);
   stake(db, a, 100000 * GOLD, 50, "meadow", now);
   stake(db, b, 100000 * GOLD, 50, "river", now);
   const winner = claimQuest(db, a, funded.id, funded, now + 31000),
