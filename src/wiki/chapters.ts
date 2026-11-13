@@ -718,6 +718,7 @@ export const CHAPTERS: Chapter[] = [
       { h: "Same platform, another game" },
       { list: [
         "MetaLayer uses the GotchiGO screen layout: the logo world picker and daily-goal chip top left, the avatar bubble (here with diamonds instead of QGOLD) and the gear top right, the stick bottom left, Actions bottom right, one objective card and the Explore / Inventory / Community bar. Only the game canvas and its actions change.",
+        "Actions sits in the bottom right corner like GotchiGO and fans out Talk, Mine, Build, Jump and Land and building. With a keyboard each has a shortcut shown beside its label: T talk, M mine, B build, Space jump, L land. Talk opens the place or person in front of the explorer, otherwise Keeper Nera.",
         "The gear opens the same Settings sheet as GotchiGO. Its first group holds world tools (my location, shared atlas, central square, land and building, minimap) instead of GPS, city overview and globe. Game, Help and Account follow; account and backup open the platform Settings. Saved actions and chain references sit under Advanced, not in Community or the backpack.",
       ] },
       { h: "Controls and proof" },

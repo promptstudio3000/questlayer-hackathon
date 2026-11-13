@@ -8,6 +8,8 @@ export type MapAction = {
   label: string;
   icon: ComponentType<{ size?: number; weight?: "regular" | "bold" | "fill"; "aria-hidden"?: boolean | "true" }>;
   onSelect: () => void;
+  /** Keyboard shortcut shown beside the label on devices with a keyboard. */
+  shortcut?: string;
 };
 
 /**
@@ -26,12 +28,16 @@ export function MapActions({ actions, children }: { actions: MapAction[]; childr
               <button
                 type="button"
                 className={`map-action map-action-${a.id}`}
+                aria-keyshortcuts={a.shortcut}
                 onClick={() => {
                   setOpen(false);
                   a.onSelect();
                 }}
               >
-                <span className="map-action-label">{a.label}</span>
+                <span className="map-action-label">
+                  {a.label}
+                  {a.shortcut && <kbd className="map-action-key" aria-hidden="true">{a.shortcut}</kbd>}
+                </span>
                 <span className="map-action-icon" aria-hidden="true">
                   <a.icon size={22} weight="bold" aria-hidden="true" />
                 </span>
