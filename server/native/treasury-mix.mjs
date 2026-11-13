@@ -1,5 +1,6 @@
-// Treasury mix: 50 % liquid staking, 40 % stablecoins on Rhea Lend, 10 % NEAR
-// (docs/TREASURY-MIX.md, QGOLD build plan stream 8).
+// Treasury mix (docs/TREASURY-MIX.md, QGOLD build plan stream 8). The target
+// comes from the treasury DAO (on testnet 90 % staked NEAR, 5 % USDC, 5 % USDT
+// since 11 Nov 2026); the settings default is the older 50 / 40 / 10.
 //
 // The sponsor treasury (the operator wallet that funds reward days) used to be
 // stNEAR only, so all of its yield came from NEAR staking and all of its value
@@ -10,6 +11,11 @@
 //   stable  USDC / USDT deposited in our yield vault, which supplies them to
 //           Rhea Lend while the market is under 95 % utilization
 //   near    wNEAR in the wallet: a reserve that is separate from the gas NEAR
+//   staked  NEAR staked with validators through the treasury's keyless staking
+//           vaults (scripts/treasury-stake-testnet.mjs). The only thing that
+//           earns on testnet. The planner counts these positions but never
+//           moves them: new stake goes through the staking script, and each
+//           validator pool is its own protocol under the 40 % cap.
 //
 // Hard limits (Lubos, 4 Nov 2026): at most 40 % of the treasury with any one
 // protocol, never supply to a market at or above 95 % utilization, approved
@@ -45,13 +51,22 @@ export const MIX_NETWORKS = {
       { id: "usdt", label: "USDT", token: "usdt.fakes.testnet", bucket: "stable", protocol: "Rhea Lend", decimals: 6, feed: PYTH.usdt },
       { id: "wnear", label: "wNEAR", token: "wrap.testnet", bucket: "near", protocol: "NEAR", decimals: 24 },
     ],
+    // Keyless staking vaults whose beneficiary is the treasury account.
+    // Vaults that do not exist yet count as nothing (b/c/d wait for the faucet).
+    stakeVaults: [
+      "stake-20261111.questlayer-dev-20261101.testnet",
+      "stake-20261111-b.questlayer-dev-20261101.testnet",
+      "stake-20261111-c.questlayer-dev-20261101.testnet",
+      "stake-20261111-d.questlayer-dev-20261101.testnet",
+      "questlayer-vault-20261101b.testnet",
+    ],
   },
   // Mainnet needs its own allowlist, a review and Lubos's go.
 };
 
 // Ceilings in code: settings may only tighten them.
 export const HARD_LIMITS = Object.freeze({ maxProtocolBps: 4000, maxUtilBps: 9500, maxMoveBps: 5000 });
-export const BUCKETS = ["lst", "stable", "near"];
+export const BUCKETS = ["staked", "lst", "stable", "near"];
 
 const U128 = /^(0|[1-9]\d{0,38})$/;
 const u128 = (v, what) => {
@@ -69,12 +84,13 @@ export function mixSettings(env = process.env, network = "testnet") {
     return v != null && v !== "" && Number.isInteger(n) && n >= 0 && n <= 10_000 ? n : fallback;
   };
   let target = {
+    staked: bps(env.TREASURY_MIX_STAKED_BPS, 0),
     lst: bps(env.TREASURY_MIX_LST_BPS, 5000),
     stable: bps(env.TREASURY_MIX_STABLE_BPS, 4000),
     near: bps(env.TREASURY_MIX_NEAR_BPS, 1000),
   };
-  const policyError = target.lst + target.stable + target.near !== 10_000;
-  if (policyError) target = { lst: 5000, stable: 4000, near: 1000 };
+  const policyError = target.staked + target.lst + target.stable + target.near !== 10_000;
+  if (policyError) target = { staked: 0, lst: 5000, stable: 4000, near: 1000 };
   const nearAmount = (v, fallback) => {
     const n = Number(v);
     return BigInt(Math.round((Number.isFinite(n) && n > 0 ? n : fallback) * 1e6)) * 10n ** 18n;
@@ -87,6 +103,12 @@ export function mixSettings(env = process.env, network = "testnet") {
     pyth: net?.pyth || null,
     ref: net?.ref || null,
     assets: net?.assets || [],
+    stakeVaults:
+      env.TREASURY_MIX_STAKE_VAULTS === "off"
+        ? []
+        : env.TREASURY_MIX_STAKE_VAULTS
+          ? env.TREASURY_MIX_STAKE_VAULTS.split(",").map((x) => x.trim()).filter(Boolean)
+          : net?.stakeVaults || [],
     target,
     policyError,
     maxProtocolBps: Math.min(HARD_LIMITS.maxProtocolBps, bps(env.TREASURY_MIX_MAX_PROTOCOL_BPS, 4000)),
@@ -209,6 +231,7 @@ function fill(want, rows, room, target) {
  * comes out of the operator's gas NEAR.
  */
 export function planMix({ holdings, markets = {}, settings }) {
+  settings = { ...settings, target: normalTargets(settings.target) };
   const total = holdings.reduce((a, h) => a + h.value, 0n);
   const target = new Map(holdings.map((h) => [h.id, 0n]));
   const notes = [];
@@ -223,15 +246,31 @@ export function planMix({ holdings, markets = {}, settings }) {
   if (total === 0n) return result({ action: "skip", reason: "empty-treasury" });
   const cap = share(total, settings.maxProtocolBps);
 
+  // Staked NEAR in the treasury's staking vaults stays where it is: the
+  // planner never sells or buys it. What it covers beyond its share is taken
+  // from the liquid buckets (stables first get their share, then LSTs).
+  const staked = holdings.filter((h) => h.bucket === "staked");
+  for (const h of staked) target.set(h.id, h.value);
+  const stakedNow = staked.reduce((a, h) => a + h.value, 0n);
+  const stakedWant = share(total, settings.target.staked);
+  for (const h of staked)
+    if (h.value > cap) notes.push(`${h.label}: above the ${settings.maxProtocolBps / 100} % cap per validator; new stake goes to other validators.`);
+  if (settings.target.staked > 0 && stakedNow + share(total, settings.driftBps) < stakedWant)
+    notes.push("Staked NEAR is below its target: new stake goes through the treasury staking vaults, so the rest waits in NEAR.");
+  let liquid = total - stakedNow;
+
   // LSTs: each provider is its own protocol, capped at 40 %. A provider we do
   // not hold yet only counts when its share reaches the provider's minimum stake.
   const lsts = holdings.filter((h) => h.bucket === "lst");
-  const lstWant = share(total, settings.target.lst);
+  // Stables get their share of what is liquid before LSTs.
+  const stableShare = min(share(total, settings.target.stable), liquid);
+  const lstWant = min(share(total, settings.target.lst), liquid - stableShare);
   let eligible = lsts.filter((h) => h.value > 0n || lstWant / BigInt(Math.max(1, lsts.length)) >= h.minStake);
   if (!eligible.length && lsts.length) eligible = [lsts[0]];
   for (const h of lsts.filter((x) => !eligible.includes(x)))
     notes.push(`${h.label}: its share is below the ${h.minStake / YOCTO} NEAR minimum stake, so it waits in NEAR.`);
   const lstLeft = fill(lstWant, eligible, () => cap, target);
+  liquid -= lstWant - lstLeft;
   if (lstLeft > 0n) notes.push("Liquid staking is below its target: the 40 % cap per protocol keeps the rest in NEAR.");
 
   // Stablecoins: all on Rhea Lend, so the protocol cap covers their sum.
@@ -242,20 +281,21 @@ export function planMix({ holdings, markets = {}, settings }) {
   };
   const byProtocol = new Map();
   for (const h of stables) byProtocol.set(h.protocol, [...(byProtocol.get(h.protocol) || []), h]);
-  let stableWant = share(total, settings.target.stable);
+  let stableWant = min(stableShare, liquid);
   // Allowlist order is the preference (USDC first); a closed or full market is skipped.
   const open = stables.filter(ok);
   for (const h of stables.filter((x) => !ok(x)))
     notes.push(`${h.label}: the Rhea market is not open or is at least ${settings.maxUtilBps / 100} % lent out, so nothing new goes there.`);
   const protocolRoom = new Map([...byProtocol].map(([p]) => [p, cap]));
-  // Keep what already sits in healthy markets (no churn between USDC and USDT),
-  // then add the rest to the first healthy market.
+  // Split evenly over the healthy markets (5 % USDC + 5 % USDT, not all in
+  // one coin), each inside the room its protocol has left; what one market
+  // cannot take goes to the next in allowlist order.
+  const each = open.length ? stableWant / BigInt(open.length) : 0n;
   for (const h of open) {
-    const room = min(protocolRoom.get(h.protocol), stableWant);
-    const keep = min(h.value, room);
-    target.set(h.id, keep);
-    stableWant -= keep;
-    protocolRoom.set(h.protocol, protocolRoom.get(h.protocol) - keep);
+    const add = min(protocolRoom.get(h.protocol), each);
+    target.set(h.id, add);
+    stableWant -= add;
+    protocolRoom.set(h.protocol, protocolRoom.get(h.protocol) - add);
   }
   for (const h of open) {
     const add = min(protocolRoom.get(h.protocol), stableWant);
@@ -270,13 +310,17 @@ export function planMix({ holdings, markets = {}, settings }) {
   // NEAR reserve takes everything the caps left over.
   const placed = [...target.values()].reduce((a, v) => a + v, 0n);
   const reserve = holdings.find((h) => h.bucket === "near");
-  if (reserve) target.set(reserve.id, total - placed);
+  if (reserve) target.set(reserve.id, total > placed ? total - placed : 0n);
 
   const buckets = bucketRows(holdings, target, total, settings);
   const drift = Math.max(...buckets.map((b) => Math.abs(b.currentBps - b.targetBps)));
+  // With most of the treasury staked, the liquid part is measured against
+  // itself, or a small liquid part would never move (2 NEAR next to 93 staked).
+  const liquidTotal = total - stakedNow;
   const assetDrift = holdings.some((h) => {
+    if (h.bucket === "staked") return false;
     const t = target.get(h.id);
-    return (h.value > t ? h.value - t : t - h.value) > share(total, settings.driftBps);
+    return (h.value > t ? h.value - t : t - h.value) > share(stakedNow > 0n ? liquidTotal : total, settings.driftBps);
   });
   if (drift <= settings.driftBps && !assetDrift) return result({ action: "hold", reason: "within-drift", drift });
 
@@ -285,7 +329,7 @@ export function planMix({ holdings, markets = {}, settings }) {
   let cash = 0n;
   const steps = [];
   const rank = (h) => (h.bucket === "stable" && !ok(h) ? 0 : h.bucket === "lst" ? 1 : h.bucket === "stable" ? 2 : 3);
-  const over = holdings.filter((h) => h.value > target.get(h.id)).sort((a, b) => rank(a) - rank(b));
+  const over = holdings.filter((h) => h.bucket !== "staked" && h.value > target.get(h.id)).sort((a, b) => rank(a) - rank(b));
   for (const h of over) {
     if (budget < settings.minMove) break;
     let amount = min(h.value - target.get(h.id), budget);
@@ -315,9 +359,9 @@ export function planMix({ holdings, markets = {}, settings }) {
   }
 
   // Sinks: stablecoins first (the point of this change), then LSTs, then the reserve.
-  const sinkRank = { stable: 0, lst: 1, near: 2 };
+  const sinkRank = { stable: 0, lst: 1, near: 2, staked: 3 };
   const under = holdings
-    .filter((h) => h.value < target.get(h.id))
+    .filter((h) => h.bucket !== "staked" && h.value < target.get(h.id))
     .sort((a, b) => sinkRank[a.bucket] - sinkRank[b.bucket]);
   for (const h of under) {
     if (cash < settings.minMove) break;
@@ -358,7 +402,7 @@ function bucketRows(holdings, target, total, settings) {
       target: goal,
       currentBps: bpsOf(current, total),
       targetBps: bpsOf(goal, total),
-      policyBps: settings.target[b],
+      policyBps: settings.target[b] ?? 0,
     };
   });
 }
@@ -435,6 +479,49 @@ export async function readRows(provider, settings, account) {
   return rows;
 }
 
+/** Treasury staking vaults: their positions as holdings of the "staked" bucket. */
+export async function readStakeVaults(provider, settings, account) {
+  const out = [];
+  await Promise.all(
+    (settings.stakeVaults || []).map(async (id) => {
+      let st;
+      try {
+        st = await view(provider, id, "get_state");
+      } catch {
+        return; // a vault that does not exist (yet) counts as nothing
+      }
+      if (!st || st.beneficiary !== account || st.network !== settings.network) return;
+      const value = ["staked", "unstaked", "pending_pool_cash"].reduce((a, k) => a + u128(String(st[k] ?? "0"), `vault ${k}`), 0n);
+      out.push(stakedHolding({ id, pool: String(st.pool || ""), value, principal: u128(String(st.principal ?? "0"), "vault principal") }));
+    }),
+  );
+  return out.sort((a, b) => a.id.localeCompare(b.id));
+}
+/** One staking vault as a holding: counted, never moved by the planner. */
+export function stakedHolding({ id, pool, value, principal = value }) {
+  const short = pool.split(".")[0] || pool;
+  return {
+    id,
+    label: `Staked with ${short}`,
+    token: id,
+    bucket: "staked",
+    protocol: `Validator ${short}`,
+    decimals: 24,
+    minStake: 0n,
+    wallet: 0n,
+    vault: principal,
+    pending: 0n,
+    walletValue: 0n,
+    vaultValue: value,
+    vaultFreeValue: 0n,
+    value,
+  };
+}
+/** Targets with every bucket present (old adopted mixes have no "staked"). */
+export function normalTargets(t) {
+  return { staked: t?.staked ?? 0, lst: t?.lst ?? 0, stable: t?.stable ?? 0, near: t?.near ?? 0 };
+}
+
 /** Rhea Lend markets keyed by token, with utilization in basis points. */
 export async function readMarkets(provider, settings, network) {
   const rs = rheaSettings({ RHEA_MAX_UTILIZATION: String(settings.maxUtilBps / 100) }, network);
@@ -464,12 +551,13 @@ export function pendingYield(record) {
 export async function readMix(provider, settings, { account, record = null, now = Date.now() } = {}) {
   assert(settings.enabled, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
   assert(account, "The treasury account is not known.", 503);
-  const [prices, rows, markets] = await Promise.all([
+  const [prices, rows, markets, stakedRows] = await Promise.all([
     readPrices(provider, settings, { now }),
     readRows(provider, settings, account),
     readMarkets(provider, settings, settings.network),
+    readStakeVaults(provider, settings, account),
   ]);
-  const holdings = valueHoldings({ assets: settings.assets, rows, prices, pending: pendingYield(record) });
+  const holdings = [...stakedRows, ...valueHoldings({ assets: settings.assets, rows, prices, pending: pendingYield(record) })];
   const plan = planMix({ holdings, markets, settings });
   return { prices, rows, markets, holdings, plan, exposure: protocolExposure(holdings, settings) };
 }
@@ -484,10 +572,13 @@ const s = (v) =>
         : v;
 
 /** Public view for GET /api/treasury/mix (no keys, read-only). */
-export function createTreasuryMixView({ provider, settings, record, account, clock = Date.now }) {
+export function createTreasuryMixView({ provider, settings: base, record, account, target = null, clock = Date.now }) {
   let hit = null;
   return async function read() {
-    if (hit && clock() - hit.at < settings.cacheMs) return hit.value;
+    if (hit && clock() - hit.at < base.cacheMs) return hit.value;
+    // The treasury DAO's adopted mix (docs/TREASURY-DAO.md) replaces the configured target.
+    const adopted = target ? await target().catch(() => null) : null;
+    const settings = adopted ? { ...base, target: adopted, governedBy: "dao" } : base;
     const r = record();
     const who = settings.account || account() || r?.account || null;
     const live = await readMix(provider, settings, { account: who, record: r, now: clock() });
@@ -496,7 +587,8 @@ export function createTreasuryMixView({ provider, settings, record, account, clo
       account: who,
       vault: settings.vault,
       policy: {
-        target: settings.target,
+        target: normalTargets(settings.target),
+        governedBy: settings.governedBy || "settings",
         maxProtocolBps: settings.maxProtocolBps,
         maxUtilBps: settings.maxUtilBps,
         driftBps: settings.driftBps,

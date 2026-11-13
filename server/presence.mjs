@@ -1,16 +1,16 @@
 import { point, assert } from "./domain.mjs";
 import { initSocialBlocks } from "./social-content.mjs";
 export function updatePresence(db, player, input, now = Date.now()) {
-  const lease = typeof input.leaseId === "string" ? input.leaseId : "legacy";
-  assert(/^[a-zA-Z0-9_-]{1,80}$/.test(lease), "Invalid sharing session.");
+  const lease = input.leaseId;
+  assert(typeof lease === "string" && /^[a-zA-Z0-9_-]{1,80}$/.test(lease), "Invalid sharing session.");
   db.prepare("DELETE FROM presence_revocations WHERE expires_at<=?").run(now);
   if (!input.enabled) {
     db.prepare(
       "INSERT OR REPLACE INTO presence_revocations(player_id,lease_id,expires_at) VALUES(?,?,?)",
     ).run(player, lease, now + 20 * 60000);
     db.prepare(
-      "DELETE FROM presence WHERE player_id=? AND (lease_id=? OR (lease_id='' AND ?='legacy'))",
-    ).run(player, lease, lease);
+      "DELETE FROM presence WHERE player_id=? AND lease_id=?",
+    ).run(player, lease);
     return { enabled: false };
   }
   if (

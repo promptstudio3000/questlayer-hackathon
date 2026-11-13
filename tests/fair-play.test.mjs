@@ -27,13 +27,14 @@ function setup() {
 }
 
 test("limits default sensibly and ignore invalid overrides", () => {
-  assert.equal(limits.maxSpeedMps, 15);
+  assert.equal(limits.maxSpeedMps, 15 / 3.6);
   assert.equal(limits.travelCooldownMaxMs, 7_200_000);
   assert.equal(fairPlayLimits({ FAIR_PLAY_DAILY_XP: "900" }).dailyXp, 900);
   assert.equal(fairPlayLimits({ FAIR_PLAY_DAILY_XP: "-1" }).dailyXp, 3000);
-  assert.equal(fairPlayLimits({ FAIR_PLAY_MAX_SPEED_MPS: "fast" }).maxSpeedMps, 15);
+  assert.equal(fairPlayLimits({ FAIR_PLAY_MAX_SPEED_KMH: "fast" }).maxSpeedMps, 15 / 3.6);
+  assert.equal(fairPlayLimits({ FAIR_PLAY_MAX_SPEED_KMH: "36" }).maxSpeedMps, 10);
   assert.equal(travelWaitMs(0, limits), 0);
-  assert.equal(travelWaitMs(1500, limits), 100_000);
+  assert.equal(travelWaitMs(1500, limits), 360_000);
   assert.equal(travelWaitMs(5_000_000, limits), 7_200_000);
 });
 
@@ -102,11 +103,14 @@ test("a GPS coin claim far from the last accepted fix is refused; arena coins sk
     const player = createPlayer(db, "Spoofer");
     // Pinned clock: the generated world depends on the local date.
     const gps = await ensureWorld(db, HOME, false, NOW);
-    const coins = worldView(db, gps.id, player, { now: NOW }).coins;
+    // A cell holds 10 coins spread over the day's waves: claim late in the
+    // local day, when every wave is open.
+    const t = NOW + 11.75 * 3600_000;
+    const coins = worldView(db, gps.id, player, { now: t }).coins;
     const a = coins[0];
-    const b = coins.find((c) => distance(c, a) > 500);
-    assert.ok(b, "fixture needs two coins at least 500 m apart");
-    const t = NOW;
+    // Any two coins 150 m apart, two seconds apart, are far faster than walking.
+    const b = coins.find((c) => distance(c, a) > 150);
+    assert.ok(b, "fixture needs two coins at least 150 m apart");
     claimCoin(db, player, a.id, fix(a, t), t);
     assert.throws(
       () => claimCoin(db, player, b.id, fix(b, t + 2000), t + 2000),
@@ -115,7 +119,8 @@ test("a GPS coin claim far from the last accepted fix is refused; arena coins sk
     const arena = await ensureWorld(db, HOME, true, NOW);
     const coin = worldView(db, arena.id, player, { now: NOW }).coins[0];
     const r = claimCoin(db, player, coin.id, fix(coin, t + 3000, 0), t + 3000);
-    assert.equal(r.value, 0, "demo arena coins give XP only");
+    // The city demo pays the same backed coins as the map (only movement differs).
+    assert.ok(r.value > 0 && r.value === coin.value_u, "demo arena coins are backed");
   } finally {
     db.close();
   }

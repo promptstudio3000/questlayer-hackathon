@@ -417,15 +417,13 @@ html.hiw-root {
 .hiw-scene {
   min-width: 0;
 }
-.hiw-panel,
 .hiw-walk,
 .hiw-zones,
 .hiw-levels,
 .hiw-collect,
 .hiw-badges,
 .hiw-npcs,
-.hiw-stake,
-.hiw-season {
+.hiw-stake {
   background: var(--hiw-panel);
   border: 2px solid #0c0119;
   border-radius: 20px;
@@ -485,68 +483,142 @@ html.hiw-root {
   color: var(--hiw-coin);
 }
 
-/* 02 Zones */
+/* 02 Zones: the live map at night (src/zone-landmarks.ts colours). */
 .hiw-zone-map {
   position: relative;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 10px;
-  padding: 12px;
+  aspect-ratio: 3 / 2;
   border-radius: 12px;
-  background: #3e2a5e;
+  overflow: hidden;
+  background: radial-gradient(120% 90% at 50% 40%, #2c1a52, #170a30);
 }
-.hiw-zone {
+.hiw-zone-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hiw-zone-streets path {
+  fill: none;
+  stroke: #6d58a6;
+  stroke-width: 3;
+  opacity: 0.55;
+}
+.hiw-zone-blocks rect {
+  fill: #3d2a6b;
+}
+.hiw-zone-blocks rect.side {
+  fill: #23134a;
+}
+.hiw-zone .fill {
+  fill: currentColor;
+  opacity: 0.07;
+}
+.hiw-zone .glow {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 9;
+  opacity: 0.55;
+}
+.hiw-zone .line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  opacity: 0.85;
+}
+.hiw-zone.t3 .line {
+  stroke-dasharray: 6 5;
+}
+.hiw-altar {
+  position: absolute;
+  display: grid;
+  justify-items: center;
+  translate: -50% -50%;
+}
+.hiw-altar-pin {
   display: grid;
   place-items: center;
-  gap: 2px;
-  min-height: 72px;
-  border-radius: 40% 60% 55% 45% / 55% 40% 60% 45%;
-  font-size: 14px;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
+  background: #fcfaff;
+  border: 2px solid var(--zone);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--zone) 70%, transparent);
 }
-.hiw-zone.t1 {
-  background: #2f8f6b;
-  color: #eafff6;
-  border: 2px solid var(--hiw-mint);
+.hiw-altar-pin img {
+  width: 28px;
+  height: 28px;
+  image-rendering: pixelated;
 }
-.hiw-zone.t2 {
-  background: #4b2d78;
-  color: var(--hiw-muted);
-  border: 2px dashed #8a6bbf;
+.hiw-altar.t3 .hiw-altar-pin img {
+  filter: grayscale(0.6);
+  opacity: 0.75;
 }
-.hiw-zone.t3 {
-  background: #4b2d78;
-  color: var(--hiw-coin);
-  border: 2px dashed var(--hiw-coin);
+.hiw-altar-stem {
+  width: 2px;
+  height: 14px;
+  background: var(--zone);
 }
-.hiw-chest {
-  grid-column: 1 / -1;
-  position: relative;
+.hiw-zpill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  color: #fcfaff;
+  font: 700 11px/1.4 ui-monospace, SFMono-Regular, Menlo, monospace;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.hiw-zpill.open {
+  background: #176553;
+}
+.hiw-zpill.upcoming {
+  background: #672eeb;
+}
+.hiw-zpill.locked {
+  background: #6f6478;
+}
+.hiw-zone-coin {
+  position: absolute;
   display: grid;
   place-items: center;
-  height: 120px;
+  translate: -50% -50%;
 }
-.hiw-chest > span {
-  grid-area: 1 / 1;
-}
-.hiw-chest-closed {
-  opacity: 0;
-}
-.hiw-chest-aura {
-  transform: translateY(-46px);
-}
-.hiw-zone-steps {
+.hiw-zone-legend {
   list-style: none;
   display: flex;
   justify-content: space-around;
+  flex-wrap: wrap;
   gap: 8px;
   margin: 12px 0 0;
   padding: 0;
+  font-weight: 600;
 }
-.hiw-zone-steps li {
+.hiw-zone-legend li {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-weight: 600;
+  gap: 8px;
+}
+.hiw-zone-legend i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid var(--zone);
+  box-shadow: 0 0 8px var(--zone);
+}
+@media (max-width: 420px) {
+  .hiw-altar-pin {
+    width: 30px;
+    height: 30px;
+  }
+  .hiw-altar-pin img {
+    width: 22px;
+    height: 22px;
+  }
+  .hiw-zpill {
+    font-size: 9px;
+    padding: 1px 6px;
+  }
 }
 
 /* 03 Levels */
@@ -1030,76 +1102,7 @@ html.hiw-root {
   }
 }
 
-/* 08 Seasons */
-.hiw-season-head {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 18px;
-  margin-bottom: 12px;
-}
-.hiw-season-head svg {
-  color: var(--hiw-coin);
-}
-.hiw-season-head b {
-  font-size: 28px;
-}
-.hiw-season-bar {
-  display: flex;
-  gap: 3px;
-  height: 44px;
-  border-radius: 12px;
-  overflow: hidden;
-  background: #ffffff10;
-}
-.hiw-season-bar .seg {
-  display: grid;
-  place-items: center;
-  min-width: 0;
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--hiw-bg);
-  white-space: nowrap;
-  overflow: hidden;
-  transform-origin: left;
-}
-.seg.hunt { background: #ff7ad9; }
-.seg.visit { background: var(--hiw-mint); }
-.seg.line { background: var(--hiw-coin); }
-.hiw-season-points {
-  list-style: none;
-  display: flex;
-  justify-content: space-around;
-  margin: 10px 0;
-  padding: 0;
-  font-size: 15px;
-}
-.hiw-season-points b {
-  color: var(--hiw-coin);
-}
-.hiw-ranks {
-  list-style: none;
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 6px;
-  margin: 0;
-  padding: 0;
-}
-.hiw-ranks li {
-  display: grid;
-  padding: 8px 10px;
-  border-radius: 10px;
-  background: var(--hiw-panel-2);
-  font-weight: 600;
-  line-height: 1.25;
-}
-.hiw-ranks small {
-  font-weight: 400;
-  color: var(--hiw-muted);
-  font-size: 13px;
-}
-
-/* 09 Fair play */
+/* 08 Fair play */
 .hiw-principles {
   list-style: none;
   display: grid;
@@ -1127,9 +1130,68 @@ html.hiw-root {
   color: var(--hiw-muted);
 }
 
-/* 10 Join */
+/* 09 Join: the real game, faint, behind a big centred call to action. */
 .hiw-join {
+  position: relative;
   grid-template-columns: 1fr;
+  isolation: isolate;
+}
+.hiw-join-bg {
+  position: absolute;
+  inset: 0 auto;
+  left: 50%;
+  width: 100vw;
+  transform: translateX(-50%);
+  z-index: -1;
+  background: url("/art/how-it-works/game-map.jpg") center / cover no-repeat;
+  opacity: 0.2;
+  filter: blur(1px);
+  mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+  -webkit-mask-image: linear-gradient(to bottom, transparent, #000 18%, #000 82%, transparent);
+}
+.hiw-join-cta {
+  display: flex;
+  justify-content: center;
+  margin: 28px 0 24px;
+}
+.hiw-button.hiw-button-big {
+  min-height: 68px;
+  padding: 0 44px;
+  border-radius: 14px;
+  font-size: 22px;
+  font-weight: 700;
+}
+@media (max-width: 480px) {
+  .hiw-button.hiw-button-big {
+    width: 100%;
+  }
+}
+.hiw-to-top {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(16px, env(safe-area-inset-bottom));
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  background: var(--hiw-panel-2);
+  color: var(--hiw-text) !important;
+  border: 2px solid #0c0119;
+  box-shadow: var(--hiw-shadow);
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity 200ms, transform 200ms var(--hiw-ease);
+}
+.hiw-to-top.shown {
+  opacity: 1;
+  pointer-events: auto;
+  transform: none;
+}
+.hiw-to-top:hover {
+  background: var(--hiw-line);
 }
 .hiw-join .hiw-copy {
   max-width: 720px;
@@ -1256,23 +1318,25 @@ html.hiw-root {
       animation-delay: var(--at);
     }
 
-    /* 02 Zones: zones appear one by one, the chest shakes, opens, the Aura rises. */
+    /* 02 Zones: outlines glow in one by one, the altars drop onto them. */
     & [data-inview="true"] .hiw-zone {
-      animation: hiw-pop 500ms var(--hiw-pop) both;
-      animation-delay: calc(300ms + var(--i) * 140ms);
+      animation: hiw-fade 700ms var(--hiw-ease) both;
+      animation-delay: calc(300ms + var(--i) * 220ms);
     }
-    & [data-inview="true"] .hiw-chest-closed {
-      animation: hiw-chest-shake 1400ms ease-in-out 1200ms both;
+    & [data-inview="true"] .hiw-zone .glow {
+      animation: hiw-zone-breathe 3.2s ease-in-out infinite;
+      animation-delay: calc(1200ms + var(--i) * 400ms);
     }
-    & [data-inview="true"] .hiw-chest-open {
-      animation: hiw-appear 1ms linear 2600ms both;
+    & [data-inview="true"] .hiw-altar {
+      animation: hiw-altar-drop 600ms var(--hiw-pop) both;
+      animation-delay: calc(700ms + var(--i) * 220ms);
     }
-    & [data-inview="true"] .hiw-chest-aura {
-      animation: hiw-aura-rise 900ms var(--hiw-pop) 2650ms both;
+    & [data-inview="true"] .hiw-zone-coin {
+      animation: hiw-bob 3s ease-in-out infinite;
     }
-    & [data-inview="true"] .hiw-zone-steps li {
+    & [data-inview="true"] .hiw-zone-legend li {
       animation: hiw-rise 500ms var(--hiw-ease) both;
-      animation-delay: calc(3200ms + var(--i) * 120ms);
+      animation-delay: calc(1600ms + var(--i) * 120ms);
     }
 
     /* 03 Levels: ring fills, ladder lights. */
@@ -1368,27 +1432,12 @@ html.hiw-root {
       animation: hiw-pot 2400ms var(--hiw-ease) 1200ms both;
     }
 
-    /* 08 Seasons: segments grow, ranks light. */
-    & [data-inview="true"] .hiw-season-bar .seg {
-      animation: hiw-grow-x 700ms var(--hiw-ease) both;
-      animation-delay: calc(300ms + var(--i) * 650ms);
-    }
-    & [data-inview="true"] .hiw-season-points li {
-      animation: hiw-pop 400ms var(--hiw-pop) both;
-      animation-delay: calc(300ms + var(--i) * 650ms);
-    }
-    & [data-inview="true"] .hiw-ranks li {
-      animation: hiw-pop 450ms var(--hiw-pop) both;
-      animation-delay: calc(2400ms + var(--i) * 220ms);
-    }
-
-    /* 09 Fair play: tiles flip in. */
     & [data-inview="true"] .hiw-principles li {
       animation: hiw-tile 650ms var(--hiw-ease) both;
       animation-delay: calc(200ms + var(--i) * 160ms);
     }
 
-    /* 10 Join: steps arrive in order, checks tick. */
+    /* 09 Join: steps arrive in order, checks tick. */
     & [data-inview="true"] .hiw-steps li {
       animation: hiw-slide 500ms var(--hiw-ease) both;
       animation-delay: calc(200ms + var(--i) * 160ms);
@@ -1409,12 +1458,14 @@ html.hiw-root {
 @keyframes hiw-pop {
   from { opacity: 0; transform: scale(0.4); }
 }
+@keyframes hiw-zone-breathe {
+  50% { opacity: 0.9; }
+}
+@keyframes hiw-altar-drop {
+  from { opacity: 0; transform: translateY(-18px) scale(0.8); }
+}
 @keyframes hiw-fade {
   from { opacity: 0; }
-}
-@keyframes hiw-appear {
-  from { opacity: 0; }
-  to { opacity: 1; }
 }
 @keyframes hiw-float {
   50% { transform: translateY(-10px); }
@@ -1441,16 +1492,6 @@ html.hiw-root {
   0% { opacity: 0; transform: translateY(6px); }
   30% { opacity: 1; }
   100% { opacity: 1; transform: none; }
-}
-@keyframes hiw-chest-shake {
-  0% { opacity: 1; transform: none; }
-  20%, 60% { opacity: 1; transform: rotate(-7deg); }
-  40%, 80% { opacity: 1; transform: rotate(7deg); }
-  99% { opacity: 1; transform: none; }
-  100% { opacity: 0; }
-}
-@keyframes hiw-aura-rise {
-  from { opacity: 0; transform: translateY(0) scale(0.5); }
 }
 @keyframes hiw-ring {
   from { stroke-dashoffset: var(--c); }

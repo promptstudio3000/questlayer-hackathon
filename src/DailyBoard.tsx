@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { CheckCircle, Circle, Target, X } from "@phosphor-icons/react";
 import { api, remaining } from "./api";
 import { Dialog } from "./Dialog";
+import { CaretRight } from "./dir-icons";
 import "./daily-board.css";
 import { tr } from "./i18n";
 
@@ -25,10 +26,13 @@ export function DailyBoard({
   worldId,
   refreshKey,
   onClaimed,
+  onGoal,
 }: {
   worldId?: string;
   refreshKey?: string | number;
   onClaimed?: () => void;
+  /** "Show me": point the map at the nearest thing this goal needs. */
+  onGoal?: (kind: string) => void;
 }) {
   const [board, setBoard] = useState<Board | null>(null);
   const [open, setOpen] = useState(false);
@@ -96,24 +100,46 @@ export function DailyBoard({
             <p className="daily-board-lead">
               {tr("All 3 goals: +{0} XP · no streaks", { 0: board.bonusXp })}</p>
             <ul>
-              {board.goals.map((g) => (
-                <li key={g.kind} className={g.done ? "done" : ""}>
-                  {g.done ? (
-                    <CheckCircle size={22} weight="fill" aria-hidden="true" />
-                  ) : (
-                    <Circle size={22} aria-hidden="true" />
-                  )}
-                  <span>
-                    <b>{g.label}</b>
-                    <span className="daily-board-bar" aria-hidden="true">
-                      <span style={{ width: `${(g.progress / g.target) * 100}%` }} />
+              {board.goals.map((g) => {
+                const row = (
+                  <>
+                    {g.done ? (
+                      <CheckCircle size={22} weight="fill" aria-hidden="true" />
+                    ) : (
+                      <Circle size={22} aria-hidden="true" />
+                    )}
+                    <span>
+                      <b>{g.label}</b>
+                      <span className="daily-board-bar" aria-hidden="true">
+                        <span style={{ width: `${(g.progress / g.target) * 100}%` }} />
+                      </span>
                     </span>
-                  </span>
-                  <small>
-                    {g.progress}/{g.target}
-                  </small>
-                </li>
-              ))}
+                    <small>
+                      {g.progress}/{g.target}
+                    </small>
+                  </>
+                );
+                // An open goal is one button: it closes the board and points the map.
+                return (
+                  <li key={g.kind} className={g.done ? "done" : ""}>
+                    {!g.done && onGoal ? (
+                      <button
+                        className="daily-board-go"
+                        aria-label={`${tr("Show me")} · ${g.label}`}
+                        onClick={() => {
+                          setOpen(false);
+                          onGoal(g.kind);
+                        }}
+                      >
+                        {row}
+                        <CaretRight size={18} aria-hidden="true" />
+                      </button>
+                    ) : (
+                      <div className="daily-board-go">{row}</div>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
             {board.claimed ? (
               <p className="daily-board-done">{tr("Done for today. +")}{board.bonusXp} {" "}{tr("XP is yours.")}</p>

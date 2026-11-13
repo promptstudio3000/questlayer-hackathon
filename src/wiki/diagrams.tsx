@@ -5,6 +5,8 @@ import React, { useEffect, useMemo, useState } from "react";
 import type { VizId } from "./chapters";
 import { EDITIONS, GOLD, LEVELS, STAKER_GATES, STAKER_MIN_NEAR } from "./chapters";
 import { Bars, Donut, Flow, LineChart, Sequence, StackBar, Timeline24, type Tone } from "./viz";
+import { SCENES } from "./scenes";
+export { BigPicture } from "./scenes";
 
 const useJson = <T,>(url: string): T | null => {
   const [data, setData] = useState<T | null>(null);
@@ -42,7 +44,7 @@ function Architecture() {
         { id: "db", x: 510, y: 50, label: "SQLite (WAL)", sub: "exactly-once ledger", tone: "core" },
         { id: "poi", x: 650, y: 165, w: 120, label: "POI database", sub: "OSM · Overture", tone: "world" },
         { id: "key", x: 90, y: 165, label: "Device key", sub: "signs NEAR actions", tone: "player" },
-        { id: "ai", x: 300, y: 165, label: "AI providers", sub: "NEAR AI · Ollama", tone: "ai" },
+        { id: "ai", x: 300, y: 165, label: "AI providers", sub: "NEAR AI Cloud", tone: "ai" },
         { id: "workers", x: 510, y: 165, w: 120, label: "Workers", sub: "rewards · keepers", tone: "core" },
         { id: "relayer", x: 200, y: 290, label: "Relayer", sub: "NEP-366 · pays gas", tone: "chain" },
         { id: "near", x: 510, y: 290, w: 200, h: 60, label: "NEAR contracts", sub: "rewards · QGOLD · NFTs · Intents", tone: "chain", pulse: true },
@@ -65,7 +67,7 @@ function Architecture() {
 function MoneyModes() {
   return (
     <Flow
-      title="Every coin is backed: play earns QGOLD from the funded daily budget, the nightly payout mints it, spending burns it."
+      title="Every coin is backed: play earns QGOLD from the funded daily budget, a payout round every 5 minutes mints it, spending burns it."
       width={720}
       height={230}
       nodes={[
@@ -82,7 +84,7 @@ function MoneyModes() {
         { from: "play", to: "gold", flow: true, tone: "muted" },
         { from: "play", to: "near", flow: true, tone: "money" },
         { from: "near", to: "qgold", label: "Claim as QGOLD", flow: true, tone: "money" },
-        { from: "gold", to: "qgold", label: "Nightly payout", flow: true, tone: "money" },
+        { from: "gold", to: "qgold", label: "Payout round (5 min)", flow: true, tone: "money" },
         { from: "qgold", to: "burn", tone: "muted" },
         { from: "xp", to: "lvl", tone: "core" },
       ]}
@@ -119,13 +121,73 @@ function CoreLoop() {
 function MapCoins() {
   return (
     <Bars
-      title="Coin sizes in a cell, in units of the cell's coin value (0.01–0.2 GOLD per unit). Rare coins appear more often near zones."
+      title="Every coin of a day is worth the same share of the map budget; a pioneer coin (a cell nobody visited for 30 days) counts twice. Coin size on the map is only drawing."
       bars={[
-        { label: "Small", value: 1, tone: "muted", note: "× 1" },
-        { label: "Medium", value: 3, tone: "money", note: "× 3" },
-        { label: "Rare", value: 10, tone: "warn", note: "× 10" },
+        { label: "Normal coin", value: 1, tone: "money", note: "1 share" },
+        { label: "Pioneer coin", value: 2, tone: "warn", note: "2 shares" },
       ]}
-      format={(v) => `${v} unit${v > 1 ? "s" : ""}`}
+      max={2}
+      format={(v) => `× ${v}`}
+    />
+  );
+}
+
+function PayoutRound() {
+  return (
+    <Flow
+      title="From a picked-up coin to QGOLD in your account: one round every 5 minutes, one Merkle root per round, 8 accounts per transaction."
+      width={720}
+      height={250}
+      nodes={[
+        { id: "coin", x: 90, y: 60, label: "Coin confirmed", sub: "server receipt, exactly once", tone: "player", pulse: true },
+        { id: "way", x: 300, y: 60, label: "On its way", sub: "Profile · Stake · Earnings", tone: "money" },
+        { id: "round", x: 520, y: 60, w: 150, label: "Round every 5 min", sub: "sum per account → root", tone: "core" },
+        { id: "claim", x: 520, y: 190, w: 150, label: "claim_payout", sub: "8 leaves per transaction", tone: "chain" },
+        { id: "mint", x: 300, y: 190, label: "QGOLD vault", sub: "mint_for at rate R", tone: "chain", pulse: true },
+        { id: "you", x: 90, y: 190, label: "Your NEAR account", sub: "QGOLD balance", tone: "money" },
+      ]}
+      edges={[
+        { from: "coin", to: "way", flow: true, tone: "player" },
+        { from: "way", to: "round", label: "≥ 1 min old", flow: true, tone: "money" },
+        { from: "round", to: "claim", label: "publish_payout_day", flow: true, tone: "core" },
+        { from: "claim", to: "mint", flow: true, tone: "chain" },
+        { from: "mint", to: "you", flow: true, tone: "money" },
+      ]}
+    />
+  );
+}
+
+function WearableRarity() {
+  return (
+    <Bars
+      title="Share of wearable finds by rarity. A wearable find is a free in-game clone of an official Aavegotchi wearable: cosmetic, not an NFT, no QGOLD value."
+      bars={[
+        { label: "Common", value: 40, tone: "muted" },
+        { label: "Uncommon", value: 26, tone: "world" },
+        { label: "Rare", value: 18, tone: "chain" },
+        { label: "Legendary", value: 10, tone: "money" },
+        { label: "Mythical", value: 5, tone: "player" },
+        { label: "Godlike", value: 1, tone: "core" },
+      ]}
+      max={40}
+      format={(v) => `${v} %`}
+    />
+  );
+}
+
+function InboxSeq() {
+  return (
+    <Sequence
+      title="A private message: sealed on the sender's device, stored on NEAR Social as ciphertext, opened only on the recipient's device."
+      lanes={["Sender device", "NEAR Social", "Game server", "Recipient device"]}
+      msgs={[
+        { from: 0, to: 1, label: "Read recipient's inbox key", tone: "player" },
+        { from: 0, to: 0, label: "Seal: X25519 + XChaCha20", tone: "player" },
+        { from: 0, to: 1, label: "Write ciphertext (relayer pays)", tone: "chain" },
+        { from: 2, to: 1, label: "Read exact record → delivered", tone: "core" },
+        { from: 3, to: 1, label: "Read the sealed record", tone: "player" },
+        { from: 3, to: 3, label: "Open with own secret key", tone: "player" },
+      ]}
     />
   );
 }
@@ -428,15 +490,15 @@ function MoneyFlow() {
 type Mix = { total: string; buckets: { bucket: string; currentBps: number; targetBps: number }[] } | null;
 function TreasuryMix() {
   const mix = useJson<Mix>("/api/treasury/mix");
-  const names: Record<string, string> = { lst: "Liquid staking", stable: "Stablecoins on Rhea", near: "NEAR reserve" };
-  const tones: Record<string, Tone> = { lst: "money", stable: "world", near: "chain" };
+  const names: Record<string, string> = { staked: "Staked NEAR", lst: "Liquid staking", stable: "Stablecoins on Rhea", near: "NEAR reserve" };
+  const tones: Record<string, Tone> = { staked: "core", lst: "money", stable: "world", near: "chain" };
   const target = [
-    { label: names.lst, value: 50, tone: tones.lst },
-    { label: names.stable, value: 40, tone: tones.stable },
-    { label: names.near, value: 10, tone: tones.near },
+    { label: names.staked, value: 90, tone: tones.staked },
+    { label: "USDC on Rhea", value: 5, tone: tones.stable },
+    { label: "USDT on Rhea", value: 5, tone: "money" as Tone },
   ];
   const live = mix?.buckets?.length
-    ? mix.buckets.map((b) => ({ label: names[b.bucket] ?? b.bucket, value: b.currentBps / 100, tone: tones[b.bucket] ?? "core" }))
+    ? mix.buckets.filter((b) => b.currentBps > 0).map((b) => ({ label: names[b.bucket] ?? b.bucket, value: b.currentBps / 100, tone: tones[b.bucket] ?? "core" }))
     : null;
   return (
     <div className="wk-pair">
@@ -452,10 +514,16 @@ function TreasuryMix() {
   );
 }
 
+// The treasury mix the DAO adopted (11 Nov 2026): 90 % staked NEAR, 5 % USDC,
+// 5 % USDT. On testnet only validator staking earns; the stablecoins earn 0.
+const MIX_STAKED = 0.9,
+  MIX_STABLE = 0.1;
 function YieldSim() {
   const [treasury, setTreasury] = useState(1000);
-  const [apr, setApr] = useState(6);
+  const [stakeApr, setStakeApr] = useState(9.8);
+  const [stableApr, setStableApr] = useState(0);
   const [share, setShare] = useState(100);
+  const apr = MIX_STAKED * stakeApr + MIX_STABLE * stableApr;
   const daily = (treasury * (apr / 100) * (share / 100)) / 365;
   const coins = daily * 0.5,
     zones = daily * 0.5;
@@ -468,8 +536,12 @@ function YieldSim() {
           <input type="range" min={10} max={20000} step={10} value={treasury} onChange={(e) => setTreasury(Number(e.target.value))} />
         </label>
         <label>
-          Blended yield <b>{apr} % a year</b>
-          <input type="range" min={1} max={14} step={0.5} value={apr} onChange={(e) => setApr(Number(e.target.value))} />
+          Staking yield on 90 % <b>{stakeApr} % a year</b>
+          <input type="range" min={1} max={14} step={0.1} value={stakeApr} onChange={(e) => setStakeApr(Number(e.target.value))} />
+        </label>
+        <label>
+          Stablecoin yield on 5 % + 5 % <b>{stableApr} % a year</b>
+          <input type="range" min={0} max={12} step={0.5} value={stableApr} onChange={(e) => setStableApr(Number(e.target.value))} />
         </label>
         <label>
           Share released <b>{share} %</b>
@@ -478,7 +550,7 @@ function YieldSim() {
       </div>
       <div className="wk-kpis">
         <span>
-          <small>Daily budget</small>
+          <small>Daily budget ({apr.toFixed(1)} % blended)</small>
           <b>{daily.toFixed(3)} NEAR</b>
         </span>
         <span>
@@ -680,7 +752,7 @@ function GoldPrices() {
     { label: "NPC gear (epic)", value: GOLD.gear.price.epic, tone: "money" as Tone },
     { label: "Altar fee", value: GOLD.altar.default, tone: "muted" as Tone },
   ].sort((a, b) => b.value - a.value);
-  return <Bars title="QGOLD prices from server/data/gold-spend.json; a map coin is worth about 0.0004 QGOLD on testnet." bars={items} format={(v) => `${v} QGOLD`} />;
+  return <Bars title="QGOLD prices from server/data/gold-spend.json; every price is burned, never paid to anyone." bars={items} format={(v) => `${v} QGOLD`} />;
 }
 
 function StakerLadder() {
@@ -762,8 +834,8 @@ function ChainSplit() {
         { label: "Stake & yield vaults", value: 100, tone: "chain" },
         { label: "Funded city & map days", value: 100, tone: "money" },
         { label: "QGOLD mint / burn / exit", value: 100, tone: "money" },
-        { label: "Map coins & zone prizes", value: 100, tone: "money", note: "nightly payout" },
-        { label: "GOLD spending", value: 100, tone: "money", note: "ft_burn" },
+        { label: "Map coins & zone prizes", value: 100, tone: "money", note: "payout rounds" },
+        { label: "QGOLD spending", value: 100, tone: "money", note: "ft_burn" },
         { label: "Task market & Secrets", value: 100, tone: "money", note: "QGOLD escrow" },
         { label: "XP", value: 30, tone: "core", note: "QXP ledger" },
       ]}
@@ -779,7 +851,7 @@ function AccountSeq() {
       msgs={[
         { from: 0, to: 0, label: "Generate key pair", tone: "player" },
         { from: 0, to: 1, label: "Create account (public key)", tone: "player" },
-        { from: 1, to: 3, label: "create + 0.1 NEAR + add key", tone: "chain" },
+        { from: 1, to: 3, label: "create + 0.02 NEAR + add key", tone: "chain" },
         { from: 0, to: 0, label: "Sign delegate action", tone: "player" },
         { from: 0, to: 2, label: "POST /api/relay", tone: "core" },
         { from: 2, to: 2, label: "Policy check · budget", tone: "core" },
@@ -818,14 +890,12 @@ function AiChain() {
       height={200}
       nodes={[
         { id: "q", x: 80, y: 100, label: "NPC question", tone: "player" },
-        { id: "near", x: 270, y: 100, label: "NEAR AI Cloud", sub: "TEE · attested", tone: "ai", pulse: true },
-        { id: "ollama", x: 450, y: 100, label: "Ollama", sub: "fallback", tone: "ai" },
-        { id: "tpl", x: 630, y: 100, label: "Template", sub: "always works", tone: "muted" },
+        { id: "near", x: 340, y: 100, label: "NEAR AI Cloud", sub: "TEE · attested", tone: "ai", pulse: true },
+        { id: "tpl", x: 610, y: 100, label: "Template", sub: "always works", tone: "muted" },
       ]}
       edges={[
         { from: "q", to: "near", flow: true, tone: "ai" },
-        { from: "near", to: "ollama", label: "timeout / error", dashed: true },
-        { from: "ollama", to: "tpl", label: "timeout / error", dashed: true },
+        { from: "near", to: "tpl", label: "timeout / error", dashed: true },
       ]}
     />
   );
@@ -856,7 +926,9 @@ function DailyJobs() {
         { label: "Database backup", spans: [{ from: 3.33, to: 3.6, tone: "core" }] },
         { label: "Harvest + mix (06:30 CET)", spans: [{ from: 5.5, to: 6, tone: "money" }] },
         { label: "Reward worker", spans: [{ from: 0, to: 24, label: "every 30 s", tone: "chain" }] },
-        { label: "Trader & QGOLD keepers", spans: [{ from: 0, to: 24, label: "every 10 min", tone: "money" }] },
+        { label: "QGOLD payout rounds", spans: [{ from: 0, to: 24, label: "every 5 min", tone: "money" }] },
+        { label: "QGOLD keeper", spans: [{ from: 0, to: 24, label: "every 5 min", tone: "money" }] },
+        { label: "Trader keeper", spans: [{ from: 0, to: 24, label: "every 10 min", tone: "ai" }] },
       ]}
     />
   );
@@ -912,6 +984,31 @@ function WikiLoop() {
   );
 }
 
+function DaoFlow() {
+  return (
+    <Flow
+      title="Who decides: explorers vote on the mix each week; the council approves each daily run only after checking it."
+      width={720}
+      height={250}
+      nodes={[
+        { id: "explorers", x: 95, y: 60, w: 150, label: "Explorers (L3+)", sub: "weekly mix vote, 1 : 1", tone: "player", pulse: true },
+        { id: "keeper", x: 330, y: 60, w: 150, label: "Keeper", sub: "files polls, results, runs", tone: "core" },
+        { id: "council", x: 590, y: 60, w: 170, label: "Council 2 of 3", sub: "approves after checks", tone: "chain", pulse: true },
+        { id: "mix", x: 590, y: 190, w: 170, label: "Adopted mix", sub: "e.g. 90 / 5 / 5", tone: "money" },
+        { id: "run", x: 330, y: 190, w: 150, label: "Daily run", sub: "≤ 25 % moved", tone: "money" },
+        { id: "treasury", x: 95, y: 190, w: 150, label: "Treasury", sub: "staking · stables · NEAR", tone: "world" },
+      ]}
+      edges={[
+        { from: "explorers", to: "keeper", label: "votes", flow: true, tone: "player" },
+        { from: "keeper", to: "council", label: "proposal", flow: true, tone: "core" },
+        { from: "council", to: "mix", label: "adopt", flow: true, tone: "chain" },
+        { from: "mix", to: "run", label: "target", flow: true, tone: "money" },
+        { from: "run", to: "treasury", label: "rebalance", flow: true, tone: "money" },
+      ]}
+    />
+  );
+}
+
 const VIZ: Record<VizId, () => React.ReactElement> = {
   architecture: Architecture,
   "money-modes": MoneyModes,
@@ -950,6 +1047,12 @@ const VIZ: Record<VizId, () => React.ReactElement> = {
   "daily-jobs": DailyJobs,
   "ci-gates": CiGates,
   "wiki-loop": WikiLoop,
+  "payout-round": PayoutRound,
+  "wearable-rarity": WearableRarity,
+  "inbox-seq": InboxSeq,
+  "phone-hud": SCENES["phone-hud"],
+  "screen-map": SCENES["screen-map"],
+  "dao-flow": DaoFlow,
 };
 
 export function Viz({ id }: { id: VizId }) {

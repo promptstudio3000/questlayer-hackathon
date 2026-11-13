@@ -213,3 +213,13 @@ test("economy page copy stays neutral", () => {
   assert.doesNotMatch(page, /hackathon|judge|demo day|presentation|pitch/i);
   assert.doesNotMatch(page, /city pot|city share/i);
 });
+
+test("the public history starts on 1 Nov 2026: the 31 Oct pilot day and its claims are left out", () => {
+  const f = fixture();
+  f.publish("2026-10-31");
+  f.publish("2026-11-01");
+  assert.deepEqual(publishedDays(f.db).map((d) => d.date), ["2026-11-01"]);
+  f.claim("confirmed", "5", null);
+  assert.equal(confirmedPayouts(f.db, 50, Date.parse("2026-11-01T00:00:00Z")).count, 0);
+  assert.equal(confirmedPayouts(f.db).count, 1);
+});

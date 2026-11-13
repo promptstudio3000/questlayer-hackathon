@@ -1,6 +1,6 @@
 // Creates and tracks the player's invisible NEAR account: a device key in this
 // browser plus a sponsored sub-account created by the server factory.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api, ApiError } from "./api";
 import {
   bindAccount,
@@ -23,6 +23,8 @@ export type ManagedAccountView = {
     state: "creating" | "ready" | "failed";
     errorCode: string | null;
     error: string | null;
+    /** Testnet, no recovery passkey: a device without a key may start over. */
+    canStartOver?: boolean;
     keys: {
       publicKey: string;
       kind: string;
@@ -33,17 +35,34 @@ export type ManagedAccountView = {
   } | null;
 };
 export type InvisibleAccountStatus =
-  "idle" | "unavailable" | "creating" | "ready" | "needs-recovery" | "error";
+  | "idle"
+  | "unavailable"
+  /** A new explorer earns the account with the first find or quest. */
+  | "play-first"
+  | "creating"
+  | "ready"
+  | "needs-recovery"
+  | "error";
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 export function useInvisibleAccount(
   playerId: string | null | undefined,
-  store: KeyStore = indexedDbKeyStore(),
+  storeOverride?: KeyStore,
 ) {
-  const [status, setStatus] = useState<InvisibleAccountStatus>("idle");
+  // One store per hook: a new default on every render made ensure() change
+  // identity each render, which re-ran the effects that call it.
+  const store = useMemo(() => storeOverride ?? indexedDbKeyStore(), [storeOverride]);
+  const [status, setStatusState] = useState<InvisibleAccountStatus>("idle");
+  // The latest status, readable right after ensure() resolves (state lags a render).
+  const statusRef = useRef<InvisibleAccountStatus>("idle");
+  const setStatus = useCallback((next: InvisibleAccountStatus) => {
+    statusRef.current = next;
+    setStatusState(next);
+  }, []);
   const [accountId, setAccountId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [canStartOver, setCanStartOver] = useState(false);
   const [keys, setKeys] = useState<
     NonNullable<ManagedAccountView["account"]>["keys"]
   >([]);
@@ -64,6 +83,7 @@ export function useInvisibleAccount(
         }
         let key = await loadDeviceKey(store);
         setKeys(view.account?.keys ?? []);
+        setCanStartOver(!!view.account?.canStartOver);
         if (view.account && view.account.state !== "failed") {
           const known = view.account.keys.some(
             (k) =>
@@ -125,6 +145,13 @@ export function useInvisibleAccount(
         keyRef.current = { ...key, accountId: account.accountId };
         setStatus("ready");
       } catch (e) {
+        if (e instanceof ApiError && e.code === "ACCOUNT_PLAY_FIRST") {
+          // Not an error: the account is earned with the first find or quest.
+          // The caller runs ensure() again once the explorer's XP changes;
+          // "idle" here made every render ask again (a 403 loop).
+          setStatus("play-first");
+          return;
+        }
         setError(e instanceof ApiError ? e.message : (e as Error).message);
         setStatus("error");
       } finally {
@@ -133,7 +160,7 @@ export function useInvisibleAccount(
     })();
     running.current = work;
     return work;
-  }, [playerId, store]);
+  }, [playerId, store, setStatus]);
 
   useEffect(() => {
     if (!playerId) {
@@ -142,7 +169,33 @@ export function useInvisibleAccount(
       keyRef.current = null;
       owner.current = null;
     }
-  }, [playerId]);
+  }, [playerId, setStatus]);
+
+  // Prepares the explorer account when needed and returns its signer, so an
+  // action signs silently instead of asking for a wallet. Null means the
+  // account is not usable yet; `reason` says why (play-first, needs-recovery…).
+  const ensureSigner = useCallback(async (): Promise<{
+    signer: NativeSigner | null;
+    reason: InvisibleAccountStatus;
+  }> => {
+    if (!keyRef.current?.accountId) await ensure();
+    const key = keyRef.current;
+    return key?.accountId
+      ? { signer: managedSigner(key, key.accountId), reason: "ready" }
+      : { signer: null, reason: statusRef.current };
+  }, [ensure]);
+
+  // Testnet: the account's keys are on no device the explorer still has and
+  // there is no recovery passkey. Starts a new account with this device's key;
+  // the old one stays on chain, no longer used by the game.
+  const startOver = useCallback(async () => {
+    if (!playerId) return;
+    let key = await loadDeviceKey(store);
+    if (!key) key = await createDeviceKey(store);
+    await api("/account/start-over", { publicKey: key.publicKey });
+    setStatus("creating");
+    await ensure();
+  }, [playerId, store, ensure, setStatus]);
 
   // Re-reads the device list without re-running account creation.
   const refresh = useCallback(async () => {
@@ -151,19 +204,26 @@ export function useInvisibleAccount(
     return view;
   }, []);
 
-  const signer: NativeSigner | null =
-    status === "ready" && keyRef.current && accountId
-      ? managedSigner(keyRef.current, accountId)
-      : null;
+  // One signer object per key and account: a new one on every render made
+  // every effect that depends on it run again on each render (the inbox
+  // summary was fetched many times a second).
+  const signerKey = status === "ready" ? keyRef.current : null;
+  const signer: NativeSigner | null = useMemo(
+    () => (signerKey && accountId ? managedSigner(signerKey, accountId) : null),
+    [signerKey, accountId],
+  );
   return {
     status,
     accountId,
     error,
     ensure,
+    ensureSigner,
     signer,
     publicKey: keyRef.current?.publicKey ?? null,
     deviceKey: status === "ready" ? keyRef.current : null,
     keys,
     refresh,
+    canStartOver,
+    startOver,
   };
 }

@@ -8,6 +8,7 @@ import { createServer } from "node:net";
 import assert from "node:assert/strict";
 import { chromium, webkit, devices } from "playwright";
 import { createRequire } from "node:module";
+import { openMapSettings } from "./lib/e2e-nav.mjs";
 const axeSource = createRequire(import.meta.url)("axe-core").source;
 
 const ROOT = resolve(import.meta.dirname, "..");
@@ -36,13 +37,13 @@ try {
   browser = await chromium.launch({ headless: true });
   for (const [name, width, height] of [["phone-360",360,780],["phone-390",390,844],["landscape",844,390],["desktop",1440,900]]) {
     if (process.env.E2E_VIEWPORT && name !== process.env.E2E_VIEWPORT) continue;
-    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
+    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     const page = await context.newPage();
     const faults = []; const resources = []; page.on("requestfailed", r => resources.push({ url: r.url().split("?")[0], error: r.failure()?.errorText })); page.on("pageerror", e => faults.push(e.message));
     await page.goto(url);
     await page.getByLabel("What should we call you?").fill("UI explorer");
     if (width === 390) {
-      await page.locator(".welcome-card *").evaluateAll(elements => {
+      await page.locator(".signin *").evaluateAll(elements => {
         const saved=elements.map(el=>[el,el.style.fontSize,getComputedStyle(el).fontSize,el.style.getPropertyPriority("font-size")]);
         window.__restoreText=()=>saved.forEach(([el,style,,priority])=>el.style.setProperty("font-size",style,priority));
         saved.filter(([el])=>el.matches("input,textarea,select")||[...el.childNodes].some(n=>n.nodeType===Node.TEXT_NODE&&n.textContent.trim())).forEach(([el,,size])=>el.style.setProperty("font-size",`${parseFloat(size)*2}px`,"important"));
@@ -60,7 +61,7 @@ try {
     if (width === 390) {
       await page.route("**/api/session", route => route.abort("failed"), { times: 1 });
       await page.getByRole("button", { name: "Start exploring", exact: true }).click();
-      await page.locator(".welcome-card .inline-error").waitFor();
+      await page.locator(".signin .inline-error").waitFor();
       assert.equal(await page.locator("#nickname").inputValue(), "UI explorer");
       await page.screenshot({ path: join(SHOTS, "welcome-lost-response.png") });
     }
@@ -119,7 +120,7 @@ try {
         }
         if (screen === "Community") {
           await page.getByRole("tab", { name:"Local chat", exact:true }).click();
-          await page.getByRole("button", { name:"Write a note", exact:true }).click();
+          await page.getByRole("button", { name:"Write a message", exact:true }).click();
           await page.locator("#map-note-text").fill("A draft kept through returning to the map.");
           await page.setViewportSize({width,height:420});
           await page.locator("#map-note-text").focus();
@@ -163,12 +164,12 @@ try {
       const cameraAfter=await page.locator(".player-marker").first().getAttribute("style");
       assert.equal(cameraAfter,cameraBefore,"Map camera remains stable across a content screen");
       await page.evaluate(()=>{navigator.geolocation.getCurrentPosition=(_ok,fail)=>fail({code:1,message:"denied"});});
-      await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();
+      await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();
       await page.getByText("Allow location access, or keep exploring in the city demo.",{exact:true}).first().waitFor();
       assert.ok(await page.locator(".map-status-chip.demo").count());
       await page.screenshot({path:join(SHOTS,"gps-denied.png")});
       await page.evaluate(()=>{navigator.geolocation.getCurrentPosition=ok=>ok({coords:{latitude:49.7384,longitude:13.3736,accuracy:999,heading:null,speed:0},timestamp:Date.now()});navigator.geolocation.watchPosition=()=>1;});
-      await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();
+      await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();
       await page.getByText("GPS ±999 m",{exact:true}).waitFor();
       assert.equal(await page.locator(".demo-pad").count(),0,"GPS play never offers manual movement");
       await page.screenshot({path:join(SHOTS,"gps-inaccurate.png")});
@@ -185,7 +186,7 @@ try {
   const ios = await webkit.launch();
   try {
     const {defaultBrowserType,...profile}=devices["iPhone 15"];
-    const context=await ios.newContext({...profile,reducedMotion:"reduce"});
+    const context=await ios.newContext({...profile,reducedMotion:"reduce"});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     const page=await context.newPage();await page.clock.install();await page.goto(url);
     await page.locator("#nickname").fill("Install explorer");
     await page.getByRole("button",{name:"Start exploring",exact:true}).click();

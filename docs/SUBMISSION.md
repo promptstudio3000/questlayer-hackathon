@@ -18,10 +18,11 @@ Optional tags: @NearLegion @NearBuilders. End with a question, e.g. "Which city 
 
 - Video: the 3-minute storyboard with shot list, voice-over, recording kit and fallbacks is
   [HACKATHON-DEMO.md](HACKATHON-DEMO.md). It is recorded after the phone verification (planned 6–7 November 2026).
-- Pitch deck (13 slides, track "Games With Real Economies"): https://claude.ai/artifact/VPSfVp6AF1vTfGqmi4bDrs
-  (private until the owner shares it; export as PDF or PPTX from the deck's Share menu). Outline: problem, product,
-  the world, the game loop, invisible chain, NPCs with wallets, one treasury, the honest state, on chain, safe and
-  fair, what comes next, try it.
+- Pitch deck (15 slides, track "Games With Real Economies", updated 10 November 2026):
+  https://claude.ai/artifact/VPSfVp6AF1vTfGqmi4bDrs (private until the owner shares it; export as PDF or PPTX from the
+  deck's Share menu). Outline: problem, product, the world, the game loop, other explorers (player dialog, encrypted
+  inbox, own Aavegotchi), invisible chain, NPCs with wallets, player-owned markets, the economy (treasury yield and
+  backed QGOLD), the honest state, on chain, safe and fair, what comes next, try it.
 - Judge walkthrough: [JUDGE-WALKTHROUGH.md](JUDGE-WALKTHROUGH.md), which maps the track criteria to "do X, see Y"
   steps and terminal checks of the economy.
 
@@ -34,7 +35,7 @@ Optional tags: @NearLegion @NearBuilders. End with a question, e.g. "Which city 
   "leadName": "<owner name>",
   "email": "<owner email>",
   "size": "1",
-  "tracks": ["games", "open"],
+  "tracks": ["games", "social", "open"],
   "nearAddress": "<mainnet payout account, e.g. team.near>",
   "projectUrl": "https://github.com/promptstudio3000/questlayer-hackathon",
   "demoUrl": "https://x.com/<owner>/status/<id>",
@@ -42,6 +43,10 @@ Optional tags: @NearLegion @NearBuilders. End with a question, e.g. "Which city 
   "consent": true
 }
 ```
+
+Track `social` (Social Money, 11 Nov 2026, Lubos): the treasury decides on a stock Sputnik DAO v2 with Trezu's role
+names; explorers vote weekly on the mix from their own accounts, the council approves every run
+([TREASURY-DAO.md](TREASURY-DAO.md)).
 
 Checklist before sending: repository public, LICENSE file present, no secrets in history (run a secret scan),
 README "do X, see Y" steps verified on a fresh clone, demo post live, `tracks` reviewed, payout account verified.

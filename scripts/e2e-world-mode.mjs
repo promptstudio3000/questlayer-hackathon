@@ -7,6 +7,7 @@ import {join,resolve} from "node:path";
 import {createServer} from "node:net";
 import assert from "node:assert/strict";
 import {chromium,webkit} from "playwright";
+import { closeOpenSheet, openMapSettings } from "./lib/e2e-nav.mjs";
 const root=resolve(import.meta.dirname,".."),dir=mkdtempSync(join(tmpdir(),"questlayer-mode-"));
 const shots=resolve(process.env.E2E_SHOTS||"output/qa/compact-guidance-2026-11-08/world-mode");mkdirSync(shots,{recursive:true});
 const port=await new Promise(done=>{const s=createServer();s.listen(0,"127.0.0.1",()=>{const p=s.address().port;s.close(()=>done(p));});});
@@ -16,7 +17,7 @@ let browser,errors="";server.stderr.on("data",d=>errors+=d);
 const engine=process.env.E2E_BROWSER==="webkit"?webkit:chromium;
 try{
  const until=Date.now()+60000;while(true){try{if((await fetch(url+"/api/health")).ok)break;}catch{}if(Date.now()>until)throw Error(errors.slice(-1000));await new Promise(r=>setTimeout(r,100));}
- browser=await engine.launch();const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:"reduce",serviceWorkers:"block"});
+ browser=await engine.launch();const context=await browser.newContext({viewport:{width:390,height:844},reducedMotion:"reduce",serviceWorkers:"block"});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
  const post=async(path,data)=>{const r=await context.request.post(url+"/api"+path,{headers:{Origin:url},data});assert.ok(r.ok());return r.json();};
  await post("/session",{name:"Mira mode"});const gpsWorld=await post("/world",{arena:false,location:home});assert.ok(gpsWorld.zones.length);
  const page=await context.newPage();await page.addInitScript(()=>localStorage.setItem("questlayer.mapAppearance","2d"));
@@ -38,22 +39,22 @@ try{
     watchPosition(){return 1;},clearWatch(){},
    }});
   },{world:gpsWorld,home});
-  await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();
+  await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();
   await page.waitForFunction(()=>window.__worldModeResponses===1);
   await page.locator(".world-loading").waitFor({state:"hidden",timeout:4000});
   await page.getByRole("button",{name:"Explore",exact:true}).click();await page.locator(".zone-card").first().waitFor({timeout:4000});
   await page.locator(".zone-card").filter({hasText:gpsWorld.zones[0].name}).waitFor();
   await page.getByRole("button",{name:"Close panel",exact:true}).click();
-  await page.getByRole("button",{name:"Demo, back to city demo",exact:true}).click();await page.locator(".demo-pad").waitFor();
+  await (await openMapSettings(page)).getByRole("button",{name:"Demo, back to city demo",exact:true}).click();await page.locator(".demo-pad").waitFor();
   await page.locator(".world-loading").waitFor({state:"hidden",timeout:10000});
   await page.evaluate(()=>{window.__delayGps=true;});
-  await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();
+  await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();
   await page.waitForFunction(()=>window.__worldModeResponses===2);
-  await page.getByRole("button",{name:"Demo, back to city demo",exact:true}).click();
+  await (await openMapSettings(page)).getByRole("button",{name:"Demo, back to city demo",exact:true}).click();
   await page.locator(".world-loading").waitFor({state:"hidden",timeout:10000});
   await page.evaluate(async()=>{window.__finishGps();await Promise.resolve();await Promise.resolve();});
   await page.locator(".demo-pad").waitFor();
-  await page.getByRole("button",{name:"Use GPS, my location",exact:true}).waitFor();
+  await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).waitFor();await closeOpenSheet(page);
   await page.getByRole("button",{name:"Explore",exact:true}).click();await page.locator(".zone-card").first().waitFor();
   const report={browser:engine.name(),fastGpsResponseAccepted:true,demoReturn:true,staleGpsResponseIgnored:true,provenance:"Actual local App/API; asynchronous synthetic GPS and immediate browser world-read response"};
   writeFileSync(join(shots,engine.name()+".json"),JSON.stringify(report,null,2));console.log(JSON.stringify(report));

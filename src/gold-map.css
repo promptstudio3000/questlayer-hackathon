@@ -88,3 +88,12 @@
 .gold-place-pin.kind-topic::before {
   content: "💬 ";
 }
+/* Free map notes: paper-white pins, the player's own with a coloured edge. */
+.gold-place-pin.kind-note {
+  max-width: 160px;
+  font-weight: 500;
+  border-left: 3px solid var(--line, #c9bfd8);
+}
+.gold-place-pin.kind-note.is-own {
+  border-left-color: var(--accent, #7b3fe4);
+}

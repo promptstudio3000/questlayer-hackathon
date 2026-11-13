@@ -1,0 +1,60 @@
+/* Settings sheet (src/SettingsScreen.tsx): compact rows so the four player
+   parts need little scrolling on a 390 px phone. */
+.settings-screen { display: grid; width: 100%; }
+.app-shell .settings-screen .settings-group { padding: 10px 0 8px; }
+.app-shell .main-panel .settings-screen .settings-group > h2 { margin: 0 0 2px; min-height: 32px; }
+.app-shell .settings-screen .settings-row { min-height: 48px; padding: 4px 2px; }
+.app-shell .settings-screen .settings-row + .settings-row { border-top: 0; }
+.settings-screen .settings-row:focus-visible,
+.settings-screen .settings-tile:focus-visible,
+.settings-screen .settings-mode > button:focus-visible,
+.settings-screen summary:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* Map: play mode, four map views as tiles. */
+.settings-mode { display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 2px; font-size: 16px; }
+.settings-mode .status-dot { flex: none; }
+.settings-mode-status { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.settings-mode > button {
+  display: inline-flex; align-items: center; gap: 6px; flex: none; min-height: 44px; padding: 0 14px;
+  border: 0; border-radius: var(--radius-control, 10px); background: var(--surface-soft); color: var(--action);
+  font: inherit; font-weight: 600;
+}
+.settings-tiles { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; padding: 4px 0 8px; }
+.settings-tile {
+  display: grid; justify-items: center; align-content: center; gap: 4px; min-height: 64px; padding: 6px 2px;
+  border: 1px solid var(--decorative-border); border-radius: 12px; background: transparent; color: var(--ink);
+  font: inherit; font-size: 13px; line-height: 1.2; text-align: center;
+}
+.settings-tile > svg { color: var(--action); }
+.settings-tile > span { overflow-wrap: anywhere; }
+.settings-tile:hover, .settings-tile[aria-pressed="true"] { background: var(--surface-soft); }
+.settings-tile[aria-pressed="true"] { border-color: var(--action); }
+
+/* Pip sits where the row icon would be. */
+.settings-guide > .pip { flex: none; width: 32px; height: 32px; margin: 0 -5px; }
+
+/* Sign out asks once: a guest without a passkey would lose the explorer. */
+.settings-sign-out > svg:first-child { color: var(--ink-secondary); }
+.settings-leave { padding: 8px 2px 6px; }
+.settings-leave > p { margin: 0 0 10px; font-size: 14px; line-height: 1.4; color: var(--ink); }
+.settings-leave-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.settings-leave-actions > button { min-height: 48px; margin: 0; }
+
+/* Account: the save block is plain text and one button. */
+.app-shell .settings-screen .play-native { margin: 0; padding: 4px 2px 8px; border: 0; background: none; box-shadow: none; }
+.app-shell .settings-screen .play-native + .play-native { border-top: 1px solid var(--decorative-border); padding-top: 12px; }
+.settings-screen .play-native .play-hint { margin: 0 0 8px; font-size: 14px; line-height: 1.4; }
+.settings-screen .play-native .secondary-button,
+.settings-screen .play-native .primary-button { width: 100%; }
+
+/* Advanced: folded, quieter, last. */
+.settings-advanced > summary { min-height: 48px; display: flex; align-items: center; color: var(--ink-secondary); font-size: 16px; font-weight: 600; }
+.settings-advanced[open] > summary { color: var(--ink); }
+.app-shell .settings-advanced > .settings-pad { padding: 0; }
+.app-shell .settings-advanced .settings-group { border: 0; border-top: 1px solid var(--decorative-border); padding: 8px 0; }
+.app-shell .settings-advanced .settings-developer { margin-top: 0; padding: 4px 0; border-top: 1px solid var(--decorative-border); }
+.settings-screen .settings-links { padding: 12px 0 8px; }
+/* Folded rows under Advanced keep a 48 px touch target. */
+.settings-screen .native-extras > summary { padding: 12px 0; cursor: pointer; }
+/* Narrow drawer on small phones: tile labels stay whole words. */
+@media (max-width: 380px) { .settings-tile { font-size: 12px; padding-inline: 0; } .settings-tiles { gap: 6px; } }

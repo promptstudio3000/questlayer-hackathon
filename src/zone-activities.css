@@ -35,10 +35,6 @@
   min-width: 48px;
   flex: none;
 }
-.zone-activity-panel .zone-access {
-  margin: 0 0 12px;
-  font-size: 14px;
-}
 .zone-activity-list {
   display: grid;
   gap: 8px;
@@ -99,17 +95,9 @@
   font-size: 16px;
   line-height: 1.4;
 }
-.zone-activity-panel .quest-detail .activity-step {
-  font-size: 14px;
-  color: var(--ink-secondary);
-}
 .zone-activity-panel .quest-prizes {
   margin: 8px 0;
   gap: 6px 12px;
-  font-size: 14px;
-}
-.zone-activity-panel .distance-note {
-  margin: 8px 0;
   font-size: 14px;
 }
 .zone-activity-panel .quest-detail .fine-print {
@@ -130,12 +118,6 @@
   .app-shell .main-panel.zone-explore-panel {
     bottom: auto;
     max-height: calc(100dvh - 230px);
-  }
-  .app-shell .player-bottom {
-    left: 111px;
-    width: 420px;
-    min-width: 0;
-    box-sizing: border-box;
   }
   .app-shell .zone-explore-panel.sheet-compact {
     bottom: auto;
@@ -213,12 +195,6 @@
 .app-shell .zone-explore-panel > .sheet-toggle {
   display: none;
 }
-.app-shell .zone-explore-panel .zone-map-collapse {
-  width: 48px;
-  min-width: 48px;
-  height: 48px;
-  flex: none;
-}
 
 @media (max-width: 900px) {
   .app-shell .main-panel.zone-explore-panel.sheet-expanded {
@@ -234,3 +210,44 @@
 /* The heading takes focus programmatically for screen readers (tabIndex -1);
    a focus ring there looked like an editable search field. */
 .main-panel .panel-heading h1[tabindex="-1"]:focus { outline: none; }
+/* Today in this zone as one row of icon facts under the title. */
+.zone-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+  font-size: 14px;
+  line-height: 1.2;
+}
+.zone-facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 28px;
+  padding: 0 9px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  white-space: nowrap;
+}
+.zone-facts li.zone-facts-tier { padding: 0; background: none; }
+.zone-facts li[data-tone="open"] { color: var(--success); background: var(--success-surface); }
+.zone-facts svg { flex: none; color: var(--action); }
+.zone-facts li[data-tone="open"] svg { color: inherit; }
+.zone-facts .coin-icon, .zone-facts img { width: 16px; height: 16px; }
+/* Chest Auras still in this zone today; the ring colour is the rarity. */
+.zone-facts li.zone-facts-auras { gap: 3px; padding: 0 4px; }
+.zone-facts li.zone-facts-auras img {
+  width: 24px;
+  height: 24px;
+  padding: 1px;
+  object-fit: contain;
+  border: 2px solid #7f9a86;
+  border-radius: 50%;
+  background: #fcfaff;
+}
+.zone-facts-auras img.rarity-rare { border-color: #3f8cff; }
+.zone-facts-auras img.rarity-epic { border-color: #9b4dff; }
+.zone-facts-auras img.rarity-legendary { border-color: #f3bd54; }

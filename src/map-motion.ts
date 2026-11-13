@@ -67,7 +67,7 @@ export function moveMapMarker(
 // follow the way the character faces, and left / right turn it.
 export const DEMO_TICK_MS = 100;
 export const DEMO_WALK_MPS = 5;
-// Under the 15 m/s GPS jump cap even though the demo arena is exempt.
+// The demo arena is exempt from the GPS travel cap (about 15 km/h).
 export const DEMO_RUN_MPS = 14;
 export const DEMO_BACK_FACTOR = 0.6;
 export const DEMO_TURN_DPS = 150;
@@ -110,6 +110,10 @@ export type DemoInput = {
   left: boolean;
   right: boolean;
   run: boolean;
+  /** Joystick: -1 (left) to 1 (right), added to the arrow keys' turn. */
+  turn?: number;
+  /** Joystick: -1 (back) to 1 (forward), added to the arrow keys' walk. */
+  walk?: number;
 };
 /** One movement tick: turn first, then walk along the new facing. */
 export function demoTick(
@@ -118,8 +122,14 @@ export function demoTick(
   input: DemoInput,
   seconds: number,
 ) {
-  const turn = (input.right ? 1 : 0) - (input.left ? 1 : 0),
-    walk = (input.forward ? 1 : 0) - (input.back ? DEMO_BACK_FACTOR : 0),
+  const clamp = (v: number) => Math.max(-1, Math.min(1, v));
+  const stickWalk = input.walk ?? 0;
+  const turn = clamp((input.right ? 1 : 0) - (input.left ? 1 : 0) + (input.turn ?? 0)),
+    walk = clamp(
+      (input.forward ? 1 : 0) -
+        (input.back ? DEMO_BACK_FACTOR : 0) +
+        (stickWalk < 0 ? stickWalk * DEMO_BACK_FACTOR : stickWalk),
+    ),
     next = normalizeHeading(heading + turn * DEMO_TURN_DPS * seconds),
     meters = walk * (input.run ? DEMO_RUN_MPS : DEMO_WALK_MPS) * seconds;
   return {

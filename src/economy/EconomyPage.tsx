@@ -3,6 +3,7 @@
 // realized yield, stNEAR, daily budget, payouts, the distribution audit and an
 // explorer link for every transaction. No sign-in, no actions.
 import React, { useEffect, useState } from "react";
+import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { exactNear, priceLabel, shortAccount, shortHash, shortNear } from "./format";
 import "./economy.css";
 import "../public-polish.css";
@@ -190,6 +191,29 @@ export default function EconomyPage() {
           One global prize pool pays every coin and zone prize on the map. Everything below is read from the NEAR
           chain or from the server's public records, with an explorer link for every transaction.
         </p>
+        <div className="eco-tldr">
+          <span className="eco-tldr-tag">TL;DR</span>
+          <ol>
+            <li>
+              <b>QGOLD</b> is the gold you earn: every unit is backed by NEAR in the vault, and you can always sell it back at R − 1 % (instantly within the daily limit, otherwise through a short queue).
+            </li>
+            <li>
+              <b>The prize pool</b> is funded by staking yield, fees and sponsors, never by players losing money.
+            </li>
+            <li>
+              <b>Every number below is checkable:</b> an audit re-runs before each new day, and every payout has an explorer link.
+            </li>
+          </ol>
+        </div>
+        <nav className="eco-jump" aria-label="On this page">
+          <a href="#eco-qgold">QGOLD token</a>
+          <a href="#eco-audit">Audit</a>
+          <a href="#eco-yield">Realized yield</a>
+          <a href="#eco-mix">Treasury mix</a>
+          <a href="#eco-budget">Daily budget</a>
+          <a href="#eco-payouts">Payouts</a>
+          <a href="/treasury">Treasury dashboard</a>
+        </nav>
         {data ? (
           <p className="eco-meta">
             <span className="eco-chip">{data.network === "mainnet" ? "NEAR mainnet" : "NEAR testnet"}</span>
@@ -251,7 +275,7 @@ export default function EconomyPage() {
               <ul className="eco-checks">
                 {data.audit.checks.map((c) => (
                   <li key={c.name} className={c.ok ? "ok" : "bad"}>
-                    <span aria-hidden>{c.ok ? "✓" : "✗"}</span> {CHECK_LABELS[c.name] ?? c.name}
+                    {c.ok ? <CheckCircle size={18} weight="bold" aria-hidden="true" /> : <XCircle size={18} weight="bold" aria-hidden="true" />} {CHECK_LABELS[c.name] ?? c.name}
                   </li>
                 ))}
               </ul>
@@ -291,7 +315,7 @@ export default function EconomyPage() {
                       {(data.realizedYield.vaults || []).map((v) => (
                         <tr key={v.accountId}>
                           <td><a href={v.explorerUrl ?? undefined} target="_blank" rel="noreferrer">{shortAccount(v.accountId)} ↗</a></td>
-                          <td><Yocto value={v.gamePaid} /></td>
+                          <td><Amount yocto={v.gamePaid} digits={6} /> <Yocto value={v.gamePaid} /></td>
                         </tr>
                       ))}
                     </tbody>
@@ -487,7 +511,7 @@ export default function EconomyPage() {
                 <dt>Realized yield</dt>
                 <dd><Amount yocto={data.yieldCycle.realizedYieldYocto} digits={6} /> <Yocto value={data.yieldCycle.realizedYieldYocto} /></dd>
                 <dt>Pool funded before / after</dt>
-                <dd><Yocto value={data.yieldCycle.fundedBefore} /> → <Yocto value={data.yieldCycle.fundedAfter} /></dd>
+                <dd><Amount yocto={data.yieldCycle.fundedBefore} digits={6} /> → <Amount yocto={data.yieldCycle.fundedAfter} digits={6} /> <small className="eco-muted">(<Yocto value={data.yieldCycle.fundedBefore} /> → <Yocto value={data.yieldCycle.fundedAfter} />)</small></dd>
                 <dt>Prize pool</dt>
                 <dd>{data.yieldCycle.rewardsContract}</dd>
               </dl>
@@ -510,7 +534,7 @@ export default function EconomyPage() {
                     {data.yieldCycle.flushes.map((f) => (
                       <tr key={f.transactionHash}>
                         <td>{shortAccount(f.vault)}</td>
-                        <td><Yocto value={f.gamePaidYocto} /></td>
+                        <td><Amount yocto={f.gamePaidYocto} digits={6} /> <Yocto value={f.gamePaidYocto} /></td>
                         <td><Tx url={f.explorerUrl} hash={f.transactionHash} /></td>
                       </tr>
                     ))}

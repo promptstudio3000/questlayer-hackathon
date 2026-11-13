@@ -44,10 +44,6 @@
   outline: 3px solid var(--inventory-action);
   outline-offset: 3px;
 }
-.inventory-kicker {
-  color: var(--inventory-secondary);
-  font-size: 14px;
-}
 .inventory-source {
   display: inline-flex;
   align-items: center;
@@ -69,21 +65,6 @@
   border: 1px solid var(--inventory-border);
   border-radius: 8px;
   flex-shrink: 0;
-}
-.inventory-section-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-}
-.inventory-section-heading h3 {
-  font-size: 20px;
-  margin: 0;
-}
-.inventory-collection {
-  display: grid;
-  gap: 14px;
-  min-width: 0;
 }
 .inventory-experience .inventory-collection-caption {
   color: var(--inventory-secondary);
@@ -197,6 +178,8 @@
 .inventory-dialog .inventory-notice {
   padding: 12px;
   border-left: 3px solid var(--inventory-action);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   background: var(--inventory-soft);
   color: var(--inventory-ink);
   font-size: 14px;
@@ -204,6 +187,8 @@
 .inventory-error {
   padding: 12px;
   border-left: 3px solid var(--inventory-error);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   background: var(--inventory-error-surface);
   color: var(--inventory-error);
 }
@@ -265,12 +250,8 @@
   padding-top: 12px;
 }
 .inventory-native-content .fine-print,
-.inventory-native-content .native-address,
-.inventory-native-content .network-label {
+.inventory-native-content .native-address {
   font-size: 14px;
-}
-.inventory-native-content .network-label {
-  width: fit-content;
 }
 .inventory-native-content .native-wardrobe > .section-label h2 {
   font-size: 20px;

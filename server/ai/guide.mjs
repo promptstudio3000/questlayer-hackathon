@@ -11,8 +11,7 @@ import { distance, GameError, hash, id } from "../domain.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { AI_OPERATIONS_SCHEMA } from "./schema.mjs";
 import { clean, debugRejected, screenText } from "./text-policy.mjs";
-import { ollamaConfiguration, ollamaJson } from "./ollama.mjs";
-import { nearAiConfiguration, nearAiJson } from "./near-ai.mjs";
+import { aiProviderName, nearAiConfiguration, nearAiJson } from "./near-ai.mjs";
 
 export const GUIDE_POLICY = "guide-v1";
 export { AI_OPERATIONS_SCHEMA };
@@ -47,7 +46,7 @@ export function guideFacts({ world = null, native = null, location = null, now =
   if (world) {
     add(
       "mode",
-      `This is ${world.cityName || world.cityId || "the city"} in demo mode; GOLD here is practice GOLD, not money.`,
+      `This is ${world.cityName || world.cityId || "the city"} in demo mode; QGOLD here is practice QGOLD, not money.`,
     );
     if (world.operatorPause)
       add("paused", "The operator has paused today's discoveries and coins in this city; check back later.");
@@ -343,20 +342,9 @@ export function createAnthropicGuideProvider({ apiKey, model = DEFAULT_GUIDE_MOD
 const guideUserMessage = (question, facts) =>
   `<facts>\n${facts.map((f) => `${f.id}: ${f.text}`).join("\n")}\n</facts>\n<player_question>\n${question}\n</player_question>`;
 
-export function createOllamaGuideProvider(config) {
-  return {
-    name: "ollama",
-    model: config.model,
-    answer: (question, facts) =>
-      ollamaJson(
-        { ...config, timeoutMs: 20_000 },
-        { system: SYSTEM, user: guideUserMessage(question, facts), schema: GUIDE_SCHEMA },
-      ),
-  };
-}
-
-// NEAR AI Cloud (private inference), same JSON contract as Ollama. Only
-// built when NEAR_AI_ENABLED=1 and a key exists.
+// NEAR AI Cloud (private inference), the only hosted open-model provider
+// (Ollama was removed 11 Nov 2026). Only built when NEAR_AI_ENABLED=1 and a
+// key exists.
 export function createNearAiGuideProvider(config) {
   return {
     name: "near-ai",
@@ -373,9 +361,9 @@ export function createNearAiGuideProvider(config) {
 
 export function guideConfiguration(env = process.env) {
   const nearAi = nearAiConfiguration(env);
-  let provider = (env.GUIDE_AI_PROVIDER || "template").trim();
-  if (!["template", "anthropic", "ollama", "near-ai", "off"].includes(provider))
-    throw Error("GUIDE_AI_PROVIDER must be template, anthropic, ollama, near-ai or off.");
+  let provider = aiProviderName(env.GUIDE_AI_PROVIDER || "template");
+  if (!["template", "anthropic", "near-ai", "off"].includes(provider))
+    throw Error("GUIDE_AI_PROVIDER must be template, anthropic, near-ai or off.");
   // NEAR AI stays off until NEAR_AI_ENABLED=1, whatever else is set.
   if (provider === "near-ai" && !nearAi.enabled) provider = "template";
   const perHour = env.GUIDE_AI_LIMIT_PER_HOUR;
@@ -385,14 +373,11 @@ export function guideConfiguration(env = process.env) {
     provider,
     model: (env.GUIDE_AI_MODEL || (provider === "near-ai" ? nearAi.model : DEFAULT_GUIDE_MODEL) || "").trim(),
     perHour: perHour ? Number(perHour) : 30,
-    ...(provider === "ollama" ? { ollama: ollamaConfiguration(env) } : {}),
     ...(provider === "near-ai" ? { nearAi } : {}),
   };
 }
 
 function providerFor(config, env) {
-  if (config.provider === "ollama" && config.ollama?.apiKey)
-    return createOllamaGuideProvider(config.ollama);
   if (config.provider === "anthropic" && env.ANTHROPIC_API_KEY)
     return createAnthropicGuideProvider({ apiKey: env.ANTHROPIC_API_KEY, model: config.model });
   if (config.provider === "near-ai" && config.nearAi?.active)

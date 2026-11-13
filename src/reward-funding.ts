@@ -1,3 +1,4 @@
+import { YOCTO_PER_GOLD } from "./gold-units.ts";
 import { tr } from "./i18n.ts";
 import { useSyncExternalStore } from "react";
 import { ApiError } from "./api";
@@ -72,8 +73,9 @@ export type RewardFundingSnapshot = {
   distribution: SourceRead<DistributionResponse> | null;
 };
 
-// 1 GOLD = 1/1000 of the native unit = 10^21 of its smallest integer unit.
-const UNITS_PER_GOLD = 10n ** 21n;
+// 1 GOLD = the smallest QGOLD unit: 10^15 of the native smallest unit at the
+// vault's starting rate (src/gold-units.ts).
+const UNITS_PER_GOLD = YOCTO_PER_GOLD;
 const INTEGER = /^\d{1,40}$/;
 export function isAmount(value: unknown): value is string {
   return typeof value === "string" && INTEGER.test(value);
@@ -85,14 +87,14 @@ export function goldExact(value: string): string {
   const whole = units / UNITS_PER_GOLD;
   const fraction = (units % UNITS_PER_GOLD)
     .toString()
-    .padStart(21, "0")
+    .padStart(15, "0")
     .replace(/0+$/, "");
   return grouping.format(whole) + (fraction ? "." + fraction : "");
 }
-/** Compact GOLD value with at most two decimals; marks rounding with "≈". */
+/** Compact whole GOLD value; marks rounding with "≈". */
 export function goldCompact(value: string): string {
   const units = BigInt(value);
-  const step = UNITS_PER_GOLD / 100n;
+  const step = UNITS_PER_GOLD;
   const rounded = ((units + step / 2n) / step) * step;
   const text = goldExact(rounded.toString());
   return rounded === units ? text : `≈ ${text}`;
@@ -268,7 +270,7 @@ export function potView(
 
 // Plain names for the six checks in server/native/distribution.mjs.
 export const CHECK_NAMES: Record<string, string> = {
-  get "ledger-conservation"() { return tr("Every funded GOLD is accounted for"); },
+  get "ledger-conservation"() { return tr("Every funded QGOLD is accounted for"); },
   get "coin-reservations-explained"() { return tr("Coins set aside match the open days"); },
   get "zone-reservations-explained"() { return tr("Prizes set aside match the open days"); },
   get "open-days-match-manifests"() { return tr("Open days match their published plan"); },

@@ -76,7 +76,7 @@ test("rarity follows zone tier and level entitlements on client and server", () 
   assert.equal(entitlementLabel("common"), "Any level · any zone chest");
   assert.equal(entitlementLabel("legendary"), "Level 4+ · gold zones");
 });
-test("chest drops stay within entitlements, prefer missing editions and respect supply", () => {
+test("chest drops stay within entitlements, prefer missing editions and have no supply cap", () => {
   const db = openDatabase(":memory:"),
     player = createPlayer(db, "Collector");
   const first = chooseChestAura(db, player, 1, 1);
@@ -91,8 +91,9 @@ test("chest drops stay within entitlements, prefer missing editions and respect 
   assert.equal(chooseChestAura(db, player, 1, 1).id, "dew");
   for (const name of server.DEMO_AURA_NAMES)
     db.prepare("INSERT INTO editions VALUES (?,256,256)").run(name);
-  assert.equal(chooseChestAura(db, player, 3, 9), null);
-  assert.equal(server.chestAuraAvailable(db, 3, 9), false);
+  // No capped supply (owner, 11 Nov 2026): a 257th copy still drops.
+  assert.ok(chooseChestAura(db, player, 3, 9));
+  assert.equal(server.chestAuraAvailable(db, 3, 9), true);
   db.close();
 });
 test("set bonuses are cosmetic pairs of different editions from one set", () => {
@@ -126,10 +127,13 @@ test("wardrobe filters by slot, rarity and set; catalog progress counts editions
   assert.equal(progress.entries.find((e) => e.edition.id === "gold").owned, 2);
   assert.equal(catalogEditionFor({ name: "Golden Dust" }).id, "gold");
 });
-test("native token ids accept every catalog edition within the 256 cap", () => {
+test("native token ids accept every catalog edition with any serial (uncapped editions)", () => {
   assert.deepEqual(server.nativeAuraToken("aura:nova:256"), { edition: "nova", serial: 256 });
+  assert.deepEqual(server.nativeAuraToken("aura:nova:257"), { edition: "nova", serial: 257 });
+  assert.deepEqual(server.nativeAuraToken("aura:nova:1000000"), { edition: "nova", serial: 1000000 });
+  assert.equal(server.AURA_CHAIN_CAPPED, false);
   assert.deepEqual(server.nativeAuraToken("aura:polar:1"), { edition: "polar", serial: 1 });
-  for (const bad of ["aura:nova:0", "aura:nova:257", "aura:festival:1", "aura:polar:01", "avatar:x", null])
+  for (const bad of ["aura:nova:0", "aura:nova:12345678901", "aura:festival:1", "aura:polar:01", "avatar:x", null])
     assert.equal(server.nativeAuraToken(bad), null, String(bad));
   assert.equal(server.nativeEditionForName("Golden Dust"), "gold");
   assert.equal(server.nativeEditionForName("Ember Wisp"), "ember");

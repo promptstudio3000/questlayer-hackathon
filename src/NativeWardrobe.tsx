@@ -104,14 +104,14 @@ export function NativeWardrobe({
   return (
     <section className="native-wardrobe">
       <p className="inventory-collection-caption">
-        {tr("Auras secured to your NEAR account. They stay separate from practice Auras and GOLD.")}</p>
+        {tr("Auras secured to your NEAR account. They stay separate from practice Auras and QGOLD.")}</p>
       {!player.wallets.length ? (
         <button
           className="inventory-action"
           disabled={!!busy}
           onClick={() => void onConnect()}
         >
-          <Wallet size={20} aria-hidden="true" /> {" "}{tr("Connect a NEAR wallet")}</button>
+          <Wallet size={20} aria-hidden="true" /> {" "}{tr("Activate my account")}</button>
       ) : (
         <>
           <button
@@ -225,7 +225,7 @@ export function NativeWardrobe({
                       <>
                         <p>
                           {tr("Securing holds up to")}{" "}<strong>{tr("0.05 test NEAR")}</strong>{" "}
-                          {tr("for storage; anything unused comes back. No practice GOLD is spent.")}</p>
+                          {tr("for storage; anything unused comes back. No practice QGOLD is spent.")}</p>
                         <button
                           className="inventory-action"
                           disabled={actionBlocked}

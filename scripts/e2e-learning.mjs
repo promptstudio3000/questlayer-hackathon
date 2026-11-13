@@ -30,7 +30,7 @@ try {
   browser=await(process.env.E2E_BROWSER==="webkit"?webkit:chromium).launch();
   for(const[name,width,height]of[["phone-360",360,780],["phone-390",390,844],["landscape",844,390],["desktop",1440,900]]){
     if(process.env.E2E_VIEWPORT&&process.env.E2E_VIEWPORT!==name)continue;
-    const context=await browser.newContext({viewport:{width,height},reducedMotion:"reduce",serviceWorkers:"block"});
+    const context=await browser.newContext({viewport:{width,height},reducedMotion:"reduce",serviceWorkers:"block"});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     const page=await context.newPage();let claims=0,guideRequests=0;
     page.on("request",r=>{if(r.method()==="POST"&&/\/api\/(quests\/(claim|checkpoint)|actors\/.*challenge)/.test(r.url()))claims++;if(r.url().includes("/guide/hint"))guideRequests++;});
     await page.goto(url+"/?lang="+language);
@@ -58,7 +58,7 @@ try {
     assert.equal(claims,0);assert.equal(guideRequests,0,"Automatic help does not call the AI guide");
     await context.close();
 
-    const skipped=await browser.newContext({viewport:{width,height},reducedMotion:"reduce",serviceWorkers:"block"});
+    const skipped=await browser.newContext({viewport:{width,height},reducedMotion:"reduce",serviceWorkers:"block"});await skipped.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     const quiet=await skipped.newPage();await quiet.goto(url+"/?lang="+language);
     await quiet.getByLabel(t("What should we call you?"),{exact:true}).fill("Mira knows");
     await quiet.getByRole("button",{name:t("Start exploring"),exact:true}).click();
@@ -70,7 +70,7 @@ try {
     await quiet.locator(".map-loading").waitFor({state:"hidden",timeout:30000});
     await quiet.screenshot({path:join(shots,`${name}-skipped-map.png`)});
     await quiet.reload();await quiet.locator(".topbar .profile-pill").waitFor();assert.equal(await quiet.locator(".game-intro").count(),0);
-    await quiet.locator(".topbar .profile-pill").click();await quiet.getByRole("tab",{name:t("Settings"),exact:true}).click();
+    await quiet.locator(".map-settings-toggle").click();await quiet.locator(".settings-screen").waitFor();
     const help=quiet.getByRole("button",{name:t("How to play"),exact:true});await help.click();
     await quiet.locator(".game-intro").waitFor();await quiet.keyboard.press("Escape");
     assert.equal(await help.evaluate(el=>el===document.activeElement),true,"Manual help returns focus to its trigger");
@@ -86,7 +86,7 @@ try {
     report.cases.push({name,continue:true,skip:true,reload:true,manualHelp:true,focusReturn:true,claims,guideRequests});
     await skipped.close();
   }
-  const interrupted = await browser.newContext({viewport:{width:390,height:844},serviceWorkers:"block"});
+  const interrupted = await browser.newContext({viewport:{width:390,height:844},serviceWorkers:"block"});await interrupted.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
   const interruptedPage=await interrupted.newPage();await interruptedPage.goto(url+"/?lang="+language);
   await interruptedPage.getByLabel(t("What should we call you?"),{exact:true}).fill("Mira interrupted");
   await interruptedPage.getByRole("button",{name:t("Start exploring"),exact:true}).click();
@@ -94,13 +94,12 @@ try {
   await interruptedPage.locator(".topbar .profile-pill").waitFor();
   assert.equal((await learningState(interruptedPage)).enabled,false,"Unfinished introduction never opts into teaching on restore");
   assert.equal((await learningState(interruptedPage)).intro,"done");
-  await interruptedPage.locator(".topbar .profile-pill").click();
-  await interruptedPage.getByRole("tab",{name:t("Settings"),exact:true}).click();
+  await interruptedPage.locator(".map-settings-toggle").click();
   await interruptedPage.getByRole("button",{name:t("How to play"),exact:true}).waitFor();
   assert.equal(await interruptedPage.locator(".game-intro").count(),0,"Restoring an unfinished introduction leaves the UI usable");
   assert.equal(await interruptedPage.locator(".first-session").count(),0);
   report.interruptedIntroRestoresQuietly=true;await interrupted.close();
-  const linked = await browser.newContext({viewport:{width:390,height:844},serviceWorkers:"block"});
+  const linked = await browser.newContext({viewport:{width:390,height:844},serviceWorkers:"block"});await linked.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
   const linkPage=await linked.newPage();await linkPage.goto(url+"/?lang="+language+"#task=local-example");
   await linkPage.getByLabel(t("What should we call you?"),{exact:true}).fill("Mira linked");
   await linkPage.getByRole("button",{name:t("Start exploring"),exact:true}).click();

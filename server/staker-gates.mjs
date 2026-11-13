@@ -4,8 +4,9 @@
 //
 // Steps, lowest first:
 //   staker  patron rank 0: matured (E+2) active stake >= STAKER_MIN_NEAR (2)
-//   tier2   the vault contract's Tier 2 (50 NEAR weighted)
-//   tier3   the vault contract's Tier 3 (100 NEAR weighted)
+//   tier2   10 NEAR weighted stake (owner decision 11 Nov 2026; the vault
+//           contract's own view still says 50)
+//   tier3   50 NEAR weighted stake (the contract's view still says 100)
 // A higher step includes the lower ones. The table lives in
 // server/data/staker-gates.json; STAKER_GATES_PATH (a JSON file) or
 // STAKER_GATES_JSON (inline JSON) override single gates, STAKER_MIN_NEAR the
@@ -18,7 +19,7 @@ import { registerModuleSchema, ensureModuleVersion } from "./schema-compatibilit
 export const STAKER_GATES_POLICY = "staker-gates-v1";
 export const STEPS = ["none", "staker", "tier2", "tier3"];
 const YOCTO = 10n ** 24n;
-const TIER_NEAR = { tier2: 50, tier3: 100 };
+const TIER_NEAR = { tier2: 10, tier3: 50 };
 const DEFAULT_PATH = fileURLToPath(new URL("./data/staker-gates.json", import.meta.url));
 
 const big = (v) => {
@@ -223,7 +224,43 @@ export function readStakerStatus(db, player) {
   }
 }
 
-/** Access for a player from the cache plus the world's (demo) tier and level. */
+/**
+ * The player's stake tier (1–3) for Tier 2/3 places: only the vault contract's
+ * reading recorded above counts. The old simulated staking never grants a tier.
+ */
+export function playerStakeTier(db, player) {
+  const s = player ? readStakerStatus(db, player) : null;
+  const t = Number.isInteger(s?.tier) ? Math.max(1, Math.min(3, s.tier)) : 1;
+  // The game's tier amounts (TIER_NEAR, Lubos 11 Nov 2026: 10 / 50 NEAR) are
+  // below the vault contract's view (50 / 100), so the recorded weighted
+  // stake decides as well; the higher of the two counts.
+  let w = 0n;
+  try {
+    w = big(s?.weighted);
+  } catch {}
+  const byStake = w >= BigInt(TIER_NEAR.tier3) * YOCTO ? 3 : w >= BigInt(TIER_NEAR.tier2) * YOCTO ? 2 : 1;
+  return Math.max(t, byStake);
+}
+
+/**
+ * Tier for opening Tier 2/3 places on the map.
+ * Owner decisions: 8 Nov 2026 every place was open until launch; 11 Nov 2026
+ * (Lubos) Tier 3 places stay locked until the player really reaches Tier 3.
+ * So by default Tier 2 places are open to everyone and Tier 3 needs the
+ * vault contract's Tier 3. TIER_PLACES=stake gates Tier 2 by the vault tier
+ * too; TIER_PLACES=open opens every place (the old 8 Nov behaviour).
+ * Staker gates (NPC menus, patron content) always use playerStakeTier.
+ */
+export function placeTier(db, player, env = process.env) {
+  if (env.TIER_PLACES === "open") return 3;
+  const real = playerStakeTier(db, player);
+  return env.TIER_PLACES === "stake" ? real : Math.max(2, real);
+}
+
+/** NEAR of matured weighted stake each tier needs (the vault contract's tiers). */
+export const TIER_STAKE_NEAR = Object.freeze({ ...TIER_NEAR });
+
+/** Access for a player from the cache plus the world's tier and level. */
 export function playerStakerAccess(db, player, { worldTier = 1, level = 1, settings = defaultStakerGates() } = {}) {
   const s = player ? readStakerStatus(db, player) : null;
   return stakerAccess(

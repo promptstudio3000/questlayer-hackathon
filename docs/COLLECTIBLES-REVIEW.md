@@ -225,6 +225,39 @@ target directory): `questlayer_collectibles.wasm` 398,418 bytes, matching `contr
 `contracts/wasm-sha256.json`. All 45 collectibles contract tests pass. Reviewed sha256
 **`52edcff46ee1a6d55bb5833838637ae4bcb986b5c0ee2620086665a9f4f96a16`**.
 
+## Uncapped editions (2026-11-12)
+
+Owner decision: Lubos, 11 Nov 2026 ("Aury by neměly mít capped supply") and 12 Nov 00:55 ("odstraň tu limitaci edicí"); testnet.
+Diff: `git diff 94f4c06 -- contracts/collectibles/src/lib.rs` (branch `claude/project-thread-xnwsia`).
+
+- `next_aura` no longer asserts `n < 256` ("Edition exhausted"); serials keep counting `aura:<edition>:<n+1>`.
+  `minted` stays `LookupMap<String, u32>`; with `overflow-checks = true` it would panic, not wrap, at u32::MAX.
+- Award-claim metadata now sets `copies: None` instead of `Some(256)`. The avatar keeps `copies: Some(1)`.
+- No state change: the `Collectibles` struct, storage prefixes and schema 3 are unchanged, so the upgrade is
+  code only with no migration. Nothing on chain parses serials: `equip_aura` checks the `aura:` prefix, claims keep
+  the full token id, the storage refund is measured per mint, and the market's 64-byte token id limit is far above
+  the longest id (`aura:wardbreaker:4294967295`, 27 bytes).
+- Test `edition_cap_is_enforced` became `editions_are_uncapped` (mint 257 → `aura:polar:257`, `copies` None).
+  All 45 collectibles contract tests pass.
+- Server: `server/aura-catalog.mjs` keeps the 256 bound while `public/native-editions-testnet.json` names an
+  older build, and lifts it once the upgrade script rewrites that manifest.
+
+### Independent re-review (2026-11-12)
+
+Reviewer: a separate review agent that did not write this change, given the diff only. Result: **confirmed, no
+changes needed** (state layout unchanged, no migration, overflow panics rather than wraps, no on-chain dependency on
+serial ≤ 256; it listed the server-side 256 checks, which now follow the deployed build).
+
+Build (rust 1.97.0 on linux x86_64, `bash scripts/build-contracts.sh --no-check`; the unchanged source first
+reproduced `52edcff…` byte for byte): `questlayer_collectibles.wasm` 398,375 bytes, sha256
+**`d82f4dee87eccc225e83f6048faedc49c96840cfa0eed0de18e57b388884b62a`**, recorded in `contracts/collectibles/WASM_SHA256`
+and `contracts/wasm-sha256.json`. Until the testnet upgrade runs, the claims and editions manifests describe the
+deployed `52edcff…` build and are listed under `testnetDeploymentsNotFromThisBuild`.
+
+Deployed on testnet 12 Nov 2026 from the VPS runner (hash rebuilt and verified there before signing): last tx
+`2J4ezP9LAmLegLDkKAFnXkG6R6zx85M1FvW1Yz6QL7CW`, 63 tokens and 14 equipment slots preserved. The manifests now name
+`d82f4dee…` and the exceptions are gone.
+
 ## Reproducible builds in CI
 
 The `reproducible-contracts` CI job builds every contract with `scripts/build-contracts-docker.sh` (Docker `rust:1.97.0`, `linux/amd64`), uploads the WASM files and `SHA256SUMS` as the `contract-wasm-linux-amd64` artifact, and runs `scripts/check-wasm-hashes.mjs`. It fails when any WASM differs from `contracts/wasm-sha256.json`, when the collectibles WASM differs from `contracts/collectibles/WASM_SHA256` or the last reviewed hash above, or when a `wasmSha256` in `public/native-*-testnet.json` is neither a current build nor listed with its exact hash under `testnetDeploymentsNotFromThisBuild` (older testnet deployments built before path remapping). A `codeHash` next to it must be the base58 of the same sha256. On macOS run `npm run contracts:docker`; after an intended contract change, `npm run contracts:docker -- --write` (or copy the hashes from the CI job summary). Deploy only the Docker or CI artifact.

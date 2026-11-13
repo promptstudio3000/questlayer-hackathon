@@ -23,8 +23,7 @@ import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { cityById } from "../spatial/city-pack.mjs";
 import { WORLD_REGISTRY } from "../worlds/registry.mjs";
 import { debugRejected, redactedSample } from "./text-policy.mjs";
-import { ollamaConfiguration, ollamaJson } from "./ollama.mjs";
-import { nearAiConfiguration, nearAiJson } from "./near-ai.mjs";
+import { aiProviderName, nearAiConfiguration, nearAiJson } from "./near-ai.mjs";
 import {
   CATEGORY_LABELS,
   DEFAULT_FLAVOUR_LAYER,
@@ -63,14 +62,14 @@ function whole(env, name, fallback, max = 10_000_000) {
 }
 
 /**
- * FLAVOUR_AI_PROVIDER template|ollama|anthropic|near-ai|off. When unset it
- * follows QUEST_AI_PROVIDER, so a server that already drafts quests on Ollama
- * writes flavour text with the same model without another setting.
+ * FLAVOUR_AI_PROVIDER template|anthropic|near-ai|off. When unset it
+ * follows QUEST_AI_PROVIDER, so a server that already drafts quests on NEAR
+ * AI writes flavour text with the same model without another setting.
  */
 export function flavourConfiguration(env = process.env) {
-  const provider = (env.FLAVOUR_AI_PROVIDER || env.QUEST_AI_PROVIDER || "template").trim();
-  if (!["template", "ollama", "anthropic", "near-ai", "off"].includes(provider))
-    throw Error("FLAVOUR_AI_PROVIDER must be template, ollama, anthropic, near-ai or off.");
+  const provider = aiProviderName(env.FLAVOUR_AI_PROVIDER || env.QUEST_AI_PROVIDER || "template");
+  if (!["template", "anthropic", "near-ai", "off"].includes(provider))
+    throw Error("FLAVOUR_AI_PROVIDER must be template, anthropic, near-ai or off.");
   return {
     provider,
     nightly: env.FLAVOUR_BATCH !== "off",
@@ -79,13 +78,11 @@ export function flavourConfiguration(env = process.env) {
     maxPois: whole(env, "FLAVOUR_MAX_POIS", DEFAULTS.maxPois, 100_000),
     poiDbPath: env.POI_DB_PATH || DEFAULT_POI_DB_PATH,
     model:
-      provider === "ollama"
-        ? ollamaConfiguration(env).model
-        : provider === "anthropic"
-          ? (env.FLAVOUR_AI_MODEL || env.QUEST_AI_MODEL || "claude-opus-5-5").trim()
-          : provider === "near-ai"
-            ? (env.FLAVOUR_AI_MODEL || nearAiConfiguration(env).model).trim()
-            : null,
+      provider === "anthropic"
+        ? (env.FLAVOUR_AI_MODEL || env.QUEST_AI_MODEL || "claude-opus-5-5").trim()
+        : provider === "near-ai"
+          ? (env.FLAVOUR_AI_MODEL || nearAiConfiguration(env).model).trim()
+          : null,
   };
 }
 
@@ -106,7 +103,7 @@ For every requested item write a title and a description in the requested langua
 Rules:
 - Use only the data given: the place's name, kind and short description, and the world lore. Never invent history, dates, numbers, opening hours, distances or facts.
 - Write no digits at all unless the same number is part of the place's name or description.
-- Never mention rewards, prizes, money, tokens, XP, GOLD, NEAR, Aura, coins or anything a player might win or be paid.
+- Never mention rewards, prizes, money, tokens, XP, GOLD, QGOLD, NEAR, Aura, coins or anything a player might win or be paid.
 - Keep players on open public paths in daylight. Never suggest entering buildings, climbing, crossing fences, railways, roofs, water, private land or going at night.
 - Do not use these words at all, not even figuratively: ${AVOID_WORDS.en}. In Czech: ${AVOID_WORDS.cs}. They are fine only inside a place name.
 - No links, contact details, hashtags, emoji, quotes around the title or markup.
@@ -198,15 +195,6 @@ function itemsByKey(output, request) {
   return new Map(request.items.map((item) => [item.key, byKey.get(normalKey(item.key))]));
 }
 
-export function createOllamaFlavourProvider(config) {
-  return {
-    name: "ollama",
-    model: config.model,
-    generate: ({ system, user }) =>
-      ollamaJson({ ...config, timeoutMs: 90_000 }, { system, user, schema: FLAVOUR_OUTPUT_SCHEMA }),
-  };
-}
-
 export function createAnthropicFlavourProvider({ apiKey, model, client = null }) {
   let sdk = client;
   return {
@@ -247,10 +235,6 @@ export function createNearAiFlavourProvider(config) {
 
 /** Model provider for the batch, or null when only template text is wanted. */
 export function flavourProvider(config, env = process.env) {
-  if (config.provider === "ollama") {
-    const o = ollamaConfiguration(env);
-    return o.apiKey ? createOllamaFlavourProvider(o) : null;
-  }
   if (config.provider === "anthropic" && env.ANTHROPIC_API_KEY)
     return createAnthropicFlavourProvider({ apiKey: env.ANTHROPIC_API_KEY, model: config.model });
   if (config.provider === "near-ai") {

@@ -1,0 +1,10 @@
+[Unit]
+Description=QuestLayer treasury mix retry: rebalance once the DAO approved today's run
+
+[Timer]
+OnCalendar=*-*-* 07..21:45:00 Europe/Prague
+Persistent=false
+Unit=questlayer-treasury@retry.service
+
+[Install]
+WantedBy=timers.target

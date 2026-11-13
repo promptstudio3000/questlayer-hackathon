@@ -5,6 +5,9 @@
 # After the harvest it runs one treasury-mix step (docs/TREASURY-MIX.md):
 # `rebalance` (at most 25 % of the treasury toward 50/40/10) and `keep`
 # (supply stables to Rhea, harvest their interest into the prize pool).
+# With the treasury DAO (docs/TREASURY-DAO.md) it first runs the DAO `daily`
+# step: weekly vote tally, Explorer sync and today's run, approved by the two
+# council keys; `rebalance` then runs only when the DAO approved today's run.
 #   bash scripts/install-stnear-harvest-mac.sh          # install / refresh
 #   bash scripts/install-stnear-harvest-mac.sh --remove # uninstall
 set -euo pipefail
@@ -15,6 +18,11 @@ PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 if [ "${1:-}" = "--remove" ]; then
   launchctl bootout "gui/$(id -u)/$LABEL" 2>/dev/null || true
   rm -f "$PLIST"; echo "removed $LABEL"; exit 0
+fi
+# Superseded on 11 Nov 2026 by the VPS timers (docs/TREASURY-WORKERS-VPS.md):
+# installing this again would run every step twice.
+if [ -f "$REPO/.data/treasury-vps/treasury-ops.json" ] && [ "${FORCE_MAC_TREASURY:-0}" != 1 ]; then
+  echo "The treasury workers run on the VPS now (docs/TREASURY-WORKERS-VPS.md); not installing the Mac LaunchAgent." >&2; exit 1
 fi
 [ -f "$REPO/.data/near-operator.json" ] || { echo "missing .data/near-operator.json" >&2; exit 1; }
 NODE="$(command -v node)"
@@ -28,7 +36,7 @@ cat > "$PLIST" <<PL
   <key>WorkingDirectory</key><string>$REPO</string>
   <key>ProgramArguments</key><array>
     <string>/bin/sh</string><string>-c</string>
-    <string>"$NODE" scripts/stnear-treasury-testnet.mjs fund-pending; "$NODE" scripts/stnear-treasury-testnet.mjs harvest; "$NODE" scripts/treasury-mix-testnet.mjs rebalance; "$NODE" scripts/treasury-mix-testnet.mjs keep</string>
+    <string>"$NODE" scripts/stnear-treasury-testnet.mjs fund-pending; "$NODE" scripts/stnear-treasury-testnet.mjs harvest; [ -f public/native-treasury-dao-testnet.json ] &amp;&amp; "$NODE" scripts/treasury-dao-testnet.mjs daily; "$NODE" scripts/treasury-mix-testnet.mjs rebalance; "$NODE" scripts/treasury-mix-testnet.mjs keep</string>
   </array>
   <key>StartCalendarInterval</key><dict><key>Hour</key><integer>6</integer><key>Minute</key><integer>30</integer></dict>
   <key>StandardOutPath</key><string>$REPO/.data/logs/stnear-harvest.log</string>

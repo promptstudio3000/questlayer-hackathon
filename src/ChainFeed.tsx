@@ -33,6 +33,9 @@ const TITLES: Record<string, () => string> = {
   avatar: () => tr("Explorer minted"),
   wardrobe: () => tr("Outfit changed"),
   market: () => tr("Market trade"),
+  "intents-trade": () => tr("Aura trade on NEAR Intents"),
+  "intents-withdraw": () => tr("Withdrawn from NEAR Intents"),
+  "npc-trade": () => tr("Trade with a trader"),
   transfer: () => tr("Aura sent"),
   roll: () => tr("Wisp roll"),
   stake: () => tr("Stake"),
@@ -158,7 +161,7 @@ export function ChainFeed({ accountId }: { accountId: string | null }) {
                     : ""}
                   {typeof item.xp === "number" && item.xp > 0 ? ` · +${item.xp} XP` : ""}
                   {typeof item.gold === "number" && item.gold > 0
-                    ? ` · +${gold(item.gold)} GOLD`
+                    ? ` · +${gold(item.gold)} QGOLD`
                     : ""}
                 </small>
               </span>

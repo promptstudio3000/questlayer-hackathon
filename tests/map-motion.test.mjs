@@ -123,3 +123,22 @@ test("map character shows the side that faces the screen bottom", async () => {
   assert.equal(characterYaw(90, 180), characterYaw(0, 90));
   assert.equal(characterYaw(-14, 166), 0);
 });
+
+test("demo joystick: up walks ahead, sideways turns, down steps back slower", async () => {
+  const { demoTick, DEMO_TURN_DPS, DEMO_BACK_FACTOR } = await import("../src/map-motion.ts");
+  const at = { lat: 49.74745, lng: 13.3774 };
+  const none = { forward: false, back: false, left: false, right: false, run: false };
+  const ahead = demoTick(at, 0, { ...none, walk: 1, turn: 0 }, 1);
+  assert.equal(ahead.heading, 0);
+  assert.ok(ahead.moved && ahead.position.lat > at.lat, "full push up walks north when facing north");
+  const turn = demoTick(at, 0, { ...none, walk: 0, turn: 1 }, 0.5);
+  assert.equal(turn.moved, false);
+  assert.equal(turn.heading, DEMO_TURN_DPS * 0.5);
+  const back = demoTick(at, 0, { ...none, walk: -1 }, 1);
+  const metres = (p) => Math.abs(p.lat - at.lat) * 111320;
+  assert.ok(back.position.lat < at.lat, "pull down steps back");
+  assert.ok(Math.abs(metres(back.position) - metres(ahead.position) * DEMO_BACK_FACTOR) < 0.01);
+  // Keys and stick together never exceed a full push.
+  const both = demoTick(at, 0, { ...none, forward: true, walk: 1 }, 1);
+  assert.ok(Math.abs(metres(both.position) - metres(ahead.position)) < 0.01);
+});

@@ -32,13 +32,13 @@ export function AuraClaims({
       {!linked && (
         <>
           <p>
-            {tr("Link a NEAR account to secure an Aura you earned. A secured Aura is yours even outside this game.")}</p>
+            {tr("Activate your account to secure an Aura you earned. A secured Aura is yours even outside this game.")}</p>
           <button
             className="button secondary"
             disabled={!!busy}
             onClick={() => void onConnect()}
           >
-            {tr("Link NEAR account")}</button>
+            {tr("Activate my account")}</button>
         </>
       )}
       {linked && !enabled && (

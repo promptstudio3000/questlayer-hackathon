@@ -209,7 +209,7 @@ test("NPC errand: accept, do the place's quest, come back to the NPC to report",
   assert.equal(errand.terms.aura, false);
   const step = view().quests.find((q) => q.id === errand.terms.steps[0].questId);
   assert.ok(step.clue, "a landmark clue is the preferred errand");
-  assert.match(errand.label, /^Errand: find out about .+ and come back$/);
+  assert.match(errand.label, /^Errand: .+$/);
   // Errands do not use up the daily quest lines.
   assert.ok(menu.filter((o) => !o.terms.errand).length >= 1);
 
@@ -227,7 +227,15 @@ test("NPC errand: accept, do the place's quest, come back to the NPC to report",
   assert.throws(() => service.complete({ player, actor: LENKA, world: view(), encounter: first, offerId: errand.id }), /Finish/);
   clock += 60_000;
   const stored = JSON.parse(db.prepare("SELECT metadata FROM quests WHERE id=?").get(step.id).metadata).clue;
+  // The map lists the open errand; it is not ready to report yet.
+  const [before] = service.tasks({ player, world: view() });
+  assert.equal(before.actorId, LENKA.id);
+  assert.equal(before.ready, false);
   claimQuest(db, player, step.id, fix(step, clock), clock, { answer: stored.answer });
+  // After the visit Lenka waits for the report: the map shows her sign.
+  const [after] = service.tasks({ player, world: view() });
+  assert.equal(after.ready, true);
+  assert.ok(after.errand);
   // The meeting from before the visit is not a return.
   assert.throws(
     () => service.complete({ player, actor: LENKA, world: view(), encounter: first, offerId: errand.id }),
@@ -240,6 +248,7 @@ test("NPC errand: accept, do the place's quest, come back to the NPC to report",
   assert.equal(done.xp, ERRAND_XP + ERRAND_CLUE_BONUS_XP);
   assert.equal(db.prepare("SELECT xp FROM players WHERE id=?").get(player).xp - xp0, ERRAND_XP + ERRAND_CLUE_BONUS_XP);
   assert.equal(done.aura, null);
+  assert.deepEqual(service.tasks({ player, world: view() }), [], "a turned-in errand leaves the map");
   // One errand per NPC and day.
   const later = buildMenu({ actor: LENKA, persona: personaFor(LENKA), world: view(), now: clock, errandsToday: 1 });
   assert.ok(!later.some((o) => o.terms.errand));

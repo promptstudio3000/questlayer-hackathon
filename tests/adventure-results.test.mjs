@@ -5,7 +5,7 @@ import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Worker } from "node:worker_threads";
-import { openDatabase, createPlayer } from "../server/database.mjs";
+import { openDatabase, createPlayer as newPlayer } from "../server/database.mjs";
 import { HOME, ensureWorld, worldView } from "../server/world.mjs";
 import {
   claimQuest,
@@ -18,6 +18,15 @@ import {
 } from "../server/game.mjs";
 import { createAdventureResults } from "../server/adventure-results.mjs";
 import { GOLD } from "../server/domain.mjs";
+
+// New explorers start with 0 GOLD (no practice faucet). These tests exercise
+// the local practice paths, so each explorer gets a practice wallet here.
+const PRACTICE_WALLET_U = 120_000 * 1_000_000;
+function createPlayer(db, name, now) {
+  const p = newPlayer(db, name, now);
+  db.prepare("UPDATE players SET gold_u=? WHERE id=?").run(PRACTICE_WALLET_U, p);
+  return p;
+}
 
 const now = Date.parse("2026-11-02T12:00:00Z");
 async function fixture(t, { path = ":memory:", arena = true } = {}) {
@@ -185,6 +194,10 @@ test("zero-item chests and another player's shared prize retain their exact inde
   assert.equal(empty.result.itemCurrent.status, "none");
   assert.equal(empty.result.reward.xp, chest.xp);
   const funded = quests.find((q) => q.tier === 2 && q.kind === "visit");
+  // Zone prizes come from the daily zone budget (a funded cell zone).
+  db.prepare(
+    "UPDATE quests SET gold_u=1500,metadata=json_set(COALESCE(metadata,'{}'),'$.cellZone',json('{\"cell\":\"test\",\"prizeU\":1500}')) WHERE id=?",
+  ).run(funded.id);
   stake(db, a, 100000 * GOLD, 50, "meadow", now);
   stake(db, b, 100000 * GOLD, 50, "river", now);
   const winner = claimQuest(db, a, funded.id, funded, now + 31000),

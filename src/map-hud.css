@@ -1,0 +1,462 @@
+/* Map HUD (Lubos, 10 Nov 2026 phone pass): logo and today's board top left,
+   one avatar + GOLD bubble and the map settings gear top right, a demo
+   joystick bottom left, the Actions button bottom right and the tab bar fixed
+   to the bottom edge on phones. Imported last from GameMap.tsx, so these
+   rules win over phone-map.css and mobile-adventure.css. */
+
+:root { --hud-tabbar: 56px; --hud-gap: 12px; --hud-stick: 116px; }
+
+/* ---- Top bar ------------------------------------------------------------ */
+.app-shell[data-screen] .topbar {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  min-height: calc(64px + env(safe-area-inset-top));
+}
+.hud-left { display: flex; align-items: center; gap: 8px; min-width: 0; pointer-events: auto; }
+.hud-brand {
+  display: grid; place-items: center; flex: none; width: 48px; height: 48px; padding: 0;
+  border: 0; border-radius: 50%; background: var(--surface-raised); box-shadow: 0 2px 12px #1a033514;
+}
+.hud-brand .brand-logo, .hud-brand .brand-logo img, .hud-brand > svg { width: 34px; height: 34px; display: block; }
+.app-shell[data-screen] .topbar-right { width: auto; margin-inline-start: auto; align-items: center; gap: 8px; }
+.hud-bubble {
+  display: flex; align-items: center; gap: 0; min-height: 52px; padding: 2px 4px 2px 2px;
+  border-radius: 28px; background: var(--surface-raised); box-shadow: 0 2px 12px #1a033514; pointer-events: auto;
+}
+.app-shell[data-screen] .topbar .hud-bubble > .profile-pill,
+.app-shell[data-screen] .topbar .hud-bubble > .balance-pill {
+  min-height: 48px; margin: 0; border: 0; box-shadow: none; background: transparent;
+}
+.app-shell[data-screen] .topbar .hud-bubble > .profile-pill { order: 0; padding: 0 2px; border-radius: 24px; }
+.app-shell[data-screen] .topbar .hud-bubble > .balance-pill { padding: 0 10px 0 6px; gap: 6px; border-radius: 24px; }
+.app-shell[data-screen] .topbar .hud-bubble .hud-xp-text { display: none; }
+.app-shell[data-screen] .topbar .hud-bubble .balance-pill > span:not(.gold-icon) { display: none; }
+.app-shell[data-screen] .topbar .hud-bubble .balance-pill b { font-size: 16px; }
+.app-shell[data-screen] .topbar .daily-board-chip { min-height: 48px; }
+
+/* ---- Map settings (gear) ------------------------------------------------ */
+.map-settings { position: relative; pointer-events: auto; }
+.map-settings-toggle {
+  position: relative; display: grid; place-items: center; width: 48px; height: 48px; padding: 0;
+  border: 0; border-radius: 50%; background: var(--surface-raised); color: var(--ink); box-shadow: 0 2px 12px #1a033514;
+}
+.map-settings-toggle[aria-expanded="true"] { color: var(--action); }
+.map-settings-demo-dot {
+  position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%;
+  background: var(--discovery, #ff1dff); box-shadow: 0 0 0 2px var(--surface-raised);
+}
+.map-settings button:focus-visible, .map-actions button:focus-visible, .info-tip-button:focus-visible,
+.map-guide-close:focus-visible, .demo-stick button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
+
+/* ---- Actions (bottom right) ---------------------------------------------- */
+.map-actions {
+  position: fixed; z-index: 26; right: var(--hud-gap);
+  bottom: calc(var(--hud-gap) + env(safe-area-inset-bottom));
+}
+.map-actions-toggle {
+  display: grid; place-items: center; width: 56px; height: 56px; padding: 0; border: 0; border-radius: 50%;
+  background: var(--action); color: var(--on-action); box-shadow: 0 4px 16px #1a033540;
+}
+.map-actions.open .map-actions-toggle { background: var(--surface-raised); color: var(--ink); }
+/* The main toggle (not MetaLayer's Mine/Build buttons, which share the base
+   class): a caption under the icon and a white rim so it never blends in. */
+.map-actions-toggle.map-actions-main {
+  align-content: center; gap: 1px; box-shadow: 0 0 0 2px #fff, 0 4px 16px #1a033566;
+}
+.map-actions-caption {
+  max-width: calc(100% - 8px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 9px; font-weight: 700; line-height: 1.1; letter-spacing: 0.02em; text-transform: uppercase;
+}
+/* MetaLayer shrinks it to 48 px while Mine/Build sit above it. */
+.layer-screen[data-tool-ready=true] .map-actions-caption { font-size: 8px; letter-spacing: 0; }
+.map-actions-list {
+  position: absolute; right: 4px; bottom: 68px; margin: 0; padding: 0; list-style: none;
+  display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
+}
+.map-actions-list li { animation: map-action-in 0.16s ease-out both; animation-delay: calc(var(--i, 0) * 25ms); }
+.map-action {
+  display: flex; align-items: center; gap: 10px; min-height: 48px; padding: 0; border: 0;
+  background: none; color: var(--ink); font: inherit; cursor: pointer;
+}
+.map-action-label {
+  padding: 6px 12px; border-radius: 16px; background: var(--surface-raised); box-shadow: 0 2px 12px #1a033526;
+  font-size: 15px; font-weight: 600; white-space: nowrap;
+}
+.map-action-icon {
+  display: grid; place-items: center; flex: none; width: 48px; height: 48px; border-radius: 50%;
+  background: var(--surface-raised); color: var(--action); box-shadow: 0 2px 12px #1a033526;
+}
+.map-action-key { display: none; margin-left: 8px; padding: 1px 6px; border-radius: 6px; background: var(--surface-sunken, #00000010); font: 600 12px/18px ui-monospace, monospace; color: var(--ink-soft, inherit); }
+@media (hover: hover) and (pointer: fine) { .map-action-key { display: inline-block; } }
+@keyframes map-action-in { from { opacity: 0; transform: translateY(12px) scale(0.85); } }
+@media (prefers-reduced-motion: reduce) { .map-actions-list li { animation: none; } }
+.app-shell .map-actions .emote-picker { top: auto; bottom: 68px; right: 0; }
+.app-shell.sheet-open .map-actions, .app-shell.map-full .map-actions { visibility: hidden; pointer-events: none; }
+@media (min-width: 901px) and (min-height: 501px) {
+  .map-actions-toggle.map-actions-main { width: 72px; height: 72px; gap: 3px; }
+  .app-shell:not([data-tool-ready=true]) .map-actions-main > svg { width: 30px; height: 30px; }
+  .map-actions-caption { font-size: 11px; }
+  .app-shell:not(.layer-screen) .map-actions-list, .app-shell .map-actions .emote-picker { bottom: 84px; }
+  .layer-screen:not([data-tool-ready=true]) .map-actions-list { bottom: 84px; }
+}
+
+/* ---- Demo joystick (bottom left) ----------------------------------------- */
+.app-shell[data-screen] .demo-pad {
+  display: block; width: var(--hud-stick); height: var(--hud-stick); padding: 0; transform: none;
+  border: 0; border-radius: 50%; background: none; box-shadow: none;
+  top: auto; right: auto; left: var(--hud-gap); bottom: calc(var(--hud-gap) + env(safe-area-inset-bottom));
+}
+.demo-stick {
+  position: relative; width: 100%; height: 100%; border-radius: 50%;
+  background: radial-gradient(circle, #ffffffe6 0 46%, #f3eefcd9 47% 100%);
+  border: 2px solid var(--control-border, #d6cceb); box-shadow: 0 4px 16px #1a033533;
+  touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab;
+}
+.demo-stick[data-active] { cursor: grabbing; border-color: var(--action); }
+.demo-stick > button {
+  position: absolute; display: grid; place-items: center; width: 24px; height: 24px; padding: 0;
+  border: 0; border-radius: 50%; background: none; color: var(--ink-secondary); pointer-events: none;
+}
+.demo-stick > button[aria-pressed="true"] { color: var(--action); }
+.demo-stick > .demo-forward { top: 4px; left: calc(50% - 12px); }
+.demo-stick > .demo-back { bottom: 4px; left: calc(50% - 12px); }
+.demo-stick > .demo-left { left: 4px; top: calc(50% - 12px); }
+.demo-stick > .demo-right { right: 4px; top: calc(50% - 12px); }
+.demo-knob {
+  position: absolute; top: calc(50% - 26px); left: calc(50% - 26px); width: 52px; height: 52px; border-radius: 50%;
+  background: var(--action); box-shadow: 0 3px 10px #1a033566, inset 0 -4px 0 #0000002e; pointer-events: none;
+  transition: transform 0.12s ease-out;
+}
+.demo-stick[data-active] .demo-knob { transition: none; }
+.app-shell[data-screen] .demo-pad .demo-run, .app-shell[data-screen] .demo-pad .demo-pad-min {
+  position: absolute; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: var(--surface-raised); color: var(--ink); box-shadow: 0 2px 10px #1a033533;
+}
+.app-shell[data-screen] .demo-pad .demo-run { width: 44px; height: 44px; right: -30px; top: -10px; }
+.app-shell[data-screen] .demo-pad .demo-run[aria-pressed="true"] { background: var(--action); color: var(--on-action); }
+.app-shell[data-screen] .demo-pad .demo-pad-min { width: 32px; height: 32px; left: -4px; top: -6px; color: var(--ink-secondary); }
+.app-shell[data-screen] .demo-pad-open {
+  display: grid; place-items: center; width: 48px; height: 48px; min-width: 48px; padding: 0; transform: none;
+  border-radius: 50%; color: var(--action);
+  top: auto; right: auto; left: var(--hud-gap); bottom: calc(var(--hud-gap) + env(safe-area-inset-bottom));
+}
+.app-shell[data-screen] .demo-pad-open > span { display: none; }
+
+/* ---- Direction guide ---------------------------------------------------- */
+.app-shell .map-guide-key { pointer-events: auto; padding: 2px 2px 2px 10px; min-height: 44px; }
+.map-guide-close {
+  display: grid; place-items: center; flex: none; width: 40px; height: 40px; margin-inline-start: 2px; padding: 0;
+  border: 0; border-radius: 8px; background: transparent; color: inherit;
+}
+.map-guide-close:hover { background: #ede6ff; }
+
+/* ---- Info flyouts ------------------------------------------------------- */
+.info-tip { position: relative; display: inline-flex; vertical-align: middle; }
+.info-tip-button {
+  display: grid; place-items: center; width: 32px; height: 32px; padding: 0; margin: -4px 0;
+  border: 0; border-radius: 50%; background: transparent; color: var(--ink-secondary);
+}
+.info-tip-button:hover, .info-tip-button[aria-expanded="true"] { background: var(--surface-soft); color: var(--action); }
+.info-tip-flyout {
+  position: absolute; top: calc(100% + 6px); z-index: 45; width: min(280px, calc(100vw - 32px));
+  padding: 10px 12px; border-radius: 12px; background: var(--ink, #1a0335); color: var(--surface, #fff);
+  font-size: 14px; font-weight: 400; line-height: 1.45; text-align: start; box-shadow: 0 8px 24px #1a033540;
+  white-space: normal;
+}
+.info-tip-flyout[data-side="above"] { top: auto; bottom: calc(100% + 6px); }
+.info-tip-end .info-tip-flyout { right: -8px; }
+.info-tip-start .info-tip-flyout { left: -8px; }
+
+/* ---- Places today: compact two-line rows -------------------------------- */
+.app-shell[data-screen] .zone-list { display: grid; gap: 6px; }
+.app-shell[data-screen] .zone-list .zone-card.zone-row {
+  display: flex; align-items: center; gap: 12px; min-height: 64px; height: auto; padding: 8px 4px 8px 8px;
+  border-radius: 12px; text-align: start;
+}
+.zone-row-art { display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 10px; background: var(--surface-soft); }
+.zone-row-art .quest-thumbnail, .zone-row-art img { max-width: 40px; max-height: 40px; }
+.zone-row-body { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.zone-row-body strong { font-size: 16px; line-height: 1.3; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.zone-row-body small { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 14px; color: var(--ink-secondary); line-height: 1.35; }
+.zone-row-body small .badge { padding: 1px 6px; font-size: 12px; }
+.zone-row-body small > span { display: inline-flex; align-items: center; gap: 4px; }
+.zone-row > svg { flex: none; color: var(--ink-secondary); }
+
+/* ---- Nearby discoveries: compact pot row ------------------------------- */
+.pot-row { display: grid; gap: 0; margin: 0 0 12px; border: 1px solid var(--decorative-border); border-radius: 12px; background: var(--surface-raised); }
+.pot-row-main { display: flex; align-items: center; gap: 8px; min-height: 52px; padding: 4px 4px 4px 10px; }
+.pot-row-main > .game-object-art { flex: none; }
+.pot-row-stat { display: grid; min-width: 0; line-height: 1.25; }
+.pot-row-stat b { font-size: 16px; white-space: nowrap; }
+.pot-row-stat small { font-size: 13px; color: var(--ink-secondary); white-space: nowrap; }
+.pot-row-scope {
+  display: inline-flex; align-items: center; gap: 4px; justify-self: start; min-height: 28px; margin: -4px 0; padding: 0;
+  border: 0; background: transparent; color: var(--action); font: inherit; font-size: 13px; font-weight: 600; white-space: nowrap;
+}
+.pot-row-sep { width: 1px; align-self: stretch; margin: 8px 2px; background: var(--decorative-border); flex: none; }
+.pot-row-spacer { flex: 1; }
+.pot-row-more {
+  display: grid; place-items: center; flex: none; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 10px;
+  background: transparent; color: var(--ink-secondary);
+}
+.pot-row-more[aria-expanded="true"] svg { transform: rotate(180deg); }
+.pot-row-detail { padding: 0 8px 8px; }
+.pot-row-detail .todays-pot { margin: 0; }
+.app-shell[data-screen] .day-row { margin-bottom: 8px; }
+
+/* ---- Nearby: create buttons sit in their own sections ------------------- */
+.nearby-head { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.nearby-head h2 { margin: 0; }
+.app-shell[data-screen] .nearby-head .nearby-count { color: var(--ink-secondary); font-size: 14px; align-self: center; }
+.nearby-add {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 40px; margin-inline-start: auto; padding: 0 12px;
+  border: 1px solid var(--control-border); border-radius: 20px; background: var(--surface-raised); color: var(--action);
+  font: inherit; font-size: 14px; font-weight: 600;
+}
+.app-shell[data-screen] .nearby-market .nearby-card { min-height: 60px; padding-block: 8px; padding-inline-end: 8px; }
+.app-shell[data-screen] .nearby-market .nearby-card-body { min-width: 0; }
+.app-shell[data-screen] .nearby-market .nearby-card-body strong { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: 16px; }
+.app-shell[data-screen] .nearby-market .nearby-card-body small { display: block; font-size: 14px; }
+
+/* ---- Close buttons hug the corner; arrows reach the edge ---------------- */
+.app-shell[data-screen] .panel-heading { align-items: center; }
+.app-shell[data-screen] .panel-heading .panel-close {
+  width: 44px; height: 44px; min-width: 44px; min-height: 44px; margin-inline-end: -8px; padding: 0;
+  display: grid; place-items: center; background: var(--surface-soft);
+}
+.app-shell[data-screen] .nearby-open { padding-inline-end: 8px; }
+.app-shell[data-screen] .nearby-open > svg { margin-inline-start: auto; }
+
+/* ---- Map chips under the top bar ---------------------------------------- */
+.app-shell[data-screen] .map-sky-chip { top: calc(70px + env(safe-area-inset-top)); left: 12px; }
+.app-shell[data-screen] .zone-presence { top: calc(112px + env(safe-area-inset-top)); }
+
+/* ---- Phones: tab bar on the bottom edge ---------------------------------- */
+@media (max-width: 600px) {
+  .app-shell[data-screen] .nav-rail { left: 0; right: 0; bottom: 0; }
+  .app-shell[data-screen] .nav-rail .rail-links {
+    grid-template-columns: repeat(3, minmax(0, 1fr)); padding: 0 4px env(safe-area-inset-bottom);
+    border: 0; border-top: 1px solid var(--decorative-border); border-radius: 0;
+    background: var(--surface-raised); box-shadow: 0 -2px 16px #1a033514;
+  }
+  .app-shell[data-screen] .rail-links button {
+    flex-direction: row; gap: 6px; min-height: var(--hud-tabbar); padding: 0 4px;
+    border-radius: 0; box-shadow: none; background: transparent;
+  }
+  .app-shell[data-screen] .rail-links button span { font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .app-shell[data-screen] .rail-links button.active { background: transparent; color: var(--action); box-shadow: inset 0 3px 0 var(--action); }
+  .app-shell[data-screen] .rail-links button svg { width: 22px; height: 22px; flex: none; }
+  /* The objective card sits right on the tab bar; the joystick and the
+     Actions button ride on top of it (--hud-card from useHudCard) and drop
+     back down when the card closes. */
+  .app-shell[data-screen] .main-panel.explore-panel.sheet-compact,
+  .app-shell[data-screen] .nearby-open {
+    bottom: calc(var(--hud-tabbar) + var(--hud-gap) + env(safe-area-inset-bottom));
+  }
+  .app-shell[data-screen] .demo-pad,
+  .app-shell[data-screen] .demo-pad-open,
+  .map-actions { bottom: calc(var(--hud-tabbar) + var(--hud-gap) + var(--hud-card, 0px) + env(safe-area-inset-bottom)); transition: bottom 0.15s ease-out; }
+  .app-shell[data-screen] .demo-pad { left: calc(var(--hud-gap) + 4px); }
+  .app-shell[data-screen] .main-panel.explore-panel.sheet-compact { max-height: min(26dvh, 200px); }
+  /* Map attribution: the free strip above the Actions button. */
+  body:has(.app-shell[data-screen]) .maplibregl-ctrl-bottom-right,
+  body:has(.app-shell[data-screen] .sheet-expanded) .maplibregl-ctrl-bottom-right {
+    bottom: calc(var(--hud-tabbar) + var(--hud-gap) + var(--hud-card, 0px) + 64px + env(safe-area-inset-bottom)) !important; right: 18px !important;
+  }
+  .app-shell[data-screen] .map-guide-key { top: calc(env(safe-area-inset-top) + 112px); left: 60px; right: auto; max-width: calc(100% - 72px); }
+}
+/* Tablets and desktop: the menu floats bottom left, joystick beside it. */
+@media (min-width: 601px) {
+  .app-shell[data-screen] .demo-pad, .app-shell[data-screen] .demo-pad-open { left: 28px; bottom: 236px; }
+  body:has(.app-shell[data-screen]) .maplibregl-ctrl-bottom-right { right: 80px !important; }
+}
+/* Desktop: the bigger Actions button (above) keeps the attribution clear. */
+@media (min-width: 901px) and (min-height: 501px) {
+  body:has(.app-shell[data-screen]) .maplibregl-ctrl-bottom-right { right: 100px !important; }
+}
+@media (min-width: 601px) and (max-width: 1100px) and (min-height: 501px) {
+  .app-shell[data-screen] .demo-pad, .app-shell[data-screen] .demo-pad-open { bottom: 304px; }
+}
+@media (max-height: 500px) and (min-width: 600px) {
+  .app-shell[data-screen] .demo-pad, .app-shell[data-screen] .demo-pad-open { right: auto; left: 128px; bottom: 12px; }
+  .app-shell[data-screen] { --hud-stick: 96px; }
+}
+
+/* ---- Folded objective cards: icon, one-line title, one stats line ------- */
+.app-shell[data-screen] .main-panel.explore-panel.sheet-compact { padding: 8px 8px 8px 12px; }
+.app-shell[data-screen] .sheet-compact .compact-selection,
+.app-shell[data-screen] .sheet-compact .recommended-quest {
+  display: flex; align-items: center; gap: 12px; min-height: 56px; padding: 0 44px 0 0; text-align: start;
+}
+.app-shell[data-screen] .sheet-compact .peek-art,
+.app-shell[data-screen] .sheet-compact .recommended-art {
+  display: grid; place-items: center; flex: none; width: 44px; height: 44px; border-radius: 10px; background: var(--surface-soft);
+}
+.app-shell[data-screen] .sheet-compact .peek-body,
+.app-shell[data-screen] .sheet-compact .recommended-quest > span:nth-child(2) { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.app-shell[data-screen] .sheet-compact .peek-body strong,
+.app-shell[data-screen] .sheet-compact .recommended-quest strong {
+  display: block; font-size: 16px; font-weight: 600; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.app-shell[data-screen] .sheet-compact .peek-body small,
+.app-shell[data-screen] .sheet-compact .recommended-quest > span:nth-child(2) > :not(strong) {
+  display: block; font-size: 14px; line-height: 1.35; color: var(--ink-secondary);
+}
+.app-shell[data-screen] .sheet-compact .compact-selection > svg,
+.app-shell[data-screen] .sheet-compact .recommended-quest > svg { flex: none; }
+.app-shell[data-screen] .sheet-compact .sheet-peek-hide,
+.app-shell[data-screen] .objective-dismiss {
+  width: 40px; height: 40px; min-width: 40px; min-height: 40px; border-radius: 50%;
+}
+.app-shell[data-screen] .sheet-compact .sheet-peek { position: relative; }
+.app-shell[data-screen] .sheet-compact .sheet-peek-hide { position: absolute; top: 50%; right: 0; transform: translateY(-50%); }
+.app-shell[data-screen] .sheet-compact:has(.sheet-peek-hide) > .objective-dismiss-bar { display: none; }
+@media (prefers-reduced-motion: reduce) { .app-shell[data-screen] .demo-pad, .app-shell[data-screen] .demo-pad-open, .map-actions { transition: none; } }
+
+/* Map messages are closed by default: only the icon shows until tapped. */
+.gold-place-pin:not([data-open]) { max-width: none; min-height: 0; padding: 4px; border-radius: 50%; border-left: 0; display: grid; place-items: center; width: 40px; height: 40px; }
+.gold-place-pin:not([data-open]) > span, .gold-place-pin:not([data-open]) .pin-close { display: none; }
+.gold-place-pin:not([data-open]) .map-kit-note { margin: 0; width: 28px; height: 28px; }
+.gold-place-pin:not([data-open]).kind-topic::before { content: none; }
+.gold-place-pin[data-open] { display: flex; align-items: center; gap: 6px; max-width: 240px; z-index: 5; -webkit-line-clamp: unset; overflow: visible; }
+.gold-place-pin[data-open] .map-kit-note { margin: 0; flex: none; }
+.gold-place-pin[data-open] > span { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.gold-place-pin .pin-close { flex: none; display: grid; place-items: center; width: 28px; height: 28px; margin: -2px -4px -2px 0; border-radius: 50%; background: rgb(26 3 53 / 0.1); font: 400 18px/1 var(--font-body, sans-serif); font-style: normal; }
+
+/* Nearby: the city sits in the title and the refresh timer next to close,
+   so the header is one low row. */
+.main-panel .panel-heading .heading-refresh {
+  display: inline-flex; align-items: center; gap: 4px; flex: none;
+  font-size: 14px; color: var(--ink-secondary); white-space: nowrap;
+}
+
+/* A chosen quest owns the map: everything else steps back until the target
+   is cleared with the chip's X. */
+.app-shell[data-target] .zone-totem-marker:not(:has(.zone-map-pin[aria-pressed="true"])),
+.app-shell[data-target] .wearable-find-marker,
+.app-shell[data-target] .market-map-pin,
+.app-shell[data-target] .creator-map-pin,
+.app-shell[data-target] .gold-place-pin,
+.app-shell[data-target] .gold-lure-marker,
+.app-shell[data-target] .map-peek-pin,
+.app-shell[data-target] .other-player-marker,
+.app-shell[data-target] .actor-marker {
+  opacity: 0.28;
+  filter: saturate(0.4);
+  transition: opacity 0.2s;
+}
+.app-shell[data-target] .quest-route-stop.next,
+.app-shell[data-target] .map-kit-checkpoint.next {
+  filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px var(--action));
+}
+
+/* Header: no bar and no blur over the map, only the floating buttons. */
+.app-shell[data-screen] .topbar { background: none; -webkit-backdrop-filter: none; backdrop-filter: none; border: 0; box-shadow: none; pointer-events: none; }
+.app-shell[data-screen] .topbar .topbar-right > *, .app-shell[data-screen] .topbar .hud-left { pointer-events: auto; }
+/* Day/night next to the avatar instead of its own row. */
+.hud-sky-slot { display: inline-flex; flex: none; }
+.app-shell[data-screen] .hud-sky-slot .map-sky-chip { position: static; height: 36px; padding: 0 10px; border-radius: 18px; max-width: none; }
+.app-shell[data-screen] .hud-sky-slot .map-sky-chip > span:not(.map-wave-hint) { display: none; }
+@media (max-width: 480px) { .app-shell[data-screen] .hud-sky-slot .map-wave-hint { display: none; } }
+/* Direction guide at the very top: centred between the header buttons on
+   wide screens, right under them on a phone. */
+.app-shell[data-screen] .map-guide-key { top: calc(env(safe-area-inset-top) + 10px); bottom: auto; left: 50%; right: auto; transform: translateX(-50%); z-index: 19; }
+@media (max-width: 760px) {
+  .app-shell[data-screen] .map-guide-key { top: calc(env(safe-area-inset-top) + 66px); left: 12px; transform: none; max-width: calc(100% - 24px); }
+  .app-shell[data-screen] .zone-presence { top: calc(70px + env(safe-area-inset-top)); }
+}
+
+/* "Go" on a Community quest: a chip under the header leads back to the quest. */
+.community-goal { position: absolute; top: calc(env(safe-area-inset-top) + 66px); left: 50%; transform: translateX(-50%); z-index: 19; display: flex; align-items: center; gap: 4px; max-width: min(420px, calc(100% - 24px)); padding: 4px; border-radius: 28px; background: var(--surface); box-shadow: 0 4px 16px #1a033533; }
+.community-goal-open { display: flex; flex: 1; align-items: center; gap: 8px; min-width: 0; min-height: 48px; padding: 0 8px 0 4px; border: 0; border-radius: 24px; background: none; color: var(--ink); text-align: start; cursor: pointer; }
+.community-goal-open img { flex: none; image-rendering: pixelated; }
+.community-goal-open span { display: grid; flex: 1; min-width: 0; }
+.community-goal-open strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 15px; }
+.community-goal-open small { color: var(--ink-secondary); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.community-goal { width: max-content; }
+@media (max-width: 760px) { .community-goal { left: 12px; right: 12px; width: auto; max-width: none; transform: none; } }
+.community-goal-open svg { flex: none; color: var(--action); }
+.community-goal-close { flex: none; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: var(--surface-soft); color: var(--ink); cursor: pointer; }
+.app-shell[data-screen]:has(.community-goal) .map-guide-key { display: none; }
+/* Test Layer (docs/TEST-LAYER.md): Test QGOLD carries a TEST tag wherever the balance shows. */
+html[data-test-layer] .balance-pill { position: relative; }
+html[data-test-layer] .balance-pill::after { content: "TEST"; position: absolute; top: -6px; right: -4px; padding: 0 4px; border-radius: 6px; background: #f2b84b; color: #2a1d00; font: 800 9px/14px system-ui, sans-serif; letter-spacing: .04em; }
+
+/* A plain point chosen as the target (navigateTo): a pulsing ring that stays
+   bright while the rest of the map steps back. */
+.map-point-target { width: 28px; height: 28px; border-radius: 50%; border: 4px solid #fff; background: var(--action); box-shadow: 0 0 0 6px rgb(255 255 255 / 0.35), 0 0 18px var(--action); animation: point-target-pulse 1.6s ease-in-out infinite; }
+@keyframes point-target-pulse { 50% { box-shadow: 0 0 0 14px rgb(255 255 255 / 0.12), 0 0 26px var(--action); } }
+@media (prefers-reduced-motion: reduce) { .map-point-target { animation: none; } }
+
+/* ---- Guidance chip: names the quest the player chose, X ends it ---------- */
+.map-guide-key > span { display: grid; min-width: 0; }
+.map-guide-key small { font-size: 12px; opacity: .8; }
+.map-guide-key strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-shell[data-screen]:has(.map-guide-key) .zone-presence { top: calc(124px + env(safe-area-inset-top)); }
+
+/* ---- Zone label: no card, just words over the map ------------------------ */
+.app-shell[data-screen] .zone-presence > button {
+  min-height: 48px; padding: 4px 8px; border: 0; background: none; box-shadow: none; color: #fff;
+  text-shadow: 0 0 3px #1a0335, 0 1px 2px #1a0335, 0 0 10px #1a0335;
+}
+.app-shell[data-screen] .zone-presence > button > svg { filter: drop-shadow(0 0 2px #1a0335) drop-shadow(0 1px 3px #1a0335); }
+.app-shell[data-screen] .zone-presence strong, .app-shell[data-screen] .zone-presence small { color: #fff; }
+@media (max-width: 760px) {
+  .app-shell[data-screen]:has(.zone-presence) .presence-chip { top: calc(140px + env(safe-area-inset-top)); }
+  .app-shell[data-screen]:has(.zone-presence):has(.map-guide-key) .presence-chip { top: calc(194px + env(safe-area-inset-top)); }
+}
+
+/* ---- "Open ..." when something is in reach: gold rim and a little life --- */
+.app-shell .nearby-open { border-color: #ffd25a; box-shadow: 0 0 0 3px #ffd25a59, 0 6px 22px #ffd25a80; }
+.nearby-open > svg { color: #ffd25a; }
+@media (prefers-reduced-motion: no-preference) {
+  .nearby-open { animation: nearby-in .28s ease-out, nearby-glow 1.8s ease-in-out .28s infinite; }
+  .nearby-open-art { animation: nearby-bob 1.8s ease-in-out infinite; }
+  .nearby-open > svg { animation: nearby-nudge 1.8s ease-in-out infinite; }
+  @keyframes nearby-in { from { opacity: 0; scale: .94; translate: 0 12px; } }
+  @keyframes nearby-glow { 50% { box-shadow: 0 0 0 7px #ffd25a26, 0 6px 30px #ffd25ab3; } }
+  @keyframes nearby-bob { 50% { translate: 0 -3px; } }
+  @keyframes nearby-nudge { 50% { translate: 4px 0; } }
+}
+
+/* ---- Quests made by players: bigger round pins with the creator's photo -- */
+.quest-map-pin.game-object-map-pin.creator-map-pin {
+  width: auto; height: auto; min-width: 64px; padding: 0; gap: 2px; justify-items: center;
+  border: 0; border-radius: 0; background: none; box-shadow: none;
+}
+.creator-pin-face {
+  position: relative; display: grid; place-items: center; width: 60px; height: 60px; overflow: hidden;
+  border: 3px solid #ff6fd0; border-radius: 50%; background: #fcfaff; box-shadow: 0 0 0 2px #fff, 0 4px 12px #1a033580;
+}
+.creator-pin-face > :not(.creator-pin-photo) { width: 40px; height: 40px; }
+.creator-pin-photo { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.creator-map-pin > small {
+  max-width: 128px; padding: 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  border-radius: 10px; background: #ff6fd0; color: #1a0335; font: 700 12px/1.3 system-ui, sans-serif;
+}
+
+/* ---- Walking into a zone: the label greets for a few seconds ------------- */
+.app-shell[data-screen] .zone-presence-welcome > button {
+  padding: 8px 12px; border: 2px solid #ffd25a; border-radius: 14px; background: #1a0335e6;
+  box-shadow: 0 0 0 3px #ffd25a40, 0 6px 22px #ffd25a66; text-shadow: none;
+}
+.app-shell[data-screen] .zone-presence-welcome strong { font-size: 18px; }
+@media (prefers-reduced-motion: no-preference) {
+  .zone-presence-welcome > button { animation: nearby-in .32s ease-out, nearby-glow 1.8s ease-in-out .32s infinite; }
+}
+html[data-motion="reduce"] :is(.nearby-open, .nearby-open-art, .nearby-open > svg, .zone-presence-welcome > button) { animation: none; }
+
+/* ---- Settings drawer ------------------------------------------------------
+   Settings slides in from the right on every screen (Lubos, 13 Nov 2026): a
+   narrow panel with a strip of map left beside it; a tap on the strip closes it. */
+.app-shell .main-panel.settings-panel {
+  position: fixed; inset: 0 0 0 auto; z-index: 30; width: min(400px, calc(100vw - 44px)); max-width: none;
+  height: auto; max-height: none; margin: 0; padding: 8px 16px calc(20px + env(safe-area-inset-bottom));
+  border-radius: 20px 0 0 20px; transform: none; translate: none; overflow-y: auto; overscroll-behavior: contain;
+  box-shadow: -8px 0 32px #1a033533; animation: settings-drawer-in 0.2s ease-out;
+}
+[dir="rtl"] .app-shell .main-panel.settings-panel { inset: 0 auto 0 0; border-radius: 0 20px 20px 0; animation-name: settings-drawer-in-rtl; }
+.app-shell:has(.main-panel.settings-panel) .sheet-backdrop { display: block; position: fixed; inset: 0; z-index: 29; background: #1a033566; }
+@keyframes settings-drawer-in { from { transform: translateX(100%); } to { transform: none; } }
+@keyframes settings-drawer-in-rtl { from { transform: translateX(-100%); } to { transform: none; } }
+html[data-motion="reduce"] .app-shell .main-panel.settings-panel { animation: none; }
+@media (prefers-reduced-motion: reduce) { .app-shell .main-panel.settings-panel { animation: none; } }

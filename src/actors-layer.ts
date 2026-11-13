@@ -8,39 +8,14 @@ import type { NearbyActor } from "./nearby-action";
 import * as maplibregl from "maplibre-gl";
 import type { ActorSegment, ActorView, ActorsResponse } from "./actor-types";
 import { api, meters } from "./api";
+import { actorPositionAt } from "./actor-position";
 import "./actors.css";
 import { tr } from "./i18n.ts";
 import { servicePin, mapKitUrl } from "./map-kit";
 
 type LngLat = { lng: number; lat: number };
 
-/** Same interpolation as server/actors/schedule.mjs positionAt. */
-export function actorPositionAt(
-  segments: ActorSegment[],
-  t: number,
-): (LngLat & { dwell: boolean; heading: number | null }) | null {
-  const s = segments.find((x) => t >= x.from && t < x.to);
-  if (!s) return null;
-  if (s.dwell || s.path.length === 1)
-    return { lng: s.path[0][0], lat: s.path[0][1], dwell: true, heading: null };
-  const pt = (p: [number, number]) => ({ lng: p[0], lat: p[1] });
-  const lengths = [0];
-  for (let i = 1; i < s.path.length; i++)
-    lengths.push(lengths[i - 1] + meters(pt(s.path[i - 1]), pt(s.path[i])));
-  const total = lengths[lengths.length - 1],
-    want = (total * (t - s.from)) / (s.to - s.from);
-  let i = 1;
-  while (i < lengths.length - 1 && lengths[i] < want) i++;
-  const span = lengths[i] - lengths[i - 1] || 1,
-    f = Math.max(0, Math.min(1, (want - lengths[i - 1]) / span)),
-    [a, b] = [s.path[i - 1], s.path[i]];
-  return {
-    lng: a[0] + (b[0] - a[0]) * f,
-    lat: a[1] + (b[1] - a[1]) * f,
-    dwell: false,
-    heading: b[0] >= a[0] ? 1 : -1,
-  };
-}
+export { actorPositionAt };
 
 // Original low-poly 3D models (src/actor-models.ts) are rendered once per
 // model into a cached sprite. three.js loads only with this chunk.
@@ -91,9 +66,13 @@ function markerNode(actor: ActorView, onSelect: (a: ActorView) => void) {
 }
 
 export type ActorsLayer = {
-  update(input: { worldId: string | null; position: LngLat; visible: boolean }): void;
+  /** `reports`: NPCs waiting for this player's report (an NPC line with every step done). */
+  update(input: { worldId: string | null; position: LngLat; visible: boolean; reports?: readonly string[] }): void;
+  /** Where the nearest matching character is right now (any distance), for "show me" buttons. */
+  find(match: (actor: ActorView) => boolean): { actor: ActorView; lat: number; lng: number; distanceM: number } | null;
   destroy(): void;
 };
+export const reportLabel = () => tr("Report back");
 
 export function attachActorsLayer(
   map: maplibregl.Map,
@@ -109,7 +88,19 @@ export function attachActorsLayer(
     fetchedFrom: LngLat | null = null,
     visible = true,
     loading: AbortController | null = null,
+    reports = new Set<string>(),
     gone = false;
+  function markReport(actor: ActorView, node: HTMLElement) {
+    const on = reports.has(actor.id);
+    node.classList.toggle("actor-report", on);
+    let chip = node.querySelector<HTMLElement>(".actor-report-chip");
+    if (on && !chip) {
+      chip = document.createElement("span");
+      chip.className = "actor-report-chip";
+      chip.textContent = reportLabel();
+      node.append(chip);
+    } else if (!on) chip?.remove();
+  }
   // Static props under an actor, e.g. the Great Portal at the boss's square.
   const arenas = new Map<string, { marker: maplibregl.Marker; node: HTMLElement; model: string }>();
   const select = (a: ActorView) => onSelect(markers.get(a.id)?.actor || a);
@@ -202,9 +193,11 @@ export function attachActorsLayer(
       if (existing) {
         existing.actor = actor;
         existing.node.classList.toggle("actor-defeated", actor.state === "defeated");
+        markReport(actor, existing.node);
         continue;
       }
       const node = markerNode(actor, select);
+      markReport(actor, node);
       const marker = new maplibregl.Marker({ element: node, anchor: "bottom" });
       markers.set(actor.id, { marker, actor, node });
       paint(actor, node);
@@ -267,6 +260,11 @@ export function attachActorsLayer(
     update(input) {
       visible = input.visible;
       position = input.position;
+      const nextReports = new Set(input.reports || []);
+      if ([...nextReports].join() !== [...reports].join()) {
+        reports = nextReports;
+        for (const { actor, node } of markers.values()) markReport(actor, node);
+      }
       if (input.worldId !== worldId) {
         worldId = input.worldId;
         actors = [];
@@ -275,6 +273,18 @@ export function attachActorsLayer(
       }
       if (!fetchedAt) void refresh();
       else tick();
+    },
+    find(match) {
+      const now = Date.now() + skew;
+      let best: { actor: ActorView; lat: number; lng: number; distanceM: number } | null = null;
+      for (const actor of actors) {
+        if (actor.state === "defeated" || actor.revealRadiusM !== undefined || !match(actor)) continue;
+        const p = actorPositionAt(actor.segments, now);
+        if (!p) continue;
+        const distanceM = position ? meters(position, p) : 0;
+        if (!best || distanceM < best.distanceM) best = { actor, lat: p.lat, lng: p.lng, distanceM };
+      }
+      return best;
     },
     destroy() {
       gone = true;

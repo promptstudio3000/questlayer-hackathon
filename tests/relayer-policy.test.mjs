@@ -64,6 +64,56 @@ async function decoded({
 }
 const call = (method, args, deposit, gas = GAS) =>
   actions.functionCall(method, args, gas, deposit);
+// The exact records the game quotes (social-profile, social-records, gold-spend/social).
+const UUID = "0f8c2a54-7b1e-4c3d-9a6f-2b5e8d1c4a7f",
+  NOTE_ID = `message_${UUID}`,
+  PLACE_ID = `place_${UUID}`;
+const PROFILE = {
+  schema: "1",
+  name: "Alice",
+  avatar_contract: "",
+  avatar_token_id: "",
+  updated_at: "1",
+  mutation_id: `profile_${UUID}`,
+};
+const NOTE = {
+  schema: "1",
+  note_id: NOTE_ID,
+  state: "published",
+  text: "Fountain",
+  lat: "49.74700",
+  lng: "13.37760",
+  anchor: "map",
+  author_fix: "",
+  image: "",
+  image_sha256: "",
+  created_at: "1",
+  updated_at: "1",
+  mutation_id: `record_${UUID}`,
+};
+const PLACE = {
+  schema: "questlayer.place/1",
+  kind: "shout",
+  thread: PLACE_ID,
+  title: "",
+  text: "Hello",
+  cell: "u2fkbnm",
+  place: "",
+  paid: "",
+  created_at: "1",
+  mutation_id: `record_${UUID}`,
+};
+const RATING = {
+  schema: "questlayer.rating/1",
+  quest_id: "river-walk",
+  registry: "creators.testnet",
+  stars: "4",
+  updated_at: "1",
+  mutation_id: `rating_${UUID}`,
+};
+const socialSet = (section, value, sender = SENDER) => ({
+  data: { [sender]: { questlayer: { [section]: value } } },
+});
 async function rejects(input, code, context = ctx()) {
   await assert.rejects(
     async () => validateDelegate(await input, context),
@@ -97,7 +147,7 @@ test("allowlisted calls normalize to a sponsored call with string amounts", asyn
           edition: "polar",
           receiver_id: SENDER,
           expires_at_ms: 1,
-          signature: "x",
+          signature: "A".repeat(86) + "==",
         },
         STORAGE_DEPOSIT,
       ),
@@ -142,12 +192,22 @@ test("allowlisted calls normalize to a sponsored call with string amounts", asyn
     [CONTRACTS.rewards, call("withdraw", {}, 1n), true],
     [
       CONTRACTS.social,
-      call("set", { data: { [SENDER]: { questlayer: { profile: {} } } } }, 1n),
+      call("set", socialSet("profile", PROFILE), 1n),
       true,
     ],
     [
       CONTRACTS.social,
-      call("set", { data: { [SENDER]: {} } }, STORAGE_DEPOSIT),
+      call("set", socialSet("notes", { [NOTE_ID]: NOTE }), STORAGE_DEPOSIT),
+      true,
+    ],
+    [
+      CONTRACTS.social,
+      call("set", socialSet("places", { [PLACE_ID]: PLACE }), 1n),
+      true,
+    ],
+    [
+      CONTRACTS.social,
+      call("set", socialSet("ratings", { "river-walk": RATING }), 1n),
       true,
     ],
   ];
@@ -711,4 +771,115 @@ test("a QGOLD burn with the game's memo is sponsored; anything else on the token
     "RELAY_RECEIVER",
     context,
   );
+});
+
+test("SocialDB writes are sponsored only for the game's own records and size", async () => {
+  const social = (args, deposit = 1n) =>
+    decoded({ receiverId: CONTRACTS.social, action: call("set", args, deposit) });
+  // Arbitrary keys under the player's own namespace are no longer sponsored.
+  for (const args of [
+    { data: { [SENDER]: {} } },
+    { data: { [SENDER]: { profile: { name: "x" } } } },
+    { data: { [SENDER]: { questlayer: { profile: {} } } } },
+    { data: { [SENDER]: { questlayer: { stash: { a: "b" } } } } },
+    { data: { [SENDER]: { questlayer: { profile: PROFILE }, graph: { follow: {} } } } },
+    socialSet("profile", { ...PROFILE, bio: "extra" }),
+    socialSet("profile", { ...PROFILE, mutation_id: "anything" }),
+    socialSet("notes", { [NOTE_ID]: NOTE, [`message_${"1".repeat(36)}`]: NOTE }),
+    socialSet("notes", { [NOTE_ID]: { ...NOTE, note_id: `message_${"0".repeat(36)}` } }),
+    socialSet("notes", { "free-key": NOTE }),
+    socialSet("notes", { [NOTE_ID]: { ...NOTE, text: { nested: "x".repeat(100) } } }),
+    socialSet("places", { [PLACE_ID]: { ...PLACE, schema: "other/1" } }),
+    socialSet("places", { [PLACE_ID]: { ...PLACE, mutation_id: 1 } }),
+    socialSet("ratings", { "river-walk": { ...RATING, stars: "6" } }),
+    socialSet("ratings", { "other-quest": RATING }),
+    socialSet("ratings", { "river-walk": { ...RATING, comment: "text" } }),
+  ])
+    await rejects(social(args), "RELAY_SOCIAL_SHAPE");
+  // A record of the right shape, padded past the game's largest real record.
+  await rejects(
+    social(socialSet("notes", { [NOTE_ID]: { ...NOTE, text: "x".repeat(4000) } })),
+    "RELAY_SOCIAL_SHAPE",
+  );
+  // The 500-character note at its largest real size still fits.
+  const longest = validateDelegate(
+    await social(
+      socialSet("notes", {
+        [NOTE_ID]: {
+          ...NOTE,
+          text: "ř".repeat(500),
+          image: `ipfs://b${"a".repeat(58)}`,
+          image_sha256: "f".repeat(64),
+        },
+      }),
+      STORAGE_DEPOSIT,
+    ),
+    ctx(),
+  );
+  assert.equal(longest.methodName, "set");
+  // Another account's namespace stays refused.
+  await rejects(social(socialSet("profile", PROFILE, "bob.testnet")), "RELAY_ARGS");
+});
+
+test("encrypted inbox records are sponsored with their exact shape (docs/PLAYER-INBOX.md)", async () => {
+  const { generateInboxKey, sealInboxMessage, toBase64Url } = await import("../server/inbox/crypto.mjs");
+  const social = (args, deposit = 1n) =>
+    decoded({ receiverId: CONTRACTS.social, action: call("set", args, deposit) });
+  const a = generateInboxKey(),
+    b = generateInboxKey(),
+    id = "msg_0e1f2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b";
+  const record = sealInboxMessage({
+    secret: a.secret,
+    accountId: SENDER,
+    peerAccountId: "bob.players.questlayer.testnet",
+    peerPublicKey: b.publicKey,
+    messageId: id,
+    text: "😀".repeat(500),
+    createdAt: 1794268800000,
+  });
+  // The largest possible message still fits the sponsored argument cap.
+  assert.equal(
+    validateDelegate(await social(socialSet("inbox", { [id]: record }), STORAGE_DEPOSIT), ctx()).methodName,
+    "set",
+  );
+  const key = {
+    schema: "questlayer.inbox-key/1",
+    key: toBase64Url(a.publicKey),
+    created_at: "1794268800000",
+    mutation_id: "inboxkey_0e1f2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b",
+  };
+  assert.equal(validateDelegate(await social(socialSet("inbox_key", key)), ctx()).methodName, "set");
+  for (const args of [
+    socialSet("inbox", { [id]: { ...record, extra: "x" } }),
+    socialSet("inbox", { [id]: { ...record, to: SENDER } }),
+    socialSet("inbox", { [id]: { ...record, box: "x".repeat(4000) } }),
+    socialSet("inbox", { [id]: record, ["msg_1e1f2a3b-4c5d-4e6f-8a9b-0c1d2e3f4a5b"]: record }),
+    socialSet("inbox", { "free-key": record }),
+    socialSet("inbox", record),
+    socialSet("inbox_key", { ...key, key: "not-a-key" }),
+    socialSet("inbox_key", { ...key, note: "x" }),
+  ])
+    await rejects(social(args), "RELAY_SOCIAL_SHAPE");
+  await rejects(social(socialSet("inbox", { [id]: record }, "bob.testnet")), "RELAY_ARGS");
+});
+
+test("redeem_aura is sponsored only with the exact voucher argument shape", async () => {
+  const redeem = (args) =>
+    decoded({ action: call("redeem_aura", args, STORAGE_DEPOSIT) });
+  const voucher = {
+    claim_id: "earned:aura_1",
+    edition: "polar",
+    receiver_id: SENDER,
+    expires_at_ms: 1,
+    signature: "A".repeat(86) + "==",
+  };
+  assert.equal(validateDelegate(await redeem(voucher), ctx()).methodName, "redeem_aura");
+  for (const args of [
+    { ...voucher, extra: 1 },
+    { ...voucher, claim_id: "fake:1" },
+    { ...voucher, edition: "not-an-edition" },
+    { ...voucher, expires_at_ms: "1" },
+    { ...voucher, signature: "x" },
+  ])
+    await rejects(redeem(args), "RELAY_ARGS");
 });

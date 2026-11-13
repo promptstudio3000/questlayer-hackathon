@@ -1,0 +1,32 @@
+{
+  "verifiedAt": "2026-11-13T10:09:09.326Z",
+  "checks": [
+    "360 and 390 phone layouts",
+    "landscape",
+    "enlarged guide",
+    "atlas controls",
+    "two authenticated peers",
+    "keyboard travel into cave",
+    "held tool resource receipt",
+    "shared mined block",
+    "reload recovery"
+  ],
+  "position": {
+    "x": -0.8647991208681823,
+    "y": 15,
+    "z": -50.35542058896882
+  },
+  "target": {
+    "layer": "space",
+    "x": 5,
+    "y": 15,
+    "z": -50
+  },
+  "inventory": {
+    "diamonds": 1,
+    "stone": 0
+  },
+  "errors": [],
+  "hardware": false,
+  "status": "passed"
+}

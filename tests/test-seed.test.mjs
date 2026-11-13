@@ -15,10 +15,17 @@ import {
 import {
   SEED_PLAYERS,
   SEED_CREATOR_QUESTS,
+  SEED_TASKS,
   SEED_BUYER,
+  SEED_NOTES,
   STARTER_KIT,
 } from "../server/test-seed/content.mjs";
 import { GOLD } from "../server/domain.mjs";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { QUEST_PHOTO } from "../server/creators/feedback.mjs";
+import { reserveTask } from "../server/market/service.mjs";
 
 const ENV = {
   CREATOR_COMMUNITY_ENABLED: "1",
@@ -28,7 +35,7 @@ const ENV = {
   CREATOR_COMPLETION_AUTHORITIES: "qa-validator",
 };
 
-function world(clock) {
+function world(clock, photoDirectory = null) {
   const db = openDatabase(":memory:");
   createActorService(db);
   initSocialContent(db);
@@ -40,6 +47,7 @@ function world(clock) {
   });
   const seed = createTestSeed(db, {
     clock,
+    photoDirectory,
     creators: {
       services: runtime.services,
       moderator: "qa-reviewer",
@@ -75,8 +83,8 @@ test("apply builds the whole test world idempotently", () => {
     assert.equal(first.players, SEED_PLAYERS.length);
     assert.equal(first.creatorQuests, SEED_CREATOR_QUESTS.length);
     assert.equal(first.openListings, 4);
-    assert.equal(first.openBounties, 3);
-    assert.equal(first.notes, 12);
+    assert.equal(first.openTasks, SEED_TASKS.length);
+    assert.equal(first.notes, 24);
     now += 1000;
     assert.deepEqual(
       { ...seed.apply(), creators: null },
@@ -88,7 +96,7 @@ test("apply builds the whole test world idempotently", () => {
     const walkers = db
       .prepare("SELECT count(*) n FROM presence WHERE substr(player_id,1,5)='seed-'")
       .get().n;
-    assert.equal(walkers, SEED_PLAYERS.length);
+    assert.equal(walkers, SEED_PLAYERS.filter((p) => p.walk || p.companion).length);
   } finally {
     db.close();
   }
@@ -137,18 +145,10 @@ test("starter kit, bots and purge leave no seed trace", () => {
       goldBefore + 5_000 * GOLD,
     );
 
-    // Tasks: submit evidence, the seed author approves, the task is reposted.
-    const bounty = db
-      .prepare("SELECT * FROM bounties WHERE substr(id,1,7)='seed-b-' AND state='open' LIMIT 1")
-      .get();
-    db.prepare(
-      "INSERT INTO bounty_submissions(bounty_id,player_id,evidence,created_at) VALUES (?,?,?,?)",
-    ).run(bounty.id, me, "There were five bells.", now);
-    now += 31_000;
-    const step = seed.tickEconomy(now);
-    assert.equal(step.approved, 1);
-    assert.equal(step.bounties, 1);
-    assert.equal(db.prepare("SELECT state FROM bounties WHERE id=?").get(bounty.id).state, "paid");
+    // Tasks: demo-bot examples are listed with their poster but cannot be taken.
+    const task = db.prepare("SELECT * FROM mk_tasks WHERE substr(id,1,7)='seed-t-' LIMIT 1").get();
+    assert.equal(task.held_u, 0);
+    assert.throws(() => reserveTask(db, me, task.id, {}, now), /example task from a demo bot/);
 
     // Creator quest: start, submit, the seed validator accepts.
     const { lifecycle, completion, community } = runtime.services;
@@ -233,6 +233,81 @@ test("starter kit never replaces an Aura the explorer already wears", () => {
       db.prepare("SELECT id,equipped FROM inventory WHERE player_id=? AND kind='aura'").all(me).map((r) => ({ ...r })),
       [{ id: "own-aura", equipped: 1 }],
     );
+  } finally {
+    db.close();
+  }
+});
+
+test("bot quests get a credited header photo once", () => {
+  const directory = mkdtempSync(join(tmpdir(), "seed-photos-"));
+  const { db, runtime, seed } = world(() => 1_800_000_000_000, directory);
+  try {
+    assert.equal(seed.apply().creators.photos, SEED_CREATOR_QUESTS.length);
+    assert.equal(seed.apply().creators.photos, 0);
+    const viewer = createPlayer(db, "Photo viewer", 1_800_000_000_000);
+    for (const q of runtime.services.community.listQuests(viewer).items) {
+      const name = q.photo.match(QUEST_PHOTO)?.[1];
+      assert.ok(name && existsSync(join(directory, name)), q.id);
+      assert.equal(q.description.split("Photo: ").length, 2, q.id);
+      assert.match(q.description, /CC BY-SA [34]\.0, Wikimedia Commons\.$/);
+    }
+  } finally {
+    db.close();
+    rmSync(directory, { recursive: true, force: true });
+  }
+});
+
+test("revertKits takes kits back and keeps the rest of the test world", () => {
+  const now = 1_800_000_000_000;
+  const { db, seed } = world(() => now);
+  try {
+    seed.apply();
+    const me = createPlayer(db, "Kit", now);
+    db.prepare("INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?,?,?)").run(
+      "own-aura", me, "aura", "Pilgrim's Path", "rare", "below", "#c9a35a", 0, null, now,
+    );
+    assert.equal(seed.grantKit(me, now), true);
+    const bots = db.prepare("SELECT COUNT(*) n FROM players WHERE substr(id,1,5)='seed-'").get().n;
+    assert.ok(seed.revertKits().removed > 0);
+    assert.deepEqual(
+      db.prepare("SELECT id FROM inventory WHERE player_id=? AND kind='aura'").all(me).map((r) => r.id),
+      ["own-aura"],
+    );
+    assert.equal(demoProgression(db, me).earnedXp, 0);
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM players WHERE substr(id,1,5)='seed-'").get().n, bots);
+    assert.equal(seed.revertKits().removed, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test("seed notes and shouts fade with time and the seed does not renew them", () => {
+  let now = 1_800_000_000_000;
+  const DAY = 86_400_000;
+  const { db, seed } = world(() => now);
+  try {
+    seed.apply();
+    const visible = () =>
+      db
+        .prepare(
+          "SELECT count(*) n FROM messages m LEFT JOIN social_note_expiry e ON e.note_id=m.id WHERE substr(m.id,1,10)='seed-note-' AND (e.expires_at IS NULL OR e.expires_at>?)",
+        )
+        .get(now).n;
+    const shouts = () =>
+      db
+        .prepare("SELECT count(*) n FROM place_threads WHERE kind='shout' AND substr(id,1,5)='seed-' AND paid_until>?")
+        .get(now).n;
+    const oneDay = SEED_NOTES.filter((n) => n.days === 1).length * 2;
+    assert.ok(oneDay > 0 && oneDay < 24);
+    assert.equal(visible(), 24);
+    assert.ok(shouts() > 0);
+    now += DAY + 1000;
+    seed.apply();
+    assert.equal(visible(), 24 - oneDay);
+    now += 7 * DAY;
+    seed.apply();
+    assert.equal(visible(), 0);
+    assert.equal(shouts(), 0);
   } finally {
     db.close();
   }

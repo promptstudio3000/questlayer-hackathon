@@ -18,9 +18,7 @@
   gap: 6px;
   align-items: center;
 }
-.gold-shop-lead,
-.gold-shop-note,
-.gold-shop-empty {
+.gold-shop-note {
   margin: 0;
   color: var(--ink-secondary);
   font-size: 14px;
@@ -33,37 +31,10 @@
   color: var(--ink-secondary);
   font-size: 13px;
 }
-.gold-emote-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
-  gap: 8px;
-}
-.gold-emote {
-  min-height: 64px;
-  border-radius: var(--radius-item);
-  border: 1px solid var(--decorative-border);
-  background: var(--surface-raised);
-  color: var(--ink);
-  display: grid;
-  place-items: center;
-  gap: 2px;
-  padding: 6px 4px;
-}
-.gold-emote.owned {
-  border-color: var(--action);
-}
-.gold-emote:disabled {
-  opacity: 0.55;
-}
 .gold-emote-glyph {
   font-size: 26px;
   line-height: 1;
 }
-.gold-emote small {
-  font-size: 12px;
-  color: var(--ink-secondary);
-}
-.gold-frame-list,
 .gold-lure-quote {
   display: grid;
   gap: 8px;
@@ -152,21 +123,6 @@
 .gold-lure-blocked {
   color: var(--error);
 }
-.gold-gear-list {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 4px;
-}
-.gold-gear-list li {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-}
-.gold-gear-list small {
-  color: var(--ink-secondary);
-}
 .npc-gear {
   display: grid;
   gap: 6px;
@@ -178,11 +134,6 @@
   gap: 6px;
   align-items: center;
   font-weight: 600;
-}
-.place-compose-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
 }
 .place-compose {
   display: grid;
@@ -242,16 +193,6 @@
   color: var(--ink);
   text-align: left;
 }
-.place-feed-body {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-.place-feed-body b,
-.place-feed-body span {
-  overflow-wrap: anywhere;
-}
-.place-feed-body small,
 .place-thread header small {
   color: var(--ink-secondary);
   font-size: 13px;
@@ -338,3 +279,62 @@
   font: inherit;
   font-weight: 600;
 }
+
+/* Shop → Items: illustrated cards, explanations behind "i" (InfoTip). */
+.gold-shop .gold-shop-balance {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.gold-shop h3 .info-tip {
+  margin-inline-start: auto;
+}
+.shop-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(68px, 1fr));
+  gap: 8px;
+}
+.shop-card-grid-wide {
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+}
+.shop-card {
+  --frame: var(--decorative-border);
+  display: grid;
+  justify-items: center;
+  align-content: start;
+  gap: 4px;
+  padding: 8px 6px;
+  border-radius: 14px;
+  border: 2px solid var(--frame);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font: inherit;
+  text-align: center;
+}
+button.shop-card { cursor: pointer; }
+.shop-card.owned { --frame: var(--action); }
+.shop-card.equipped { box-shadow: 0 0 0 2px var(--action); }
+.shop-card.rarity-rare { --frame: #8064ff; }
+.shop-card.rarity-epic { --frame: #e06ee0; }
+.shop-card.rarity-legendary { --frame: #e3a632; }
+.shop-card:disabled { opacity: 0.55; }
+.shop-card-art {
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: var(--surface-soft);
+}
+.shop-card-art.gold-emote-glyph { font-size: 28px; aspect-ratio: auto; height: 44px; background: none; }
+.shop-card-art .gold-frame-swatch { width: 52%; height: 52%; border-width: 8px; }
+.shop-card-art .aura-sprite { width: 86%; height: auto; }
+.shop-card-icon svg { width: 52%; height: 52%; color: var(--action); }
+.shop-card strong { font-size: 14px; line-height: 1.2; }
+.shop-card-price {
+  font-size: 12px;
+  line-height: 1.2;
+  font-weight: 700;
+  color: var(--action);
+}
+.shop-card-why { font-size: 11px; line-height: 1.2; color: var(--ink-soft, var(--ink)); }

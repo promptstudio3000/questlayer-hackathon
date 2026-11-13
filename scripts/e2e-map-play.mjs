@@ -13,6 +13,7 @@ import {chromium,webkit} from "playwright";
 import {daytimeOffset} from "./lib/e2e-clock.mjs";
 import {metersBetween,headingTo,stepFrom} from "../src/map-motion.ts";
 import {containsPoint} from "../server/poi/geo.mjs";
+import { openMapSettings } from "./lib/e2e-nav.mjs";
 
 const root=resolve(import.meta.dirname,".."),dir=mkdtempSync(join(tmpdir(),"questlayer-map-play-"));
 const before=process.env.E2E_PHASE==="before",engine=process.env.E2E_BROWSER==="webkit"?webkit:chromium;
@@ -35,7 +36,7 @@ const report={phase:before?"before":"after",engine:engine.name(),provenance:"Act
 const angle=(a,b)=>Math.abs(((a-b+540)%360)-180);
 const pause=ms=>new Promise(r=>setTimeout(r,ms));
 async function context(motion="reduce",point=home){
- const c=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:motion,serviceWorkers:"block"});
+ const c=await browser.newContext({viewport:{width:1440,height:900},reducedMotion:motion,serviceWorkers:"block"});await c.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
  await c.addInitScript(({offset,point})=>{
   const D=Date;window.Date=class extends D{constructor(...a){super(...(a.length?a:[D.now()+offset]));}static now(){return D.now()+offset;}};
   let p=point,course=null,speed=0,accuracy=5;
@@ -106,7 +107,7 @@ try{
   await p.keyboard.down("w");await p.locator(".demo-forward").hover();await p.mouse.down();await pause(150);await p.mouse.up();assert.equal(await p.locator(".demo-forward").getAttribute("aria-pressed"),"true");await p.keyboard.up("w");
   await p.keyboard.down("w");await p.locator(".daily-board-chip").click();await p.locator("dialog[open]").waitFor();await p.waitForFunction(()=>document.querySelector(".demo-forward")?.getAttribute("aria-pressed")==="false");
   const stopped=await pose(p);await p.keyboard.press("Escape");await p.keyboard.down("w");await pause(250);assert.equal(await p.locator(".demo-forward").getAttribute("aria-pressed"),"false");await p.keyboard.up("w");assert.ok(metersBetween(point(stopped.position),point((await pose(p)).position))<.2);
-  await p.getByRole("button",{name:"Community",exact:true}).click();await p.getByRole("tab",{name:"Local chat",exact:true}).click();await p.getByRole("button",{name:"Write a note",exact:true}).click();await p.locator("#map-note-text").fill("WASD stays in this draft.");await p.locator("#map-note-text").press("ArrowLeft");assert.equal(await p.locator("#map-note-text").inputValue(),"WASD stays in this draft.");await p.keyboard.press("Escape");
+  await p.getByRole("button",{name:"Community",exact:true}).click();await p.getByRole("tab",{name:"Local chat",exact:true}).click();await p.getByRole("button",{name:"Write a message",exact:true}).click();await p.locator("#map-note-text").fill("WASD stays in this draft.");await p.locator("#map-note-text").press("ArrowLeft");assert.equal(await p.locator("#map-note-text").inputValue(),"WASD stays in this draft.");await p.keyboard.press("Escape");
   const close=p.getByRole("button",{name:"Close panel",exact:true});if(await close.isVisible())await close.click();
   await p.locator(".maplibregl-canvas").focus();const restart=await pose(p);await p.keyboard.down("ArrowUp");
   await p.waitForFunction(start=>{const q=window.__testAvatar.getLngLat();return Math.hypot((q.lng-start[0])*Math.cos(q.lat*Math.PI/180),q.lat-start[1])*111320>2;},restart.position,{timeout:10000});
@@ -129,7 +130,7 @@ try{
 
  if(!before){
   const gpsContext=await context("reduce");await api(gpsContext,"/session",{name:"GPS camera explorer"});await api(gpsContext,"/world",{arena:true,location:home});const gpsPage=await gpsContext.newPage();await ready(gpsPage);
-  await gpsPage.evaluate(p=>window.__gps(p,90,1.4),home);await gpsPage.getByRole("button",{name:"Use GPS, my location",exact:true}).click();
+  await gpsPage.evaluate(p=>window.__gps(p,90,1.4),home);await (await openMapSettings(gpsPage)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();
   const bearing=async h=>gpsPage.waitForFunction(h=>Math.abs(((window.__testMap.getBearing()-h+540)%360)-180)<1,h,{timeout:15000});
   await bearing(90);await pause(1000);const west=stepFrom(home,270,2);
   await gpsPage.evaluate(p=>window.__gps(p,270,1.4),west);await bearing(270);await pause(1000);const north=stepFrom(west,0,4);
@@ -152,7 +153,7 @@ try{
  const page=await routeContext.newPage();page.setDefaultTimeout(30000);
  if(before)await api(routeContext,"/quests/checkpoint",{questId:route.id,checkpoint:0,fix:route.nextPoint});
  await ready(page);
- if(!before){await page.evaluate(p=>window.__gps(p,null,0),targets[0]);await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();await page.locator(".world-loading").waitFor({state:"hidden",timeout:60000});}
+ if(!before){await page.evaluate(p=>window.__gps(p,null,0),targets[0]);await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();await page.locator(".world-loading").waitFor({state:"hidden",timeout:60000});}
  await selectRoute(page,zone,route);
  if(before){await page.getByRole("button",{name:"Close panel",exact:true}).click();await page.screenshot({path:join(shots,"390-checkpoint-after-first.png")});report.checks.push({name:"checkpoint-numbering-after-first",markers:await page.locator(".quest-route-stop").allTextContents()});}
  else{

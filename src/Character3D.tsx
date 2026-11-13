@@ -21,10 +21,13 @@ type Scene = ReturnType<
 export function Character3D({
   items,
   originTokenId,
+  look,
   onClose,
 }: {
   items: Item[];
   originTokenId?: string;
+  /** Outfit tag of the worn gotchi; an outfit shows in 2D. */
+  look?: string;
   onClose: () => void;
 }) {
   const host = useRef<HTMLDivElement>(null),
@@ -79,7 +82,7 @@ export function Character3D({
       scene.current?.dispose();
       scene.current = null;
     };
-  }, [originTokenId, above, below, attempt]);
+  }, [originTokenId, look, above, below, attempt]);
   return (
     <Dialog label={tr("Your character in 3D")} onClose={onClose}>
       <section className="character-room">
@@ -99,7 +102,7 @@ export function Character3D({
         <div className="model-stage" ref={host} aria-busy={!loaded && !error}>
           {!loaded && (
             <div className="model-fallback">
-              <Character items={items} originTokenId={originTokenId} />
+              <Character items={items} originTokenId={originTokenId} look={look} />
               {!error && <p role="status">{tr("Preparing your 3D look…")}</p>}
             </div>
           )}

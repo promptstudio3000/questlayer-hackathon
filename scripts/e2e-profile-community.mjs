@@ -37,7 +37,7 @@ try {
   browser = await engine.launch();
   for (const [name, width, height] of [["phone-360", 360, 780], ["phone-390", 390, 844], ["landscape", 844, 390], ["desktop", 1440, 900]]) {
     if (process.env.E2E_VIEWPORT && process.env.E2E_VIEWPORT !== name) continue;
-    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
+    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     const page = await context.newPage();
     const faults = [];
     page.on("pageerror", e => faults.push(e.message));
@@ -73,7 +73,7 @@ try {
     const characterTab = page.getByRole("tab", { name: "Character", exact: true });
     await characterTab.focus();
     await page.keyboard.press("End");
-    assert.equal(await page.getByRole("tab", { name: "Settings", exact: true }).getAttribute("aria-selected"), "true", "Keyboard tabs select Settings");
+    assert.equal(await page.getByRole("tab", { name: "Stake", exact: true }).getAttribute("aria-selected"), "true", "Keyboard tabs select Stake");
     await page.keyboard.press("Home");
     assert.equal(await characterTab.getAttribute("aria-selected"), "true", "Keyboard tabs return to Character");
     if (phase !== "before") {
@@ -81,16 +81,23 @@ try {
       assert.deepEqual(sizes.filter(s => s.width < 47.9 || s.height < 47.9), [], "Profile tabs have 48px targets");
       assert.ok(await page.locator(".profile-hero-avatar").evaluate(el => el.querySelector(".profile-hero-source").getBoundingClientRect().bottom <= el.querySelector(".character-composition").getBoundingClientRect().top), "Appearance disclosure does not overlap the character");
     }
-    for (const section of ["Badges", "Stake", "Rewards", "Settings"]) {
+    // Badges are a chapter of Character; Stake holds Stake and Earnings behind one switch.
+    await page.locator(".badge-medal").first().waitFor();
+    await page.getByRole("button", { name: /^Badges/ }).click();
+    await capture("profile-badges");
+    for (const section of ["Stake"]) {
       await page.getByRole("tab", { name: section, exact: true }).click();
-      if (section === "Badges") await page.locator(".badge-medal").first().waitFor();
       if (section === "Stake") await page.locator(".fuel").waitFor();
       await page.waitForTimeout(250);
       await capture("profile-" + section.toLowerCase());
+      if (section === "Stake") {
+        await page.getByRole("button", { name: "Earnings", exact: true }).click();
+        await page.locator(".earn-hero").waitFor();
+        await capture("profile-earnings");
+      }
     }
     await page.getByRole("tab", { name: "Character", exact: true }).click();
-    await page.locator(".profile-tiles").getByRole("button", { name: /Wardrobe/ }).click();
-    await page.locator(".inventory-experience").waitFor();
+    await page.locator(".journey").waitFor();
     await close();
     await openProfile();
     if (width === 390) {
@@ -103,7 +110,7 @@ try {
     await capture("community-unavailable");
     if (phase !== "before") {
       await page.locator(".community-available-actions").getByRole("button", { name: "Local chat", exact: true }).click();
-      await page.getByRole("button", { name: "Write a note", exact: true }).waitFor();
+      await page.getByRole("button", { name: "Write a message", exact: true }).waitFor();
       await page.getByRole("tab", { name: "Quests", exact: true }).click();
       await page.locator(".community-available-actions").getByRole("button", { name: "Community tasks", exact: true }).click();
       assert.equal(await page.getByRole("tab", { name: "Tasks", exact: true }).getAttribute("aria-selected"), "true");
@@ -114,41 +121,41 @@ try {
       await capture("community-" + section.toLowerCase());
     }
     await page.getByRole("tab", { name: "Local chat", exact: true }).click();
-    await page.getByRole("button", { name: "Write a note", exact: true }).waitFor();
+    await page.getByRole("button", { name: "Write a message", exact: true }).waitFor();
     await capture("community-empty");
-    await page.getByRole("button", { name: "Write a note", exact: true }).click();
+    await page.getByRole("button", { name: "Write a message", exact: true }).click();
     await page.locator("#map-note-text").fill("The fountain is a quiet place to pause between discoveries.");
-    assert.equal(await page.getByRole("button", { name: "Publish note", exact: true }).isDisabled(), true, "Public consent remains required");
+    await page.getByText("Public at this pin", { exact: false }).waitFor();
     await capture("note-compose");
     if (width === 390) {
       await page.setViewportSize({ width, height: 420 });
       await page.locator("#map-note-text").focus();
       await capture("note-keyboard-viewport");
       await page.setViewportSize({ width, height });
-      await page.locator(".map-notes-compose *").evaluateAll(els => els.filter(el => el.matches("textarea,input") || [...el.childNodes].some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim())).map(el => [el, parseFloat(getComputedStyle(el).fontSize)]).forEach(([el, size]) => {
+      await page.locator(".quick-create *").evaluateAll(els => els.filter(el => el.matches("textarea,input") || [...el.childNodes].some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim())).map(el => [el, parseFloat(getComputedStyle(el).fontSize)]).forEach(([el, size]) => {
         el.dataset.qaFont = el.style.fontSize;
         el.style.setProperty("font-size", `${size * 2}px`, "important");
       }));
       await capture("note-enlarged-text");
-      await page.getByRole("button", { name: "Publish note", exact: true }).scrollIntoViewIfNeeded();
+      await page.getByRole("button", { name: "Post to local chat", exact: true }).scrollIntoViewIfNeeded();
       await capture("note-enlarged-text-actions");
-      assert.ok(await page.getByRole("button", { name: "Publish note", exact: true }).isVisible(), "Publication remains reachable with 200% text");
-      await page.locator(".map-notes-compose [data-qa-font]").evaluateAll(els => els.forEach(el => {
+      assert.ok(await page.getByRole("button", { name: "Post to local chat", exact: true }).isVisible(), "Publication remains reachable with 200% text");
+      await page.locator(".quick-create [data-qa-font]").evaluateAll(els => els.forEach(el => {
         el.style.removeProperty("font-size");
         if (el.dataset.qaFont) el.style.fontSize = el.dataset.qaFont;
         delete el.dataset.qaFont;
       }));
     }
     await page.keyboard.press("Escape");
+    await page.getByRole("dialog").waitFor({ state: "detached" });
+    await close();
     await openCommunity();
     await page.getByRole("tab", { name: "Local chat", exact: true }).click();
     const resume = page.getByRole("button", { name: "Resume draft", exact: true });
     if (await resume.isVisible()) await resume.click();
     await page.locator("#map-note-text").waitFor();
     assert.equal(await page.locator("#map-note-text").inputValue(), "The fountain is a quiet place to pause between discoveries.", "Draft survives returning to the map");
-    const consent = page.getByLabel("Publish this note and its pin publicly.", { exact: true });
-    await consent.check();
-    await page.getByRole("button", { name: "Publish note", exact: true }).click();
+    await page.getByRole("button", { name: "Post to local chat", exact: true }).click();
     await page.locator(".map-note").first().waitFor();
     assert.equal(await page.locator(".map-note").count(), 1, "One server-confirmed local public note");
     await page.locator(".app-shell > .toast").waitFor({ state: "detached" });
@@ -164,7 +171,7 @@ try {
     await page.getByRole("dialog").getByRole("button", { name: "Remove note", exact: true }).click();
     await page.locator(".map-note").waitFor({ state: "detached" });
     assert.deepEqual(faults, [], "No browser errors");
-    report.viewports.push({ name, width, height, scans, faults, checks: ["All profile routes", "Wardrobe action", "Creator capability and all Community routes", "Public consent", "Draft restoration", "Local publication", "Removal cancellation"] });
+    report.viewports.push({ name, width, height, scans, faults, checks: ["All profile routes", "Character story", "Creator capability and all Community routes", "Public disclosure", "Draft restoration", "Local publication", "Removal cancellation"] });
     writeFileSync(join(shots, "report.json"), JSON.stringify(report, null, 2));
     await context.close();
     console.log(`${name}: Profile, Community and public-note interactions passed`);

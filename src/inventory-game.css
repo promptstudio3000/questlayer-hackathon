@@ -272,95 +272,10 @@
   font-size: 12px;
   color: var(--inventory-secondary);
 }
-
-.inv-tabs {
-  display: flex;
-  gap: 4px;
-  padding: 4px;
-  border-radius: 14px;
-  background: var(--inv-frame-dark);
-}
-.inventory-experience .inv-tabs > button {
-  flex: 1;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  min-width: 0;
-  min-height: 44px;
-  padding: 0 6px;
-  border: 0;
-  border-radius: 10px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #e6dafc;
-  background: transparent;
-}
-.inventory-experience .inv-tabs > button[aria-selected="true"] {
-  color: #1a0335;
-  background: #fcfaff;
-  box-shadow: inset 0 -3px 0 var(--inventory-action);
-}
-.inventory-experience .inv-tabs > button:focus-visible {
-  outline-color: #ffffff;
-  outline-offset: -3px;
-}
 .inv-panel {
   display: grid;
   gap: 10px;
   min-width: 0;
-}
-.inv-toolbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.inventory-experience .inv-toolbar-title {
-  display: grid;
-  min-width: 0;
-  line-height: 1.2;
-}
-.inv-toolbar-title strong {
-  font-size: 18px;
-}
-.inv-toolbar-title small {
-  font-size: 14px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  color: var(--inventory-secondary);
-}
-.inv-segment {
-  display: inline-flex;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 12px;
-  border: 1px solid var(--inventory-border);
-  background: var(--inventory-soft);
-}
-.inventory-experience .inv-segment > button {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  min-height: 44px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 9px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--inventory-ink);
-  background: transparent;
-}
-.inventory-experience .inv-segment > button[aria-pressed="true"] {
-  color: var(--inventory-on-action);
-  background: var(--inventory-action);
-}
-.inv-segment span {
-  font-size: 12px;
-  padding: 0 6px;
-  border-radius: 8px;
-  background: #ffffff33;
 }
 .inv-chips {
   display: flex;
@@ -388,57 +303,6 @@
   color: var(--inventory-on-action);
   background: var(--inventory-action);
   border-color: var(--inventory-action);
-}
-.inventory-experience .inv-chip-icon {
-  margin-left: auto;
-  min-width: 44px;
-  padding: 0 12px;
-}
-.inv-chip-icon em {
-  font-style: normal;
-  font-size: 12px;
-  font-weight: 700;
-}
-.inv-filter-more {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 8px;
-}
-.inv-filter-more label {
-  display: grid;
-  gap: 2px;
-  font-size: 12px;
-  color: var(--inventory-secondary);
-  min-width: 0;
-}
-.inv-filter-more select {
-  min-height: 44px;
-  min-width: 0;
-  font-size: 16px;
-  padding: 0 8px;
-  color: var(--inventory-ink);
-  background: var(--inventory-raised);
-  border: 1px solid var(--inventory-border);
-  border-radius: 10px;
-}
-.inventory-experience .inv-grid-caption {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 14px;
-  color: var(--inventory-secondary);
-}
-.inventory-experience .inv-filter-reset {
-  grid-column: 1 / -1;
-  justify-self: start;
-  min-height: 44px;
-  padding: 0 4px;
-  border: 0;
-  font-size: 14px;
-  color: var(--inventory-action);
-  background: transparent;
-  text-decoration: underline;
 }
 .inventory-experience .inv-empty-compact {
   justify-items: stretch;
@@ -576,16 +440,6 @@
   color: #ffffff;
   background: #1a0335;
 }
-.inv-cell-pip {
-  position: absolute;
-  left: 50%;
-  bottom: 0;
-  width: 44%;
-  height: 4px;
-  transform: translateX(-50%);
-  border-radius: 4px 4px 0 0;
-  background: var(--frame);
-}
 
 /* Compact item detail: a short bottom sheet instead of a tall card. */
 .game-dialog:has(> .inv-detail) {
@@ -674,9 +528,6 @@
   .inv-hero-stage > .character-composition {
     width: 64px;
     height: 80px;
-  }
-  .inventory-experience .inv-segment > button {
-    padding: 0 9px;
   }
 }
 @media (min-width: 560px) {

@@ -2,6 +2,7 @@ import { atomic } from "../database.mjs";
 import { levelFor } from "../domain.mjs";
 import { observationRequirement } from "./completion-policy.mjs";
 import { creatorPlace, creatorPrice } from "./place-policy.mjs";
+import { creatorPhoto } from "./feedback.mjs";
 import {
   creatorAssert as fail,
   creatorKey as key,
@@ -10,7 +11,7 @@ import {
   createCreatorOperations,
 } from "./operations.mjs";
 
-const OPTIONAL_CONTENT = ["place", "price", "requirement"];
+const OPTIONAL_CONTENT = ["place", "price", "requirement", "photo"];
 const content = (value) => {
   const keys = value && typeof value === "object" ? Object.keys(value) : [];
   fail(
@@ -38,6 +39,9 @@ const content = (value) => {
     ...(Object.hasOwn(value, "price")
       ? { price: creatorPrice(value.price) }
       : {}),
+    ...(Object.hasOwn(value, "photo")
+      ? { photo: creatorPhoto(value.photo) }
+      : {}),
   };
 };
 // Explicit opt-in demo adapter. The host initializes this only with reviewed
@@ -50,6 +54,8 @@ export function createCreatorLifecycle(
     isCompletionAuthority = () => false,
     authorizeAdmission = () => true,
     clock = Date.now,
+    // Host hook, inside the review transaction: the game's XP for a first publication.
+    onPublished = null,
   } = {},
 ) {
   fail(
@@ -436,6 +442,15 @@ export function createCreatorLifecycle(
             db.prepare(
               "UPDATE creator_quests SET published_revision=? WHERE id=?",
             ).run(row.latest_revision, questId);
+          // The game's XP for building a quest, once, at first publication.
+          if (decision === "approve" && row.published_revision === null)
+            onPublished?.({
+              questId,
+              author: row.author,
+              place: candidate.content.place,
+              title: candidate.content.title,
+              now,
+            });
           touch(
             questId,
             decision === "approve" || row.published_revision !== null

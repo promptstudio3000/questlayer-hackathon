@@ -31,6 +31,38 @@ export interface NpcReply {
   verification?: { provider: "near-ai"; model: string; chatId: string; status: string; url: string };
   note?: string;
   npc?: { id: string; name: string; title: string | null; archetype: string };
+  /** The NPC's own question (its mission), on a greeting. */
+  mission?: NpcMission;
+  /** Who the character is (its persona card), on a greeting. */
+  lore?: { backstory: string | null; likes: string[] };
+  /** Places it knows from the shared memory, nearest first, on a greeting. */
+  places?: NpcPlace[];
+}
+/** A place an NPC has heard of; distance from the NPC when the spot is known. */
+export interface NpcPlace {
+  name: string;
+  topic: string;
+  tip: string;
+  lat?: number;
+  lng?: number;
+  distanceM?: number;
+}
+/** The question an NPC asks for the shared memory of the place. */
+export interface NpcMission {
+  topic: string;
+  ask: string;
+  /** This player already taught this NPC something today. */
+  answered: boolean;
+  /** XP for a new tip, and how many rewarded answers are left today. */
+  xp: number;
+  left: number;
+}
+export interface NpcMissionResult {
+  outcome: "new" | "confirmed" | "duplicate" | "off_topic" | "rejected" | "pending" | "limited";
+  say: string;
+  xp: number;
+  note?: string;
+  mission: NpcMission;
 }
 export interface NpcLockedOffer {
   id: string;
@@ -59,10 +91,20 @@ export interface NpcTurnIn {
   replay?: boolean;
 }
 
+/** An open NPC line in one world, for the map ("Report back" signs). */
+export interface NpcMapTask extends NpcActiveLine {
+  actorId: string;
+  actorName: string | null;
+  /** Every step is done: the NPC waits for a report (a fresh meeting). */
+  ready: boolean;
+}
+
 const base = (actorId: string) => `/actors/${encodeURIComponent(actorId)}`;
 export const npcGreet = (actorId: string, encounter: string) => api<NpcReply>(`${base(actorId)}/greet`, { encounter });
 export const npcTalk = (actorId: string, encounter: string, message: string) =>
   api<NpcReply>(`${base(actorId)}/talk`, { encounter, message });
+export const npcMission = (actorId: string, encounter: string, answer: string) =>
+  api<NpcMissionResult>(`${base(actorId)}/mission`, { encounter, answer });
 export const npcAccept = (actorId: string, encounter: string, offerId: string) =>
   api<{ offerId: string; state: string }>(`${base(actorId)}/offers/${offerId}/accept`, { encounter });
 export const npcTurnIn = (actorId: string, encounter: string, offerId: string) =>

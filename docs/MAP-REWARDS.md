@@ -6,7 +6,7 @@ Policy id: `map-rewards-v1` (`server/map-rewards/policy.mjs`). Numbers are tunin
 policy id so a published day never changes meaning.
 
 Since policy `map-rewards-v2` (5 Nov 2026, Lubos) there is no practice money on the map: **every coin is
-backed QGOLD and all coins of a day are worth the same**. The demo arena gives XP only and cells outside the
+backed QGOLD and all coins of a day are worth the same**. Since 10 Nov 2026 the city demo (demo arena) pays the same backed coins, and cells outside the
 plan (outside Czechia) get no coins. Plzeň's native NEAR days (`server/native/`) are unchanged.
 
 ## 1. One plan per day for all of Czechia
@@ -20,10 +20,17 @@ At the first request of a local day (Europe/Prague) the server builds the day pl
   vault's backing rate R. The reward worker records both from chain (`map_budget`); until it has, the testnet
   defaults apply: 0.05 NEAR for coins, 0.05 NEAR for zones, R = 0.001 NEAR (`MAP_COIN_DAY_YOCTO`,
   `MAP_ZONE_DAY_YOCTO`, `QGOLD_RATE_YOCTO`). The game database's `treasury` table is not used by the map.
-- **Coins: equal shares.** Every cell holds 400 coin shares (`CELL_COINS`), a pioneer cell twice that.
-  One coin = coin budget ÷ all shares, rounded down to whole micro-QGOLD, the same for every coin of the
-  day (`summary.coinValueU`). Example: 0.05 NEAR at R 0.001 = 50 QGOLD over about 6.5 to 13 million shares,
-  so a coin is 3 to 7 micro-QGOLD. A cell whose paths hold fewer coins leaves its shares in the treasury.
+- **Yield only (13 Nov 2026).** With `NATIVE_YIELD_BACKED_DAYS=1` the worker records the lower of the chain
+  cap and the yield drip (one seventh of the free realized staking yield, split 50/50 into coins and zones;
+  `source: "realized_yield"`, zero when there is none). City days and map days share that yield:
+  `mapYieldCommitted` (payout items since the first yield-backed map day plus today's whole budget) is
+  subtracted before a city day takes its drip.
+- **Coins: few and worth something** (owner, 13 Nov 2026: about 10 coins per city, more in Plzeň). One coin =
+  coin budget ÷ `MAP_COIN_TARGET` (default 200), rounded down to whole micro-QGOLD, the same for every coin of
+  the day (`summary.coinValueU`). An opened street cell places 10 coins (`CELL_COINS`), the Plzeň city demo
+  50 (`ARENA_COINS`), and placement stops once the day's whole coin budget is placed (`coinRoom`, inside the
+  placement transaction, pioneer doubles included), so every coin on the map is covered. Example: 0.0005 NEAR
+  of yield at R = 1 microNEAR is 500 QGOLD, 2.5 QGOLD a coin.
 - **Zones: formula.** The zone budget is split per cell:
 
 | Part | Share | Score |
@@ -49,17 +56,21 @@ writes its rewards once (`map_cell_drops`):
 
 1. **Zones per cell (1–3):** 1, plus one at 30 and one at 150 checked places. The chosen POI quests of the
    cell become funded *cell zones* (gold, 70 m) with the cell's zone budget as the first-finisher prize.
-   Plzeň keeps its six reviewed city zones and gets no cell zones. Big cities (Praha, Brno, …) scale by their
+   Plzeň keeps its six reviewed city zones and gets no POI cell zones; instead its reviewed zones in the cell
+   (Tier 3 first, up to the cell's zone count) share the cell's zone budget as their first-finisher prize
+   (owner, 13 Nov 2026: every prize is paid out on chain). Only the first world to open the cell that day
+   funds them, so the GPS city and the demo never spend it twice. With map rewards on, the game treasury
+   funds no zone prize. Big cities (Praha, Brno, …) scale by their
    cells instead of six zones per city.
 2. **Coins:** Poisson-disc spots on mapped public paths, 95–120 m apart, 60 m within 300 m of a zone
-   (3× denser), never two coins closer than 60 m, at most the cell's 400. Every coin has the day's one value;
+   (3× denser), never two coins closer than 60 m, at most the cell's 10 (50 in the city demo). Every coin has the day's one value;
    a pioneer coin (drawn as "medium") counts two shares.
 3. **Waves:** each coin belongs to one of six waves between 07:00 and 22:00 local, each start moved by up
    to ±30 min from the day seed. A later wave's coins are hidden and cannot be claimed (`WAVE_NOT_OPEN`).
    The demo arena has no waves (remote visitors in any time zone). `MAP_COIN_WAVES=1..12|off`.
 4. **Pioneer:** a cell nobody visited for 30 days (`map_cell_visits`) shows gold fog. Its first drop of the
    day pays two shares per coin and adds a pioneer chest (XP, Aura while edition supply lasts).
-5. The demo arena (no GPS) places coins worth 0: XP only. Outside Czechia a cell gets no coins until more
+5. The demo arena (no GPS, arrow keys) places a fixed number of coins per cell at the same backed value as the map; payout rounds pay them in QGOLD (Lubos, 10 Nov 2026: the demo behaves like reality, only movement differs). Outside Czechia a cell gets no coins until more
    countries have a plan; its POI quests still give XP.
 
 ## 3. On the map
@@ -80,12 +91,12 @@ bigger. The sky chip shows the time of the next coin wave.
   collected in GPS worlds as `claim_map` (leaf fields, proof, coin or zone index, attestor signature;
   at most 240 a day), and closes the day after one day of grace (`server/map-rewards/chain.mjs`).
   It needs the rewards upgrade with `map_days.rs` and a worker key that allows the three map
-  methods next to the four native ones. The demo arena gives XP only, so it never goes on chain. Status:
+  methods next to the four native ones. The demo arena never sends `claim_map`; its coins are paid by payout rounds. Status:
   `chain` in `GET /api/map/rewards/day`. Every published day (city or map) holds 256 receipt slots
   (about 2.6 NEAR of storage) until it closes, so the contract needs about five days of separate storage
   reserve; `node scripts/topup-rewards-storage.mjs [--send]` tops it up from the operator. Without it
   `publish_map_day` traps ("Top up separate storage and gas funding before publication").
-- `MAP_PAYOUTS=1`: map coins and cell zones are paid by the nightly payout (docs/DAILY-PAYOUTS.md), one
+- `MAP_PAYOUTS=1`: map coins and cell zones (GPS and the city demo) are paid by payout rounds every few minutes (docs/DAILY-PAYOUTS.md), one
   leaf per account per day, and `claim_map` is no longer sent (the map day worker only records the budget).
 - **Caps grow with the treasury.** The rewards contract caps each date at max(0.1 NEAR, 10 % of each
   bucket's funding) (`date_cap`). City days together take at most max(0.006 NEAR, 4 % of a bucket's
@@ -113,3 +124,14 @@ Worlds created before the deploy keep their coins until midnight; the next day u
 - `close_map_day(day_id)`: after a one-day grace period, returns the unclaimed budget to the available
   treasury.
 - Views: `get_map_day(day_id)` and `get_map_cell(day_id, cell)`.
+
+## Outside Czechia (11 Nov 2026)
+
+The day plan covers the 16,346 Czech cells. A street cell anywhere else gets
+backed coins too (`worldCoinCount` in `server/map-rewards/service.mjs`): up to
+`CELL_COINS` (10) coins of the day's coin value, drawn from the same day coin
+budget as Czech cells (`summary.unplacedU.coins`, `coinRoom`) until it is placed. The drop is
+recorded in `map_cell_drops` under the day, so the payout rounds pay it at
+that day's rate. It needs `MAP_PAYOUTS=1` (abroad cells have no Merkle leaf for
+`claim_map`); `MAP_WORLD_COINS=off` turns it off. No funded cell zones and no
+pioneer bonus outside Czechia.

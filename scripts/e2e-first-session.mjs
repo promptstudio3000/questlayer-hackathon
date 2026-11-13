@@ -24,7 +24,8 @@ import { join, resolve } from "node:path";
 import { gzipSync } from "node:zlib";
 import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
-import { closeOpenSheet, openScreen } from "./lib/e2e-nav.mjs";
+import { closeOpenSheet, openScreen, openSettings } from "./lib/e2e-nav.mjs";
+import { fixedDayOffset, shiftBrowserClock } from "./lib/e2e-clock.mjs";
 
 const require = createRequire(import.meta.url);
 const AXE_SOURCE = require("axe-core").source;
@@ -33,7 +34,8 @@ const SHOTS_ROOT = resolve(
   process.env.E2E_SHOTS || join(ROOT, "output/qa/2026-11-first-session"),
 );
 // Against a live server (E2E_BASE_URL) every explorer the journey makes is
-// named "test ..." so bot accounts are easy to find and clean up.
+// named "test ..." so bot accounts are easy to find and clean up, and gets no
+// sponsored NEAR account unless E2E_ACCOUNTS=1.
 const TAG = process.env.E2E_NAME_PREFIX ?? (process.env.E2E_BASE_URL ? "test " : "");
 const CHAIN =
   /\b(wallet|testnet|transaction|NEAR|mint(ed)?|NFT|on-chain|contract|blockchain|demo GOLD)\b/i;
@@ -92,15 +94,20 @@ async function freePort() {
   });
 }
 
+// One fixed day and hour for the server and every page, so the day's world
+// is the same on every run (scripts/lib/e2e-clock.mjs).
+const CLOCK_OFFSET_MS = fixedDayOffset();
+
 async function startServer() {
   if (process.env.E2E_BASE_URL) return { url: process.env.E2E_BASE_URL, stop() {} };
   const port = await freePort();
   const dir = mkdtempSync(join(tmpdir(), "questlayer-e2e-"));
   const url = `http://127.0.0.1:${port}`;
-  const child = spawn(process.execPath, [join(ROOT, "server/index.mjs")], {
+  const child = spawn(process.execPath, ["--import", join(ROOT, "scripts/lib/e2e-clock.mjs"), join(ROOT, "server/index.mjs")], {
     cwd: dir,
     env: {
       PATH: process.env.PATH,
+      E2E_CLOCK_OFFSET_MS: String(CLOCK_OFFSET_MS),
       PORT: String(port),
       HOST: "127.0.0.1",
       APP_ORIGIN: url,
@@ -214,6 +221,20 @@ async function newExplorerContext(browser, profile) {
     acceptDownloads: true,
     locale: "en-GB",
   });
+  await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});  // Start in the city demo (src/play-here.ts).
+  await shiftBrowserClock(context, CLOCK_OFFSET_MS);
+  // Against a live server a new explorer's invisible NEAR account is paid
+  // from the shared daily sponsorship budget (about 0.12 test NEAR each).
+  // Test explorers skip it unless E2E_ACCOUNTS=1, so a test run never uses
+  // up the budget real explorers need.
+  if (process.env.E2E_BASE_URL && process.env.E2E_ACCOUNTS !== "1")
+    await context.route("**/api/account/create", (route) =>
+      route.fulfill({
+        status: 429,
+        contentType: "application/json",
+        body: JSON.stringify({ error: "Skipped for a test explorer.", code: "SUBSIDY_BUDGET" }),
+      }),
+    );
   // Record vibration calls; headless browsers have no vibration motor.
   await context.addInitScript(() => {
     window.__vibrations = [];
@@ -256,11 +277,11 @@ async function cardOverlaps(page, where) {
         "top bar": document.querySelectorAll(".topbar"),
         "profile menu": document.querySelectorAll(".profile-menu"),
         "tab bar": document.querySelectorAll(".nav-rail"),
-        "map tools": document.querySelectorAll(".map-toolbar"),
+        "map tools": document.querySelectorAll(".map-settings, .map-actions-toggle"),
         "demo controls": document.querySelectorAll(".demo-pad"),
-        "Market entry": [...document.querySelectorAll(".profile-tiles button")].filter((e) =>
-          /^Market/.test(e.textContent.trim()),
-        ),
+        // Profile → Character has no Market tile since 10 Nov 2026; its
+        // first control below the totals is the Badges chapter.
+        "Badges chapter": document.querySelectorAll(".badge-chapter-toggle"),
       };
       const hits = [];
       for (const c of cards)
@@ -318,6 +339,7 @@ async function firstLoad(page, url, report) {
   }
   const perf = {
     scriptRawKb: Math.round(raw / 1024),
+    scriptRawBytes: raw,
     scriptGzipKb: Math.round(gzip / 1024),
     scripts: scripts.size,
     requests,
@@ -426,8 +448,12 @@ async function runDevice(name, server) {
       "system reduced motion reaches the page",
     );
     // Deterministic teaching is visible before moving and requires no AI reply.
-    await page.locator(".first-session-hint").waitFor();
-    assert.match(await page.locator(".first-session-hint").innerText(), /Use the pad|sparkling find/);
+    // When the day's world has a street find in reach, the one-tap nearby
+    // card stands in for the coach (src/map-objective.ts).
+    await page.locator(".first-session-hint:visible, .nearby-open:visible").first().waitFor();
+    if (await page.locator(".first-session-hint").isVisible())
+      assert.match(await page.locator(".first-session-hint").innerText(), /Use the pad|sparkling find/);
+    else assert.match(await page.locator(".nearby-open").innerText(), /Open /);
     await capture(page, "coach-nearest-find");
     await assertNoChainWords(page, "find step");
     await scan(page, "map-coach");
@@ -436,7 +462,22 @@ async function runDevice(name, server) {
     for (let i = 0; i < 12; i++) {
       const title = await coachTitle(page);
       if (title !== STEP_TITLES.find && title !== STEP_TITLES.coin) break;
-      await page.locator(".first-session-action").click();
+      // A street find already in reach replaces the coach with its one-tap
+      // card (src/map-objective.ts); whether one is depends on the day's world.
+      // Wait until one of them is ready: the world loads in the background
+      // and can swap a busy coach for the card a moment later.
+      const nearby = page.locator(".nearby-open");
+      const action = page.locator(".first-session-action:not([disabled])");
+      await page.waitForFunction(() => {
+        const shown = (el) => !!el && el.getClientRects().length > 0 && getComputedStyle(el).visibility !== "hidden";
+        const a = document.querySelector(".first-session-action:not([disabled])");
+        return shown(a) || shown(document.querySelector(".nearby-open"));
+      }, null, { timeout: 30_000 });
+      await page.waitForTimeout(800);
+      if (!(await action.isVisible()) && (await nearby.isVisible())) {
+        await nearby.click();
+        await page.getByRole("button", { name: "Point me there", exact: true }).click();
+      } else await page.locator(".first-session-action").click();
       // The action turns the explorer toward it; run there with the keys,
       // then the pickup loop claims coins within reach every 600 ms.
       await walkToTarget(page);
@@ -448,32 +489,30 @@ async function runDevice(name, server) {
 
     console.log("4. First chest");
 
+    // One tap starts the chest quest: far away it goes straight to the map
+    // with the target chip; at the chest it opens the one confirm button.
     await page.locator(".first-session-action").click();
     const detail = page.locator(".quest-detail").first();
-    await detail.waitFor();
-    await capture(page, "chest-detail");
     for (let i = 0; i < 40; i++) {
-      const button = detail.locator(".primary-button").first();
-      const label = (await button.innerText()).trim();
-      if (/Open chest|Confirm visit/.test(label)) {
-        await button.click();
-        break;
-      }
-      assert.match(label, /Start quest|Guide me/, `unexpected chest action: ${label}`);
-      await button.click();
-      if (await detail.isVisible()) continue;
-      await page.locator(".map-guide-key").waitFor();
-      assert.equal(await detail.isVisible(), false, "Guidance folds the detail to reveal the map");
-      await walkToTarget(page);
-      await page.waitForTimeout(400);
-      // Guidance folds the sheet so the pad is free; the folded
-      // sheet keeps the chosen place, one tap opens it again.
       if (!(await detail.isVisible())) {
+        await page.locator(".compact-selection, .nearby-open").first().waitFor();
+        await walkToTarget(page);
+        await page.waitForTimeout(400);
         const nearby = page.locator(".nearby-open");
         if (await nearby.isVisible()) await nearby.click();
         else await page.locator(".compact-selection").click();
         await detail.waitFor();
       }
+      const button = detail.locator(".primary-button").first();
+      const label = (await button.innerText()).trim();
+      if (/Open chest|Confirm visit/.test(label)) {
+        await capture(page, "chest-detail");
+        await button.click();
+        break;
+      }
+      assert.match(label, /^Go/, `unexpected chest action: ${label}`);
+      await button.click();
+      await detail.waitFor({ state: "hidden" });
     }
     const reward = page.getByRole("dialog");
     await reward.waitFor({ timeout: 15_000 });
@@ -496,7 +535,6 @@ async function runDevice(name, server) {
 
     console.log("6. Optional secure or share from the durable receipt");
     await page.getByRole("button", { name: "Inventory", exact: true }).click();
-    await page.getByRole("button", { name: "History", exact: true }).click();
     await page.getByRole("button", { name: "Adventure results", exact: true }).click();
     await page.locator(".adventure-result-list button").first().click();
     await page.locator(".reward-more > summary").click();
@@ -536,10 +574,7 @@ async function runDevice(name, server) {
     console.log(`  ${vibrations} haptic cues`);
 
     console.log("7. Sound, vibration and motion settings");
-    await page.locator(".topbar .profile-pill").click();
-    await page.getByRole("tab", { name: "Settings" }).click();
-    const settings = page.getByRole("tabpanel");
-    await settings.scrollIntoViewIfNeeded();
+    const settings = await openSettings(page);
     const sound = settings.getByRole("switch", { name: /Sound/ });
     if ((await sound.getAttribute("aria-checked")) !== "true") await sound.click();
     const vibration = settings.getByRole("switch", { name: /Vibration/ });
@@ -576,20 +611,21 @@ async function runDevice(name, server) {
 
     console.log("9. Sell on NEAR");
     // Aura trades happen on NEAR only (docs/ONCHAIN-TRADES.md): the sale form
-    // prices in test NEAR and secures the Aura before listing it. The offline
+    // prices in QGOLD and secures the Aura before listing it. The offline
     // CI server has no chain, so the journey checks the form and backs out.
     await itemActions.getByRole("button", { name: "Sell" }).click();
-    await page.getByText("Price in test NEAR").waitFor();
-    await page.locator("#inventory-list-price").fill("0.05");
+    await page.getByText("Price in QGOLD").waitFor();
+    await page.locator("#inventory-list-price").fill("50M");
     await scan(page, "market-listing-form");
     await page.locator(".inventory-sale-form").getByRole("button", { name: "Back" }).click();
     await quietToast(page);
     await page.getByRole("button", { name: "Close item details" }).click();
     await page.locator('dialog[aria-label="Aura details"]').waitFor({ state: "detached", timeout: 5_000 }).catch(() => {});
-    await page.getByRole("tab", { name: "Market", exact: true }).click();
-    const marketTabs = page.getByRole("tablist", { name: "Market" });
-    await marketTabs.getByRole("tab", { name: "Secured" }).waitFor({ timeout: 10_000 });
-    assert.equal(await marketTabs.getByRole("tab", { name: "Practice" }).count(), 0, "no database market tab");
+    // Inventory → Shop → Market: one card board of Auras for sale on NEAR.
+    await page.getByRole("tab", { name: "Shop", exact: true }).click();
+    await page.getByRole("tablist", { name: "Shop" }).getByRole("tab", { name: "Market", exact: true }).click();
+    await page.locator(".market-board").waitFor({ timeout: 10_000 });
+    assert.equal(await page.getByRole("tab", { name: "Practice" }).count(), 0, "no database market tab");
     await capture(page, "market-secured");
     await scan(page, "market");
     console.log(`  ${auraName}: sale form in test NEAR, market is on chain`);
@@ -598,12 +634,13 @@ async function runDevice(name, server) {
     await openScreen(page, "Community");
     const feed = page.getByRole("region", { name: "Creator community" });
     await feed.waitFor();
-    await feed.getByRole("heading", { name: "All creator quests" }).waitFor({ timeout: 15_000 });
+    // One quest list (or its empty note) under the filter chips.
+    await feed.locator(".cl-list, .creator-empty-line").first().waitFor({ timeout: 15_000 });
     assert.equal(await feed.locator("[role=alert]").count(), 0, "creator feed loads without an error");
     await capture(page, "creator-feed");
     await scan(page, "creator-feed");
     await feed
-      .getByRole("navigation", { name: "Creator community section" })
+      .getByRole("group", { name: "Creator community section" })
       .getByRole("button")
       .nth(1)
       .click();
@@ -618,7 +655,7 @@ async function runDevice(name, server) {
     // card without a real install prompt; elsewhere this step is skipped.
     const cardContext = await newExplorerContext(browser, profile);
     const cardPage = await cardContext.newPage();
-    await cardPage.clock.install();
+    await cardPage.clock.install({ time: Date.now() + CLOCK_OFFSET_MS });
     await cardPage.goto(server.url);
     await cardPage.getByPlaceholder("Your explorer name").fill(`${TAG}Card ${name}`);
     await cardPage.getByRole("button", { name: "Start exploring" }).click();
@@ -637,7 +674,7 @@ async function runDevice(name, server) {
       await capture(cardPage, "home-screen-card-map");
       await cardPage.locator(".topbar .profile-pill").click();
       await cardPage.getByRole("tab", { name: "Character" }).click();
-      await cardPage.locator(".profile-tiles button").filter({ hasText: /^Market/ }).waitFor();
+      await cardPage.locator(".badge-chapter-toggle").waitFor();
       await check("Profile screen");
       await capture(cardPage, "home-screen-card-profile-screen");
       // The offer waits while a sheet owns the bottom; it returns on close.

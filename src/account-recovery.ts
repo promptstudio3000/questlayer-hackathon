@@ -22,6 +22,9 @@ export const RECOVERY_PRF_SALT = new TextEncoder().encode(
   "questlayer:recovery-key:v1",
 );
 export const RECOVERY_LABEL = "Recovery passkey";
+// Label of the key behind a player's 12 wallet words. Never change it: keys
+// already on accounts are recognised by this exact text.
+export const WALLET_WORDS_LABEL = "Wallet words";
 
 export type ApiCall = <T>(path: string, data?: unknown) => Promise<T>;
 export type CredentialsApi = {
@@ -533,6 +536,38 @@ export async function signOutOtherSessions({
   );
 }
 
+export const isWalletWords = (k: AccountKey) =>
+  k.kind === "device" && k.label === WALLET_WORDS_LABEL;
+export function hasWalletWords(keys: AccountKey[]) {
+  return keys.some((k) => isWalletWords(k) && k.state === "active");
+}
+
+// Asks the secure account window to make 12 wallet words and add their key to
+// the account. Only the new public key ever comes back to the game.
+export async function exportToWallet({
+  deviceKey,
+  passkey,
+}: {
+  deviceKey: PlayerKeyRecord;
+  /** The account has a recovery passkey; the window asks to unlock it first. */
+  passkey: boolean;
+}) {
+  if (!deviceKey.vaultId)
+    throw new RecoveryError(
+      "Wallet words need the secure account window, which this device does not use.",
+      "WALLET_WORDS_UNAVAILABLE",
+    );
+  try {
+    return await (
+      await import("./signing-vault/client.ts")
+    ).vaultRequest<{ publicKey: string }>("exportWallet", { passkey });
+  } catch (error) {
+    if ((error as Error).message === "Account action cancelled.")
+      throw new RecoveryError("Wallet words were cancelled.", "CANCELLED");
+    throw error;
+  }
+}
+
 export function hasRecoveryPasskey(keys: AccountKey[]) {
   return keys.some((k) => k.kind === "recovery" && k.state === "active");
 }
@@ -545,6 +580,8 @@ export type DeviceRow = {
   state: string;
   current: boolean;
   canRevoke: boolean;
+  /** The key behind the player's 12 wallet words. */
+  wallet?: boolean;
 };
 // What the Profile device list shows: removed keys are hidden, this device is
 // first and can never be revoked from itself, and the last usable key stays.
@@ -558,7 +595,10 @@ export function deviceRows(
     .map((k) => {
       const current = k.publicKey === localPublicKey;
       const recovery = k.kind === "recovery";
-      const title = current
+      const wallet = isWalletWords(k);
+      const title = wallet
+        ? tr("Wallet words")
+        : current
         ? tr("This device")
         : recovery
           ? RECOVERY_LABEL
@@ -572,6 +612,8 @@ export function deviceRows(
             ? tr("Being revoked")
             : recovery
               ? tr("Restores your explorer on a new device")
+              : wallet
+                ? tr("12 words that open this account in a NEAR wallet")
               : current
                 ? tr("Signs your game actions here")
                 : tr("Can sign your game actions");
@@ -585,6 +627,7 @@ export function deviceRows(
         kind: (recovery ? "recovery" : "device") as DeviceRow["kind"],
         state: k.state,
         current,
+        wallet,
         canRevoke:
           !current &&
           (k.state === "pending" ||

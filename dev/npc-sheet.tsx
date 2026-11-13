@@ -4,6 +4,7 @@ import { createRoot } from "react-dom/client";
 import NpcSheet from "../src/NpcSheet";
 import type { ActorEncounter } from "../src/actor-types";
 import "../src/style.css";
+import "../src/secondary-surfaces.css";
 
 const q = new URLSearchParams(location.search);
 const model = q.get("npc") || "pilgrim";
@@ -26,8 +27,17 @@ const reply = {
     { offerId: "a1", kind: "quest", label: "Deliver a letter to the chronicler", xp: 30, aura: false, steps: [{ questId: "s1", title: "Main square", kind: "visit", zone: null, done: true }] },
     { offerId: "a2", kind: "quest", label: "Visit three fountains", xp: 60, aura: true, steps: [{ questId: "s2", title: "Fountain 1", kind: "visit", zone: "Centre", done: true }, { questId: "s3", title: "Fountain 2", kind: "visit", zone: null, done: false }] },
   ],
-  source: "ollama",
+  source: "near-ai",
   note: undefined,
+  mission: { topic: "pub", ask: "Tell me, friend: where is the best pub around here?", answered: false, xp: 30, left: 3 },
+  lore: { backstory: "A floating lantern spirit who has walked every street of this town for a hundred years.", likes: ["parks", "riverbanks", "old churches"] },
+  places: [
+    { name: "Republic Square", topic: "sights", tip: "The main square, with the cathedral in the middle.", distanceM: 40, lat: 49.7472, lng: 13.3776 },
+    { name: "U Salzmannů", topic: "pub", tip: "One of the oldest pubs in town, with a classic Czech beer hall feel.", distanceM: 210, lat: 49.7478, lng: 13.3794 },
+    { name: "Great Synagogue", topic: "sights", tip: "The second largest synagogue in Europe.", distanceM: 420, lat: 49.7467, lng: 13.3728 },
+    { name: "Na Spilce", topic: "food", tip: "Czech classics in the big beer hall inside the brewery.", distanceM: 760, lat: 49.7472, lng: 13.3879 },
+    { name: "Hidden courtyard", topic: "secret", tip: "A quiet courtyard behind the old town hall." },
+  ],
   npc: { id: "x", name: model === "pilgrim" ? "Ráda the Pilgrim" : model, title: "Wanderer with errands", archetype },
 };
 const realFetch = window.fetch;
@@ -37,6 +47,8 @@ window.fetch = async (input, init) => {
   await new Promise((r) => setTimeout(r, 150));
   let body: unknown = reply;
   if (url.endsWith("/talk")) body = { ...reply, say: "Good question! Try the fountain.", emote: "think" };
+  if (url.endsWith("/mission"))
+    body = { outcome: "new", say: "Díky! Na Spilce si zapíšu a povím to dalším.", xp: 30, mission: { ...reply.mission, answered: true, left: 2 } };
   if (url.endsWith("/keeper")) body = { lines: ["Vault: 2.000 NEAR", "Pending yield: 0.004 NEAR"], stake: null };
   return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
 };
@@ -47,4 +59,4 @@ const encounter: ActorEncounter = {
   menu: [],
   actor: { id: "x", kind: "npc", archetype, name: reply.npc.name, title: reply.npc.title, model, segments: [] },
 };
-createRoot(document.getElementById("root")!).render(<NpcSheet actorId="x" encounter={encounter} onClose={() => {}} />);
+createRoot(document.getElementById("root")!).render(<NpcSheet playerId="fixture-player" draftRealm="fixture-world" actorId="x" encounter={encounter} onClose={() => {}} />);

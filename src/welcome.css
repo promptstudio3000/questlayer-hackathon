@@ -1,0 +1,252 @@
+/* Welcome (src/Welcome.tsx): a name and one button, then a separate step
+   with every way back in. Sized to fit a phone and a short landscape
+   viewport without scrolling. */
+.game-dialog:has(.signin) {
+  width: min(380px, calc(100vw - 24px));
+  padding: 20px;
+  background: var(--surface);
+}
+/* Nothing of the empty game shell shows behind the first screen. */
+dialog.game-dialog:has(.signin)::backdrop {
+  background: radial-gradient(circle at 50% 30%, #441c6c, var(--shell) 70%);
+}
+.signin {
+  display: grid;
+  gap: 16px;
+}
+.signin-main {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+.signin-art {
+  position: relative;
+  justify-self: center;
+  display: grid;
+  place-items: center;
+  width: 104px;
+  height: 104px;
+  border-radius: 50%;
+  background: var(--surface-soft);
+}
+.signin-art .ghost-art {
+  width: 64px;
+  height: 72px;
+}
+.signin-coin {
+  position: absolute;
+  top: 2px;
+  right: -8px;
+}
+.signin h1 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.2;
+  text-align: center;
+  text-wrap: balance;
+}
+.signin h1:focus {
+  outline: none;
+}
+.signin h1 em {
+  display: block;
+  font-style: normal;
+  color: var(--action);
+}
+.signin .signin-sub {
+  margin: -6px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink-secondary);
+  text-align: center;
+}
+.signin form {
+  display: grid;
+  gap: 8px;
+}
+.signin label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink-secondary);
+}
+.signin input {
+  min-height: 48px;
+  padding: 0 14px;
+  border: 1.5px solid var(--control-border);
+  border-radius: var(--radius-item);
+  background: var(--surface-raised);
+  color: var(--ink);
+}
+.signin .primary-button {
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 0 16px;
+  border-radius: var(--radius-item);
+  font-size: 15px;
+  font-weight: 600;
+}
+.signin .primary-button > svg {
+  margin: 0;
+}
+.signin-switch {
+  justify-self: center;
+  color: var(--action);
+  font-size: 15px;
+  font-weight: 500;
+}
+.signin .signin-foot {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-secondary);
+  text-align: center;
+  text-wrap: balance;
+}
+.signin-foot svg {
+  margin-inline-end: 4px;
+  vertical-align: -3px;
+  color: var(--success);
+}
+.signin-foot a {
+  margin-inline-start: 6px;
+  white-space: nowrap;
+}
+.signin-foot a {
+  color: var(--action);
+  font-weight: 500;
+}
+
+/* Step two. */
+.signin-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.signin-head h1 {
+  text-align: start;
+  font-size: 20px;
+}
+.signin-head .icon-button {
+  flex: none;
+  border-radius: 50%;
+  background: var(--surface-soft);
+  color: var(--ink);
+}
+.signin-password small {
+  font-size: 12px;
+  color: var(--ink-secondary);
+}
+.signin-or {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-secondary);
+}
+.signin-or::before,
+.signin-or::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--decorative-border);
+}
+.signin-ways {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+.signin-way {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-height: 56px;
+  padding: 8px 4px;
+  border: 1.5px solid var(--decorative-border);
+  border-radius: var(--radius-item);
+  background: var(--surface-raised);
+  color: var(--ink);
+  font-size: 12px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+.signin-way svg {
+  color: var(--action);
+}
+.signin-way span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+@media (hover: hover) {
+  .signin-way:hover:not(:disabled) {
+    border-color: var(--action);
+  }
+}
+
+/* Short landscape phone: art beside the form, so the name field and the
+   button stay on screen. */
+@media (max-height: 480px) and (min-width: 560px) {
+  .game-dialog:has(.signin) {
+    width: min(620px, calc(100vw - 24px));
+    padding: 16px 20px;
+  }
+  .signin:not(.signin-login) {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: center;
+    gap: 20px;
+  }
+  .signin:not(.signin-login) h1 {
+    text-align: start;
+    font-size: 20px;
+  }
+  .signin .signin-sub {
+    text-align: start;
+  }
+  .signin-main {
+    gap: 10px;
+  }
+  .signin-switch {
+    justify-self: start;
+    min-height: 40px;
+  }
+  .signin .signin-foot {
+    text-align: start;
+  }
+  .signin-login {
+    gap: 10px;
+  }
+  .signin-password {
+    grid-template-columns: 1fr 1fr auto;
+    align-items: center;
+  }
+  .signin-password .primary-button {
+    width: auto;
+  }
+  .signin-password small {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Desktop: the same two steps with more room. */
+@media (min-width: 900px) and (min-height: 640px) {
+  .game-dialog:has(.signin) {
+    width: 420px;
+    padding: 28px;
+  }
+  .signin {
+    gap: 20px;
+  }
+  .signin-art {
+    width: 128px;
+    height: 128px;
+  }
+  .signin-art .ghost-art {
+    width: 80px;
+    height: 90px;
+  }
+  .signin:not(.signin-login) h1 {
+    font-size: 26px;
+  }
+}

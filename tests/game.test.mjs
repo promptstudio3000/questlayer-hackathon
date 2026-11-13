@@ -1,7 +1,7 @@
 import test from "node:test";
 import { latLngToCell, cellToLatLng } from "h3-js";
 import assert from "node:assert/strict";
-import { openDatabase, createPlayer, atomic } from "../server/database.mjs";
+import { openDatabase, createPlayer as newPlayer, atomic } from "../server/database.mjs";
 import {
   GOLD,
   COIN_VALUE,
@@ -31,6 +31,15 @@ import {
   contribution,
   harvestDemo,
 } from "../server/game.mjs";
+
+// New explorers start with 0 GOLD (no practice faucet). These tests exercise
+// the local practice paths, so each explorer gets a practice wallet here.
+const PRACTICE_WALLET_U = 120_000 * 1_000_000;
+function createPlayer(db, name, now) {
+  const p = newPlayer(db, name, now);
+  db.prepare("UPDATE players SET gold_u=? WHERE id=?").run(PRACTICE_WALLET_U, p);
+  return p;
+}
 const now = Date.parse("2026-11-02T12:00:00Z");
 function setup() {
   const db = openDatabase(":memory:");
@@ -63,11 +72,12 @@ test("simultaneous activation shares a single world and one cell drop", async ()
   ]);
   assert.equal(w1.id, w2.id);
   assert.equal(db.prepare("SELECT COUNT(*) AS n FROM worlds").get().n, 1);
-  // Map rewards: one cell drop. The demo arena's coins give XP only, so no
-  // money is reserved anywhere.
+  // Map rewards: one cell drop. The demo arena's coins are backed by the
+  // day's on-chain budget like map coins, so the database treasury reserves
+  // nothing.
   const c = db.prepare("SELECT COUNT(*) n,COALESCE(SUM(value_u),0) v FROM coins").get();
   assert.ok(c.n > 0);
-  assert.equal(c.v, 0);
+  assert.ok(c.v > 0);
   assert.equal(
     db.prepare("SELECT reserved_u FROM treasury WHERE bucket='coins'").get()
       .reserved_u,
@@ -89,9 +99,10 @@ test("shared coin pays one player once and cannot be farmed by retries", async (
     db.prepare("SELECT gold_u FROM players WHERE id=?").get(a).gold_u,
     start + coin.value_u,
   );
+  // Map coins are paid from the on-chain day budget, never the DB treasury.
   assert.equal(
     db.prepare("SELECT paid_u FROM treasury WHERE bucket='coins'").get().paid_u,
-    coin.value_u,
+    0,
   );
   db.close();
 });
@@ -113,7 +124,8 @@ test("expired coins cannot be collected and unclaimed backing rolls over once", 
   expireWorlds(db, w.endsAt + 2);
   const t = db.prepare("SELECT * FROM treasury WHERE bucket='coins'").get();
   assert.equal(t.reserved_u, 0);
-  assert.equal(t.available_u, initial - coin.value_u);
+  // Map coins never touch the DB treasury (backed by the on-chain day budget).
+  assert.equal(t.available_u, initial);
   db.close();
 });
 test("a solo player can complete a free quest and mint one bounded Aura", async () => {
@@ -154,21 +166,28 @@ test("tier access matures, withdrawals remove it, decreases apply immediately", 
   assert.equal(positionTier(p, now + 63_001), 0);
   db.close();
 });
+function fundZone(db, questId, prizeU) {
+  db.prepare(
+    "UPDATE quests SET gold_u=?,metadata=json_set(COALESCE(metadata,'{}'),'$.cellZone',json(?)) WHERE id=?",
+  ).run(prizeU, JSON.stringify({ policy: "test", cell: "test", prizeU }), questId);
+}
 test("a funded quest has one GOLD payout while everyone can still earn personal XP", async () => {
   const { db, a, b } = setup();
   const w = await ensureWorld(db, HOME, true, now),
     q = worldView(db, w.id).quests.find((q) => q.tier === 2);
-  stake(db, a, 100_000 * GOLD, 50, "meadow", now);
-  stake(db, b, 100_000 * GOLD, 50, "river", now);
-  assert.throws(() => claimQuest(db, a, q.id, q, now), /Tier/);
+  // A zone prize comes only from the daily zone budget (a funded cell zone),
+  // never from the game treasury (owner, 13 Nov 2026).
+  assert.equal(q.gold_u, 0);
+  fundZone(db, q.id, 1500);
+  // Tier places are open to everyone until launch (owner decision 8 Nov).
   const r = claimQuest(db, a, q.id, q, now + 31_000),
     r2 = claimQuest(db, b, q.id, q, now + 32_000);
-  assert.equal(r.reward, 1000 * GOLD);
+  assert.equal(r.reward, 1500);
   assert.equal(r2.reward, 0);
   assert.equal(r2.xp, q.xp);
   assert.equal(
     db.prepare("SELECT paid_u FROM treasury WHERE bucket='zones'").get().paid_u,
-    1000 * GOLD,
+    0,
   );
   db.close();
 });
@@ -327,5 +346,27 @@ test("city snapshots share a fixed public center and never record the first visi
   assert.equal(second.id, w.id);
   // Six reviewed city zones; pioneer chests of first-visited cells come on top.
   assert.equal(second.zones.filter((z) => z.source !== "pioneer").length, 6);
+  db.close();
+});
+
+test("Tier 2 places are open to everyone, Tier 3 needs the vault's Tier 3; TIER_PLACES=stake uses only the vault tier", async () => {
+  const { placeTier, recordStakerStatus } = await import("../server/staker-gates.mjs");
+  const { db, a } = setup();
+  stake(db, a, 100_000 * GOLD, 50, "meadow", now);
+  // Simulated positions never open Tier 3 either.
+  assert.equal(placeTier(db, a, {}), 2);
+  assert.equal(placeTier(db, a, { TIER_PLACES: "open" }), 3);
+  // Simulated positions never count toward the real tier.
+  assert.equal(placeTier(db, a, { TIER_PLACES: "stake" }), 1);
+  recordStakerStatus(db, a, { tier: 2 });
+  assert.equal(placeTier(db, a, { TIER_PLACES: "stake" }), 2);
+  assert.equal(placeTier(db, a, {}), 2);
+  recordStakerStatus(db, a, { tier: 3 });
+  assert.equal(placeTier(db, a, {}), 3);
+  // 50 NEAR of weighted stake is Tier 3 in the game even where the contract view says 2.
+  recordStakerStatus(db, a, { tier: 2, weighted: 50n * 10n ** 24n });
+  assert.equal(placeTier(db, a, {}), 3);
+  recordStakerStatus(db, a, { tier: 1, weighted: 49n * 10n ** 24n });
+  assert.equal(placeTier(db, a, { TIER_PLACES: "stake" }), 2);
   db.close();
 });

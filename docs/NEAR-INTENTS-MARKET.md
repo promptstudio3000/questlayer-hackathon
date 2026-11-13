@@ -33,6 +33,11 @@ browser builders produce identical bytes).
 
 ## How a trade works
 
+A sell signs its `token_diff` first (13 Nov 2026): the signing vault always asks the player to approve a
+NEP-413 message, and phones block an approval window that opens long after the tap. So the order is
+signed right after the Sell tap, then the key is turned on, the Aura deposited and the signed order posted.
+A declined approval leaves the Aura in the player's collection.
+
 ```
 seller (device key)                     buyer (device key)
   │ add_public_key (relayed, 1 yocto)     │ add_public_key (relayed)
@@ -63,7 +68,13 @@ seller (device key)                     buyer (device key)
   balance. The server cannot move anything a player did not sign.
 - The **solver** is the existing relayer account. It only pays gas for
   `execute_intents` (deposit 0). Before sending it runs `simulate_intents` and
-  refuses any batch that does not net to zero.
+  refuses any batch that does not net to zero. Every solver transaction (book
+  fill, NPC trade, withdrawal) reserves one operation plus
+  `SUBSIDY_GAS_RESERVE_YOCTO` from the service-wide sponsorship budget
+  (`SUBSIDY_DAILY_*`, the same budget as relays and account creation) and is
+  refused with `SUBSIDY_BUDGET` once that is used up; without a configured
+  budget the solver sends nothing (`SUBSIDY_DISABLED`). The solver signs the exact transaction before sending it: a failure while signing
+  releases the reservation, while a send with an unknown outcome keeps it.
 - The **relayer policy** (`server/relayer/policy.mjs`) sponsors only:
   `add_public_key`/`remove_public_key` (1 yocto) on the verifier,
   `nft_transfer_call` of an Aura to the verifier for the sender's own account,
@@ -93,6 +104,21 @@ in one transaction; the server only pairs orders and pays gas. Turn on → list 
 with one tap (the panel wraps and deposits missing wNEAR first) → withdraw
 back to the account. Only the invisible explorer's device key can sign intents
 for now; a linked external wallet would need one more reviewed flow.
+
+**Proof of every trade (10 Nov).** The solver settles book trades, so no
+relayed call of the player carries them. The server therefore books each
+settled fill in the History of both explorers (kind `intents-trade`, "Sold …"
+for the seller, "Bought …" for the buyer with what they paid including the
+fee) and each withdrawal (kind `intents-withdraw`), with `meta.txHash` = the
+`execute_intents` transaction, `meta.accountId`, `meta.venue: "near-intents"`.
+The explorer behind an account is found through `wallet_links` (managed
+explorer accounts and linked wallets); an account nobody linked gets no row,
+and a failed History write never undoes a settlement. History, Settings → On
+chain and the Profile wallet history show these rows with a ChainLink to the
+transaction. The panel also lists **Your Intents trades** (the account's own
+orders from `GET /api/native/intents/account`): open listings, sales and
+purchases, each settled one with its proof link. NPC trades book their own
+`npc-trade` row in `server/npc/trader.mjs`, so `settlePair` writes none.
 
 ## Deploy and prove on testnet (Mac, one command per step)
 

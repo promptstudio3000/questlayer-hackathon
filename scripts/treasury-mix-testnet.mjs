@@ -24,6 +24,7 @@ import { Account, KeyPairSigner, actions } from "near-api-js";
 import { createNearProvider } from "../server/near-provider.mjs";
 import { mixSettings, readMix, unitsFor, valueIn, pendingYield } from "../server/native/treasury-mix.mjs";
 import { quoteSell, fundingAttachment, fundingAlreadyRecorded } from "../server/native/stnear-treasury.mjs";
+import { readDao, adoptedMix, dailyRun, sameTargets, utcDate } from "../server/native/treasury-dao.mjs";
 
 const [command = "status", ...rest] = process.argv.slice(2);
 const dryRun = rest.includes("--dry-run");
@@ -40,6 +41,27 @@ assert(settings.enabled && !settings.policyError, "Treasury mix settings are inv
 const rewardsId = process.env.NEAR_REWARDS_ACCOUNT || "questlayer-rewards-20261101b.testnet";
 const account = new Account(operator.accountId, provider, KeyPairSigner.fromSecretKey(operator.secretKey));
 const asset = (id) => settings.assets.find((a) => a.id === id);
+
+// Treasury DAO (docs/TREASURY-DAO.md): once the DAO exists, the target is the
+// mix the DAO adopted and a run happens only on a day whose run the DAO approved.
+const daoManifestPath = process.env.TREASURY_DAO_MANIFEST || "public/native-treasury-dao-testnet.json";
+const dao = existsSync(daoManifestPath) ? await readDao(provider, JSON.parse(readFileSync(daoManifestPath)).contractId) : null;
+if (dao?.exists) {
+  const adopted = adoptedMix(dao.proposals);
+  if (adopted) settings.target = adopted.targets;
+  console.log(JSON.stringify({ dao: dao.daoId, adoptedMix: adopted && { proposal: adopted.proposalId, option: adopted.option, target: adopted.targets } }));
+}
+function daoAllowsRun() {
+  if (!dao) return true;
+  assert(dao.exists, `The treasury DAO ${dao.daoId} is in the manifest but does not exist.`);
+  const run = dailyRun(dao.proposals, utcDate(Date.now()));
+  if (!run || run.status !== "Approved") {
+    console.log(JSON.stringify({ skipped: "rebalance", reason: run ? `today's DAO run is ${run.status}` : "no DAO run filed today (scripts/treasury-dao-testnet.mjs daily)" }));
+    return false;
+  }
+  assert(sameTargets(run.meta.target, settings.target), "Today's approved DAO run has another target than the adopted mix.");
+  return true;
+}
 
 const statePath = ".data/treasury-mix.json",
   recordPath = "public/treasury-mix-testnet.json",
@@ -147,6 +169,14 @@ if (command === "status") {
   const live = await read();
   console.log(JSON.stringify({ dryRun, ...summary(live) }, null, 2));
   if (live.plan.action !== "rebalance" || dryRun) process.exit(0);
+  if (!daoAllowsRun()) process.exit(0);
+  // One run a day: the VPS retries `rebalance` during the day in case the DAO
+  // approves later, and a second run must not move another 25 %.
+  const today = utcDate(Date.now());
+  if (state.runs.some((r) => r.at?.slice(0, 10) === today)) {
+    console.log(JSON.stringify({ skipped: "rebalance", reason: `already ran on ${today}` }));
+    process.exit(0);
+  }
   await rebalance(live);
 } else if (command === "keep") {
   await keep();

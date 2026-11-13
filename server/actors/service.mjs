@@ -6,7 +6,7 @@ import { createHash, randomBytes } from "node:crypto";
 import { assert, distance, point } from "../domain.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { cityById } from "../spatial/city-pack.mjs";
-import { localDateStart } from "../spatial/calendar.mjs";
+import { localDateStart, shiftDate } from "../spatial/calendar.mjs";
 import {
   closedPlaces,
   effectiveCityPack,
@@ -16,20 +16,23 @@ import { pauseFor, pauseState } from "../operator/world-controls.mjs";
 import { cellToLatLng, getResolution, isValidCell } from "h3-js";
 import { DENSITY_CAP_PER_CELL, loadCityActors, loadGenericActors, REVEAL_RADIUS_M } from "./definitions.mjs";
 import { actorPois } from "./pois.mjs";
-import { pathGraph } from "./schedule.mjs";
+import { activeWindows, pathGraph } from "./schedule.mjs";
 import { buildActorMenu, menuHash } from "./menu.mjs";
 import { ACTORS_SCHEMA } from "./schema.mjs";
 import { planDay, positionAt } from "./schedule.mjs";
 import { planSpawns } from "./spawns.mjs";
 import { skyAt } from "../sun.mjs";
 import { streetFindIds } from "../street-finds.mjs";
+import { ACTOR_HOME_RADIUS_M, compactActorCast } from "../demo-zones.mjs";
+import { FAIR_PLAY } from "../fair-play.mjs";
 
 export const ENCOUNTER_TTL_MS = 5 * 60_000;
 export const ENCOUNTER_RADIUS_M = 35;
 export const STATION_RADIUS_M = 50;
 export const MAX_GPS_ACCURACY_M = 30;
 export const MAX_FIX_AGE_MS = 15_000;
-export const MAX_SPEED_MPS = 15;
+// Same cap as the shared travel guard (about 15 km/h, server/fair-play.mjs).
+export const MAX_SPEED_MPS = FAIR_PLAY.maxSpeedMps;
 export const SEGMENT_HORIZON_MS = 2 * 3600_000;
 // The map refetches every minute, so the list sends only the next 20 minutes
 // of each walk (was the full 2 h: ~80 KB a minute on a phone, see
@@ -158,8 +161,13 @@ export function createActorService(db, options = {}) {
     if (manifest.cityId) {
       const base = cities(manifest.cityId);
       if (!base) return null;
-      const reviewed = loadActors(manifest.cityId);
-      return { cast: reviewed || loadGeneric(), base, generic: !reviewed, packKey: "" };
+      const reviewed = loadActors(manifest.cityId),
+        cast = reviewed || loadGeneric();
+      // A compact demo world (DEMO_ZONES, server/demo-zones.mjs) keeps its
+      // cast near the centre too.
+      if (manifest.demoZones)
+        return { cast: compactActorCast(cast), base, generic: !reviewed, packKey: "compact", compact: true };
+      return { cast, base, generic: !reviewed, packKey: "" };
     }
     const region = manifest.region;
     if (manifest.arena || typeof region !== "string" || !isValidCell(region) || getResolution(region) !== 7) return null;
@@ -209,6 +217,7 @@ export function createActorService(db, options = {}) {
       finds,
       pois,
       cap: source.cell ? DENSITY_CAP_PER_CELL : null,
+      ...(source.compact ? { homeArea: { center: pack.center, radiusM: ACTOR_HOME_RADIUS_M } } : {}),
     });
     const instances = spawned.map((s) => {
       const id = `${s.id}${suffix}`,
@@ -226,7 +235,15 @@ export function createActorService(db, options = {}) {
         }),
       };
     });
-    const plan = { seed, instances, center: pack.center, byId: new Map(instances.map((i) => [i.id, i])) };
+    const plan = {
+      seed,
+      instances,
+      center: pack.center,
+      byId: new Map(instances.map((i) => [i.id, i])),
+      // Kept for comeBackFor: when an actor is out again on a later day.
+      hours: city.hours,
+      allDay: forceAllDay || !!manifest.arena,
+    };
     plans.set(key, plan);
     while (plans.size > PLAN_CACHE_SIZE) plans.delete(plans.keys().next().value);
     return plan;
@@ -447,7 +464,35 @@ export function createActorService(db, options = {}) {
       expiresAt,
     );
     db.prepare("DELETE FROM actor_encounters WHERE expires_at<?").run(now - 7 * 86_400_000);
-    return { encounter: token, expiresAt, actor, menu, distanceM: Math.round(meters) };
+    const comeBack = menu.length ? null : comeBackFor(actor, instance.def, manifest, plan);
+    return { encounter: token, expiresAt, actor, menu, distanceM: Math.round(meters), ...(comeBack ? { comeBack } : {}) };
+  }
+
+  // When an actor with nothing on offer is worth a visit again: its first
+  // active minute on the next day (a beaten weekly boss: next Monday). Same
+  // opening hours, day/night phase and sunrise maths as the day plan.
+  function comeBackFor(actor, def, manifest, plan) {
+    if (actor.archetype === "trader") return null; // the trader board is always open
+    const boss = actor.archetype === "boss";
+    if (boss && actor.state !== "defeated") return null;
+    const reason = boss ? "boss_beaten" : actor.state === "defeated" ? "beaten" : "nothing_today";
+    const [y, m, d] = String(manifest.day).split("-").map(Number);
+    const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay() || 7;
+    const ahead = boss ? 8 - dow : 1;
+    try {
+      const day = shiftDate(manifest.day, ahead),
+        dayStart = localDateStart(day, manifest.timezone);
+      // Boss appearances are short windows; the first span of the day is enough here.
+      const spans = activeWindows({ ...def, windows: undefined }, {
+        dayStart,
+        hours: plan?.hours || ["07:00", "22:00"],
+        allDay: !!plan?.allDay,
+        sky: plan?.center || null,
+      });
+      return { reason, at: spans[0]?.[0] ?? dayStart };
+    } catch {
+      return null;
+    }
   }
 
   // For /talk, /offers and /challenge routes. Throws 403/404/410.
@@ -475,8 +520,9 @@ export function createActorService(db, options = {}) {
     };
   }
 
-  // Builds today's city plans (arena and reviewed cities) ahead of the first
-  // player, so no request pays for a cold plan. Street cells are cheap (~25 ms)
+  // Builds today's reviewed city plans (arena and Plzeň) ahead of the first
+  // player, so no request pays for a cold plan. Auto cities with the generic
+  // cast are left to their first visit. Street cells are cheap (~25 ms)
   // and are left to the first visit. Returns how many plans were built.
   function warm(now = clock()) {
     let built = 0;
@@ -491,6 +537,8 @@ export function createActorService(db, options = {}) {
         continue;
       }
       if (!manifest.cityId || !(manifest.endsAt > now)) continue;
+      // Only reviewed casts (Plzeň) are warmed; auto cities plan on their first visit.
+      if (manifest.cityStatus === "auto" || castFor(manifest)?.generic) continue;
       const before = plans.size;
       try {
         planFor(manifest);
@@ -502,5 +550,35 @@ export function createActorService(db, options = {}) {
     return built;
   }
 
-  return { list, encounter, requireEncounter, planFor, warm, castNow, manifestFor };
+  // The same warm-up for server start: it yields to the event loop between
+  // plans. With a hundred auto city worlds the plans take ~30 s of CPU, which
+  // must not block /api/health during a release activation.
+  async function warmInBackground(now = clock()) {
+    let built = 0;
+    const rows = db
+      .prepare("SELECT manifest FROM worlds WHERE created_at >= ?")
+      .all(now - 2 * 86_400_000);
+    for (const row of rows) {
+      await new Promise((resolve) => setImmediate(resolve));
+      let manifest;
+      try {
+        manifest = JSON.parse(row.manifest);
+      } catch {
+        continue;
+      }
+      if (!manifest.cityId || !(manifest.endsAt > now)) continue;
+      // Only reviewed casts (Plzeň) are warmed; auto cities plan on their first visit.
+      if (manifest.cityStatus === "auto" || castFor(manifest)?.generic) continue;
+      const before = plans.size;
+      try {
+        planFor(manifest);
+      } catch {
+        continue;
+      }
+      if (plans.size > before) built++;
+    }
+    return built;
+  }
+
+  return { list, encounter, requireEncounter, planFor, warm, warmInBackground, castNow, manifestFor };
 }

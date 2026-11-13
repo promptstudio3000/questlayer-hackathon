@@ -33,9 +33,6 @@
 .app-shell .settings-row { min-height: 56px; padding: 12px 0; background: transparent; border-color: var(--decorative-border); font-size: 16px; font-weight: 500; }
 .app-shell .settings-group > summary { padding: 12px 0; min-height: 48px; font-size: 16px; }
 .app-shell .settings-pad { padding: 0; }
-.app-shell .presence-consent { margin: 0; padding: 0; }
-.app-shell .presence-consent > summary { min-height: 48px; display: flex; align-items: center; font-size: 14px; color: var(--ink-secondary); }
-.app-shell .presence-consent p { margin: 0 0 16px; font-size: 14px; line-height: 1.5; }
 .app-shell :is(.session-review,.device-review,.creator-accepted,.creator-quote,.staking-management) { border-radius: 12px; border-color: var(--decorative-border); background: var(--surface-soft); }
 .app-shell :is(.session-list,.device-list) > li { padding-block: 16px; border-color: var(--decorative-border); }
 .app-shell :is(.session-check,.profile-consent,.creator-check) { min-height: 48px; font-size: 16px; line-height: 1.5; }
@@ -61,10 +58,8 @@
 .app-shell .gold-shop h3 { font-size: 20px; }
 .app-shell :is(.gold-frame,.gold-gear-list > li,.place-feed button) { border: 0; border-bottom: 1px solid var(--decorative-border); border-radius: 0; background: transparent; padding-block: 16px; }
 .app-shell :is(.gold-emote,.place-compose) { border: 1px solid var(--decorative-border); background: var(--surface-soft); box-shadow: none; }
-.app-shell .gold-emote.owned { border-color: var(--action); }
 .app-shell :is(.place-filters,.place-compose-row) { gap: 8px; flex-wrap: wrap; }
 .app-shell .place-filters button { min-width: 48px; }
-.app-shell .place-feed-body small { color: var(--ink-secondary); font-size: 14px; }
 .app-shell .staking-panel { --staking-control: var(--control-border); --staking-line: var(--decorative-border); }
 .app-shell :is(.staking-position,.staking-create,.fuel-meter-card) { border: 1px solid var(--decorative-border); border-radius: 12px; background: var(--surface-raised); box-shadow: none; }
 .app-shell :is(.native-market .market-refresh,.badge-pages button) { min-width: 48px; }
@@ -93,9 +88,6 @@ dialog.game-dialog-encounter:has(> .npc-sheet) { background: var(--surface); col
 .game-dialog .npc-role { background: var(--surface-raised); color: var(--ink-secondary); font-size: 14px; }
 .game-dialog .npc-bubble { padding: 16px; background: var(--surface-raised); color: var(--ink); border: 1px solid var(--decorative-border); border-radius: 12px; line-height: 1.5; }
 .game-dialog .npc-bubble::before { display: none; }
-.game-dialog .npc-tabs { background: transparent; border-bottom: 1px solid var(--decorative-border); border-radius: 0; gap: 8px; padding: 0; }
-.game-dialog .npc-tabs button { min-height: 48px; border-radius: 0; font-size: 14px; color: var(--ink-secondary); background: transparent; }
-.game-dialog .npc-tabs button.active { color: var(--ink); box-shadow: inset 0 -3px 0 var(--action); }
 .game-dialog .npc-sheet .screen-tabs { margin: 0; padding: 0; gap: 8px; background: transparent; border: 0; border-bottom: 1px solid var(--decorative-border); border-radius: 0; }
 .game-dialog .npc-sheet .screen-tabs button { min-width: 48px; min-height: 48px; padding: 8px; border-radius: 0; color: var(--ink-secondary); background: transparent; box-shadow: none; font-size: 14px; }
 .game-dialog .npc-sheet .screen-tabs button[aria-selected="true"] { color: var(--ink); box-shadow: inset 0 -3px 0 var(--action); }

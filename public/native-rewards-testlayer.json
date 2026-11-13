@@ -1,0 +1,156 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-12T16:16:25.029Z",
+  "contractId": "questlayer-rewards-tl1112.testnet",
+  "codeHash": "5Ci3cxE7KL9QnNRomx1ddrajeDKGdbwQygX5DadH1q1h",
+  "wasmSha256": "3e6e8be931b0887a39b9ad038efd11ef015c879b896e37a2ddb97bd2f7a2faa8",
+  "attestor": "4noET6e7eYOOEkQWcNOYx4hWz7b5nE4c7ps4SXPcAL8=",
+  "workerPublicKey": "ed25519:GRt6GkrD3tACua8xmYFwshvPqeGS4Mzytx7SXufCCUcH",
+  "factory": {
+    "contractId": "questlayer-vaults-tl1112.testnet",
+    "codeHash": "5mn94vZFGdvT43PEUpx3YrFjVNbtZTbEgcYHWTMeNRZD",
+    "wasmSha256": "46e7579d5a542cb9980e92dfd4578b57b2ec6e8dbe8db9ef263b96fb953818c4",
+    "vaultCodeHash": "4bnUo5Bn5MJqME8o5SrK9YfacYjzwmqFGPfQ4gxp3TbY",
+    "vaultWasmSha256": "357c3b5715d7700aa1d11bc827c7407ddbc28e3892b702405d7cbbe8f5e7535b",
+    "setupDeposit": "3520000000000000000000000"
+  },
+  "vaults": [
+    {
+      "accountId": "questlayer-vault-tl1112.testnet",
+      "beneficiary": "questlayer-dev-20261101.testnet",
+      "pool": "aurora.pool.f863973.m0",
+      "codeHash": "4bnUo5Bn5MJqME8o5SrK9YfacYjzwmqFGPfQ4gxp3TbY",
+      "wasmSha256": "357c3b5715d7700aa1d11bc827c7407ddbc28e3892b702405d7cbbe8f5e7535b"
+    }
+  ],
+  "funding": "explicit sponsor; realized staking yield not yet demonstrated",
+  "vaultPolicy": "experimental keyless factory positions, immutable contribution, full exit; testnet only",
+  "state": {
+    "version": 2,
+    "network": "testnet",
+    "beneficiary": "questlayer-dev-20261101.testnet",
+    "pool": "aurora.pool.f863973.m0",
+    "rewards": "questlayer-rewards-tl1112.testnet",
+    "contribution_bps": 5000,
+    "stage": "idle",
+    "nonce": "1",
+    "operation": "",
+    "exit_requested": false,
+    "unlock_epoch": "0",
+    "epoch": "5440",
+    "observed_epoch": "5439",
+    "principal": "100000000000000000000000",
+    "high_water_basis": "100000000000000000000000",
+    "staked": "100000000000000000000000",
+    "unstaked": "0",
+    "pending_pool_cash": "0",
+    "owner_credit": "0",
+    "owner_pending": "0",
+    "game_credit": "0",
+    "game_pending": "0",
+    "deposited": "100000000000000000000000",
+    "owner_paid": "0",
+    "game_paid": "0",
+    "weighted_stake": "0",
+    "partial_exit": "0",
+    "pending_contribution_bps": null,
+    "busy_since": "5439",
+    "recoverable_at_epoch": null,
+    "min_harvest": "1000000000000000000000",
+    "next_harvest_epoch": "0",
+    "tier": 1,
+    "contribution_policy": "owner-adjustable-after-settlement-v2",
+    "exit_policy": "full-or-partial-v2",
+    "tier_policy": "conservative-mature-principal-v1",
+    "recovery_policy": "balance-and-pool-reconciled-after-2-epochs-v3"
+  },
+  "poolPosition": {
+    "account_id": "questlayer-vault-tl1112.testnet",
+    "unstaked_balance": "3",
+    "staked_balance": "100007071028170180819046",
+    "can_withdraw": true
+  },
+  "transactions": [
+    {
+      "label": "Deploy and initialize ql-tl1112-rewards.testnet",
+      "transaction": "6L5eWWAMasq9hiEZMmszSLGeYpX56XVunFPFgybfoAjD"
+    },
+    {
+      "label": "Install bounded publisher and claim relay key",
+      "transaction": "7YXZRCpqFb8K6FkCiwjQ6Vw3TWUt63TwbazHRVWhTeCW"
+    },
+    {
+      "label": "Deploy and initialize ql-tl1112-vault.testnet",
+      "transaction": "6SWtiiyXWz4MxPDST8t584A3kvAWjg8xmno7tEg1R94n"
+    },
+    {
+      "label": "Allow only the isolated native vault as yield source",
+      "transaction": "GaqGCEXELMSZ4bdvSxrjb7L6Qx7yT1D4fM5XmoTNtd7w"
+    },
+    {
+      "label": "Sponsor 0.2 test NEAR with separate 50/50 accounting",
+      "transaction": "CwdybRxxSVSeshEDydp3vqCU53dnq9yvp9NXVR7eGk88"
+    },
+    {
+      "label": "Deposit 100000000000000000000000 yoctoNEAR into the validator through the vault",
+      "transaction": "AGTri4NWPsxf8sptRqCHbqQdf1uTmdNF7SBirJtYjAWz"
+    },
+    {
+      "label": "Deploy and initialize questlayer-rewards-tl1112.testnet",
+      "transaction": "Dsb2rvGd9aGioJ6zRxNjrAYKnc17TFmYFZ7oy6b8TYns"
+    },
+    {
+      "label": "Install bounded publisher and claim relay key",
+      "transaction": "12fmZY8uzjWqYjHWySdTVYypBocUUjcqwp8SvEQXLm6Y"
+    },
+    {
+      "label": "Deploy and initialize questlayer-vault-tl1112.testnet",
+      "transaction": "Gt1D226VttNMusJxh6ySGh45Fkp2Zp2YckpKrFj12Zge"
+    },
+    {
+      "label": "Allow only the isolated native vault as yield source",
+      "transaction": "CsCufKM22aBGRL3UzWEhYLXixu5JmeQvyKJrr7T5AKJK"
+    },
+    {
+      "label": "Sponsor 0.2 test NEAR with separate 50/50 accounting",
+      "transaction": "FjGVyixhCx1J4oKtSPHuFHbadojHp6ygD9KaSuVUbNvR"
+    },
+    {
+      "label": "Deposit 100000000000000000000000 yoctoNEAR into the validator through the vault",
+      "transaction": "733KxN3Pu4kdV1xiUFhY6AX5oU3SpbgwjeB53at2Arb4"
+    },
+    {
+      "label": "Deploy and initialize questlayer-vaults-tl1112.testnet",
+      "transaction": "58RuaaXopbSnZq3gSf9yxoMDXLLDdXrNTftoi9nPNgzg"
+    },
+    {
+      "label": "Top up separate reward storage and gas reserve",
+      "transaction": "7xNmRUd83KrEfqNePTC3vHL5QmZqHGZSF7QjwfR6EdYE"
+    },
+    {
+      "label": "Allow only the isolated native vault as yield source",
+      "transaction": "F3PTeg9bhZdytbPDWyDdn13MdpwdkEdp28MRcXkGkwZq"
+    },
+    {
+      "label": "Allow only the isolated native vault as yield source",
+      "transaction": "F73hevo88HAAiwQgfxDkvQ9WpGAmAf7YnLSoA1qUmtm"
+    },
+    {
+      "label": "Allow only the isolated native vault as yield source",
+      "transaction": "5MF6LyTUuM6fPD64wkg7vus2rvC4uPNht3B6V7PMgofy"
+    }
+  ],
+  "workerMethods": [
+    "publish_day",
+    "close_day",
+    "claim",
+    "maintain_vault",
+    "publish_map_day",
+    "claim_map",
+    "close_map_day",
+    "publish_payout_day",
+    "claim_payout",
+    "close_payout_day"
+  ],
+  "qgoldVault": "questlayer-qgold-vault-tl1112.testnet"
+}

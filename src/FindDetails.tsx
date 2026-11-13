@@ -3,6 +3,8 @@ import { Dialog } from "./Dialog";
 import { GameObjectArt } from "./game-object-art";
 import { distanceLabel } from "./app-bits";
 import { tr } from "./i18n";
+import { wearableArtUrl } from "./character-art";
+import { RARITY_NAMES } from "./GotchiWardrobe";
 import type { Coin } from "./types";
 
 export function FindDetails({ coin, available, distanceM, onClose, onPoint, onInventory }: {
@@ -13,16 +15,20 @@ export function FindDetails({ coin, available, distanceM, onClose, onPoint, onIn
   const name = coin.wearable?.name || tr("Street find");
   return <Dialog presentation="encounter" label={name} onClose={onClose}>
     <section className="find-details">
-      <div className="find-details-art">
+      {/* Official art is small pixel art (Hook Hand is a 9×9 grey hook), so it
+          sits in the same rarity ring as its map marker to read as an item. */}
+      <div className={`find-details-art${coin.wearable ? ` wearable-art rarity-${coin.wearable.rarity}` : ""}`}>
         {coin.wearable && !failed
-          ? <img src={`/api/wearables/art/${coin.wearable.id}.svg`} alt={name} onError={() => setFailed(true)} />
+          ? <img src={wearableArtUrl(coin.wearable.id)} alt={name} onError={() => setFailed(true)} />
           : <GameObjectArt kind="discovery" size={128} />}
       </div>
       <h2>{name}</h2>
-      <p>{distanceLabel(distanceM)}</p>
-      <p role="status">{available ? tr("This find is collected automatically when you are close enough.") : tr("This find is no longer on the map.")}</p>
+      {coin.wearable && RARITY_NAMES[coin.wearable.rarity] && <p className={`find-details-rarity rarity-${coin.wearable.rarity}`}>
+        {RARITY_NAMES[coin.wearable.rarity]()}
+      </p>}
+      {!available && <p role="status">{tr("This find is no longer on the map.")}</p>}
       {available
-        ? <button className="primary-button" onClick={onPoint}>{tr("Point me there")}</button>
+        ? <button className="primary-button" onClick={onPoint}>{tr("Go")} · {distanceLabel(distanceM)}</button>
         : <button className="primary-button" onClick={onInventory}>{tr("Inventory")}</button>}
     </section>
   </Dialog>;

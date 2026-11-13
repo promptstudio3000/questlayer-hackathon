@@ -2,8 +2,22 @@
 // flow diagrams with moving dashes, sequence diagrams that replay message by
 // message, line/bar/stacked/donut charts and a 24-hour timeline. Motion is
 // CSS only and stops under prefers-reduced-motion (see wiki.css).
-import React, { useId } from "react";
+import React, { useEffect, useId, useState } from "react";
 import { scrollRegionKeys } from "../scroll-region";
+import { prefersReducedMotion } from "../feedback";
+
+/** False while the player or the system asks for reduced motion; follows changes. */
+export function useMotion() {
+  const [ok, setOk] = useState(() => typeof window !== "undefined" && !prefersReducedMotion());
+  useEffect(() => {
+    const mq = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    const update = () => setOk(!prefersReducedMotion());
+    update();
+    mq?.addEventListener?.("change", update);
+    return () => mq?.removeEventListener?.("change", update);
+  }, []);
+  return ok;
+}
 
 export type Tone = "core" | "chain" | "money" | "player" | "ai" | "world" | "muted" | "warn";
 
@@ -52,6 +66,7 @@ export function Flow({
   title: string;
 }) {
   const uid = useId().replace(/:/g, "");
+  const motion = useMotion();
   const full = new Map(nodes.map((n) => [n.id, { ...n, w: n.w ?? 132, h: n.h ?? (n.sub ? 52 : 38) }]));
   return (
     <figure className="wk-fig">
@@ -74,7 +89,15 @@ export function Flow({
           return (
             <g key={i} className={`wk-edge tone-${e.tone ?? "muted"}`}>
               <path d={d} className={e.dashed ? "wk-edge-line dashed" : "wk-edge-line"} markerEnd={`url(#arr-${uid})`} />
-              {e.flow ? <path d={d} className="wk-edge-flow" style={{ animationDelay: `${(i % 5) * -0.4}s` }} /> : null}
+              {e.flow && motion
+                ? [0, 1].map((k) => (
+                    // A token travels along the edge: money or data moving. SMIL keeps it on the curve;
+                    // it is not rendered at all under reduced motion.
+                    <circle key={k} r={4.5} className="wk-token">
+                      <animateMotion dur="2.6s" repeatCount="indefinite" path={d} begin={`${-(k * 1.3 + (i % 4) * 0.35)}s`} />
+                    </circle>
+                  ))
+                : null}
               {e.label ? (
                 <text x={mx} y={my - 6} className="wk-edge-label" textAnchor="middle">
                   {e.label}

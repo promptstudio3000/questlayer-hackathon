@@ -3,11 +3,12 @@ import assert from "node:assert/strict";
 import {
   zoneCountdown,
   zoneLoot,
-  zoneLootFeatures,
   zoneRarity,
   zoneTotemFeatures,
   zoneWallFeatures,
   zoneLandmarkLabel,
+  zoneSchedule,
+  nextLocalMidnight,
 } from "../src/zone-landmarks.ts";
 
 const H = 3600000,
@@ -58,7 +59,7 @@ test("countdown shows when a zone opens even if the player cannot play it", () =
   assert.match(c.window, /Legendary · open 1 h/);
   const open = zoneCountdown(z, [], now + 2 * H);
   assert.equal(open.text, "Closes in 30:00");
-  assert.equal(zoneCountdown(z, [], now + 3 * H).text, "Closed");
+  assert.equal(zoneCountdown(z, [], now + 3 * H).text, "Closed · new zones tomorrow");
 });
 
 test("all-day zones say open now until their last hours", () => {
@@ -84,7 +85,7 @@ test("loot lists only what loaded data backs, rarest first", () => {
   );
 });
 
-test("walls keep boundary paths open, dim upcoming ones, vanish when spent", () => {
+test("walls keep boundary paths open, dim upcoming ones, stay low and dim when spent", () => {
   const open = zoneWallFeatures([zone()], [], now);
   const upcoming = zoneWallFeatures([zone({ opensAt: now + H })], [], now);
   const closed = zoneWallFeatures([zone({ closesAt: now - 1 })], [], now);
@@ -93,7 +94,9 @@ test("walls keep boundary paths open, dim upcoming ones, vanish when spent", () 
   assert.equal(open[0].geometry.coordinates.length, 49, "keeps the published circle boundary");
   assert.equal(upcoming[0].properties.dim, true);
   assert.ok(upcoming[0].properties.height < open[0].properties.height);
-  assert.equal(closed.length, 0);
+  assert.equal(closed.length, 1, "closed zones stay visible");
+  assert.equal(closed[0].properties.dim, true);
+  assert.ok(closed[0].properties.height < upcoming[0].properties.height);
 });
 
 test("every zone gets a totem; taller for rarer tiers; crown names the type", () => {
@@ -108,16 +111,8 @@ test("every zone gets a totem; taller for rarer tiers; crown names the type", ()
   for (const f of chest) assert.ok(f.properties.base < f.properties.height);
 });
 
-test("loot points sit inside the zone and dim before it opens", () => {
+test("a zone label names its finds before it opens", () => {
   const z = zone({ tier: 2, opensAt: now + H });
-  const pts = zoneLootFeatures([z], [quest({ tier: 2 })], now);
-  assert.ok(pts.length >= 2);
-  for (const p of pts) {
-    const [lng, lat] = p.geometry.coordinates;
-    const d = Math.hypot((lng - z.lng) * Math.cos((z.lat * Math.PI) / 180), lat - z.lat) * 111320;
-    assert.ok(d < z.radius, `item ${d.toFixed(1)} m from centre`);
-    assert.equal(p.properties.dim, true);
-  }
   assert.match(zoneLandmarkLabel(z, [quest({ tier: 2 })], now), /opens at .* find: /);
 });
 
@@ -139,4 +134,30 @@ test("zone walls carry a taller halo band above them", () => {
   const [w] = zoneWallFeatures([zone()], [quest()], now);
   assert.ok(w.properties.height >= 30);
   assert.ok(w.properties.halo > w.properties.height);
+});
+
+test("zone rewards reset at the next local midnight, also across DST", () => {
+  // 3 Nov 2026 10:00 UTC = 11:00 in Prague (CET, UTC+1).
+  assert.equal(nextLocalMidnight(now, "Europe/Prague"), Date.UTC(2026, 10, 3, 23));
+  // 24 Oct 2026 12:00 UTC: the night of the switch back to CET.
+  assert.equal(nextLocalMidnight(Date.UTC(2026, 9, 24, 12), "Europe/Prague"), Date.UTC(2026, 9, 24, 22));
+  assert.equal(nextLocalMidnight(Date.UTC(2026, 9, 25, 12), "Europe/Prague"), Date.UTC(2026, 9, 25, 23));
+  // An unknown zone name falls back to Prague instead of throwing.
+  assert.equal(nextLocalMidnight(now, "Nowhere/City"), Date.UTC(2026, 10, 3, 23));
+});
+
+test("zone schedule counts progress, what is left and the reset", () => {
+  const quests = [
+    quest(),
+    quest({ id: "w:quest:2", kind: "visit", xp: 50, gold_u: 0 }),
+    quest({ id: "w:quest:3", kind: "visit", xp: 30, gold_u: 0, completed: 1 }),
+  ];
+  const s = zoneSchedule(zone(), quests, now, "Europe/Prague");
+  assert.equal(s.phase, "open");
+  assert.equal(s.done, 1);
+  assert.equal(s.total, 3);
+  assert.equal(s.xp, 60);
+  assert.equal(s.gold_u, 500);
+  assert.ok(s.loot.length > 0 && s.loot.every((l) => l.kind === "aura"));
+  assert.equal(s.resetAt, Date.UTC(2026, 10, 3, 23));
 });

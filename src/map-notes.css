@@ -72,19 +72,12 @@
 .map-notes-heading > div {
   min-width: 0;
 }
-.map-notes-mode {
-  display: inline-block;
-  color: #665577;
-  font-size: 14px;
-}
 .map-notes-secondary,
 .map-notes p.map-notes-secondary {
   color: #665577;
   font-size: 14px;
   line-height: 1.45;
 }
-.map-notes-toolbar,
-.map-notes-photo-row,
 .map-notes-actions {
   display: flex;
   gap: 12px;
@@ -102,20 +95,6 @@
   border-radius: 12px;
   overflow-wrap: anywhere;
 }
-.map-notes-draft {
-  margin: 12px 0 16px;
-  padding: 12px 0;
-  border-top: 1px solid #dcd1eb;
-  border-bottom: 1px solid #dcd1eb;
-}
-.map-notes-draft p {
-  margin: 0 0 8px;
-}
-.map-notes-draft button {
-  min-height: 48px;
-  color: #665577;
-  background: #fcfaff;
-}
 .map-notes-notice {
   background: #e3f6ee;
   color: #176553;
@@ -129,12 +108,10 @@
   border: 1px solid #dcd1eb;
   margin: 16px 0;
 }
-.map-notes-compose,
 .map-notes-dialog {
   display: grid;
   gap: 12px;
 }
-.map-notes-compose > label,
 .map-notes-dialog > label {
   font-weight: 500;
 }
@@ -159,35 +136,6 @@
 .map-notes textarea::placeholder {
   color: #665577;
 }
-.map-notes-photo-button {
-  position: relative;
-  min-height: 48px;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  border: 1px solid #dcd1eb;
-  border-radius: 8px;
-  cursor: pointer;
-  background: #fff;
-  overflow: hidden;
-}
-.map-notes-photo-button input {
-  position: absolute;
-  inset: 0;
-  opacity: 0;
-  width: 100%;
-  height: 100%;
-  cursor: pointer;
-}
-.map-notes-photo-button:focus-within {
-  outline: 3px solid #672eeb;
-  outline-offset: 3px;
-}
-.map-notes-photo-button.is-disabled {
-  opacity: 0.56;
-  cursor: default;
-}
 .map-notes-preview {
   position: relative;
   max-width: 100%;
@@ -203,21 +151,6 @@
   position: absolute;
   right: 8px;
   top: 8px;
-}
-.map-notes-anchor {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 12px 0;
-  border-top: 1px solid #e8e0ef;
-  border-bottom: 1px solid #e8e0ef;
-  flex-wrap: wrap;
-}
-.map-notes-anchor > span {
-  flex: 1;
-}
-.map-notes-anchor > button {
-  font-size: 14px;
 }
 .map-notes label.map-notes-check {
   display: flex;
@@ -329,19 +262,6 @@
 .map-note-location p {
   overflow-wrap: anywhere;
 }
-.map-notes-empty {
-  text-align: center;
-  padding: 32px 12px;
-  color: #665577;
-}
-.map-notes-empty svg {
-  color: #672eeb;
-}
-.map-notes-empty h3 {
-  color: #1a0335;
-  font-size: 20px;
-  margin: 12px 0 0;
-}
 .map-notes button.map-notes-secondary-action {
   margin-top: 24px;
   background: transparent;
@@ -373,9 +293,6 @@
     align-items: flex-start;
     flex-wrap: wrap;
   }
-  .map-notes-anchor button {
-    flex-basis: 100%;
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   .map-notes *,
@@ -387,9 +304,6 @@
 
 /* Legacy application form labels use a compact scale. Notes keep their own
    readable form baseline, including labels inside the shared native dialog. */
-.map-notes .map-notes-compose > label,
-.map-notes .map-notes-photo-button,
-.map-notes .map-notes-photo-button > span,
 .map-notes .map-notes-check,
 .map-notes .map-notes-check > span,
 .game-dialog .map-notes-dialog > label,
@@ -398,9 +312,6 @@
   font-size: 16px;
   line-height: 1.5;
 }
-.map-notes .map-notes-compose > label,
-.map-notes .map-notes-photo-button,
-.map-notes .map-notes-photo-button > span,
 .map-notes .map-notes-check,
 .game-dialog .map-notes-dialog > label {
   color: var(--ink-secondary, #665577);
@@ -414,7 +325,6 @@
   line-height: 1.5;
 }
 .map-notes .map-notes-secondary,
-.map-notes .map-notes-mode,
 .map-notes .map-note-author time,
 .map-notes .map-note-location,
 .map-notes .map-note-location > p {
@@ -451,4 +361,10 @@
   gap: 4px;
   font-size: 14px;
   min-height: 44px;
+}
+/* The note whose map pin was tapped. */
+.map-note.is-focused {
+  outline: 2px solid var(--accent, #7b3fe4);
+  outline-offset: 2px;
+  border-radius: 12px;
 }

@@ -8,6 +8,7 @@ import { resolve } from "node:path";
 import { createServer } from "node:net";
 import { chromium } from "playwright";
 import { readPreparedContent } from "../server/world-preparation/read.mjs";
+import { openMapSettings } from "./lib/e2e-nav.mjs";
 
 const arg = (key) => process.argv.includes(key) ? process.argv[process.argv.indexOf(key)+1] : null;
 assert.ok(arg("--days") && arg("--out"), "Use --days <prepared-days> --out <qa-output> after npm run build.");
@@ -37,7 +38,7 @@ try {
   const expectedCountries=(arg('--expected-countries')||'DE,ZA,JP,US,AR,AU').split(',').sort();
   assert.deepEqual(selected.map(s=>s.country).sort(),expectedCountries,"The real-data journey must cover the explicitly expected countries.");
   for(const {country,quest,region} of selected) {
-    const context=await browser.newContext();
+    const context=await browser.newContext();await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     const request=async(path,body)=>{const response=await context.request.post(url+"/api"+path,{data:body,headers:{Origin:url}});return {status:response.status(),data:await response.json()};};
     assert.equal((await request("/session",{name:`Map pilot ${country}`})).status,201);
     const loaded=await request("/world",{location:quest.target,arena:false});assert.equal(loaded.status,200);assert.equal(loaded.data.globalPreparation.financialActivation,false);
@@ -49,14 +50,14 @@ try {
     await context.close();
   }
   const q=selected[0].quest;
-  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,geolocation:{latitude:q.target.lat,longitude:q.target.lng,accuracy:5},permissions:["geolocation"]});
+  const context=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,geolocation:{latitude:q.target.lat,longitude:q.target.lng,accuracy:5},permissions:["geolocation"]});await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
   await context.addInitScript(()=>{localStorage.setItem("questlayer-play-mode-chosen","1");localStorage.setItem("questlayer-play-mode","demo");localStorage.setItem("questlayer.mapAppearance","2d");});
   const page=await context.newPage();page.on("pageerror",e=>report.pageErrors.push(e.message));
   await page.goto(url);
   await page.getByPlaceholder("Your explorer name").fill("Atlas browser pilot");await page.getByRole("button",{name:"Start exploring",exact:true}).click();
   await page.getByRole("button",{name:"Let's explore",exact:true}).click();
   const worldResponse=page.waitForResponse(r=>r.url().endsWith("/api/world") && r.request().postDataJSON()?.arena===false && r.status()===200);
-  await page.getByRole("button",{name:"Use GPS, my location",exact:true}).click();await worldResponse;
+  await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).click();await worldResponse;
   await page.waitForFunction(()=>document.querySelector(".coverage-note")?.textContent?.includes("Map-derived discoveries by Atlas"));
   assert.equal(await page.locator(".first-session").count(),0,"The arena coin/chest coach must not promise absent global objects.");
   await page.locator(".map-loading").waitFor({state:"hidden",timeout:45000});
@@ -90,7 +91,7 @@ try {
   report.globalNoticeLocales=[];
   const notice="Map-derived discoveries by Atlas. Public access and paths have not been checked on foot: follow local signs and skip blocked places. These activities award personal XP; no monetary or item reward is promised.";
   for(const lang of ["ar","cs","de","es","fr","hi","ja","pt","ru","zh"]) {
-    const localized=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,geolocation:{latitude:q.target.lat,longitude:q.target.lng,accuracy:5},permissions:["geolocation"]});
+    const localized=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true,geolocation:{latitude:q.target.lat,longitude:q.target.lng,accuracy:5},permissions:["geolocation"]});await localized.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     await localized.addInitScript(lang=>{localStorage.setItem("questlayer.lang",lang);localStorage.setItem("questlayer-play-mode-chosen","1");localStorage.setItem("questlayer-play-mode","demo");},lang);
     assert.equal((await localized.request.post(url+"/api/session",{data:{name:`Atlas locale ${lang}`},headers:{Origin:url}})).status(),201);
     const p=await localized.newPage();await p.goto(url);await p.locator(".map-status-chip button").click();

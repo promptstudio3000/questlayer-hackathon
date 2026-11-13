@@ -1,5 +1,6 @@
 // HTTP routes for GOLD spending and place messages (docs/GOLD-SPENDING.md):
 //   GET  /api/gold/shop                       catalog, prices, what the player owns
+//   GET  /api/gold/balance                    spendable QGOLD (wallet) + on the way
 //   POST /api/gold/buy {sku}                  unlock a premium emote or a cosmetic (burn)
 //   POST /api/gold/equip {frame}              wear an unlocked marker frame (null = none)
 //   POST /api/gold/emote {emote}              show an emote above the character
@@ -23,8 +24,10 @@ import { BURN_KINDS, spendRealm } from "./ledger.mjs";
 import { confirmQgoldBurn, ensureQgoldBurns, prepareQgoldBurn } from "./qgold-burn.mjs";
 
 import { runPurchase, purchaseRow } from "./purchases.mjs";
+import { atomic } from "../database.mjs";
+import { GameError } from "../domain.mjs";
 
-const ONE = /^\/api\/places\/((?:place|post)_[a-f0-9-]{36})(?:\/(extend|posts|report|social\/prepare|social\/confirm))?$/;
+const ONE = /^\/api\/places\/((?:place|post)_[a-f0-9-]{36}|seed-pt-[a-z0-9-]{1,40})(?:\/(extend|posts|report|social\/prepare|social\/confirm))?$/;
 
 export function createGoldSpendRoutes(
   { gold, places, social, linkedAccount = () => null, qgold = null, db = null },
@@ -34,17 +37,65 @@ export function createGoldSpendRoutes(
   if (db) ensureQgoldBurns(db);
   // QGOLD realm: balances are the player's QGOLD on chain, spends are burns.
   const onChain = () => spendRealm() === "qgold" && qgold;
-  const purchase = (req, player, path, input, work) => onChain()
-    ? runPurchase(db, { player, id: req.headers["x-questlayer-purchase"], path, input }, work) : work();
+  const purchase = async (req, player, path, input, work) => {
+    if (!onChain()) return work();
+    const id = req.headers["x-questlayer-purchase"];
+    try {
+      return await runPurchase(db, { player, id, path, input }, work);
+    } catch (error) {
+      if (error.code === "QGOLD_BURN") await refuseShortBurn(player, id, error);
+      throw error;
+    }
+  };
+  // A burn the player's QGOLD cannot cover only fails on chain, so the
+  // shortfall is caught before anything is signed and the purchase released.
+  async function refuseShortBurn(player, id, error) {
+    const needU = Number(error.details?.amountU), purchase = error.details?.purchaseId;
+    if (!Number.isSafeInteger(needU) || needU <= 0 || !purchase) return;
+    let haveU;
+    try {
+      haveU = await qgold.balanceU(player);
+    } catch {
+      return; // the burn itself still checks the balance on chain
+    }
+    if (!Number.isFinite(haveU) || haveU >= needU) return;
+    const released = atomic(db, () => {
+      const p = db.prepare("SELECT * FROM qgold_purchases WHERE id=? AND player_id=?").get(purchase, player);
+      if (!p || p.state !== "new" || p.memo || p.relay_job_id || p.tx_hash) return false;
+      db.prepare("DELETE FROM qgold_purchase_aliases WHERE purchase_id=?").run(p.id);
+      db.prepare("DELETE FROM qgold_purchases WHERE id=?").run(p.id);
+      return true;
+    });
+    if (!released) return;
+    const short = new GameError("Not enough QGOLD in your account.", 402, "QGOLD_SHORT");
+    short.details = { needU, haveU, purchaseReleased: id };
+    throw short;
+  }
+  // The linked NEAR account that holds the most QGOLD pays (a player can
+  // link a second wallet, and the newest link may still be empty).
+  async function spendable(player) {
+    if (qgold.spendable) return qgold.spendable(player);
+    return { accountId: qgold.accountIds(player)[0] ?? null, balanceU: await qgold.balanceU(player) };
+  }
   async function withBalance(player, view) {
     if (!onChain()) return view;
-    let balanceU = 0;
+    let balanceU = 0,
+      balanceKnown = true,
+      accountId = qgold.accountIds(player)[0] ?? null;
     try {
-      balanceU = await qgold.balanceU(player);
+      ({ balanceU, accountId } = await spendable(player));
     } catch {
-      /* the shop still opens; the burn itself checks the balance on chain */
+      // The shop still opens and the buttons stay usable: the burn itself
+      // checks the balance on chain.
+      balanceKnown = false;
     }
-    return { ...view, realm: "qgold", balanceU };
+    let pendingU = 0;
+    try {
+      pendingU = Math.max(0, Number(qgold.pendingU?.(player)) || 0);
+    } catch {
+      /* nothing on the way is shown */
+    }
+    return { ...view, realm: "qgold", balanceU, balanceKnown, pendingU, hasAccount: !!accountId };
   }
   function limit(key, max, assert) {
     const k = `${key}:${Math.floor(Date.now() / 60_000)}`,
@@ -74,13 +125,21 @@ export function createGoldSpendRoutes(
         assert(p, "Purchase not found.", 404, "PURCHASE_NOT_FOUND");
         respond(res, { accountId: p.account_id, contractId: p.contract_id, amount: String(p.amount_u), memo: p.memo, state: p.state }); return true;
       }
+      // The one balance every price check and the top bar show: QGOLD on the
+      // player's NEAR account (the richest linked one) plus what the next
+      // payout brings. The game's own counter is not money.
+      if (path === "/api/gold/balance" && method === "GET") return respond(res, await withBalance(player, gold.wallet(player))), true;
       if (path === "/api/gold/shop" && method === "GET") return respond(res, await withBalance(player, gold.shop(player))), true;
       if (path === "/api/gold/burn/prepare" && method === "POST") {
         assert(onChain(), "QGOLD spending is not open here.", 503, "QGOLD_DISABLED");
         const i = await body(req);
         const pending = purchaseRow(db, player, i.purchaseId);
         const accounts = qgold.accountIds(player);
-        const accountId = pending.account_id ?? accounts[0] ?? null;
+        let accountId = pending.account_id ?? null;
+        if (!accountId) {
+          try { accountId = (await spendable(player)).accountId; } catch { /* fall back to the newest link */ }
+          if (!accounts.includes(accountId)) accountId = accounts[0] ?? null;
+        }
         assert(accounts.includes(accountId), "This purchase account is not linked.", 403, "BURN_SIGNER");
         if (pending.relay_job_id && pending.state === "prepared") {
           const job = db.prepare("SELECT transaction_hash,state FROM relay_jobs WHERE id=?").get(pending.relay_job_id);

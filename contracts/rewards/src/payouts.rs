@@ -28,7 +28,8 @@ use crate::*;
 /// Minimum age before a fully settled day can be closed; rights do not expire.
 pub const PAYOUT_GRACE_MS: u64 = 3 * DAY_MS;
 /// Leaves claimed in one transaction (each is one vault call plus a callback).
-pub const PAYOUT_MAX_BATCH: usize = 10;
+/// Eight leaves with the allowances below fit the 280 TGas the worker attaches.
+pub const PAYOUT_MAX_BATCH: usize = 8;
 /// Most accounts one day can pay.
 pub const PAYOUT_MAX_LEAVES: u32 = 262_144;
 /// Smallest leaf: the vault mints nothing below one QGOLD unit (1e-6 QGOLD,
@@ -37,8 +38,16 @@ pub const PAYOUT_MIN_YOCTO: u128 = 10_000_000_000_000_000;
 const CHUNK_BITS: u32 = 256;
 /// Storage bound of one bitmap chunk (32 bytes, its key and trie overhead).
 const CHUNK_STORAGE: u64 = 160;
-const MINT_GAS: Gas = Gas::from_tgas(14);
-const CALLBACK_GAS: Gas = Gas::from_tgas(6);
+// Measured on actual WASM in a local sandbox (docs/DAILY-PAYOUTS.md, "Gas"):
+// mint_for burned at most 2.26 TGas, mint_with_carry_for 2.97 and on_payout
+// 2.72. The allowances keep about 5x and 3.7x headroom over those numbers.
+pub const MINT_GAS: Gas = Gas::from_tgas(15);
+pub const CALLBACK_GAS: Gas = Gas::from_tgas(10);
+/// Fixed parent-receipt work of one batch.
+pub const CLAIM_BASE_GAS: Gas = Gas::from_tgas(20);
+/// Per leaf in the parent: proof, bitmap and attempt writes, and the execution
+/// fees of the two receipts it creates, which the sender prepays.
+pub const CLAIM_LEAF_GAS: Gas = Gas::from_tgas(6);
 
 #[derive(BorshDeserialize, BorshSerialize, Serialize, Clone)]
 #[borsh(crate = "near_sdk::borsh")]
@@ -100,7 +109,7 @@ mod u128_str {
 #[allow(dead_code)]
 #[ext_contract(ext_payout)]
 trait PayoutCallbacks {
-    fn on_payout(&mut self, day_id: String, index: u32, account_id: AccountId, coins: U128, zones: U128) -> bool;
+    fn on_payout(&mut self, day_id: String, index: u32, account_id: AccountId, coins: U128, zones: U128, nonce: Option<U64>) -> bool;
 }
 
 pub(crate) fn payout_days() -> LookupMap<String, PayoutDay> {
@@ -124,6 +133,13 @@ fn chunks(leaves: u32) -> u32 {
 fn bit_of(index: u32) -> (usize, u8) {
     let i = index % CHUNK_BITS;
     (i as usize / 8, 1u8 << (i % 8))
+}
+/// Claimed (its mint issued) and not yet booked paid.
+pub(crate) fn leaf_pending(day_id: &str, index: u32) -> bool {
+    let key = chunk_key(day_id, index);
+    let (byte, mask) = bit_of(index);
+    payout_bits().get(&key).is_some_and(|c| c[byte] & mask != 0)
+        && !payout_paid_bits().get(&key).is_some_and(|c| c[byte] & mask != 0)
 }
 
 fn hash_pair(a: &[u8], b: &[u8]) -> Vec<u8> {
@@ -201,6 +217,53 @@ impl Rewards {
             near_sdk::serde_json::json!({"day_id":day_id,"root":root,"leaves":leaves,"coins":coins.to_string(),"zones":zones.to_string()}),
         );
         }
+
+    /// Books one issued mint exactly once: paid, or refused and reopened.
+    pub(crate) fn settle_payout(&mut self, day_id: &str, index: u32, account_id: &AccountId, coins: u128, zones: u128, ok: bool) -> bool {
+        let amount = coins + zones;
+        let mut days = payout_days();
+        let mut day = days.get(&day_id.to_string()).expect("Unknown payout day");
+        let mut settlement = payout_settlements().get(&day_id.to_string()).expect("Payout settlement status unavailable");
+        let key = chunk_key(day_id, index);
+        let (byte, mask) = bit_of(index);
+        let mut claimed = payout_bits().get(&key).expect("Payout callback is not pending");
+        let mut paid = payout_paid_bits().get(&key).unwrap_or_else(|| vec![0; (CHUNK_BITS / 8) as usize]);
+        assert!(index < day.leaves && !day.closed && settlement.pending > 0
+            && claimed[byte] & mask != 0 && paid[byte] & mask == 0,
+            "Payout callback is not pending");
+        self.pending -= amount;
+        settlement.pending -= 1;
+        if ok {
+            self.withdrawn += amount;
+            settlement.paid += 1;
+            paid[byte] |= mask;
+            payout_paid_bits().insert(&key, &paid);
+            event(
+                "payout_paid",
+                near_sdk::serde_json::json!({"day_id":day_id,"index":index,"account_id":account_id,"amount":amount.to_string()}),
+            );
+        } else {
+            // Undo the claim: the leaf can be claimed again, nothing is lost.
+            self.coins.awarded -= coins;
+            self.zones.awarded -= zones;
+            day.paid -= amount;
+            day.paid_leaves -= 1;
+            self.coins.reserved += coins;
+            self.zones.reserved += zones;
+            day.coins_left += coins;
+            day.zones_left += zones;
+            claimed[byte] &= !mask;
+            payout_bits().insert(&key, &claimed);
+            days.insert(&day_id.to_string(), &day);
+            event(
+                "payout_failed",
+                near_sdk::serde_json::json!({"day_id":day_id,"index":index,"account_id":account_id,"amount":amount.to_string()}),
+            );
+        }
+        payout_settlements().insert(&day_id.to_string(), &settlement);
+        self.check();
+        ok
+    }
 }
 
 #[near_bindgen]
@@ -218,7 +281,10 @@ impl Rewards {
     /// leaf, whether this call started its payment (false = already claimed).
     pub fn claim_payout(&mut self, day_id: String, claims: Vec<PayoutLeaf>) -> Vec<bool> {
         assert!(!self.paused, "Claims paused");
-        assert!(!claims.is_empty() && claims.len() <= PAYOUT_MAX_BATCH, "Batch is 1 to 10 leaves");
+        assert!(!claims.is_empty() && claims.len() <= PAYOUT_MAX_BATCH, "Batch is 1 to 8 leaves");
+        // Fail before any state change rather than in the middle of a batch.
+        let need = CLAIM_BASE_GAS.as_gas() + claims.len() as u64 * (MINT_GAS.as_gas() + CALLBACK_GAS.as_gas() + CLAIM_LEAF_GAS.as_gas());
+        assert!(env::prepaid_gas().as_gas() >= need, "Attach at least {} TGas for this batch", need / 1_000_000_000_000);
         let vault = qgold_vault().expect("QGOLD vault not set");
         let mut days = payout_days();
         let mut day = days.get(&day_id).expect("Unknown payout day");
@@ -256,10 +322,12 @@ impl Rewards {
             settlement.pending += 1;
             chunk[byte] |= mask;
             bits.insert(&key, &chunk);
+            let nonce = reconcile::record_payout_attempt(&day_id, c.index, &c.account_id, from_coins, from_zones);
+            let world = world_days::is_world_payout(&day_id);
             Promise::new(vault.clone())
                 .function_call(
-                    if world_days::is_world_payout(&day_id){"mint_with_carry_for"}else{"mint_for"},
-                    near_sdk::serde_json::json!({"account_id": c.account_id, "memo": if world_days::is_world_payout(&day_id){format!("world payout {day_id}:{}",c.index)}else{format!("daily payout {day_id}")}})
+                    if world {"mint_with_carry_for"} else {"mint_for"},
+                    near_sdk::serde_json::json!({"account_id": c.account_id, "memo": if world {reconcile::world_memo(&day_id, c.index)} else {format!("daily payout {day_id}")}})
                         .to_string()
                         .into_bytes(),
                     NearToken::from_yoctonear(amount),
@@ -271,6 +339,7 @@ impl Rewards {
                     c.account_id,
                     U128(from_coins),
                     U128(from_zones),
+                    Some(U64(nonce)),
                 )).detach();
             started.push(true);
         }
@@ -280,53 +349,13 @@ impl Rewards {
         started
     }
 
+    /// `nonce` is absent only for mints issued before attempts were recorded.
     #[private]
-    pub fn on_payout(&mut self, day_id: String, index: u32, account_id: AccountId, coins: U128, zones: U128) -> bool {
-        let amount = coins.0 + zones.0;
-        let mut days = payout_days();
-        let mut day = days.get(&day_id).expect("Unknown payout day");
-        let mut settlement = payout_settlements().get(&day_id).expect("Payout settlement status unavailable");
-        let key = chunk_key(&day_id, index);
-        let (byte, mask) = bit_of(index);
-        let mut claimed = payout_bits().get(&key).expect("Payout callback is not pending");
-        let mut paid = payout_paid_bits().get(&key).unwrap_or_else(|| vec![0; (CHUNK_BITS / 8) as usize]);
-        assert!(index < day.leaves && !day.closed && settlement.pending > 0
-            && claimed[byte] & mask != 0 && paid[byte] & mask == 0,
-            "Payout callback is not pending");
-        self.pending -= amount;
-        settlement.pending -= 1;
+    pub fn on_payout(&mut self, day_id: String, index: u32, account_id: AccountId, coins: U128, zones: U128, nonce: Option<U64>) -> bool {
+        reconcile::take_payout_attempt(&day_id, index, nonce.map(|n| n.0));
         // Successful mint_for returns JSON U128; an unread payload is not a failure.
         let ok = !matches!(env::promise_result_checked(0, 0), Err(near_sdk::PromiseError::Failed));
-        if ok {
-            self.withdrawn += amount;
-            settlement.paid += 1;
-            paid[byte] |= mask;
-            payout_paid_bits().insert(&key, &paid);
-            event(
-                "payout_paid",
-                near_sdk::serde_json::json!({"day_id":day_id,"index":index,"account_id":account_id,"amount":amount.to_string()}),
-            );
-        } else {
-            // Undo the claim: the leaf can be claimed again, nothing is lost.
-            self.coins.awarded -= coins.0;
-            self.zones.awarded -= zones.0;
-            day.paid -= amount;
-            day.paid_leaves -= 1;
-            self.coins.reserved += coins.0;
-            self.zones.reserved += zones.0;
-            day.coins_left += coins.0;
-            day.zones_left += zones.0;
-            claimed[byte] &= !mask;
-            payout_bits().insert(&key, &claimed);
-            days.insert(&day_id, &day);
-            event(
-                "payout_failed",
-                near_sdk::serde_json::json!({"day_id":day_id,"index":index,"account_id":account_id,"amount":amount.to_string()}),
-            );
-        }
-        payout_settlements().insert(&day_id, &settlement);
-        self.check();
-        ok
+        self.settle_payout(&day_id, index, &account_id, coins.0, zones.0, ok)
     }
 
     /// After the grace period and every successful mint: surplus NEAR goes back
@@ -400,7 +429,7 @@ impl Rewards {
     }
 
     pub fn get_payout_config(&self) -> near_sdk::serde_json::Value {
-        near_sdk::serde_json::json!({"leaf":"payout|<day_id>|<index>|<account>|<amount_yocto>","max_batch":PAYOUT_MAX_BATCH,"max_leaves":PAYOUT_MAX_LEAVES,"min_yocto":PAYOUT_MIN_YOCTO.to_string(),"grace_ms":PAYOUT_GRACE_MS,"settlement_status":true})
+        near_sdk::serde_json::json!({"leaf":"payout|<day_id>|<index>|<account>|<amount_yocto>","max_batch":PAYOUT_MAX_BATCH,"max_leaves":PAYOUT_MAX_LEAVES,"min_yocto":PAYOUT_MIN_YOCTO.to_string(),"grace_ms":PAYOUT_GRACE_MS,"settlement_status":true,"mint_tgas":MINT_GAS.as_tgas(),"callback_tgas":CALLBACK_GAS.as_tgas(),"reconcile_after_ms":reconcile::RECONCILE_AFTER_MS})
     }
 }
 
@@ -449,6 +478,19 @@ mod payout_tests {
         (hex(&level[0]), proofs)
     }
     const DAY: &str = "payout-2026-11-05-v1";
+    /// The nonce the issued leaf's callback carries.
+    fn pn(index: u32) -> Option<U64> {
+        reconcile::payout_nonce(DAY, index)
+    }
+    fn ctx_gas(who: &str, time: u64, tgas: u64) {
+        let mut b = VMContextBuilder::new();
+        b.current_account_id(a("rewards.testnet"))
+            .predecessor_account_id(a(who))
+            .block_timestamp(time * 1_000_000)
+            .prepaid_gas(Gas::from_tgas(tgas))
+            .account_balance(NearToken::from_near(100));
+        testing_env!(b.build());
+    }
     /// Funds 1 NEAR (0.5 coins, 0.5 zones) and publishes three accounts.
     fn setup() -> (Rewards, Vec<PayoutLeaf>) {
         ctx("owner.testnet", 1, 0, None);
@@ -510,7 +552,7 @@ mod payout_tests {
         ctx("anyone.testnet", 2, 0, None);
         r.claim_payout(DAY.into(), vec![claims[1].clone()]);
         ctx("rewards.testnet", 2, 0, Some(PromiseResult::Successful(b"\"5000\"".to_vec())));
-        assert!(r.on_payout(DAY.into(), 1, a("bob.testnet"), U128(5 * Y), U128(0)));
+        assert!(r.on_payout(DAY.into(), 1, a("bob.testnet"), U128(5 * Y), U128(0), pn(1)));
         assert_eq!((r.pending, r.withdrawn), (0, 5 * Y));
         assert_eq!(r.coins.awarded, 5 * Y);
     }
@@ -522,7 +564,7 @@ mod payout_tests {
         r.claim_payout(DAY.into(), claims.clone());
         // carol's 4 Y: 2 Y left in coins after alice and bob, then 2 Y zones.
         ctx("rewards.testnet", 2, 0, Some(PromiseResult::Failed));
-        assert!(!r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(2 * Y), U128(2 * Y)));
+        assert!(!r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(2 * Y), U128(2 * Y), pn(2)));
         let d = r.get_payout_day(DAY.into()).unwrap();
         assert_eq!((d.coins_left, d.zones_left, d.paid_leaves), (2 * Y, 2 * Y, 2));
         assert_eq!(r.payout_claimed(DAY.into(), vec![2]), vec![false]);
@@ -608,10 +650,10 @@ mod payout_tests {
         }));
         assert!(pending.is_err(), "pending mints must prevent closure");
         ctx("rewards.testnet", 2 + PAYOUT_GRACE_MS, 0, Some(PromiseResult::Successful(b"\"1\"".to_vec())));
-        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0));
-        r.on_payout(DAY.into(), 1, a("bob.testnet"), U128(5 * Y), U128(0));
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0), pn(0));
+        r.on_payout(DAY.into(), 1, a("bob.testnet"), U128(5 * Y), U128(0), pn(1));
         ctx("rewards.testnet", 2 + PAYOUT_GRACE_MS, 0, Some(PromiseResult::Failed));
-        r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(2 * Y), U128(2 * Y));
+        r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(2 * Y), U128(2 * Y), pn(2));
         let failed = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
             ctx("publisher.testnet", 3 + PAYOUT_GRACE_MS, 0, None);
             r.close_payout_day(DAY.into());
@@ -622,7 +664,7 @@ mod payout_tests {
         ctx("anyone.testnet", 4 + PAYOUT_GRACE_MS, 0, None);
         assert_eq!(r.claim_payout(DAY.into(), claims), vec![false, false, true]);
         ctx("rewards.testnet", 5 + PAYOUT_GRACE_MS, 0, Some(PromiseResult::Successful(vec![1; 100])));
-        r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(2 * Y), U128(2 * Y));
+        r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(2 * Y), U128(2 * Y), pn(2));
         let before = r.withdrawn;
         ctx("publisher.testnet", 6 + PAYOUT_GRACE_MS, 0, None);
         r.close_payout_day(DAY.into());
@@ -650,8 +692,8 @@ mod payout_tests {
         ctx("anyone.testnet", 2, 0, None);
         r.claim_payout(DAY.into(), vec![claims[0].clone()]);
         ctx("rewards.testnet", 3, 0, Some(PromiseResult::Successful(b"\"3\"".to_vec())));
-        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0));
-        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0));
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0), pn(0));
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0), pn(0));
     }
 
     #[test]
@@ -661,8 +703,8 @@ mod payout_tests {
         ctx("anyone.testnet", 2, 0, None);
         r.claim_payout(DAY.into(), vec![claims[0].clone()]);
         ctx("rewards.testnet", 3, 0, Some(PromiseResult::Failed));
-        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0));
-        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0));
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0), pn(0));
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0), pn(0));
     }
 
     #[test]
@@ -684,20 +726,240 @@ mod payout_tests {
         ctx("anyone.testnet", 2, 0, None);
         r.claim_payout(DAY.into(), claims);
         ctx("rewards.testnet", 3, 0, Some(PromiseResult::Successful(b"\"3\"".to_vec())));
-        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0));
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0), pn(0));
         assert!(env::used_gas() < CALLBACK_GAS, "successful callback host work");
         ctx("rewards.testnet", 4, 0, Some(PromiseResult::Failed));
-        r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(2 * Y), U128(2 * Y));
+        r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(2 * Y), U128(2 * Y), pn(2));
         assert!(env::used_gas() < CALLBACK_GAS, "failed callback host work");
         // Native host metering does not include compiled WASM instruction gas;
         // the release still requires a cross-contract WASM gas rehearsal.
     }
 
+
     #[test]
-    #[should_panic(expected = "Batch is 1 to 10 leaves")]
+    fn a_full_batch_fits_the_worker_gas_with_callback_headroom() {
+        // server/native/reward-worker.mjs attaches 280 TGas to claim_payout.
+        let batch = CLAIM_BASE_GAS.as_tgas() + PAYOUT_MAX_BATCH as u64 * (MINT_GAS.as_tgas() + CALLBACK_GAS.as_tgas() + CLAIM_LEAF_GAS.as_tgas());
+        assert!(batch <= 280, "{batch}");
+        // Sandbox maxima in GGas (docs/DAILY-PAYOUTS.md, "Gas").
+        let (mint, callback) = (2_967u64, 2_713u64);
+        let ggas = |g: Gas| g.as_gas() / 1_000_000_000;
+        assert!(ggas(MINT_GAS) >= 5 * mint && ggas(CALLBACK_GAS) * 10 >= 36 * callback);
+    }
+
+    #[test]
+    #[should_panic(expected = "Attach at least 268 TGas for this batch")]
+    fn a_batch_without_gas_for_every_callback_is_refused_before_any_change() {
+        let (mut r, claims) = setup();
+        ctx_gas("anyone.testnet", 2, 200);
+        let full: Vec<PayoutLeaf> = claims.iter().cycle().take(PAYOUT_MAX_BATCH).cloned().collect();
+        r.claim_payout(DAY.into(), full);
+    }
+
+    /// Leaf `index` claimed at t = 2 whose callback never ran (out of gas).
+    fn stuck(r: &mut Rewards, claims: &[PayoutLeaf], index: usize) -> Option<U64> {
+        ctx("anyone.testnet", 2, 0, None);
+        assert_eq!(r.claim_payout(DAY.into(), vec![claims[index].clone()]), vec![true]);
+        let attempt = r.get_payout_attempt(DAY.into(), index as u32).unwrap();
+        assert_eq!(attempt["account_id"], claims[index].account_id.as_str());
+        assert_eq!(attempt["receipt_evidence"], false);
+        pn(index as u32)
+    }
+
+    #[test]
+    fn owner_books_a_stuck_daily_leaf_paid_once_and_the_day_can_close() {
+        let (mut r, claims) = setup();
+        let old = stuck(&mut r, &claims, 1);
+        for (who, at) in [("owner.testnet", 1 + DAY_MS), ("publisher.testnet", 2 + DAY_MS)] {
+            let refused = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                ctx(who, at, 0, None);
+                r.owner_reconcile_payout(DAY.into(), 1, true);
+            }));
+            assert!(refused.is_err(), "{who} at {at}");
+        }
+        let receipt = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ctx("anyone.testnet", 2 + DAY_MS, 0, None);
+            let _ = r.reconcile_payout(DAY.into(), 1);
+        }));
+        assert!(receipt.is_err(), "mint_for keeps no QGOLD receipt");
+        ctx("owner.testnet", 2 + DAY_MS, 0, None);
+        assert!(r.owner_reconcile_payout(DAY.into(), 1, true));
+        assert_eq!((r.pending, r.withdrawn), (0, 5 * Y));
+        assert_eq!(r.get_payout_progress(DAY.into(), vec![1]).unwrap().statuses, vec!["paid"]);
+        assert!(r.get_payout_attempt(DAY.into(), 1).is_none());
+        for _ in 0..2 {
+            let again = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                ctx("rewards.testnet", 3 + DAY_MS, 0, Some(PromiseResult::Failed));
+                r.on_payout(DAY.into(), 1, a("bob.testnet"), U128(5 * Y), U128(0), old);
+            }));
+            assert!(again.is_err(), "late callback");
+            let twice = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                ctx("owner.testnet", 3 + DAY_MS, 0, None);
+                r.owner_reconcile_payout(DAY.into(), 1, false);
+            }));
+            assert!(twice.is_err(), "second reconcile");
+        }
+        assert_eq!(r.withdrawn, 5 * Y);
+        ctx("anyone.testnet", 4 + DAY_MS, 0, None);
+        assert_eq!(r.claim_payout(DAY.into(), claims.clone()), vec![true, false, true]);
+        ctx("rewards.testnet", 5 + DAY_MS, 0, Some(PromiseResult::Successful(b"\"1\"".to_vec())));
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0), pn(0));
+        r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(2 * Y), U128(2 * Y), pn(2));
+        ctx("publisher.testnet", 1 + PAYOUT_GRACE_MS, 0, None);
+        r.close_payout_day(DAY.into());
+        assert_eq!((r.pending, r.withdrawn), (0, 12 * Y));
+        r.check();
+    }
+
+    #[test]
+    fn a_refused_stuck_leaf_reopens_and_its_old_callback_cannot_settle_the_retry() {
+        let (mut r, claims) = setup();
+        let old = stuck(&mut r, &claims, 2);
+        ctx("owner.testnet", 2 + DAY_MS, 0, None);
+        assert!(!r.owner_reconcile_payout(DAY.into(), 2, false));
+        let d = r.get_payout_day(DAY.into()).unwrap();
+        assert_eq!((d.coins_left, d.zones_left, d.paid_leaves, r.pending), (10 * Y, 2 * Y, 0, 0));
+        assert_eq!(r.get_payout_progress(DAY.into(), vec![2]).unwrap().statuses, vec!["unclaimed"]);
+        ctx("anyone.testnet", 3 + DAY_MS, 0, None);
+        assert_eq!(r.claim_payout(DAY.into(), vec![claims[2].clone()]), vec![true]);
+        let retry = pn(2);
+        assert_ne!(retry, old);
+        let stale = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ctx("rewards.testnet", 4 + DAY_MS, 0, Some(PromiseResult::Successful(b"\"1\"".to_vec())));
+            r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(4 * Y), U128(0), old);
+        }));
+        assert!(stale.is_err());
+        ctx("rewards.testnet", 4 + DAY_MS, 0, Some(PromiseResult::Successful(b"\"1\"".to_vec())));
+        assert!(r.on_payout(DAY.into(), 2, a("carol.testnet"), U128(4 * Y), U128(0), retry));
+        assert_eq!((r.pending, r.withdrawn), (0, 4 * Y));
+        r.check();
+    }
+
+    #[test]
+    #[should_panic(expected = "Payout callback is not pending")]
+    fn a_payout_callback_without_its_nonce_is_stale() {
+        let (mut r, claims) = setup();
+        stuck(&mut r, &claims, 0);
+        ctx("rewards.testnet", 3, 0, Some(PromiseResult::Failed));
+        r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0), None);
+    }
+
+    #[test]
+    fn a_leaf_issued_before_attempt_records_still_settles_by_its_callback() {
+        let (mut r, claims) = setup();
+        stuck(&mut r, &claims, 0);
+        reconcile::forget_attempts(DAY, 0, &a("nobody.testnet"));
+        ctx("rewards.testnet", 3, 0, Some(PromiseResult::Successful(b"\"3\"".to_vec())));
+        assert!(r.on_payout(DAY.into(), 0, a("alice.testnet"), U128(3 * Y), U128(0), None));
+        assert_eq!((r.pending, r.withdrawn), (0, 3 * Y));
+    }
+
+    const WORLD: &str = "payout-world-2026-11-09-v1";
+    const START: u64 = 1_794_096_000_000; // 2026-11-08 UTC
+    /// A world payout of two leaves, both claimed at START + 1 with no callback.
+    fn stuck_world() -> Rewards {
+        ctx("owner.testnet", 1, 0, None);
+        let mut r = Rewards::new(a("owner.testnet"), a("publisher.testnet"), Base64VecU8(vec![7; 32]));
+        r.set_qgold_vault(a("qgold.testnet"));
+        ctx("sponsor.testnet", 1, NEAR + SPONSOR_STORAGE_FEE, None);
+        r.fund_rewards("sponsor".into(), "fund-1".into());
+        ctx("publisher.testnet", 1, 0, None);
+        r.reserve_world_day("world-2026-11-08-v1".into(), "a".repeat(64), U64(START), U64(START + DAY_MS), U128(0), U128(5 * Y));
+        ctx("publisher.testnet", START, 0, None);
+        r.record_world_earned("world-2026-11-08-v1".into(), U128(0), U128(5 * Y));
+        let leaves = vec![payout_leaf(WORLD, 0, &a("alice.testnet"), 2 * Y), payout_leaf(WORLD, 1, &a("bob.testnet"), 3 * Y)];
+        let (root, proofs) = tree(&leaves);
+        r.move_world_to_payout(WORLD.into(), root, 2, vec![world_days::WorldContribution {
+            world_day_id: "world-2026-11-08-v1".into(), coins_yocto: U128(0), zones_yocto: U128(5 * Y) }]);
+        ctx("anyone.testnet", START + 1, 0, None);
+        r.claim_payout(WORLD.into(), vec![
+            PayoutLeaf { index: 0, account_id: a("alice.testnet"), amount_yocto: U128(2 * Y), proof: proofs[0].clone() },
+            PayoutLeaf { index: 1, account_id: a("bob.testnet"), amount_yocto: U128(3 * Y), proof: proofs[1].clone() },
+        ]);
+        assert_eq!(r.get_payout_attempt(WORLD.into(), 0).unwrap()["receipt_evidence"], true);
+        r
+    }
+    fn receipt(account: &str, deposited: u128) -> Vec<u8> {
+        near_sdk::serde_json::to_vec(&near_sdk::serde_json::json!({"account_id":account,"depositedYocto":deposited.to_string(),"qgoldU":"1"})).unwrap()
+    }
+
+    #[test]
+    fn anyone_settles_a_stuck_world_leaf_from_the_qgold_receipt() {
+        let mut r = stuck_world();
+        let early = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ctx("anyone.testnet", START + DAY_MS, 0, None);
+            let _ = r.reconcile_payout(WORLD.into(), 0);
+        }));
+        assert!(early.is_err(), "still in flight");
+        ctx("anyone.testnet", START + 1 + DAY_MS, 0, None);
+        let _ = r.reconcile_payout(WORLD.into(), 0);
+        let view = near_sdk::test_utils::get_created_receipts();
+        let q = format!("{:?}", view.iter().find(|x| x.receiver_id.as_str() == "qgold.testnet").expect("receipt view").actions);
+        assert!(q.contains(&format!("{:?}", b"get_game_conversion".to_vec())), "{q}");
+        let n0 = reconcile::payout_nonce(WORLD, 0).unwrap();
+        let n1 = reconcile::payout_nonce(WORLD, 1).unwrap();
+        // Alice's conversion receipt exists: paid. Bob's does not: reopened.
+        ctx("rewards.testnet", START + 2 + DAY_MS, 0, Some(PromiseResult::Successful(receipt("alice.testnet", 2 * Y))));
+        assert!(r.on_payout_reconciled(WORLD.into(), 0, n0));
+        ctx("rewards.testnet", START + 2 + DAY_MS, 0, Some(PromiseResult::Successful(b"null".to_vec())));
+        assert!(!r.on_payout_reconciled(WORLD.into(), 1, n1));
+        assert_eq!(r.get_payout_progress(WORLD.into(), vec![0, 1]).unwrap().statuses, vec!["paid", "unclaimed"]);
+        assert_eq!((r.pending, r.withdrawn), (0, 2 * Y));
+        // The same evidence cannot be booked twice, nor the late mint callback.
+        let again = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ctx("rewards.testnet", START + 3 + DAY_MS, 0, Some(PromiseResult::Successful(receipt("alice.testnet", 2 * Y))));
+            r.on_payout_reconciled(WORLD.into(), 0, n0);
+        }));
+        assert!(again.is_err());
+        let late = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ctx("rewards.testnet", START + 3 + DAY_MS, 0, Some(PromiseResult::Successful(b"{}".to_vec())));
+            r.on_payout(WORLD.into(), 0, a("alice.testnet"), U128(0), U128(2 * Y), Some(n0));
+        }));
+        assert!(late.is_err());
+        assert_eq!(r.withdrawn, 2 * Y);
+        r.check();
+    }
+
+    #[test]
+    fn a_world_receipt_that_does_not_match_or_cannot_be_read_changes_nothing() {
+        let mut r = stuck_world();
+        let n0 = reconcile::payout_nonce(WORLD, 0).unwrap();
+        for result in [
+            PromiseResult::Successful(receipt("mallory.testnet", 2 * Y)),
+            PromiseResult::Successful(receipt("alice.testnet", 2 * Y + 1)),
+            PromiseResult::Failed,
+        ] {
+            let refused = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                ctx("rewards.testnet", START + 2 + DAY_MS, 0, Some(result));
+                r.on_payout_reconciled(WORLD.into(), 0, n0);
+            }));
+            assert!(refused.is_err());
+        }
+        assert_eq!(r.get_payout_progress(WORLD.into(), vec![0]).unwrap().statuses, vec!["pending"]);
+        assert_eq!(r.pending, 5 * Y);
+        // The owner may not override the receipt while it is evidence...
+        let owner = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ctx("owner.testnet", START + 2 + DAY_MS, 0, None);
+            r.owner_reconcile_payout(WORLD.into(), 0, false);
+        }));
+        assert!(owner.is_err());
+        // ...and anyone loses that evidence once QGOLD may prune it.
+        let late = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            ctx("anyone.testnet", START + 1 + reconcile::RECEIPT_EVIDENCE_MS, 0, None);
+            let _ = r.reconcile_payout(WORLD.into(), 0);
+        }));
+        assert!(late.is_err());
+        ctx("owner.testnet", START + 1 + reconcile::RECEIPT_EVIDENCE_MS, 0, None);
+        assert!(r.owner_reconcile_payout(WORLD.into(), 0, true));
+        assert_eq!(r.pending, 3 * Y);
+        r.check();
+    }
+
+    #[test]
+    #[should_panic(expected = "Batch is 1 to 8 leaves")]
     fn batches_are_bounded() {
         let (mut r, claims) = setup();
         ctx("anyone.testnet", 2, 0, None);
-        r.claim_payout(DAY.into(), claims.iter().cycle().take(11).cloned().collect());
+        r.claim_payout(DAY.into(), claims.iter().cycle().take(PAYOUT_MAX_BATCH + 1).cloned().collect());
     }
 }

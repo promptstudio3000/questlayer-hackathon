@@ -101,6 +101,35 @@ Implementation: `src/account-recovery.ts`, `src/DeviceKeys.tsx` (Profile), `src/
 
 Limits: every key is a NEAR full-access key, so a device that is still in a thief's hands can race the owner until it is revoked; the recovery passkey is only as available as the player's passkey provider makes it; PRF needs a recent Chrome, Safari or Edge with a PRF-capable provider (otherwise setup is refused with a clear message). Not yet verified on physical devices.
 
+## Wallet words: opening the account in a NEAR wallet (12 November 2026)
+
+Settings (gear) → Account → **Open in a wallet** gives the player a standard NEAR seed
+phrase for their existing account, so it can be imported into Meteor, Intear or any wallet that
+accepts a 12-word phrase. The account had no phrase before: each device holds a random key in the signing
+origin. Instead of exporting that key, the signing origin generates twelve new BIP-39 words, derives the
+NEAR key (SLIP-10 ed25519, `m/44'/397'/0'`, the same recipe as `near-seed-phrase`) and adds its public key
+to the account as one more full-access key through the sponsored relayer. It is stored as a `device` key
+labelled `Wallet words` and is revoked like any other device.
+
+Security properties (`src/signing-vault/wallet-export.ts`, `wallet-export-view.ts`):
+
+- The words are created, shown and checked only in the top-level approval window of the signing origin.
+  The request result that reaches storage and the game is the public key alone.
+- Nothing writes the words to IndexedDB, logs, the clipboard, a URL or a network request. The page text
+  holds them only while the player keeps them open; they hide on blur, on a hidden tab and after
+  2 minutes, and text selection is disabled. There is no copy button.
+- Before the words appear the player holds a button, or unlocks their recovery passkey when the account
+  has one. The passkey must re-derive a key that is a live full-access key of this account.
+- The key is added only after the player answered two "which is word N?" checks, so an abandoned attempt
+  leaves no key on the account.
+- The approval may stay open 15 minutes (`approvalTtl`); every other approval keeps 3 minutes.
+
+Known limits: without a recovery passkey there is no real re-authentication, so someone holding the
+unlocked device can make wallet words; a wallet holding the words has full control and bypasses the
+signing origin's review; a screenshot of the open words cannot be prevented by a web page.
+`npm run e2e:signing-vault` covers the whole journey and searches every request, the signing origin's
+storage, the game page and the clipboard for the words.
+
 ## Primary-source review
 
 Reviewed 2026-10-31:

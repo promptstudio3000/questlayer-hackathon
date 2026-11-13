@@ -27,11 +27,6 @@
   overflow: hidden;
 }
 .npc-bubble::before { content: ""; position: absolute; top: -8px; left: 50%; margin-left: -8px; border: 8px solid transparent; border-top: 0; border-bottom-color: #fcfaff; }
-.npc-tabs { display: flex; gap: 4px; padding: 3px; border-radius: 12px; background: #ffffff12; }
-.npc-tabs button { position: relative; flex: 1; display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 48px; padding: 4px 2px; border: 0; border-radius: 9px; background: transparent; color: #cbb8ef; font: inherit; font-size: 12px; cursor: pointer; }
-.npc-tabs button svg { font-size: 18px; }
-.npc-tabs button.active { background: #672eeb; color: #fff; }
-.npc-badge { position: absolute; top: 2px; right: calc(50% - 22px); min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: #ff1dff; color: #1a0335; font-size: 11px; line-height: 16px; }
 .npc-panel { display: grid; gap: 8px; }
 .npc-actions { display: grid; gap: 6px; }
 .npc-action {
@@ -55,7 +50,7 @@
 .npc-action:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 1px 0 #10021f; }
 .npc-action:disabled { opacity: 0.5; cursor: default; }
 .npc-action-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: #ffffff1a; font-size: 22px; color: #ff9dff; }
-.npc-action-label { font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.npc-action-label { min-width: 0; overflow-wrap: break-word; font-weight: 600; line-height: 1.2; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .npc-action small { padding: 2px 8px; border-radius: 99px; background: #fef87d; color: #1a0335; font-weight: 600; font-size: 12px; white-space: nowrap; }
 .npc-action.suggested { border-color: #ff1dff; box-shadow: 0 3px 0 #10021f, 0 0 10px #ff1dff88; }
 .npc-action.turn-in { border-color: #37f4a0; background: linear-gradient(#176553, #0f4639); }
@@ -88,8 +83,6 @@
   .npc-action { transition: none; }
 }
 .npc-task-title { margin: 0; font-weight: 600; }
-.npc-turnin { min-height: 48px; padding: 0 14px; border: 0; border-radius: 12px; background: #37f4a0; color: #0f4639; font: inherit; font-weight: 600; cursor: pointer; }
-.npc-turnin:disabled { background: #ffffff1a; color: #cbb8ef; cursor: default; }
 /* Grid tracks default to their widest content, so one long locked chip
    ("Reach Tier 2 (50 NEAR matured) · Reach level 5") pushed the whole
    dialog past the right edge on phones. Tracks may shrink; text wraps. */
@@ -113,30 +106,16 @@
   .npc-plate h2 { text-align: start; }
 }
 
-/* The greeting is a playable step. Conversation, records and the full menu are opt-in. */
+/* One job per tab: Talk (conversation), Tasks (offers and progress), Profile (lore and places). */
 .game-dialog .npc-linear { gap: 16px; }
 .game-dialog .npc-linear .npc-hero { background: var(--surface-soft); }
 .game-dialog .npc-linear .npc-bubble { text-align: center; border: 0; background: transparent; padding: 4px 8px; }
-.npc-linear .npc-continue, .npc-story-step .primary-button { width: 100%; justify-content: center; gap: 12px; }
-.npc-story-step { display: grid; gap: 12px; }
-.game-dialog .npc-story-step h3 { font-size: 22px; text-transform: none; color: var(--ink); }
-.npc-choice { display: grid; grid-template-columns: minmax(0, 1fr) 24px; gap: 6px 12px; text-align: start; padding: 16px; min-height: 64px; background: var(--surface-soft); color: var(--ink); border: 0; border-radius: 12px; font-size: 16px; }
-.npc-choice small { grid-column: 1; color: var(--ink-secondary); font-size: 14px; }
-.npc-choice > svg { grid-column: 2; grid-row: 1 / 3; align-self: center; }
-.npc-offer-reward { display: flex; gap: 8px; align-items: center; color: var(--action); }
-.npc-offer-brief ol { padding-inline-start: 24px; margin: 0; color: var(--ink-secondary); font-size: 16px; }
-.npc-more { display: grid; min-width: 0; }
-.npc-more > summary { display: flex; align-items: center; justify-content: center; min-height: 48px; cursor: pointer; color: var(--action); text-decoration: underline; font-size: 16px; }
-.npc-more > summary::-webkit-details-marker { display: none; }
-.npc-more[open] > :not(summary) { margin-block: 12px; }
 .game-dialog .npc-linear .npc-chat { position: static; }
 .game-dialog .npc-linear .npc-notice { color: var(--success); background: var(--success-surface); font-size: 16px; }
 .npc-linear .text-button { min-height: 48px; }
 
 /* Keep the available action close to a compact, original portrait. */
 .game-dialog .npc-linear .npc-portrait { height: 144px; }
-.game-dialog .npc-linear .npc-choice { padding: 12px; min-height: 56px; }
-.game-dialog .npc-linear .npc-story-step h3 { margin: 0; font-size: 20px; }
 .game-dialog .npc-linear .npc-next-step { margin: 0; font-size: 16px; color: var(--ink-secondary); }
 @media (max-height: 500px) and (min-width: 600px) {
   .game-dialog .npc-linear .npc-portrait { height: 80px; }
@@ -150,3 +129,28 @@
   .game-dialog .npc-linear .npc-role { font-size: 14px; }
   .game-dialog .npc-linear .npc-emote { top: 0; left: 52px; font-size: 20px; }
 }
+
+/* Arcade pass (11 Nov 2026): compact type, quest rows fit two short lines. */
+.game-dialog .npc-linear .npc-bubble {
+  font-size: var(--text-body);
+  line-height: 1.4;
+}
+.game-dialog .npc-linear .npc-plate h2 {
+  font-size: var(--text-title);
+}
+.game-dialog .npc-linear .npc-role {
+  font-size: var(--text-note);
+}
+.npc-linear .npc-continue { width: 100%; justify-content: center; gap: 12px; }
+.npc-sheet .npc-subhead { margin-top: 8px; }
+.npc-about h3:first-child { font-size: var(--text-body, 16px); text-transform: none; letter-spacing: 0; color: var(--ink, #1a0335); }
+.npc-likes { color: var(--ink-secondary, #5b4a75); font-size: 14px; }
+.npc-places { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.npc-place { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 12px; background: var(--surface-soft, #f3eefc); color: var(--ink, #1a0335); }
+.npc-place > svg { margin-top: 2px; font-size: 22px; color: var(--action, #672eeb); }
+.npc-place-text { display: grid; gap: 2px; min-width: 0; }
+.npc-place-text small { color: var(--ink-secondary, #5b4a75); font-size: 13px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.npc-place-meta { display: grid; justify-items: end; gap: 4px; font-size: 13px; white-space: nowrap; }
+.npc-place-topic { padding: 1px 8px; border-radius: 99px; background: var(--surface-raised, #fff); color: var(--ink-secondary, #5b4a75); }
+.npc-place-distance { font-weight: 700; color: var(--action, #672eeb); }
+.npc-panel[hidden] { display: none; }

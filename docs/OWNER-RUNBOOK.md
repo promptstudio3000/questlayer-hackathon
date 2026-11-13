@@ -11,7 +11,7 @@ new operator. Generate service keys only on a machine that keeps them; a cloud c
 
 | File in `.data/` (Mac, mode 600) | Account / purpose |
 | --- | --- |
-| `near-operator.json` | `questlayer-dev-20261101.testnet`: owner of game, nfts, market, rewards, vaults, creators |
+| `near-operator.json` | `questlayer-dev-20261101.testnet`: owner of nfts, market, rewards, vaults, creators |
 | `player-factory.json` | `play-20261101.questlayer-dev-20261101.testnet`: creates and funds player sub-accounts |
 | `relayer.json` | `relay-20261101.questlayer-dev-20261101.testnet`: pays gas for relayed actions |
 | `creators-publisher.json` | publisher key of `questlayer-creators-20261101b.testnet` |
@@ -21,6 +21,13 @@ new operator. Generate service keys only on a machine that keeps them; a cloud c
 The award signer on `nfts.questlayer-dev-20261101.testnet` is the VPS application's existing
 `award-attestor.pem` (public key in `public/native-claims-testnet.json`); it was not replaced. The previous keys are
 archived in `.data/archive-20261101-before-rotation/`. Testnet only; back them up privately.
+
+Retired on 2026-11-10: the legacy game contract `game.questlayer-dev-20261101.testnet` (unused by the server;
+`get_treasury` showed `owed` 0 and `pending` 0). `set_paused` trapped on its old code, so the account was deleted
+directly into the operator (tx `GLYDVZ9RdyCvjXu5zKyUv3rYC6BJLKWRwDBKvFG2zEdD`, 3.197 NEAR returned). The previous
+escrow `questlayer-qgold-escrow-20261105.testnet` was empty and is retired; the live escrow is
+`questlayer-qgold-escrow-20261109.testnet` (publisher key file on the VPS: `escrow-publisher.json`, the old one kept
+as `escrow-publisher.json.retired-20261105`).
 
 ## 1. Keys
 
@@ -58,6 +65,10 @@ Expected: `network: testnet`, `relayer.enabled: true`, `distribution.status: ver
 `socialRecords.contractId` set and `nativeRewards.last_error: null`. The release archive includes `public/*.json`
 because the server reads the network manifests from there.
 
+A testnet deploy then reinstalls the signing vault (`scripts/install-signing-vault-vps.sh`) on its own when
+`scripts/signing-vault-fingerprint.sh` (vault sources, its server, the installer and the contract manifests)
+differs from the installed release; `SKIP_SIGNING_VAULT=1` leaves the vault as it is.
+
 ## 5. Optional: reuse MapOS credentials
 
 The map works without keys (OpenFreeMap). Only if a keyed provider is wanted later, read the MapOS runtime
@@ -74,6 +85,10 @@ ssh -o IdentitiesOnly=yes root@72.61.188.39 'ls /opt/ps3000/apps/mapos* 2>/dev/n
 secret scan over the history, verify the README steps on a fresh clone, then submit once.
 
 ## 7. Mainnet slice: one command (needs Lubos's go, see `docs/MAINNET-PLAN.md` §5)
+
+State on 10 November (rewards M4, vault factory v3, QGOLD proposal 4, the encrypted inbox, relayer subsidy, the
+retired game contract): `docs/MAINNET-PLAN.md` §7. Before a mainnet inbox, write the three `SUBSIDY_*` values
+into the mainnet runtime.env; without them sponsorship fails closed.
 
 Nothing here has run on mainnet. `scripts/deploy-mainnet-slice.mjs` deploys the minimal slice from
 `docs/MAINNET-PLAN.md` §1: the collectibles contract (create, deploy and `new` in one transaction, then

@@ -1,8 +1,8 @@
 // Map rewards in a world (docs/MAP-REWARDS.md): when the first player opens
 // an H3 cell on a day, its coins, zone prizes and pioneer bonus are drawn
 // from the day plan and written once. Every coin is backed QGOLD of the same
-// value (pioneer coins count twice). The demo arena gives XP only, and cells
-// outside the plan (outside Czechia) get no coins.
+// value (pioneer coins count twice). The city demo pays the same backed
+// coins, and cells outside the plan (outside Czechia) get no coins.
 import { mapChainEnabled, mapChainStatus } from "./chain.mjs";
 import {
   latLngToCell,
@@ -17,6 +17,7 @@ import { shiftDate } from "../spatial/calendar.mjs";
 import { atomic } from "../database.mjs";
 import { distance } from "../domain.mjs";
 import { isCzechiaCell } from "./czechia.mjs";
+import { payoutsEnabled } from "../payouts/worker.mjs";
 import {
   cellSeed,
   ensureDayPlan,
@@ -27,6 +28,7 @@ import {
 } from "./day-plan.mjs";
 import { placeCellCoins, unit, waveTimes } from "./placement.mjs";
 import {
+  ARENA_COINS,
   CELL_COINS,
   COIN_TIER,
   MAP_REWARDS_POLICY,
@@ -35,6 +37,7 @@ import {
   WAVES,
 } from "./policy.mjs";
 import { ensureMapRewardsSchema } from "./schema.mjs";
+import { organicRing } from "../spatial/organic-shape.mjs";
 
 export const PIONEER_CHEST_XP = 80;
 
@@ -49,33 +52,23 @@ export function waveCount(env = process.env) {
 
 const cellOf = (p) => latLngToCell(p.lat, p.lng, 7);
 
-function circle(p, radius, steps = 20) {
-  const ring = [];
-  for (let i = 0; i <= steps; i++) {
-    const a = ((i % steps) / steps) * Math.PI * 2;
-    ring.push([
-      Number(
-        (
-          p.lng +
-          (Math.cos(a) * radius) / (111320 * Math.cos((p.lat * Math.PI) / 180))
-        ).toFixed(7),
-      ),
-      Number((p.lat + (Math.sin(a) * radius) / 110540).toFixed(7)),
-    ]);
-  }
-  return ring;
-}
+// Cell zones and pioneer chests are irregular blobs, not circles (Lubos,
+// 11 Nov 2026); the spot seeds the shape, so it is the same on every read.
+const circle = (p, radius, steps = 20) =>
+  organicRing(p, radius, `${p.lat},${p.lng}:${radius}`, steps);
 
 /** Promote 1-3 of the cell's POI quests to funded cell zones. Returns zone ids. */
-function promoteCellZones(db, world, cell, count, zonesU, seed) {
+function promoteCellZones(db, world, cell, count, zonesU, seed, firstToday = true) {
   if (count < 1) return [];
   const reviewed = !!world.cityId && world.cityStatus !== "auto";
-  if (reviewed) return []; // Plzeň keeps its six reviewed city zones.
+  if (reviewed) return fundReviewedZones(db, world, cell, count, zonesU, seed, firstToday);
   const candidates = (world.zones || [])
     .filter(
       (z) =>
         z.source === "poi" &&
         !z.cellZone &&
+        // A Tier 3 place stays locked; its prize would sit out of reach.
+        (z.tier || 1) === 1 &&
         Number.isFinite(z.lat) &&
         cellOf(z) === cell,
     )
@@ -99,7 +92,7 @@ function promoteCellZones(db, world, cell, count, zonesU, seed) {
     if (!q || prize <= 0) continue;
     const meta = JSON.parse(q.metadata || "{}");
     if (meta.activity)
-      meta.activity.rewardConstraint = `Personal XP for everyone who finishes; the first explorer also takes ${(prize / 1e6).toFixed(6)} QGOLD from this area's daily budget.`;
+      meta.activity.rewardConstraint = `Personal XP for everyone who finishes; the first explorer also takes ${prize.toLocaleString("en-US")} QGOLD from this area's daily budget.`;
     meta.cellZone = { policy: MAP_REWARDS_POLICY, cell, prizeU: prize };
     db.prepare("UPDATE quests SET gold_u=?,metadata=? WHERE id=?").run(
       prize,
@@ -109,6 +102,40 @@ function promoteCellZones(db, world, cell, count, zonesU, seed) {
     z.prizeU = prize;
   }
   return candidates.map((z) => z.id);
+}
+
+/**
+ * Plzeň keeps its six reviewed city zones (no POI cell zones there), and
+ * their prizes come from the same daily zone budget as every cell zone
+ * (owner, 13 Nov 2026: every prize the game shows is paid out on chain).
+ * The cell's zone budget is split over up to `count` reviewed zones in the
+ * cell, Tier 3 first; only the first world that opens the cell today funds
+ * them, so the GPS city and the demo never spend the same budget twice.
+ */
+function fundReviewedZones(db, world, cell, count, zonesU, seed, firstToday) {
+  if (!firstToday || zonesU <= 0) return [];
+  const candidates = (world.zones || [])
+    .filter((z) => z.source !== "poi" && z.source !== "pioneer" && !z.cellZone && Number.isFinite(z.lat) && cellOf(z) === cell)
+    .sort((a, b) => (b.tier || 1) - (a.tier || 1) || unit(seed, `zone:${a.id}`) - unit(seed, `zone:${b.id}`))
+    .slice(0, count);
+  if (!candidates.length) return [];
+  const prize = Math.floor(zonesU / candidates.length);
+  if (prize <= 0) return [];
+  const funded = [];
+  for (const z of candidates) {
+    const q = db
+      .prepare("SELECT id,metadata FROM quests WHERE zone_id=? AND claimant IS NULL ORDER BY id LIMIT 1")
+      .get(z.id);
+    if (!q) continue;
+    const meta = JSON.parse(q.metadata || "{}");
+    if (meta.activity)
+      meta.activity.rewardConstraint = `Personal XP for everyone who finishes; the first explorer also takes ${prize.toLocaleString("en-US")} QGOLD from this area's daily budget.`;
+    meta.cellZone = { policy: MAP_REWARDS_POLICY, cell, prizeU: prize, reviewed: true };
+    db.prepare("UPDATE quests SET gold_u=?,metadata=? WHERE id=?").run(prize, JSON.stringify(meta), q.id);
+    z.prizeU = prize;
+    funded.push(z.id);
+  }
+  return funded;
 }
 
 function chestActivity(spot) {
@@ -121,7 +148,7 @@ function chestActivity(spot) {
     },
   );
   activity.rewardConstraint =
-    "Personal XP once; a cosmetic Aura only while edition supply remains. Coins in this area are worth double today.";
+    "Personal XP once and a cosmetic Aura. Coins in this area are worth double today.";
   return activity;
 }
 
@@ -162,7 +189,7 @@ function pioneerChest(db, world, cell, samples, now, seed) {
     questId,
     world.id,
     "Pioneer chest",
-    "Nobody has explored this area for a month. Reach the chest first and open it: XP for every pioneer today, a cosmetic Aura while edition supply remains.",
+    "Nobody has explored this area for a month. Reach the chest first and open it: XP for every pioneer today and a cosmetic Aura.",
     spot.lat,
     spot.lng,
     1,
@@ -214,7 +241,10 @@ export async function materializeCellRewards(
     return row ? JSON.parse(row.manifest) : world;
   }
   const inPlan = isCzechiaCell(cell);
-  const plan = inPlan ? ensureDayPlan(db, now) : null;
+  // A street cell outside the Czech day plan draws backed coins from the
+  // day's unplaced coin budget (worldCoinCount); it needs payouts to be paid.
+  const abroad = !inPlan && !world.arena && worldCoinsEnabled();
+  const plan = inPlan || abroad ? ensureDayPlan(db, now) : null;
   const points = await samples();
   if (!Array.isArray(points)) return world;
   const inCell = points.filter((p) => cellOf(p) === cell);
@@ -235,7 +265,7 @@ export async function materializeCellRewards(
     )
       return current;
     const day = plan?.day || current.day;
-    const leaf = plan ? readCell(db, plan.day, cell) : null;
+    const leaf = plan && inPlan ? readCell(db, plan.day, cell) : null;
     const seed = plan
       ? cellSeed(plan.seed, cell)
       : cellSeed(`outside|${current.day}`, cell);
@@ -244,13 +274,19 @@ export async function materializeCellRewards(
       .prepare("SELECT 1 FROM map_cell_drops WHERE day=? AND cell=?")
       .get(day, cell);
     const pioneer = !!leaf?.pioneer && firstToday && !current.arena;
-    // Backed coins only: the demo arena gives XP-only coins, a cell outside
-    // the plan gets none.
-    const count = current.arena ? CELL_COINS : leaf?.coins || 0;
+    // Backed coins only: a cell outside the plan gets none. The city demo
+    // behaves like the real map (only movement differs): its coins carry the
+    // same backed value and are paid in QGOLD, at a fixed count per cell.
+    const worldCoins = abroad && plan ? worldCoinCount(db, plan) : 0;
     const valueU =
-      current.arena || !leaf
-        ? 0
-        : (plan.summary.coinValueU || 0) * (pioneer ? PIONEER_MULT : 1);
+      leaf || worldCoins || (current.arena && plan)
+        ? (plan.summary.coinValueU || 0) * (pioneer ? PIONEER_MULT : 1)
+        : 0;
+    // CELL_COINS per opened street cell, ARENA_COINS in the Plzeň city demo,
+    // and never more than the day's coin budget still unplaced (coinRoom).
+    const want = current.arena ? ARENA_COINS : leaf?.coins || worldCoins;
+    const count =
+      valueU > 0 ? Math.min(want, coinRoom(db, plan, valueU)) : current.arena ? want : 0;
     // Zones first, so coins gather around them.
     const zoneIds = promoteCellZones(
       db,
@@ -259,6 +295,7 @@ export async function materializeCellRewards(
       leaf?.zones ?? 0,
       leaf?.zonesU || 0,
       seed,
+      firstToday,
     );
     const extra = [];
     if (pioneer) {
@@ -339,6 +376,36 @@ export async function materializeCellRewards(
     );
     return current;
   });
+}
+
+/**
+ * Backed coins outside the Czech day plan (docs/MAP-REWARDS.md, "Outside
+ * Czechia"): every street cell elsewhere gets up to CELL_COINS coins of the
+ * day's coin value from the same day budget as Czech cells, until that
+ * budget is placed. MAP_WORLD_COINS=off turns it off; it needs MAP_PAYOUTS.
+ */
+export function worldCoinsEnabled(env = process.env) {
+  return env.MAP_WORLD_COINS !== "off" && payoutsEnabled(env);
+}
+export function worldCoinCount(db, plan) {
+  const valueU = plan?.summary?.coinValueU || 0;
+  return valueU > 0 ? Math.min(CELL_COINS, coinRoom(db, plan, valueU)) : 0;
+}
+
+/**
+ * Coins of `valueU` that still fit in the day's coin budget: the budget
+ * (summary.unplacedU.coins) minus every coin already placed today in any
+ * world, the city demo and pioneer doubles included. Runs inside the
+ * placement transaction, so two worlds cannot place the same budget.
+ */
+export function coinRoom(db, plan, valueU) {
+  const budgetU = plan?.summary?.unplacedU?.coins || 0;
+  if (valueU <= 0 || budgetU <= 0) return 0;
+  const placedU =
+    db
+      .prepare("SELECT COALESCE(SUM(coins_u),0) n FROM map_cell_drops WHERE day=?")
+      .get(plan.day)?.n || 0;
+  return Math.max(0, Math.floor((budgetU - placedU) / valueU));
 }
 
 /** Coin ids of a world whose wave has not opened yet at `now`. */

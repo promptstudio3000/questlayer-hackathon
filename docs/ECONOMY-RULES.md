@@ -17,7 +17,7 @@ instead of the source; developers change the value here and in the pointed file 
 | Rule | Value | Source |
 | --- | --- | --- |
 | Income that may fund rewards | only realized, received, attributable yield or explicit sponsor funding | `contracts/rewards`, `docs/NATIVE-REWARDS-AND-VAULT.md` |
-| Split of each eligible receipt | 50 % street coins / 50 % zones; odd unit to zones | `contracts/game/src/lib.rs` `fund_rewards`, `server/game.mjs` |
+| Split of each eligible receipt | 50 % street coins / 50 % zones; odd unit to zones | `server/game.mjs` (`contracts/game` `fund_rewards` is retired on 10 November 2026) |
 | Proposed creator share (not live) | 10 % creators, then 45 / 45 | `CREATOR-ECONOMY-PLAN.md` |
 | Unclaimed backing after expiry | returns to the same bucket, never to players | `server/world.mjs`, rewards contract |
 
@@ -35,7 +35,7 @@ instead of the source; developers change the value here and in the pointed file 
 | Rule | Value | Source |
 | --- | --- | --- |
 | Daily zones in Plzeň | 6 slots, 3 Free / 2 Tier 2 / 1 Tier 3, disjoint polygons | `docs/WORLD-GENERATION.md`, `server/world-planner.mjs` |
-| Shared zone prize (practice) | Tier 3: 5,000 GOLD; Tier 2: 1,000 GOLD; Free: 0 GOLD, only if the zone bucket can back it | `server/world.mjs:179-187` |
+| Shared zone prize | With map rewards on (default): the cell's daily zone budget, split over Plzeň's reviewed zones in the cell or the cell's POI zones, paid out on chain (owner, 13 Nov 2026). Only with `MAP_REWARDS=off` the old practice prizes (Tier 3 5,000, Tier 2 1,000 GOLD) apply | `server/map-rewards/service.mjs`, `server/world.mjs` |
 | Personal XP per activity | from the quest template (visit 50 XP; route and chest per template) | `server/quest-templates.mjs` |
 | Shared prize vs personal XP | personal XP once per account; the shared prize pays once, to the first valid receipt | `docs/GAME-RULES.md` E14, E15 |
 | Activity windows | all-day, three-hour and one-hour openings in one published schedule | `server/spatial/calendar.mjs` |
@@ -62,7 +62,7 @@ instead of the source; developers change the value here and in the pointed file 
 
 | Rule | Value | Source |
 | --- | --- | --- |
-| Welcome credit | 120,000 GOLD in the practice ledger | `server/database.mjs:249-255` |
+| Welcome credit | none: a new explorer starts with 0 GOLD (the 120,000 practice faucet was removed 10 Nov 2026) | `server/database.mjs` `createPlayer` |
 | Practice quest examples | 1,000 / 5,000 GOLD prizes | `server/world.mjs:179` |
 | QA creator commitment | 200 XP, test fixtures only | `docs/CREATOR-INTEGRATION-2026-10-31.md` |
 

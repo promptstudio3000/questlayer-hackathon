@@ -38,10 +38,13 @@ export function buildCityPlan(city, day) {
     base = buildCityZones(city, day, {
       onRejected: (reason) => rejected.push(reason),
     }),
-    timedTier2 = base.find((z) => z.tier === 2)?.slot;
+    timedTier2 = base.find((z) => z.tier === 2)?.slot,
+    // The demo layout keeps every zone, rarer ones too, open all day.
+    alwaysOpen = city.demoZones?.alwaysOpen === true;
   const zones = base.map((z) => {
-    const hours =
-      z.tier === 3 ? 1 : z.tier === 2 && z.slot === timedTier2 ? 3 : 0;
+    const hours = alwaysOpen
+      ? 0
+      : z.tier === 3 ? 1 : z.tier === 2 && z.slot === timedTier2 ? 3 : 0;
     const opensAt = hours
       ? endsAt - (24 - (z.tier === 3 ? 18 : 12)) * 3600000
       : startsAt;
@@ -76,11 +79,13 @@ export function buildCityPlan(city, day) {
       ...(city.dayAdjustment
         ? { operatorAdjustment: city.dayAdjustment }
         : {}),
+      ...(city.demoZones ? { demoZones: city.demoZones.layout } : {}),
     },
     timezone: city.timezone,
     startsAt,
     endsAt,
     zones,
+    ...(city.demoZones ? { demoZones: city.demoZones.layout } : {}),
     ...(day >= QUEST_POLICY_START_DAY ? { questPolicy: QUEST_POLICY } : {}),
   };
 }

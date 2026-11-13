@@ -1,4 +1,9 @@
+import { createLayerStore } from "./layer/store.mjs";
+import { createMetaLayerChain, createMetaLayerEconomy } from "./layer/economy.mjs";
+import { createLayerRoutes } from "./layer/routes.mjs";
+import { LAYER_REGISTRY, publicLayer } from "./layer/layers.mjs";
 import { defaultDatabasePath } from "./state-path.mjs";
+import { readReleaseStatus } from "./release-status.mjs";
 import {
   cellProof,
   mapRewardsDay,
@@ -7,6 +12,7 @@ import {
 import { publicLevelTable } from "./levels.mjs";
 import { NativeTransactionConfirmation } from "./native/transaction-confirmation.mjs";
 import { createCreatorRuntime } from "./creators/runtime.mjs";
+import { QuestPhotos, createRatingAnchor } from "./creators/feedback.mjs";
 import { createMarketRoutes } from "./market/routes.mjs";
 import {
   escrowHealth,
@@ -26,6 +32,7 @@ import { NoteMedia } from "./note-media.mjs";
 import { TaskEvidence, evidenceTaskView } from "./task-evidence.mjs";
 import { Moderation } from "./moderation.mjs";
 import { SocialContent, isSocialBlocked } from "./social-content.mjs";
+import { createCommunityPlaces } from "./community-places.mjs";
 import { NativeProgression } from "./native/progression.mjs";
 import { NativeTasks, TASK_CONTRACT } from "./native/tasks.mjs";
 import { updatePresence, readNearbyPresence } from "./presence.mjs";
@@ -39,7 +46,7 @@ import {
 import {
   publicAppearance,
   publicAppearances,
-  sharedOriginalSvg,
+  sharedOriginal,
 } from "./appearance.mjs";
 import { NativeMarket } from "./native/market.mjs";
 import {
@@ -55,10 +62,11 @@ import { NativeRewards } from "./native/rewards.mjs";
 import { startRewardWorker } from "./native/reward-worker.mjs";
 import { payoutsEnabled, payoutStatus, pendingPayout } from "./payouts/worker.mjs";
 import { allocationSettings } from "./native/allocation.mjs";
-import { AUTO_CITIES, cityStatus } from "./spatial/city-pack.mjs";
+import { AUTO_CITIES, LIVE_CITIES, cityStatus, playableCityById } from "./spatial/city-pack.mjs";
+import { findDemoCity } from "./spatial/demo-city.mjs";
 import { relayerConfiguration } from "./relayer/config.mjs";
 import { loadServiceAccount } from "./relayer/key-transport.mjs";
-import { ManagedAccounts } from "./relayer/accounts.mjs";
+import { ManagedAccounts, hasPlayedFirstAdventure } from "./relayer/accounts.mjs";
 import { SubsidyBudget } from "./relayer/subsidy-budget.mjs";
 import { signingVaultOrigin, vaultCors } from "./signing-vault-cors.mjs";
 import { Relayer, startRelayWorker } from "./relayer/relay.mjs";
@@ -101,19 +109,25 @@ import { startGlobalActivityLoader, globalActivityStatus } from "./global-activi
 import { startFlavourWorker } from "./ai/flavour-batch.mjs";
 import { flavourStatus } from "./ai/flavour.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
+import { createOriginSync, dressDefault } from "./origin-sync.mjs";
+import { GotchiOutfitArt, ownedOutfit, setOutfitSlot, outfitVersion } from "./gotchi-outfit.mjs";
 import {
   WEARABLES,
   equipWearable,
   wardrobe,
   wornWearables,
 } from "./gotchi-wearables.mjs";
-import { playerCard, sendWave, takeWaves } from "./player-waves.mjs";
+import { isDemoBot, playerCard, profileOriginal, sendWave, takeWaves } from "./player-waves.mjs";
+import { demoBotReply } from "./demo-bot-chat.mjs";
+import { PlayerInbox, socialInboxReader } from "./inbox/service.mjs";
+import { createInboxRoutes } from "./inbox/routes.mjs";
 import { verifyMessage as verifyEvmMessage, isAddress } from "viem";
 import { createServer } from "node:http";
 import { NativeCollectibles } from "./native/collectibles.mjs";
 import { chainFeed, chainItems } from "./native/chain-feed.mjs";
 import { clientAddress, RateWindows, pruneRateWindows, publicRpcUrl } from "./http-security.mjs";
 import { readFileSync, existsSync, createReadStream } from "node:fs";
+import { tourState, tourAction, tourMark } from "./tour/tour.mjs";
 import { resolve, extname, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
@@ -123,17 +137,23 @@ import {
   featureEnabled,
   DEFAULT_RPC,
   manifestName,
+  MANIFEST_SET,
+  LAYER,
+  TEST_LAYER,
+  SESSION_TTL_MS,
+  SOCIAL_CONTRACT_ID,
 } from "./native/network.mjs";
 const BUILD_ID = resolveBuildId();
 const APP_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 // The relayer is built before the market; it reads the same escrow manifest.
 function escrowManifestForRelay() {
-  return loadEscrowManifest(APP_ROOT, NETWORK);
+  return loadEscrowManifest(APP_ROOT, MANIFEST_SET);
 }
 import { createHash, randomBytes } from "node:crypto";
 import { monitorEventLoopDelay, performance } from "node:perf_hooks";
 import { ensureMapReadIndexes } from "./map-read-indexes.mjs";
 import { ensureHotPathIndexes } from "./hot-path-indexes.mjs";
+import { ensureCoinSpots, spotWorlds } from "./coin-spots.mjs";
 import {
   generateRegistrationOptions,
   verifyRegistrationResponse,
@@ -147,6 +167,7 @@ import {
 } from "./identity/near.mjs";
 import { createNearProvider } from "./near-provider.mjs";
 import { IdentitySessions } from "./identity/sessions.mjs";
+import { initializeTesterLogin, testerLogin } from "./identity/test-login.mjs";
 import {
   evmAddress,
   evmChainId,
@@ -168,6 +189,7 @@ import {
   HOME,
   ensureWorld,
   worldView,
+  coinCounts,
   expireWorlds,
   retryStreetWorlds,
 } from "./world.mjs";
@@ -175,7 +197,10 @@ import { worldQuery } from "./spatial/world-query.mjs";
 import * as game from "./game.mjs";
 import { createActorRoutes } from "./actors/routes.mjs";
 import { actorsAllDay, actorsEnabled, createActorService } from "./actors/service.mjs";
+import { registerPoiSource } from "./actors/pois.mjs";
+import { poiFileActorSource } from "./actors/poi-file-source.mjs";
 import { testSeedMode as readTestSeedMode } from "./test-seed/config.mjs";
+import { demoZoneMode } from "./demo-zones.mjs";
 import { createTestSeed } from "./test-seed/seed.mjs";
 import "./npc/menu-builder.mjs";
 import { createNpcService } from "./npc/service.mjs";
@@ -189,6 +214,8 @@ import { createKeeperVault, keeperVaultSettings } from "./npc/keeper-vault.mjs";
 import { createLiquidStake, liquidStakeSettings } from "./native/liquid-stake.mjs";
 import { createTreasuryView } from "./native/stnear-treasury.mjs";
 import { createTreasuryMixView, mixSettings } from "./native/treasury-mix.mjs";
+import { createTreasuryHistory } from "./native/treasury-history.mjs";
+import { createTreasuryDaoView, daoManifest, eligibleExplorers, EXPLORER_RULE } from "./native/treasury-dao.mjs";
 import { createRheaMarkets, rheaSettings } from "./native/rhea-markets.mjs";
 import { combineStakeReaders, createYieldVaultReader, yieldVaultSettings } from "./native/yield-vault-reader.mjs";
 import { createQgoldVaultReader, qgoldVaultSettings } from "./native/qgold-vault.mjs";
@@ -202,6 +229,7 @@ import { createDailyBoard } from "./daily-board/service.mjs";
 import { createDailyBoardRoutes } from "./daily-board/routes.mjs";
 import { loadPlaceBadges } from "./badges/place-catalog.mjs";
 import { createBadgeService, userBadgeSettings } from "./badges/service.mjs";
+import { playerJourney } from "./player-journey.mjs";
 import { createBadgeChain, startBadgeWorker } from "./badges/chain.mjs";
 import { createBadgeRoutes } from "./badges/routes.mjs";
 import { createGoldSpend } from "./gold-spend/service.mjs";
@@ -219,6 +247,7 @@ import { createSeasonRoutes } from "./season/routes.mjs";
 import { ensureFairPlaySchema, guardTravel } from "./fair-play.mjs";
 import { DEFAULT_LAYER, WORLD_REGISTRY, layerSummary } from "./worlds/registry.mjs";
 import { poiWorldStatus } from "./poi/coverage.mjs";
+import { placeTier } from "./staker-gates.mjs";
 import {
   GOLD,
   DAY,
@@ -226,7 +255,6 @@ import {
   id,
   hash,
   point,
-  tierFor,
   positionTier,
 } from "./domain.mjs";
 
@@ -236,13 +264,47 @@ const nativeAttestationsDisabled =
 const backgroundWorkersDisabled =
   process.env.DISABLE_BACKGROUND_WORKERS === "1";
 const db = openDatabase();
+// Layer (docs/LAYER.md): the shared virtual voxel world, nonfinancial and
+// testnet-only, off unless LAYER_ENABLED=1. Its tables live in the game database.
+const layerEnabled = process.env.LAYER_ENABLED === "1" && NETWORK !== "mainnet";
+// MetaLayer economy (server/layer/economy.mjs): created once the NEAR provider
+// and wallet links exist below; the store reaches it through this holder.
+let metaLayerEconomy = null;
+const layerRoutes = layerEnabled
+  ? createLayerRoutes({
+      store: createLayerStore(db, {
+        economy: {
+          onRecord: (action) => metaLayerEconomy?.onRecord(action),
+          ownsLand: (actor, x0, z0) => metaLayerEconomy?.ownsLand(actor, x0, z0) ?? false,
+          syncParcel: (actor, x0, z0) =>
+            metaLayerEconomy ? metaLayerEconomy.syncParcel(actor, x0, z0) : { owned: false, owner: null },
+          summary: (actor, layerId) =>
+            metaLayerEconomy
+              ? metaLayerEconomy.summary(actor, layerId)
+              : { active: false, metagold: "0", metaXp: 0, badges: [], parcels: [], pending: [], treasury: null },
+        },
+      }),
+      authenticate: auth,
+      actorFor: (playerId) => {
+        const row = db.prepare("SELECT name FROM players WHERE id=?").get(playerId);
+        assert(row, "Please sign in again.", 401);
+        return { id: playerId, name: row.name };
+      },
+    })
+  : null;
 ensureMapReadIndexes(db);
 ensureHotPathIndexes(db);
+ensureCoinSpots(db);
 // Testnet test world (docs/TEST-SEED.md); throws on mainnet with TEST_SEED=1.
 const testSeedMode = readTestSeedMode(process.env, NETWORK);
+// Compact always-open demo zones (docs/DEMO-ZONES.md); throws on mainnet.
+const demoZones = demoZoneMode(process.env, NETWORK);
+const testSeedKit = process.env.TEST_SEED_KIT === "1";
 const adventureResults = createAdventureResults(db);
 const socialContent = new SocialContent(db);
+const communityPlaces = createCommunityPlaces(db);
 const noteMedia = new NoteMedia();
+const questPhotos = new QuestPhotos();
 // Private sponsored-task photos and the shared report intake. Operator
 // decisions are made only through server/cli/moderate.mjs.
 const taskEvidence = new TaskEvidence(db);
@@ -263,11 +325,34 @@ const rpc = process.env.NEAR_RPC_URL || DEFAULT_RPC;
 const browserRpc = publicRpcUrl(process.env.PUBLIC_NEAR_RPC_URL, DEFAULT_RPC);
 const provider = createNearProvider(rpc);
 const identitySessions = new IdentitySessions(db, { origin, provider });
+initializeTesterLogin(db);
+// Test Layer vs QuestLayer World (docs/TEST-LAYER.md): each runs as its own
+// server with its own database and contract set; the world picker links them.
+const linkOrigin = (value) => {
+  try {
+    const u = new URL(String(value || ""));
+    return u.protocol === "https:" || u.hostname === "127.0.0.1" || u.hostname === "localhost" ? u.origin : null;
+  } catch {
+    return null;
+  }
+};
+const tourEnabled = NETWORK === "testnet" && (TEST_LAYER || process.env.TOUR_ENABLED === "1");
+const gameLayerConfig = Object.freeze({
+  id: LAYER,
+  test: TEST_LAYER,
+  tour: tourEnabled,
+  // The other world, for the picker: World links to the Test Layer only on testnet.
+  testLayerUrl: TEST_LAYER || NETWORK !== "testnet" ? null : linkOrigin(process.env.TEST_LAYER_ORIGIN),
+  worldUrl: TEST_LAYER ? linkOrigin(process.env.WORLD_ORIGIN) : null,
+  // Until launch (Lubos, 13 Nov 2026) World sends a new visitor to the Test Layer; the picker
+  // switches back to World and remembers it. DEFAULT_TEST_LAYER=1 on World, removed at launch.
+  defaultTest: !TEST_LAYER && NETWORK === "testnet" && process.env.DEFAULT_TEST_LAYER === "1" && !!linkOrigin(process.env.TEST_LAYER_ORIGIN),
+});
 const deploymentManifestPath = existsSync(
-  resolve(APP_ROOT, `public/${NETWORK}-deployment.json`),
+  resolve(APP_ROOT, `public/${MANIFEST_SET}-deployment.json`),
 )
-  ? resolve(APP_ROOT, `public/${NETWORK}-deployment.json`)
-  : resolve(APP_ROOT, `dist/${NETWORK}-deployment.json`);
+  ? resolve(APP_ROOT, `public/${MANIFEST_SET}-deployment.json`)
+  : resolve(APP_ROOT, `dist/${MANIFEST_SET}-deployment.json`);
 const deploymentManifest = JSON.parse(
   readFileSync(deploymentManifestPath, "utf8"),
 );
@@ -307,6 +392,32 @@ const linkedAccount = (player, accountId) =>
 db.exec(
   `CREATE TABLE IF NOT EXISTS passkeys(id TEXT PRIMARY KEY,player_id TEXT NOT NULL REFERENCES players(id),public_key TEXT NOT NULL,counter INTEGER NOT NULL,transports TEXT NOT NULL);`,
 );
+
+// MetaLayer contract (contracts/metalayer): id from public/native-metalayer-<network>.json
+// (or NEAR_METALAYER_CONTRACT), recorder key <state dir>/metalayer-recorder.json
+// (or METALAYER_RECORDER_KEY_PATH). Testnet only, and only with LAYER_ENABLED=1.
+if (layerEnabled) {
+  const manifestPath = [
+    resolve(APP_ROOT, `public/${manifestName("native-metalayer")}`),
+    resolve(APP_ROOT, `dist/${manifestName("native-metalayer")}`),
+  ].find((p) => existsSync(p));
+  const contractId =
+    process.env.NEAR_METALAYER_CONTRACT ||
+    (manifestPath ? JSON.parse(readFileSync(manifestPath, "utf8")).contractId : null);
+  metaLayerEconomy = createMetaLayerEconomy(db, {
+    chain: contractId
+      ? createMetaLayerChain({
+          provider,
+          contractId,
+          keyPath: process.env.METALAYER_RECORDER_KEY_PATH || resolve(dirname(defaultDatabasePath()), "metalayer-recorder.json"),
+          loadAccount: loadServiceAccount,
+        })
+      : null,
+    linkedAccount: (playerId) => linkedAccount(playerId),
+  });
+  if (contractId && !backgroundWorkersDisabled)
+    setInterval(() => void metaLayerEconomy.tick().catch(() => {}), 15_000).unref();
+}
 const marketManifestPath = [
   resolve(APP_ROOT, `public/${manifestName("native-market")}`),
   resolve(APP_ROOT, `dist/${manifestName("native-market")}`),
@@ -397,6 +508,7 @@ const managedAccounts = relayConfig.factoryAccount
       factoryId: relayConfig.factoryAccount,
       fundYocto: relayConfig.fundYocto,
       topupCapYocto: relayConfig.topupCapYocto,
+      refuel: relayConfig.refuel,
       subsidyBudget: new SubsidyBudget(db, { dailyYocto: relayConfig.subsidyDailyYocto, dailyOperations: relayConfig.subsidyDailyOperations, gasReserveYocto: relayConfig.subsidyGasReserveYocto }),
     })
   : null;
@@ -411,9 +523,17 @@ const intentsManifest =
   intentsManifestPath && process.env.INTENTS_MARKET_ENABLED !== "0"
     ? JSON.parse(readFileSync(intentsManifestPath, "utf8"))
     : null;
+// Treasury DAO (docs/TREASURY-DAO.md): the Sputnik DAO the Mac keeper created.
+// Explorers vote on it from their explorer account through the relayer.
+const treasuryDaoManifest = (() => {
+  if (process.env.TREASURY_DAO_ENABLED === "0") return null;
+  const path = [resolve(APP_ROOT, `public/${manifestName("native-treasury-dao")}`), resolve(APP_ROOT, `dist/${manifestName("native-treasury-dao")}`)].find((p) => existsSync(p));
+  return path ? daoManifest(JSON.parse(readFileSync(path, "utf8")), NETWORK) : null;
+})();
+const treasuryDao = treasuryDaoManifest ? createTreasuryDaoView({ provider, manifest: treasuryDaoManifest }) : null;
 // The QGOLD token the relayer may sponsor burns on (and escrow funding).
 const qgoldTokenForRelay = (() => {
-  const path = resolve(APP_ROOT, `public/native-qgold-vault-${NETWORK}.json`);
+  const path = resolve(APP_ROOT, `public/${manifestName("native-qgold-vault")}`);
   const settings = qgoldVaultSettings(
     process.env,
     existsSync(path) ? JSON.parse(readFileSync(path, "utf8")) : null,
@@ -455,6 +575,7 @@ const relayer = managedAccounts
           wnear: intentsManifest?.wnear || undefined,
           qgold: escrowManifestForRelay()?.tokenId || qgoldTokenForRelay,
           qgoldEscrow: escrowManifestForRelay()?.contractId || undefined,
+          treasuryDao: treasuryDaoManifest?.contractId || undefined,
           rewards: !featureEnabled("rewards")
             ? undefined
             : rewardsConfig?.contractId ||
@@ -468,6 +589,8 @@ const relayer = managedAccounts
         blockTtl: relayConfig.blockTtl,
         maxJobsPerDay: relayConfig.maxJobsPerDay,
         maxDepositYoctoPerDay: relayConfig.maxDepositYoctoPerDay,
+        maxCancelsPerDay: relayConfig.maxCancelsPerDay,
+        maxCancelsGlobalPerDay: relayConfig.maxCancelsGlobalPerDay,
         maxGas: relayConfig.maxGas,
         vaults: nativeVaults,
         factorySetupDeposit: rewardsConfig?.factory?.setupDeposit ?? null,
@@ -486,15 +609,24 @@ const intentsMarket =
   nativeMarket
     ? new IntentsMarket(db, {
         verifier: new NativeContractReader(provider, intentsManifest.verifierContract),
-        nftContract: intentsManifest.nftContract || nativeMarket.nfts.contractId,
+        // The Auras of this world: the Test Layer shares the verifier record but
+        // mints its Auras in its own collectibles contract (docs/TEST-LAYER.md).
+        nftContract: nativeMarket.nfts.contractId || intentsManifest.nftContract,
         wnear: intentsManifest.wnear,
         solver: relayerService,
+        // Solver gas counts against the service-wide sponsorship budget.
+        subsidyBudget: managedAccounts?.subsidyBudget ?? null,
         manifest: intentsManifest,
       })
     : null;
 const intentsRoutes = createIntentsRoutes(intentsMarket);
 const relayerRoutes = createRelayerRoutes({
   authorizeEnrollment: req => allowEnrollment(req, identitySessions.authenticate(sessionToken(req))),
+  authorizeAccountCreation: req => {
+    const current = identitySessions.authenticate(sessionToken(req));
+    allowEnrollment(req, current);
+    allowAccountCreation(req, current);
+  },
   relayer,
   accounts: managedAccounts,
 });
@@ -545,16 +677,14 @@ const actorService =
         },
       })
     : null;
+// Generic actors live at real POIs from the W3 file (ACTOR_POI_HOMES=off: path junctions only).
+if (actorService && process.env.ACTOR_POI_HOMES !== "off") registerPoiSource(poiFileActorSource());
 const actorRoutes = createActorRoutes(actorService);
 // Today's city plans are built off the request path after a restart, so the
 // first /api/actors call does not stall the server (docs/PERFORMANCE-BUDGET.md).
 if (actorService && !backgroundWorkersDisabled)
   setTimeout(() => {
-    try {
-      actorService.warm();
-    } catch (e) {
-      console.error("Actor plan warm-up failed:", e.name);
-    }
+    actorService.warmInBackground().catch((e) => console.error("Actor plan warm-up failed:", e?.name));
   }, 1000).unref();
 // A city world opened for the first time today gets its actor plan built
 // right after the response, before the client asks for the cast.
@@ -566,8 +696,8 @@ function warmActorPlan(world) {
     } catch {}
   });
 }
-// NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset reuses the guide's
-// Ollama setup; the key stays in the runtime environment only.
+// NPC talk and quest lines (N1+N2). NPC_AI_PROVIDER unset uses NEAR AI Cloud
+// when it is on; the key stays in the runtime environment only.
 // NEAR → EUR reference for "Stake 2 NEAR (~5 €)" labels (server/near-price.mjs).
 const nearPrice = createNearPrice({ env: process.env });
 const npcRoutes = createNpcRoutes(
@@ -612,6 +742,18 @@ if (PRACTICE_MARKET_ON_CHAIN) {
     .prepare("UPDATE listings SET state='cancelled' WHERE state='open'")
     .run().changes;
   if (closed) console.log(`Practice market moved on chain: closed ${closed} database listing(s).`);
+}
+// Simulated staking (practice GOLD positions) is closed: since 5 Nov all GOLD
+// is real QGOLD, and its fake yield fed the coin and zone budgets that payouts
+// turn into QGOLD. SIMULATED_STAKING=1 brings it back for local tests only.
+const SIMULATED_STAKING = process.env.SIMULATED_STAKING === "1";
+function assertSimulatedStakingOpen() {
+  assert(
+    SIMULATED_STAKING,
+    "Practice staking has closed. Tier places open with a real stake in the vault.",
+    410,
+    "SIMULATED_STAKING_CLOSED",
+  );
 }
 function assertPracticeMarketOpen() {
   assert(
@@ -679,8 +821,8 @@ const stnearTreasury = createTreasuryView({
     return p ? JSON.parse(readFileSync(p, "utf8")) : null;
   },
 });
-// Treasury mix 50 % LST / 40 % stablecoins on Rhea Lend / 10 % NEAR
-// (docs/TREASURY-MIX.md): live holdings, targets and the next run's plan. The
+// Treasury mix (docs/TREASURY-MIX.md): live holdings (wallet, yield vault and
+// the treasury staking vaults), the DAO's target and the next run's plan. The
 // Mac worker writes the public record of runs; this never signs.
 const treasuryMixRecordPaths = [
   process.env.TREASURY_MIX_RECORD,
@@ -699,8 +841,28 @@ const treasuryMix = treasuryMixConfig.enabled
       settings: treasuryMixConfig,
       record: () => readJsonRecord(treasuryMixRecordPaths),
       account: () => readJsonRecord(treasuryRecordPaths)?.account || null,
+      // Once the treasury DAO adopted a mix, that is the target.
+      target: treasuryDao
+        ? async () => (await treasuryDao.read()).adopted?.targets || null
+        : null,
     })
   : null;
+// Treasury history (docs/TREASURY-PAGE.md): one point per UTC day for /treasury.
+const treasuryHistory = treasuryMix
+  ? createTreasuryHistory(db, {
+      records: () => ({ mixRecord: readJsonRecord(treasuryMixRecordPaths), stnearRecord: readJsonRecord(treasuryRecordPaths) }),
+    })
+  : null;
+const readTreasuryMix = async () => {
+  const view = await treasuryMix();
+  try {
+    treasuryHistory?.note(view);
+  } catch (error) {
+    console.error("treasury history:", error?.message || error);
+  }
+  return view;
+};
+if (treasuryHistory) setInterval(() => void readTreasuryMix().catch(() => {}), 60 * 60_000).unref();
 const liquidStakeConfig = liquidStakeSettings(process.env, NETWORK);
 const liquidStake =
   liquidStakeConfig.enabled && liquidStakeConfig.tokens.length
@@ -708,7 +870,7 @@ const liquidStake =
     : null;
 // Yield vault (docs/YIELD-VAULT.md): locked deposits count toward Staker at once.
 // Contract from YIELD_VAULT_ACCOUNT or public/native-yield-vault-<network>.json.
-const yieldVaultManifestPath = resolve(APP_ROOT, `public/native-yield-vault-${NETWORK}.json`);
+const yieldVaultManifestPath = resolve(APP_ROOT, `public/${manifestName("native-yield-vault")}`);
 const yieldVaultConfig = yieldVaultSettings(
   process.env,
   existsSync(yieldVaultManifestPath) ? JSON.parse(readFileSync(yieldVaultManifestPath, "utf8")) : null,
@@ -718,7 +880,7 @@ const yieldVaultReader = yieldVaultConfig.enabled
   : null;
 // QGOLD vault (docs/QGOLD-VAULT.md): backing, R, exits and the invariant monitor.
 // Contract from QGOLD_VAULT_ACCOUNT or public/native-qgold-vault-<network>.json.
-const qgoldManifestPath = resolve(APP_ROOT, `public/native-qgold-vault-${NETWORK}.json`);
+const qgoldManifestPath = resolve(APP_ROOT, `public/${manifestName("native-qgold-vault")}`);
 const qgoldConfig = qgoldVaultSettings(
   process.env,
   existsSync(qgoldManifestPath) ? JSON.parse(readFileSync(qgoldManifestPath, "utf8")) : null,
@@ -790,10 +952,23 @@ const goldSpendRoutes = createGoldSpendRoutes({
         contract: qgoldConfig.manifest?.tokenContract || qgoldConfig.contract,
         accountIds: playerAccounts,
         async balanceU(player) {
-          const account = playerAccounts(player)[0];
-          if (!account) return 0;
-          return Number((await qgoldVault.account(account)).balance || 0);
+          return (await this.spendable(player)).balanceU;
         },
+        // The linked account with the most QGOLD (newest first on a tie).
+        async spendable(player) {
+          const accounts = playerAccounts(player).slice(0, 4);
+          if (!accounts.length) return { accountId: null, balanceU: 0 };
+          const reads = await Promise.allSettled(accounts.map((a) => qgoldVault.account(a)));
+          if (reads.every((r) => r.status === "rejected")) throw reads[0].reason;
+          let best = { accountId: accounts[0], balanceU: 0 };
+          reads.forEach((r, i) => {
+            const balanceU = r.status === "fulfilled" ? Number(r.value.balance || 0) : 0;
+            if (balanceU > best.balanceU) best = { accountId: accounts[i], balanceU };
+          });
+          return best;
+        },
+        // QGOLD collected on the map that the next payout still has to mint.
+        pendingU: (player) => pendingPayout(db, player).units,
         txStatus: (hash, account) => provider.viewTransactionStatusWithReceipts({ txHash: hash, accountId: account, waitUntil: "FINAL" }),
         relayerId: relayer?.relayerId,
       }
@@ -821,7 +996,7 @@ const marketModerators = new Set(
 // function-call key for the escrow) lives at <state dir>/escrow-publisher.json
 // or QGOLD_ESCROW_PUBLISHER_KEY_PATH; without it fundings are still
 // confirmed but payouts wait in the queue.
-const escrowManifest = loadEscrowManifest(APP_ROOT, NETWORK);
+const escrowManifest = loadEscrowManifest(APP_ROOT, MANIFEST_SET);
 setEscrowConfig(escrowManifest);
 const marketEscrowView = escrowManifest ? escrowView(provider, escrowManifest.contractId) : null;
 if (escrowManifest && process.env.QGOLD_ESCROW_WORKER !== "0") {
@@ -840,6 +1015,8 @@ if (escrowManifest && process.env.QGOLD_ESCROW_WORKER !== "0") {
       }
       await runEscrowWorker(db, {
         view: marketEscrowView,
+        // Sends and refunds wait until the token knows their recipient.
+        tokenView: escrowView(provider, escrowManifest.tokenId),
         call: send || (async () => { throw Error("Escrow publisher key is not installed."); }),
         activate: marketActivate,
         drop: marketDrop,
@@ -866,6 +1043,32 @@ const marketRoutes = createMarketRoutes({
       .some((w) => marketModerators.has(w.account_id));
   },
 });
+// Encrypted player inbox (docs/PLAYER-INBOX.md): ciphertext on NEAR Social,
+// written by the sender's own account through the relayer. INBOX_ENABLED=0
+// switches it off; moderators are the market/creator moderators.
+const playerInbox =
+  process.env.INBOX_ENABLED === "0"
+    ? null
+    : new PlayerInbox(db, socialInboxReader(new NativeContractReader(provider, SOCIAL_CONTRACT_ID)), {
+        isModerator: (player) =>
+          marketModerators.has(player) ||
+          db
+            .prepare("SELECT account_id FROM wallet_links WHERE player_id=?")
+            .all(player)
+            .some((w) => marketModerators.has(w.account_id)),
+      });
+const inboxRoutes = createInboxRoutes(playerInbox);
+if (playerInbox && !backgroundWorkersDisabled) {
+  let inboxBusy = false;
+  setInterval(() => {
+    if (inboxBusy) return;
+    inboxBusy = true;
+    playerInbox
+      .confirmPending()
+      .catch((error) => console.error("Inbox delivery:", String(error?.message || error).slice(0, 200)))
+      .finally(() => (inboxBusy = false));
+  }, 20_000).unref();
+}
 // Badges (docs/BADGES.md): place badges for notable places reached with GPS
 // (game database, cosmetic, never sellable) and POAP-like player badges on
 // the soulbound questlayer_badges contract. The contract id comes from
@@ -941,11 +1144,18 @@ const testSeed = createTestSeed(db, {
       }
     : null,
   log: (message) => console.log(message),
+  photoDirectory: questPhotos.directory,
 });
 try {
-  if (testSeedMode === "apply")
+  if (testSeedMode === "apply") {
     console.log("Test seed applied:", JSON.stringify(testSeed.apply()));
-  else {
+    // Starter kits (9 Auras + XP for every real explorer) are opt-in: players
+    // read kit Auras as their own finds. Off takes earlier kits back.
+    if (!testSeedKit) {
+      const reverted = testSeed.revertKits();
+      if (reverted.removed) console.log("Test seed kits reverted:", JSON.stringify(reverted));
+    }
+  } else {
     const purged = testSeed.purge();
     if (purged.removed) console.log("Test seed removed:", JSON.stringify(purged));
   }
@@ -953,6 +1163,9 @@ try {
   console.error("Test seed failed:", error?.code || error?.message || error);
 }
 const testSeedActive = testSeedMode === "apply";
+const grantTestKit = (player) => {
+  if (testSeedActive && testSeedKit) testSeed.grantKit(player);
+};
 const challengeRoutes = createChallengeRoutes(
   createMonsterChallenges(db, actorService, {
     levelOf: (player) => demoProgression(db, player).level,
@@ -975,6 +1188,12 @@ const creatorMoney = creatorsManifest
     })
   : null;
 const creatorMoneyRoutes = createCreatorMoneyRoutes(creatorMoney);
+const RATING_ANCHOR_PATH = /^\/api\/creator-ratings\/([^/]{1,128})\/(prepare|confirm)$/;
+const ratingAnchors = createRatingAnchor(
+  db,
+  featureEnabled("social") ? socialRecords : null,
+  { registry: creatorsManifest?.contractId || "", network: NETWORK },
+);
 const nativeEconomy = nativeRewards ? new NativeEconomy(nativeRewards) : null;
 // Public economy ledger for the /economy page (docs/ECONOMY-PAGE.md).
 const yieldCycleProofPath = resolve(APP_ROOT, "public/native-yield-cycle-proof.json");
@@ -1111,6 +1330,19 @@ async function refreshOriginals(address) {
     originalLookups.delete(address);
   }
 }
+const outfitArt = new GotchiOutfitArt();
+/** An explorer's original as drawn in the game: its own art, or the in-game outfit. */
+async function wornOriginalSvg(playerId, gotchi) {
+  if (!gotchi) return null;
+  const row = db.prepare("SELECT appearance FROM players WHERE id=?").get(playerId);
+  let appearance = {};
+  try {
+    appearance = JSON.parse(row?.appearance || "{}");
+  } catch {}
+  if (appearance.originTokenId !== gotchi.tokenId) return gotchi.svg || null;
+  return outfitArt.svg(gotchi, ownedOutfit(db, playerId, appearance.outfit));
+}
+const originSync = createOriginSync(db, { read: refreshOriginals, log: (m) => console.warn(m) });
 const readPublicDistribution = publicDistribution(nativeRewards, auditDistribution);
 const listeners = new Set(),
   rates = new RateWindows();
@@ -1148,8 +1380,9 @@ function emit(type, data, worldId = null) {
 const coinWorld = (coinId) => String(coinId).split(":coin:")[0] || null;
 const questWorld = (questId) =>
   db.prepare("SELECT world_id FROM quests WHERE id=?").get(String(questId))?.world_id ?? null;
+const SESSION_MAX_AGE = Math.floor(SESSION_TTL_MS / 1000);
 function cookie(token) {
-  return `questlayer-hackathon=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=2592000${origin.startsWith("https:") ? "; Secure" : ""}`;
+  return `questlayer-hackathon=${token}; HttpOnly; SameSite=Lax; Path=/; Max-Age=${SESSION_MAX_AGE}${origin.startsWith("https:") ? "; Secure" : ""}`;
 }
 function sessionTokens(req) {
   const header = req.headers.cookie || "";
@@ -1169,7 +1402,7 @@ function newSession(player, kind = "guest", accountId = null) {
   db.prepare("INSERT INTO sessions VALUES (?,?,?)").run(
     hash(token),
     player,
-    Date.now() + 30 * DAY,
+    Date.now() + SESSION_TTL_MS,
   );
   identitySessions.record(token, kind, accountId);
   return token;
@@ -1237,6 +1470,31 @@ function allowEnrollment(req, current) {
   assert(grant?.purpose === "credential-management" && grant.sessionHash === tokenHash,
     "Sign in again with an existing passkey or wallet before adding a sign-in method.", 403, "ACCOUNT_REAUTH_REQUIRED");
 }
+// A sponsored, funded NEAR account is the most expensive thing the game gives a
+// new explorer (factory transfer plus gas), and a guest cookie costs nothing. The
+// account is prepared once the explorer has finished a first adventure step on the
+// map (any XP: a GPS-verified find, coin or quest), and creations from one network
+// address are bounded per UTC day on top of the shared sponsorship budget. A retry
+// after a failed creation passed this bar already.
+const ACCOUNT_CREATIONS_PER_IP_PER_DAY = 20;
+function allowAccountCreation(req, current) {
+  if (managedAccounts?.row(current.playerId)) return;
+  assert(hasPlayedFirstAdventure(db, current.playerId),
+    "Finish your first find or quest on the map; your explorer account is prepared right after.", 403, "ACCOUNT_PLAY_FIRST");
+  if (req.questlayerCreationCounted) return;
+  req.questlayerCreationCounted = true;
+  limitDaily("account-create", clientAddress(req, process.env.TRUST_PROXY === "loopback"), ACCOUNT_CREATIONS_PER_IP_PER_DAY,
+    "Too many new explorer accounts from this network today. Your progress is saved; try again tomorrow.");
+}
+// Per-UTC-day counters share the minute-keyed windows: the key ends with the day's
+// last minute, so pruning keeps it until the day is over.
+function limitDaily(scope, who, max, message) {
+  const day = Math.floor(Date.now() / 86_400_000),
+    key = `${scope}:${who}:${(day + 1) * 1440 - 1}`,
+    n = (rates.get(key) || 0) + 1;
+  rates.set(key, n);
+  assert(n <= max, message, 429, "RATE_LIMITED");
+}
 async function body(req) {
   let size = 0;
   const chunks = [];
@@ -1300,6 +1558,7 @@ function profile(player) {
       )
     )
       p.appearance = {};
+    else p.appearance = { ...p.appearance, look: outfitVersion(ownedOutfit(db, player, p.appearance.outfit)) };
   }
   return {
     ...p,
@@ -1310,7 +1569,7 @@ function profile(player) {
       .prepare("SELECT COUNT(*) AS n FROM coins WHERE claimant=?")
       .get(player).n,
     level: p.level,
-    tier: tierFor(p.positions.reduce((s, x) => s + positionTier(x), 0)),
+    tier: placeTier(db, player),
     weighted_u: p.positions.reduce((s, x) => s + positionTier(x), 0),
   };
 }
@@ -1351,12 +1610,18 @@ async function api(req, res, url) {
     assert(n <= 600, "Please try again shortly.", 429);
   }
   if (await creatorRuntime.handle(req, res)) return;
+  if (req.method === "GET" && path.startsWith("/api/release/")) {
+    const r = readReleaseStatus(path, { network: NETWORK });
+    return respond(res, r.body, r.status);
+  }
   if (path === "/api/health")
     return respond(res, {
       status: "ok",
       app: "QuestLayer",
       version: "0.1.0",
       network: NETWORK,
+      gameLayer: LAYER,
+      manifestSet: MANIFEST_SET,
       features: ENABLED_FEATURES,
       ...schemaStatus(db, { buildId: BUILD_ID }),
       mode: "demo",
@@ -1381,6 +1646,8 @@ async function api(req, res, url) {
         ? auditSummary(publicAudit(nativeRewards.lastAudit))
         : { status: "not-configured" },
       yieldBackedDays: nativeRewards?.yieldBackedDays === true,
+      // Dates the publisher could not fund (docs/GLOBAL-TREASURY.md).
+      unfundedDays: nativeRewards?.unfundedDays || {},
       relayer: relayer ? relayer.workerStatus() : { status: "not-configured" },
       creatorMoney: creatorMoney
         ? creatorMoney.workerStatus()
@@ -1389,6 +1656,7 @@ async function api(req, res, url) {
         ? socialRecords.workerStatus()
         : { status: "not-configured" },
       testSeed: testSeedActive ? testSeed.status() : { status: "off" },
+      demoZones: demoZones || "off",
       npcRolls: npcRolls
         ? {
             status: (await npcRolls.readiness()).ok ? "ready" : "off",
@@ -1450,9 +1718,23 @@ async function api(req, res, url) {
     return respond(res, await qgoldPage(), 200, {
       "Cache-Control": "public, max-age=30",
     });
+  if (path === "/api/treasury/dao" && method === "GET") {
+    assert(treasuryDao, "The treasury DAO is not set up on this host.", 503, "TREASURY_DAO_DISABLED");
+    const account = String(url.searchParams.get("account") || "");
+    return respond(res, await treasuryDao.read({ account: /^[a-z0-9._-]{2,64}$/.test(account) ? account : null }), 200, { "Cache-Control": account ? "no-store" : "public, max-age=30" });
+  }
+  if (path === "/api/treasury/dao/explorers" && method === "GET") {
+    assert(treasuryDao, "The treasury DAO is not set up on this host.", 503, "TREASURY_DAO_DISABLED");
+    return respond(res, { dao: treasuryDao.contractId, rule: EXPLORER_RULE, accounts: eligibleExplorers(db, { network: NETWORK }), generatedAt: Date.now() }, 200, { "Cache-Control": "public, max-age=300" });
+  }
   if (path === "/api/treasury/mix" && method === "GET") {
     assert(treasuryMix, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
-    return respond(res, await treasuryMix(), 200, { "Cache-Control": "public, max-age=60" });
+    return respond(res, await readTreasuryMix(), 200, { "Cache-Control": "public, max-age=60" });
+  }
+  if (path === "/api/treasury/history" && method === "GET") {
+    assert(treasuryHistory, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
+    await readTreasuryMix().catch(() => null); // today's point, when the chain answers
+    return respond(res, treasuryHistory.read({ days: Number(url.searchParams.get("days")) || 90 }), 200, { "Cache-Control": "public, max-age=300" });
   }
   if (path === "/api/economy/ledger" && method === "GET")
     return respond(res, await publicLedger(), 200, {
@@ -1462,12 +1744,22 @@ async function api(req, res, url) {
     assert(nativeEconomy, "Native economy is not configured yet.", 503);
     return respond(res, await nativeEconomy.snapshot());
   }
+  // "/?newyork": the Test Layer's city demo looks up a typed city name.
+  if (path === "/api/demo-city" && method === "GET")
+    return respond(
+      res,
+      { city: TEST_LAYER ? findDemoCity(url.searchParams.get("q"), { live: LIVE_CITIES, auto: AUTO_CITIES.entries }) : null },
+      200,
+      { "Cache-Control": "public, max-age=300" },
+    );
   if (path === "/api/config")
     return respond(res, {
       mode: "demo",
       network: NETWORK,
+      gameLayer: gameLayerConfig,
       signingVaultOrigin: secureSigningOrigin,
       features: ENABLED_FEATURES,
+      layer: layerEnabled ? { layers: LAYER_REGISTRY.map(publicLayer) } : null,
       rpcUrl: browserRpc,
       coinValue: 0.01,
       coinSplit: 50,
@@ -1498,9 +1790,31 @@ async function api(req, res, url) {
     const input = await body(req);
     const result = game.session(db, input.name);
     identitySessions.record(result.token, "guest");
-    if (testSeedActive) testSeed.grantKit(result.player.id);
+    grantTestKit(result.player.id);
     return respond(res, { player: profile(result.player.id) }, 201, {
       "Set-Cookie": cookie(result.token),
+    });
+  }
+  if (path === "/api/auth/tester" && method === "POST") {
+    // Testnet tester sign-in (server/identity/test-login.mjs): name + the
+    // password the owner chose, stored only as a salted scrypt hash.
+    assert(NETWORK !== "mainnet", "Not found.", 404);
+    limit(
+      "tester-login",
+      clientAddress(req, process.env.TRUST_PROXY === "loopback"),
+      5,
+      "Please wait a minute before trying again.",
+    );
+    const input = await body(req);
+    const player = testerLogin(db, {
+      network: NETWORK,
+      name: input.name,
+      password: input.password,
+    });
+    assert(player, "That name and password do not match.", 401);
+    const token = newSession(player, "guest");
+    return respond(res, { player: profile(player), returning: true }, 200, {
+      "Set-Cookie": cookie(token),
     });
   }
   if (path === "/api/logout" && method === "POST") {
@@ -1515,7 +1829,7 @@ async function api(req, res, url) {
     db.prepare("DELETE FROM presence WHERE player_id=?").run(player);
     return respond(res, { ok: true }, 200, {
       "Set-Cookie": [
-        cookie("").replace("Max-Age=2592000", "Max-Age=0"),
+        cookie("").replace(`Max-Age=${SESSION_MAX_AGE}`, "Max-Age=0"),
         "questlayer-management=; HttpOnly; SameSite=Strict; Path=/api; Max-Age=0",
         "auratrail=; HttpOnly; SameSite=Lax; Path=/; Max-Age=0",
       ],
@@ -1846,6 +2160,10 @@ async function api(req, res, url) {
         returning: !!existing,
       };
     });
+    // Read the wallet's Aavegotchis now, so the explorer arrives dressed in
+    // their best one and sees its wearables (server/origin-sync.mjs).
+    originSync.touch(result.player, { force: true });
+    await originSync.settle(result.player, 6000);
     return respond(
       res,
       {
@@ -1932,6 +2250,47 @@ async function api(req, res, url) {
         )
         .all(),
     });
+  // A quest rating as a NEAR Social record from the explorer's own account.
+  const ratingAnchor = path.match(RATING_ANCHOR_PATH);
+  if (ratingAnchor && method === "POST") {
+    const rater = auth(req);
+    assert(creatorRuntime.config.enabled, "Not found", 404);
+    const input = await body(req);
+    const linked = input.accountId || linkedAccount(rater);
+    assert(linked, "Your explorer account is still being prepared.", 409);
+    const accountId = nearAccountId(linked);
+    assert(linkedAccount(rater, accountId), "Link this account first.", 403);
+    const questId = decodeURIComponent(ratingAnchor[1]);
+    return respond(
+      res,
+      ratingAnchor[2] === "prepare"
+        ? await ratingAnchors.prepare(rater, accountId, { questId })
+        : await ratingAnchors.confirm(rater, accountId, {
+            questId,
+            mutationId: input.mutationId,
+          }),
+    );
+  }
+  // Header photos creators attach to their quests (server/creators/feedback.mjs).
+  if (path === "/api/creator-photos" && method === "POST") {
+    const uploader = auth(req);
+    assert(creatorRuntime.config.enabled, "Not found", 404);
+    const input = await body(req);
+    assert(auth(req) === uploader, "Please sign in again.", 401);
+    return respond(res, { photo: await questPhotos.store(uploader, input.image) }, 201);
+  }
+  if (path.startsWith("/api/creator-photos/") && method === "GET") {
+    auth(req);
+    const file = questPhotos.file(path);
+    assert(file && existsSync(file), "Image not found.", 404);
+    res.writeHead(200, {
+      "Content-Type": "image/jpeg",
+      "Cache-Control": "private,max-age=86400,immutable",
+      "X-Content-Type-Options": "nosniff",
+      "Referrer-Policy": "no-referrer",
+    });
+    return createReadStream(file).pipe(res);
+  }
   if (path.startsWith("/api/media/") && method === "GET") {
     const viewer = auth(req);
     const file = noteMedia.file(path);
@@ -2008,6 +2367,8 @@ async function api(req, res, url) {
   }
   const player = auth(req);
   req.questlayerPlayer = player;
+  originSync.touch(player);
+  if (layerRoutes && (await layerRoutes.handle(req, res, url, { player, body, respond, assert }))) return;
   if (
     await relayerRoutes.handle(req, res, url, { player, body, respond, assert })
   )
@@ -2019,6 +2380,8 @@ async function api(req, res, url) {
   if (await huntRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await dailyBoardRoutes.handle(req, res, url, { player, body, respond, assert }))
+    return;
+  if (await inboxRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await marketRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
@@ -2764,7 +3127,10 @@ async function api(req, res, url) {
     return respond(res, { player: profile(player) });
   }
   if (path === "/api/me") {
-    if (testSeedActive) testSeed.grantKit(player);
+    grantTestKit(player);
+    // A just-linked wallet: answer with the dressed original when Base is quick.
+    originSync.touch(player, { force: true });
+    await originSync.settle(player, 4000);
     return respond(res, { player: profile(player) });
   }
   if (path === "/api/events" && method === "GET") {
@@ -2806,8 +3172,17 @@ async function api(req, res, url) {
     spans.wexpire = performance.now() - at;
     at = performance.now();
     // `explore`: a spot of the same city the player asked to search (map moved).
-    const world = await ensureWorld(db, location, input.arena !== false, Date.now(), {
+    // `city`: the Test Layer's demo in another city ("/?newyork"). The arena
+    // skips travel checks, so World always keeps its default city there.
+    const arenaCity =
+      TEST_LAYER && input.arena !== false && typeof input.city === "string"
+        ? playableCityById(input.city.slice(0, 64))
+        : null;
+    const [w0, s0, e0, n0] = arenaCity?.coverage || [];
+    const inArenaCity = !arenaCity || (location.lng >= w0 && location.lng <= e0 && location.lat >= s0 && location.lat <= n0);
+    const world = await ensureWorld(db, inArenaCity ? location : arenaCity.center, input.arena !== false, Date.now(), {
       cellAt: input.explore ? point(input.explore) : null,
+      arenaCity,
     });
     spans.wensure = performance.now() - at;
     viewWorld(player, world.id);
@@ -2838,11 +3213,23 @@ async function api(req, res, url) {
     viewWorld(player, w.id);
     return respondCached(req, res, { ...w, layerId: DEFAULT_LAYER.id });
   }
+  if (path === "/api/world/coin-counts" && method === "GET") {
+    limit("world-read", player, 240, "Please wait before refreshing the map again.");
+    const lat = Number(url.searchParams.get("lat")),
+      lng = Number(url.searchParams.get("lng"));
+    const at = Number.isFinite(lat) && Number.isFinite(lng) && Math.abs(lat) <= 90 && Math.abs(lng) <= 180 ? { lat, lng } : null;
+    return respond(res, coinCounts(db, url.searchParams.get("id") || null, at));
+  }
   if (path === "/api/coins/claim" && method === "POST") {
     limit("coin", player, 240, "Please slow down collecting coins.");
     const input = await body(req),
       result = game.claimCoin(db, player, input.coinId, input.fix);
-    if (!result.alreadyClaimed) emit("coin", { id: input.coinId }, coinWorld(input.coinId));
+    if (!result.alreadyClaimed) {
+      // Copies of this coin in other worlds (same spot, same day) go too.
+      const claimed = db.prepare("SELECT lat,lng FROM coins WHERE id=?").get(String(input.coinId));
+      for (const world of [coinWorld(input.coinId), ...spotWorlds(db, input.coinId)])
+        emit("coin", { id: input.coinId, ...(claimed ? { lat: claimed.lat, lng: claimed.lng } : {}) }, world);
+    }
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/quests/checkpoint" && method === "POST") {
@@ -2870,11 +3257,13 @@ async function api(req, res, url) {
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/stake" && method === "POST") {
+    assertSimulatedStakingOpen();
     const i = await body(req);
     const result = game.stake(db, player, i.amount, i.contribution, i.pool);
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/contribution" && method === "POST") {
+    assertSimulatedStakingOpen();
     const i = await body(req);
     return respond(res, {
       ...game.contribution(db, player, i.positionId, i.contribution),
@@ -2882,6 +3271,7 @@ async function api(req, res, url) {
     });
   }
   if (path === "/api/unstake" && method === "POST") {
+    assertSimulatedStakingOpen();
     const i = await body(req);
     return respond(res, {
       ...game.unstake(db, player, i.positionId),
@@ -2889,6 +3279,7 @@ async function api(req, res, url) {
     });
   }
   if (path === "/api/withdraw" && method === "POST") {
+    assertSimulatedStakingOpen();
     const i = await body(req);
     return respond(res, {
       ...game.redeem(db, player, i.withdrawalId),
@@ -2922,7 +3313,7 @@ async function api(req, res, url) {
     emit("market", {});
     return respond(res, r);
   }
-  if (path.startsWith("/api/messages") || path.startsWith("/api/social/")) {
+  if (path.startsWith("/api/messages") || path.startsWith("/api/social/") || path.startsWith("/api/community-places")) {
     const key = `social:${player}:${Math.floor(Date.now() / 60000)}`;
     const count = (rates.get(key) || 0) + 1;
     rates.set(key, count);
@@ -2949,6 +3340,7 @@ async function api(req, res, url) {
         lat: Number(url.searchParams.get("lat") ?? HOME.lat),
         lng: Number(url.searchParams.get("lng") ?? HOME.lng),
         arena: url.searchParams.get("arena") !== "0",
+        radiusKm: url.searchParams.has("radiusKm") ? Number(url.searchParams.get("radiusKm")) : null,
       }),
     );
   if (path === "/api/messages" && method === "POST") {
@@ -2978,10 +3370,49 @@ async function api(req, res, url) {
     emit("message", {});
     return respond(res, { id: result.id, state: result.state });
   }
+  if (noteAction && method === "PATCH" && !noteAction[2]) {
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const result = socialContent.edit(player, noteAction[1], input);
+    emit("message", {});
+    return respond(res, result);
+  }
   if (noteAction?.[2] === "report" && method === "POST") {
     const input = await body(req);
     assert(auth(req) === player, "Please sign in again.", 401);
     return respond(res, socialContent.report(player, noteAction[1], input));
+  }
+  if (path === "/api/community-places" && method === "GET")
+    return respond(
+      res,
+      communityPlaces.list(player, {
+        lat: Number(url.searchParams.get("lat") ?? HOME.lat),
+        lng: Number(url.searchParams.get("lng") ?? HOME.lng),
+        arena: url.searchParams.get("arena") !== "0",
+      }),
+    );
+  if (path === "/api/community-places" && method === "POST") {
+    limit("community-places", player, 20, "Please wait before adding another place.");
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const result = communityPlaces.create(player, input);
+    emit("message", {});
+    return respond(res, result, 201);
+  }
+  const communityPlace = path.match(/^\/api\/community-places\/([a-z0-9_-]{1,60})(?:\/(report))?$/);
+  if (communityPlace) {
+    const input = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const [, placeId, sub] = communityPlace;
+    if (sub === "report" && method === "POST")
+      return respond(res, communityPlaces.report(player, placeId, input));
+    if (!sub && method === "PATCH") return respond(res, communityPlaces.edit(player, placeId, input));
+    if (!sub && method === "DELETE") {
+      const result = communityPlaces.remove(player, placeId);
+      emit("message", {});
+      return respond(res, result);
+    }
+    assert(false, "Method not allowed.", 405);
   }
   if (path === "/api/social/blocks" && method === "GET")
     return respond(res, socialContent.blocks(player));
@@ -3163,6 +3594,8 @@ async function api(req, res, url) {
         0,
       );
     });
+    originSync.touch(player, { force: true });
+    await originSync.settle(player, 6000);
     return respond(res, { address: c.address, verified: true });
   }
   if (path === "/api/wearables" && method === "GET")
@@ -3174,11 +3607,20 @@ async function api(req, res, url) {
     const result = equipWearable(db, player, i.itemId, !!i.equipped);
     return respond(res, { ...result, player: profile(player) });
   }
+  if (path === "/api/me/journey" && method === "GET") {
+    limit("journey", player, 30, "Please wait a moment before refreshing your story.");
+    return respond(
+      res,
+      playerJourney(db, player, {
+        placeBadgeName: (id) => badgeService?.catalog?.byId?.get(id)?.name || null,
+      }),
+    );
+  }
   if (path === "/api/players/card" && method === "GET") {
     limit("player-card", player, 60, "Please wait before opening more explorer cards.");
     const target = url.searchParams.get("playerId");
     let look = null;
-    if (/^player_[a-f0-9-]{36}$/.test(target || "")) {
+    if (/^player_[a-f0-9-]{36}$/.test(target || "") || isDemoBot(target)) {
       const row = db
         .prepare(
           "SELECT id,appearance,native_outfit,native_account FROM players WHERE id=?",
@@ -3187,6 +3629,15 @@ async function api(req, res, url) {
       if (row) look = await publicAppearance(db, row, nativeCollectibles);
     }
     return respond(res, playerCard(db, player, target, look));
+  }
+  // Demo bots answer from fixed lines; nothing is stored or sent on chain.
+  if (path === "/api/players/bot-chat" && method === "POST") {
+    limit("bot-chat", player, 12, "Please wait a moment before writing again.");
+    const i = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    const reply = demoBotReply(db, player, i.playerId, i.text);
+    if (tourEnabled) tourMark(db, player, "message");
+    return respond(res, reply);
   }
   if (path === "/api/players/wave" && method === "POST") {
     limit("wave", player, 20, "Please wait before waving again.");
@@ -3220,6 +3671,7 @@ async function api(req, res, url) {
         db.prepare(
           "UPDATE external_links SET data=?,verified_at=? WHERE address=?",
         ).run(JSON.stringify(data), data.verifiedAt, link.address);
+        dressDefault(db, player, link.address, data);
       } catch {
         return respond(res, {
           linked: true,
@@ -3251,11 +3703,19 @@ async function api(req, res, url) {
       status: "verified",
     });
   }
+  if (path === "/api/aavegotchi/outfit" && method === "POST") {
+    limit("gotchi-outfit", player, 60, "Please wait before changing the outfit again.");
+    const i = await body(req);
+    assert(auth(req) === player, "Please sign in again.", 401);
+    setOutfitSlot(db, player, String(i.slot || ""), i.itemId ?? null);
+    return respond(res, { player: profile(player) });
+  }
   if (path === "/api/aavegotchi/equip" && method === "POST") {
     const i = await body(req);
     if (i.tokenId === null) {
+      // Remember the choice, so the default original is not put back on.
       db.prepare("UPDATE players SET appearance=? WHERE id=?").run(
-        "{}",
+        '{"starter":true}',
         player,
       );
       return respond(res, { player: profile(player) });
@@ -3309,11 +3769,13 @@ async function api(req, res, url) {
         "Refresh original ownership before opening its 3D look.",
         403,
       );
+      // An in-game outfit swaps slots 0-6 in the official renderer's look.
       return respond(
         res,
         await gotchiModels.describe({
           tokenId: appearance.originTokenId,
           expectedWearables: gotchi.equipped,
+          outfit: ownedOutfit(db, player, appearance.outfit),
         }),
       );
     }
@@ -3336,6 +3798,25 @@ async function api(req, res, url) {
     });
     return res.end(asset.bytes);
   }
+  if (path === "/api/players/skin" && method === "GET") {
+    // The original on an explorer's public profile; no presence needed.
+    const explorer = url.searchParams.get("playerId");
+    assert(explorer && /^player_[a-f0-9-]{36}$/.test(explorer), "Invalid explorer.");
+    assert(
+      explorer === player || !isSocialBlocked(db, player, explorer),
+      "This appearance is not available.",
+      404,
+    );
+    const svg = await wornOriginalSvg(explorer, profileOriginal(db, explorer)?.gotchi);
+    assert(svg, "This appearance is not available.", 404);
+    res.writeHead(200, {
+      "Content-Type": "image/svg+xml",
+      "Content-Security-Policy":
+        "default-src 'none'; style-src 'unsafe-inline'; sandbox",
+      "Cache-Control": "private,no-cache",
+    });
+    return res.end(svg);
+  }
   if (path === "/api/presence/skin" && method === "GET") {
     const explorer = url.searchParams.get("playerId");
     assert(
@@ -3347,7 +3828,7 @@ async function api(req, res, url) {
       "This shared appearance is no longer available.",
       404,
     );
-    const svg = sharedOriginalSvg(db, explorer);
+    const svg = await wornOriginalSvg(explorer, sharedOriginal(db, explorer));
     assert(svg, "This shared appearance is no longer available.", 404);
     res.writeHead(200, {
       "Content-Type": "image/svg+xml",
@@ -3423,13 +3904,22 @@ async function api(req, res, url) {
       (g) => g.tokenId === token,
     );
     assert(gotchi?.svg, "The appearance is unavailable.", 404);
+    const svg = (await wornOriginalSvg(player, gotchi)) || gotchi.svg;
     res.writeHead(200, {
       "Content-Type": "image/svg+xml",
       "Content-Security-Policy":
         "default-src 'none'; style-src 'unsafe-inline'; sandbox",
-      "Cache-Control": "private,max-age=60",
+      "Cache-Control": "private,no-cache",
     });
-    return res.end(gotchi.svg);
+    return res.end(svg);
+  }
+  // Guided tour with helper Pip (docs/GUIDED-TOUR.md): Test Layer, or TOUR_ENABLED=1.
+  if (path === "/api/tour" && method === "GET")
+    return respond(res, tourState(db, player, { enabled: tourEnabled }), 200, { "Cache-Control": "private,no-store" });
+  if (path === "/api/tour" && method === "POST") {
+    assert(tourEnabled, "The tour runs in the Test Layer.", 404, "TOUR_OFF");
+    tourAction(db, player, await body(req));
+    return respond(res, tourState(db, player, { enabled: true }));
   }
   if (path === "/api/guide/hint" && method === "POST") {
     // First-session coach: one grounded sentence for the player's current
@@ -3498,7 +3988,7 @@ async function api(req, res, url) {
     const b = id("bounty");
     atomic(db, () => {
       const p = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
-      assert(p.gold_u >= i.amount, "Not enough GOLD.");
+      assert(p.gold_u >= i.amount, "Not enough QGOLD.");
       db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=?").run(
         i.amount,
         player,
@@ -3827,7 +4317,7 @@ const maintenance = setInterval(() => {
   if (backgroundWorkersDisabled) return;
   try {
     expireWorlds(db);
-    game.harvestDemo(db);
+    if (SIMULATED_STAKING) game.harvestDemo(db);
     db.prepare("DELETE FROM presence WHERE expires_at<? OR updated_at<?").run(
       Date.now(),
       Date.now() - 30_000,

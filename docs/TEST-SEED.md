@@ -27,25 +27,43 @@ npm run seed:test -- remove   [--db path]
 
 ## What it contains (`server/test-seed/content.mjs`)
 
-- **Six explorers.** Five walk real Plzeň pedestrian paths near náměstí Republiky
+- **Ten explorers.** Five walk real Plzeň pedestrian paths near náměstí Republiky
   in the practice map (arena). Ondra stays about 30 m from the most recently active
   real explorer, in the same map mode, so shared presence shows up wherever you are.
+  Klara, Petr, Eva and Honza never walk the map: they only create quests and post tasks.
 - **Map notes** at six places, in both the practice and the GPS map.
+- **Community places** (Community · Places): seven recommended spots around the square, in both maps.
+- **Shouts and topics** (Community · Local chat): two shouts kept on the map for the next 7 days on every start, and two topics with replies that stay free for good.
 - **Practice market.** Four Auras from seed explorers are always on sale; a sold
   one is restocked within 30 s. Marek buys anything a real explorer lists for up to
   60,000 practice GOLD once it has been listed for 45 s, so selling can be tried.
-- **Tasks.** Three practice-GOLD tasks. The seed author approves the first
-  submitted evidence after 30 s and the task is posted again.
-- **Creator quests.** Two public creator profiles and five approved quests (visit,
-  trail, chest, a free story) with observation requirements. A completion submitted
+- **Tasks** (Community · Tasks). Seven example player tasks from demo bots (photo,
+  answer, go, deliver, meet, collect, create) around the square. They hold no QGOLD
+  and cannot be taken (the market refuses `seed-` tasks); they show how the list,
+  the poster and the reward look. Practice-GOLD tasks of earlier seed versions are
+  deleted on every start.
+- **Secrets.** Three free place Secrets around the demo square (courtyard, mural,
+  riverside viewpoint), so Explore · Nearby always has something to reveal. Price 0
+  and no visit reward: revealing one moves no QGOLD.
+- **Creator quests.** Eight public creator profiles with followers among the bots and
+  twelve approved quests (visits, trails, chests, a free story) with observation
+  requirements. Publishing gives the bots the game's creator XP (server/data/creator-xp.json). A completion submitted
   on a seed quest is accepted after 30 s by the configured completion authority.
   Needs `CREATOR_COMMUNITY_ENABLED=1`; otherwise this part is skipped.
+  Each quest carries a header photo of the real place in Plzeň (`server/test-seed/photos/`,
+  from Wikimedia Commons under CC BY-SA, cropped to 600×450; authors and licences in
+  `photos/credits.json`). The seed copies the files into the quest photo store and names the
+  photo and its credit in the quest, also for quests an earlier seed already published.
 - **NPCs and monsters.** `TEST_SEED=1` turns the roaming actors on, as
   `ACTORS_ENABLED=1` does.
 - **Daily board.** Vera, Tomas and Jana finish today's board 7, 11 and 16 hours
   into each world day, so the "explorers finished today" count moves
   (`docs/DAILY-BOARD.md`). No XP for them.
-- **Starter kit for every real explorer**, once, on sign-up or the next app load,
+- **Starter kit (opt-in, `TEST_SEED_KIT=1`)**. Off by default since 10 Nov 2026:
+  players read the kit Auras as their own finds. While it is off, every start
+  takes earlier kits back (`revertKits`: kit Auras, kit XP and shards; bots,
+  notes, quests and listings stay). With `TEST_SEED_KIT=1` every real explorer
+  gets it once, on sign-up or the next app load,
   so the Inventory backpack grid is full and the level bar is part filled:
   - Nine practice Auras across every rarity and both slots: Northern Lights
     (can be secured as a NEAR Aura and sold on the signed-order market), Ember

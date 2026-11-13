@@ -10,15 +10,22 @@ import {
 import {
   ArrowClockwise,
   BookmarkSimple,
+  Camera,
   Check,
   Eye,
   EyeSlash,
   PencilSimple,
   Plus,
-  UserCircle,
+  UserPlus,
   UsersThree,
   Flag,
+  Globe,
+  Info,
+  MapPin,
+  Path,
   ShieldSlash,
+  Target,
+  X,
 } from "@phosphor-icons/react";
 import { ArrowRight, ArrowLeft } from "./dir-icons";
 import { Ghost } from "./Ghost";
@@ -27,10 +34,13 @@ import {
   CreatorSupport,
   type CreatorMoneyBridge,
 } from "./CreatorMoney";
-import { meters } from "./api";
+import { api, ApiError, meters } from "./api";
 import { parseAccessPrice, nearText } from "./creator-money-quote";
 import { formatNativeNear } from "./native-amounts";
 import { Dialog } from "./Dialog";
+import { InfoTip } from "./InfoTip";
+import { mapKitUrl } from "./map-kit";
+import { QuestFeedback, questPhotoData } from "./QuestFeedback";
 import { useFormDraft } from "./useFormDraft";
 import { AiQuestDraft } from "./AiQuestDraft";
 import {
@@ -56,11 +66,23 @@ import {
   type CreatorPlaceTemplate,
   type CreatorProfile,
   type CreatorPublicationQuote,
+  type CreatorXpTable,
   type OwnedCreatorQuest,
   type PublicCreatorQuest,
+  type QuestMapTarget,
 } from "./creator-community-types";
 import type { Player } from "./types";
+import {
+  BotTag,
+  CommunityRow,
+  ExplorerAvatar,
+  FilterChips,
+  Stars,
+  XpReward,
+  type ArtKind,
+} from "./CommunityCards";
 import "./creator-community.css";
+import "./quest-detail.css";
 import { tr } from "./i18n";
 
 export type { CreatorCommunityView } from "./creator-community-types";
@@ -75,12 +97,21 @@ type Props = {
   /** Where the explorer stands now, for "Near you". Never sent to the server. */
   position?: { lat: number; lng: number };
   money?: CreatorMoneyBridge;
+  /** "Go" on a quest with a place: show it on the map and point the way. */
+  onGo?: (target: QuestMapTarget) => void;
+  /** Keeps a saved rating on chain as well; runs in the background. */
+  onRate?: (questId: string, stars: number) => void;
   /**
    * Community screen tab hosting this component. "quests" shows quest browsing
    * and started quests; "creators" shows creators and your own creations.
    * Omitted, every section is reachable from the inner navigation.
    */
   section?: "quests" | "creators";
+  /**
+   * Set when one quest opens on its own from the map (Lubos, 13 Nov 2026):
+   * the header button closes the dialog instead of going back to the list.
+   */
+  onClose?: () => void;
 };
 type Point = { lat: number; lng: number };
 type Loaded = {
@@ -210,17 +241,11 @@ async function load(
     );
   switch (view.page) {
     case "community": {
-      const [quests, following] = await Promise.all([
-        client.read<CreatorPage<PublicCreatorQuest>>(
-          "/quests?limit=50",
-          signal,
-        ),
-        client.read<CreatorPage<PublicCreatorQuest>>(
-          "/quests?following=true&limit=5",
-          signal,
-        ),
-      ]);
-      return { me, quests, following };
+      const quests = await client.read<CreatorPage<PublicCreatorQuest>>(
+        "/quests?limit=50",
+        signal,
+      );
+      return { me, quests };
     }
     case "following":
       return {
@@ -256,7 +281,8 @@ async function load(
           : {}),
       };
     case "creator": {
-      const [creator, quests] = await Promise.all([
+      // The profile opens as a dialog over the creators list.
+      const [creator, quests, creators] = await Promise.all([
         client.read<CreatorProfile & { following: boolean }>(
           `/creators/${idPath(view.creatorId)}`,
           signal,
@@ -265,8 +291,9 @@ async function load(
           `/quests?creator=${idPath(view.creatorId)}&limit=20`,
           signal,
         ),
+        client.read<CreatorPage<CreatorProfile>>("/creators?limit=20", signal),
       ]);
-      return { me, creator, quests };
+      return { me, creator, quests, creators };
     }
     case "quest": {
       const [quest, participation] = await Promise.all([
@@ -321,7 +348,10 @@ function CreatorCommunitySession({
   client: injected,
   position,
   money,
+  onGo,
+  onRate,
   section: screenSection,
+  onClose,
 }: Props) {
   const client = useMemo(
     () => injected || createCreatorClient({ playerId: player.id }),
@@ -345,6 +375,7 @@ function CreatorCommunitySession({
     error: string;
   }>({ key: "", capability: null, data: null, loading: true, error: "" });
   const [busy, setBusy] = useState(false);
+  const [nearOnly, setNearOnly] = useState(false);
   const [message, setMessage] = useState("");
   const actionLock = useRef(false),
     alive = useRef(true),
@@ -543,23 +574,27 @@ function CreatorCommunitySession({
     );
   const data = state.data;
   const allTabs = [
-    { page: "community", label: tr("Community"), section: "quests" },
+    { page: "community", label: tr("All"), section: "quests" },
+    { page: "near", label: tr("Nearby"), section: "quests" },
     { page: "following", label: tr("Following"), section: "quests" },
     { page: "participations", label: tr("Started"), section: "quests" },
     { page: "creators", label: tr("Creators"), section: "creators" },
     { page: "mine", label: tr("My creations"), section: "creators" },
   ] as const;
-  const tabs = allTabs.filter((tab) =>
-    screenSection
-      ? tab.section === screenSection
-      : tab.page !== "participations",
-  );
-  const active =
+  type Chip = (typeof allTabs)[number]["page"];
+  const chips = allTabs
+    .filter((tab) => (screenSection ? tab.section === screenSection : true))
+    .map((tab) => ({ id: tab.page as Chip, label: tab.label }));
+  const chipValue: Chip =
     view.page === "edit" || view.page === "profile" || view.page === "blocked"
       ? "mine"
       : view.page === "creator"
         ? "creators"
-        : view.page;
+        : view.page === "community"
+          ? nearOnly
+            ? "near"
+            : "community"
+          : (view.page as Chip);
   return (
     <section
       ref={section}
@@ -569,20 +604,20 @@ function CreatorCommunitySession({
     >
       <h2 className="sr-only" data-creator-heading tabIndex={-1}>
         {tr("Stories from explorers")}</h2>
-      <div className="creator-toolbar">
-        <nav className="creator-tabs" aria-label={tr("Creator community section")}>
-          {tabs.map((tab) => (
-            <button
-              key={tab.page}
-              aria-current={active === tab.page ? "page" : undefined}
-              onClick={() => navigate({ page: tab.page })}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+      {view.page !== "quest" && <FilterChips
+        label={tr("Creator community section")}
+        options={chips}
+        value={chipValue}
+        onChange={(next) => {
+          if (next === "near" || next === "community") {
+            setNearOnly(next === "near");
+            if (view.page !== "community") navigate({ page: "community" });
+          } else navigate({ page: next });
+        }}
+      >
         <button
-          className="creator-icon"
+          type="button"
+          className="cl-icon-button"
           aria-label={tr("Refresh creator quests")}
           title={tr("Refresh creator quests")}
           disabled={busy || state.loading}
@@ -590,16 +625,7 @@ function CreatorCommunitySession({
         >
           <ArrowClockwise size={20} />
         </button>
-      </div>
-      {!screenSection && (
-        <button
-          className="creator-started"
-          onClick={() => navigate({ page: "participations" })}
-        >
-          <BookmarkSimple size={20} /> {" "}{tr("Your started quests")}{" "}
-          <ArrowRight size={20} />
-        </button>
-      )}
+      </FilterChips>}
       {message && (
         <p className="creator-message" role="status">
           {message}
@@ -639,28 +665,21 @@ function CreatorCommunitySession({
       ) : (
         data && (
           <>
-            {view.page === "community" && (
-              <CommunityHome
-                data={data}
-                position={position}
-                navigate={navigate}
-              />
-            )}
             {(view.page === "community" || view.page === "following") && (
               <>
-                <h3>
-                  {view.page === "following"
-                    ? tr("From creators you follow")
-                    : tr("All creator quests")}
-                </h3>
-                <QuestList
-                  page={data.quests}
+                <QuestCards
+                  quests={data.quests?.items || []}
                   from={position}
+                  nearOnly={view.page === "community" && nearOnly}
                   navigate={navigate}
                   empty={
                     view.page === "following"
                       ? tr("Follow a creator to see their published quests here. Following is free and does not share your location.")
-                      : tr("No reviewed creator quests are published yet. Explore the map, or start a draft in My creations.")
+                      : nearOnly
+                        ? !position
+                          ? tr("Turn on location on the map to see creator places nearby.")
+                          : tr("No creator places within 5 km yet. Pin the first one in My creations.")
+                        : tr("No reviewed creator quests are published yet. Explore the map, or start a draft in My creations.")
                   }
                 />
                 {data.quests?.nextCursor && (
@@ -678,32 +697,32 @@ function CreatorCommunitySession({
                 )}
               </>
             )}
-            {view.page === "creators" && (
+            {(view.page === "creators" || view.page === "creator") && (
               <>
-                <h3>{tr("Meet the creators")}</h3>
                 {!data.creators?.items.length ? (
                   <Empty>
                     {tr("Creators appear here after they deliberately publish a profile.")}</Empty>
                 ) : (
-                  data.creators.items.map((creator) => (
-                    <article className="creator-row" key={creator.id}>
-                      <UserCircle size={32} aria-hidden="true" />
-                      <div>
-                        <h4>{creator.displayName}</h4>
-                        <p>
-                          {creator.bio || tr("Free quests from this explorer.")}
-                        </p>
-                        <button
-                          className="text-button"
-                          onClick={() =>
-                            navigate({ page: "creator", creatorId: creator.id })
+                  <ul className="cl-list">
+                    {data.creators.items.map((creator) => (
+                      <li key={creator.id}>
+                        <CreatorCard
+                          creator={creator}
+                          self={creator.id === player.id}
+                          busy={busy}
+                          onOpen={() => navigate({ page: "creator", creatorId: creator.id })}
+                          onFollow={() =>
+                            void act(
+                              `/creators/${idPath(creator.id)}/follow`,
+                              "PUT",
+                              { following: !creator.following },
+                              creator.following ? tr("You no longer follow {0}.", { 0: creator.displayName }) : tr("You follow {0}.", { 0: creator.displayName }),
+                            )
                           }
-                        >
-                          {tr("View creator")}{" "}<ArrowRight size={20} />
-                        </button>
-                      </div>
-                    </article>
-                  ))
+                        />
+                      </li>
+                    ))}
+                  </ul>
                 )}
                 {data.creators?.nextCursor && (
                   <More
@@ -714,98 +733,55 @@ function CreatorCommunitySession({
               </>
             )}
             {view.page === "creator" && data.creator && (
-              <>
-                <Back onClick={() => navigate({ page: "creators" })}>
-                  {tr("Creators")}</Back>
-                <h3>{data.creator.displayName}</h3>
-                <p>{data.creator.bio}</p>
-                {data.creator.id !== player.id && (
-                  <button
-                    className="secondary-button"
-                    disabled={busy}
-                    onClick={() =>
-                      void act(
-                        `/creators/${idPath(data.creator!.id)}/follow`,
-                        "PUT",
-                        { following: !data.creator!.following },
-                        tr("Following preference confirmed."),
-                      )
-                    }
-                  >
-                    <UsersThree size={20} />
-                    {data.creator.following ? tr("Unfollow") : tr("Follow for free")}
-                  </button>
-                )}
-                <p className="creator-hint">
-                  {tr("Following neither pays the creator nor shares your location.")}</p>
-                {data.creator.id !== player.id && (
-                  <details className="creator-safety-tools">
-                    <summary>{tr("Creator safety")}</summary>
-                    <p className="creator-hint">
-                      {tr("Blocking hides public content between you. Your started quest instructions remain available.")}</p>
-                    <button
-                      className="secondary-button"
-                      disabled={busy}
-                      onClick={() =>
-                        setSafety({
-                          kind: "block",
-                          creator: data.creator!,
-                          blocked: true,
-                        })
-                      }
-                    >
-                      <ShieldSlash size={20} />
-                      {tr("Block creator…")}</button>
-                  </details>
-                )}
-                <QuestList
-                  page={data.quests}
-                  from={position}
-                  navigate={navigate}
-                  empty={tr("This creator has no published free quests at the moment.")}
-                />
-                {data.quests?.nextCursor && (
-                  <More
-                    busy={busy}
-                    onClick={() =>
-                      void more(
-                        "quests",
-                        `/quests?creator=${idPath(view.creatorId)}`,
-                      )
-                    }
-                  />
-                )}
-              </>
+              <CreatorDialog
+                creator={data.creator}
+                quests={data.quests?.items || []}
+                self={data.creator.id === player.id}
+                busy={busy}
+                from={position}
+                navigate={navigate}
+                onClose={() => navigate({ page: "creators" })}
+                onFollow={() =>
+                  void act(
+                    `/creators/${idPath(data.creator!.id)}/follow`,
+                    "PUT",
+                    { following: !data.creator!.following },
+                    data.creator!.following ? tr("You no longer follow {0}.", { 0: data.creator!.displayName }) : tr("You follow {0}.", { 0: data.creator!.displayName }),
+                  )
+                }
+                onBlock={() =>
+                  setSafety({
+                    kind: "block",
+                    creator: data.creator!,
+                    blocked: true,
+                  })
+                }
+              />
             )}
             {view.page === "participations" && (
               <>
-                <h3>{tr("Your started quests")}</h3>
-                <p className="creator-hint">
-                  {tr("Your accepted instructions remain available after edits or closure.")}</p>
                 {!data.participations?.items.length ? (
                   <Empty>
                     {tr("Start a reviewed free quest to keep its instructions here.")}</Empty>
                 ) : (
-                  data.participations.items.map((part) => (
-                    <article className="creator-quest-row" key={part.questId}>
-                      <button
-                        className="creator-quest-open"
-                        onClick={() =>
-                          navigate({ page: "quest", questId: part.questId })
-                        }
-                      >
-                        <span className="creator-state">
-                          {statusName(part.state)}
-                        </span>
-                        <h4>{part.content.title}</h4>
-                        <small>
-                          {tr("Accepted revision")}{" "}{part.revision} ·{" "}
-                          {statusName(part.questState)}
-                        </small>
-                        <ArrowRight size={22} />
-                      </button>
-                    </article>
-                  ))
+                  <ul className="cl-list">
+                    {data.participations.items.map((part) => {
+                      const art: ArtKind = part.content.place?.template ?? "story";
+                      return (
+                        <li key={part.questId}>
+                          <CommunityRow
+                            art={art}
+                            title={part.content.title}
+                            author={part.creator?.displayName || tr("Creator")}
+                            meta={`${kindLabel(art)} · ${statusName(part.state)}`}
+                            onOpen={() =>
+                              navigate({ page: "quest", questId: part.questId })
+                            }
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
                 )}
                 {data.participations?.nextCursor && (
                   <More
@@ -827,6 +803,10 @@ function CreatorCommunitySession({
                 onSafety={setSafety}
                 money={money}
                 position={position}
+                client={client}
+                onGo={onGo}
+                onRate={onRate}
+                onClose={onClose}
               />
             )}
             {view.page === "mine" && (
@@ -840,6 +820,7 @@ function CreatorCommunitySession({
                     <Plus size={20} /> {" "}{tr("New quest")}</button>
                 </div>
                 {money && <CreatorEarningsPanel money={money} />}
+                {data.me.creatorXp && <CreatorXpTable table={data.me.creatorXp} />}
                 <Progression me={data.me} />
                 <button
                   className="creator-profile-entry"
@@ -1037,143 +1018,277 @@ function More({ busy, onClick }: { busy: boolean; onClick: () => void }) {
     </button>
   );
 }
-function CommunityHome({
-  data,
-  position,
-  navigate,
-}: {
-  data: Loaded;
-  position?: Point;
-  navigate: (view: CreatorCommunityView) => void;
-}) {
-  const near = nearbyQuests(data.quests?.items || [], position).slice(0, 5);
-  const followed = data.following?.items.slice(0, 3) || [];
-  return (
-    <>
-      <h3>{tr("Near you")}</h3>
-      {!position ? (
-        <Empty>{tr("Turn on location on the map to see creator places nearby.")}</Empty>
-      ) : !near.length ? (
-        <Empty>
-          {tr("No creator places within 5 km yet. Pin the first one in My creations.")}</Empty>
-      ) : (
-        <div className="creator-nearby">
-          {near.map(({ quest, distance }) => (
-            <QuestRow
-              key={quest.id}
-              quest={quest}
-              distance={distance}
-              navigate={navigate}
-            />
-          ))}
-        </div>
-      )}
-      <div className="creator-heading">
-        <h3>{tr("Creators you follow")}</h3>
-        {followed.length > 0 && (
-          <button
-            className="text-button"
-            onClick={() => navigate({ page: "following" })}
-          >
-            {tr("See all")}{" "}<ArrowRight size={18} />
-          </button>
-        )}
-      </div>
-      {!followed.length ? (
-        <Empty>
-          {tr("Follow a creator to see their new places here.")}{" "}
-          <button
-            className="text-button"
-            onClick={() => navigate({ page: "creators" })}
-          >
-            {tr("Meet the creators")}{" "}<ArrowRight size={18} />
-          </button>
-        </Empty>
-      ) : (
-        followed.map((quest) => (
-          <QuestRow
-            key={quest.id}
-            quest={quest}
-            distance={placeDistance(quest.place, position)}
-            navigate={navigate}
-          />
-        ))
-      )}
-    </>
-  );
-}
-function QuestRow({
-  quest,
-  distance,
-  navigate,
-}: {
-  quest: PublicCreatorQuest;
-  distance: number | null;
-  navigate: (view: CreatorCommunityView) => void;
-}) {
-  const template = quest.place ? PLACE_TEMPLATES[quest.place.template] : null;
-  return (
-    <article className="creator-quest-row">
-      <button
-        className="creator-quest-open"
-        onClick={() => navigate({ page: "quest", questId: quest.id })}
-      >
-        <span className="creator-state">
-          {template ? template.badge : tr("Quest")}
-          {quest.price ? ` · ${nearText(quest.price)} NEAR` : tr(" · Free")}
-          {distance !== null ? ` · ${distanceText(distance)}` : ""}
-        </span>
-        <h4>{quest.title}</h4>
-        <small>{tr("By")}{" "}{quest.creator.displayName}</small>
-        <ArrowRight size={22} />
-      </button>
-    </article>
-  );
-}
-function QuestList({
-  page,
+const questArt = (quest: PublicCreatorQuest): ArtKind =>
+  quest.kind ?? (quest.place ? quest.place.template : "story");
+const kindLabel = (kind: ArtKind) =>
+  kind === "story" ? tr("Story") : kind === "task" ? tr("Task") : PLACE_TEMPLATES[kind].badge;
+/** Every creator quest in one compact list, nearest first when the map has a position. */
+function QuestCards({
+  quests,
   from,
+  nearOnly = false,
   navigate,
   empty,
 }: {
-  page?: CreatorPage<PublicCreatorQuest>;
+  quests: PublicCreatorQuest[];
   from?: Point;
+  nearOnly?: boolean;
   navigate: (view: CreatorCommunityView) => void;
   empty: string;
 }) {
-  return !page?.items.length ? (
-    <Empty>{empty}</Empty>
-  ) : (
-    <div>
-      {page.items.map((quest) => {
-        const distance = placeDistance(quest.place, from);
+  const rows = quests
+    .map((quest) => ({ quest, distance: placeDistance(quest.place, from) }))
+    .filter((r) => !nearOnly || (r.distance !== null && r.distance <= NEARBY_METERS))
+    .sort((a, b) =>
+      from ? (a.distance ?? Number.MAX_VALUE) - (b.distance ?? Number.MAX_VALUE) : 0,
+    );
+  if (!rows.length) return <Empty>{empty}</Empty>;
+  return (
+    <ul className="cl-list">
+      {rows.map(({ quest, distance }) => {
+        const art = questArt(quest);
         return (
-          <article className="creator-quest-row" key={quest.id}>
-            <button
-              className="creator-quest-open"
-              onClick={() => navigate({ page: "quest", questId: quest.id })}
-            >
-              <span className="creator-state">
-                {quest.place
-                  ? PLACE_TEMPLATES[quest.place.template].badge
-                  : tr("Free")}
-                {distance !== null ? ` · ${distanceText(distance)}` : ""}
-              </span>
-              <h4>{quest.title}</h4>
-              <p>
-                {quest.description.length > 180
-                  ? quest.description.slice(0, 180) + "…"
-                  : quest.description}
-              </p>
-              <small>
-                {tr("By")}{" "}{quest.creator.displayName} {" "}{tr("· reviewed revision")}{" "}
-                {quest.revision}
-              </small>
-              <ArrowRight size={22} />
-            </button>
-          </article>
+          <li key={quest.id}>
+            <CommunityRow
+              art={art}
+              title={quest.title}
+              author={quest.creator.displayName}
+              look={quest.creator.look}
+              meta={kindLabel(art)}
+              rating={quest.rating}
+              photo={quest.photo}
+              where={
+                distance !== null
+                  ? tr("{0} away", { 0: distanceText(distance) })
+                  : quest.place
+                    ? null
+                    : tr("Anywhere")
+              }
+              reward={
+                quest.price ? (
+                  <span>{nearText(quest.price)} NEAR</span>
+                ) : (
+                  <span className="cl-free">{tr("Free")}</span>
+                )
+              }
+              onOpen={() => navigate({ page: "quest", questId: quest.id })}
+            />
+          </li>
         );
       })}
+    </ul>
+  );
+}
+function CreatorStats({ creator }: { creator: CreatorProfile }) {
+  const s = creator.stats;
+  return (
+    <span className="cl-creator-stats">
+      {s && (
+        <>
+          <span>
+            <b>{count(s.quests)}</b> {s.quests === 1 ? tr("quest") : tr("quests")}
+          </span>
+          <span>
+            <b>{count(s.followers)}</b> {s.followers === 1 ? tr("follower") : tr("followers")}
+          </span>
+        </>
+      )}
+    </span>
+  );
+}
+function FollowButton({
+  creator,
+  busy,
+  onFollow,
+  big = false,
+}: {
+  creator: CreatorProfile;
+  busy: boolean;
+  onFollow: () => void;
+  big?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      className="cl-follow"
+      aria-pressed={!!creator.following}
+      aria-label={
+        creator.following
+          ? tr("Unfollow {0}", { 0: creator.displayName })
+          : tr("Follow {0}", { 0: creator.displayName })
+      }
+      disabled={busy}
+      onClick={onFollow}
+    >
+      {creator.following ? (
+        <>
+          <Check size={16} weight="bold" aria-hidden="true" /> {tr("Following")}
+        </>
+      ) : (
+        <>
+          <UserPlus size={big ? 20 : 16} weight="bold" aria-hidden="true" /> {tr("Follow")}
+        </>
+      )}
+    </button>
+  );
+}
+function CreatorCard({
+  creator,
+  self,
+  busy,
+  onOpen,
+  onFollow,
+}: {
+  creator: CreatorProfile;
+  self: boolean;
+  busy: boolean;
+  onOpen: () => void;
+  onFollow: () => void;
+}) {
+  return (
+    <div className="cl-creator">
+      <button
+        type="button"
+        className="cl-avatar-button"
+        onClick={onOpen}
+        tabIndex={-1}
+        aria-hidden="true"
+      >
+        <ExplorerAvatar look={creator.look} size={56} />
+      </button>
+      <button type="button" className="cl-creator-main" onClick={onOpen}>
+        <strong>
+          <span>{creator.displayName}</span>
+        </strong>
+        {creator.bio && <span className="cl-creator-bio">{creator.bio}</span>}
+        <span className="cl-creator-stats">
+          <CreatorStats creator={creator} />
+          <BotTag look={creator.look} />
+        </span>
+      </button>
+      {!self && <FollowButton creator={creator} busy={busy} onFollow={onFollow} />}
+    </div>
+  );
+}
+/** A creator's profile and quests, as its own dialog over the creators list. */
+function CreatorDialog({
+  creator,
+  quests,
+  self,
+  busy,
+  from,
+  navigate,
+  onClose,
+  onFollow,
+  onBlock,
+}: {
+  creator: CreatorProfile;
+  quests: PublicCreatorQuest[];
+  self: boolean;
+  busy: boolean;
+  from?: Point;
+  navigate: (view: CreatorCommunityView) => void;
+  onClose: () => void;
+  onFollow: () => void;
+  onBlock: () => void;
+}) {
+  const [info, setInfo] = useState(false);
+  const s = creator.stats;
+  return (
+    <Dialog label={creator.displayName} history={false} onClose={onClose}>
+      <div className="cl-profile">
+        <button type="button" className="sheet-close" aria-label={tr("Close")} onClick={onClose}>
+          <X size={20} aria-hidden="true" />
+        </button>
+        <header className="cl-profile-head">
+          <ExplorerAvatar look={creator.look} size={88} />
+          <div>
+            <h2>
+              {creator.displayName}
+              <BotTag look={creator.look} />
+            </h2>
+            <p>
+              {tr("Creator")}
+              {creator.look ? ` · ${tr("Level {0}", { 0: creator.look.level })}` : ""}
+            </p>
+          </div>
+        </header>
+        {creator.bio && <p className="cl-profile-bio">{creator.bio}</p>}
+        {s && (
+          <dl className="cl-profile-stats">
+            <div>
+              <dt>{tr("Quests")}</dt>
+              <dd>{count(s.quests)}</dd>
+            </div>
+            <div>
+              <dt>{tr("Followers")}</dt>
+              <dd>{count(s.followers)}</dd>
+            </div>
+            <div>
+              <dt>{tr("Finished")}</dt>
+              <dd>{count(s.completions)}</dd>
+            </div>
+            <div>
+              <dt>{tr("Creator XP")}</dt>
+              <dd>{count(s.xp)}</dd>
+            </div>
+          </dl>
+        )}
+        {!self && (
+          <div className="cl-profile-actions">
+            <FollowButton creator={creator} busy={busy} onFollow={onFollow} big />
+            <button
+              type="button"
+              className="cl-info"
+              aria-label={tr("About following and safety")}
+              aria-expanded={info}
+              onClick={() => setInfo((v) => !v)}
+            >
+              <Info size={22} aria-hidden="true" />
+            </button>
+          </div>
+        )}
+        {info && !self && (
+          <div className="cl-info-panel">
+            <p>{tr("Following is free. It neither pays the creator nor shares your location.")}</p>
+            <p>{tr("Blocking hides public content between you. Your started quest instructions remain available.")}</p>
+            <button type="button" className="text-button" disabled={busy} onClick={onBlock}>
+              <ShieldSlash size={18} aria-hidden="true" /> {tr("Block creator…")}
+            </button>
+          </div>
+        )}
+        <h3>{tr("Quests by {0}", { 0: creator.displayName })}</h3>
+        <QuestCards
+          quests={quests}
+          from={from}
+          navigate={navigate}
+          empty={tr("This creator has no published free quests at the moment.")}
+        />
+      </div>
+    </Dialog>
+  );
+}
+/** What the game gives a creator for building quests. */
+function CreatorXpTable({ table }: { table: CreatorXpTable }) {
+  return (
+    <div className="cl-earn">
+      <strong>{tr("Each published quest earns you XP")}</strong>
+      <ul>
+        <li>{tr("Story")} · <XpReward xp={table.publish.story} /></li>
+        <li>{tr("Visit")} · <XpReward xp={table.publish.visit} /></li>
+        <li>{tr("Chest")} · <XpReward xp={table.publish.chest} /></li>
+        <li>{tr("Trail")} · <XpReward xp={table.publish.trail} /></li>
+      </ul>
+      <span>
+        {tr("Trails get +{0} XP for every stop after the second.", { 0: table.trailStopBonus })}{" "}
+        {tr("+{0} XP each time another explorer finishes it (up to {1} a day). QGOLD only comes from QGOLD you put into a quest yourself.", {
+          0: table.completion,
+          1: table.completionsPerDay,
+        })}
+      </span>
+      {table.earned > 0 && (
+        <span>{tr("You earned {0} XP from your quests so far.", { 0: count(table.earned) })}</span>
+      )}
     </div>
   );
 }
@@ -1203,6 +1318,43 @@ function Progression({ me }: { me: CreatorMe }) {
     </details>
   );
 }
+/** The quest type art as a big tile, or the creator's own photo. */
+function QuestHero({
+  photo,
+  art,
+  onBack,
+  backLabel,
+  close = false,
+}: {
+  photo?: string;
+  art: ArtKind;
+  onBack: () => void;
+  backLabel: string;
+  /** In the map dialog the button closes it (X), not back to a list. */
+  close?: boolean;
+}) {
+  const [broken, setBroken] = useState(false);
+  const file = art === "story" ? "community" : art;
+  return (
+    <div className={`qd-hero${photo && !broken ? " has-photo" : ""}`}>
+      {photo && !broken ? (
+        <img className="qd-hero-photo" src={photo} alt="" onError={() => setBroken(true)} />
+      ) : (
+        <img className="qd-hero-art" src={mapKitUrl(`quests/${file}.png`)} width={96} height={96} alt="" draggable={false} />
+      )}
+      <button type="button" className="qd-back" aria-label={backLabel} title={backLabel} onClick={onBack}>
+        {close ? <X size={22} weight="bold" aria-hidden="true" /> : <ArrowLeft size={22} aria-hidden="true" />}
+      </button>
+      <span className="qd-kind">{kindLabel(art)}</span>
+    </div>
+  );
+}
+
+/**
+ * One quest, one goal, one button (Lubos, 12 Nov 2026): photo, title, who made
+ * it, what to do, and "Go". The description folds; the rules live under (i).
+ * Once started the same screen is the progress: go there, answer, done.
+ */
 function QuestDetail({
   playerId,
   data,
@@ -1212,6 +1364,10 @@ function QuestDetail({
   onSafety,
   money,
   position,
+  client,
+  onGo,
+  onRate,
+  onClose,
 }: {
   playerId: string;
   data: Loaded;
@@ -1221,124 +1377,145 @@ function QuestDetail({
   onSafety: (action: SafetyAction) => void;
   money?: CreatorMoneyBridge;
   position?: Point;
+  client: CreatorClient;
+  onGo?: (target: QuestMapTarget) => void;
+  /** Keeps a saved rating on chain as well; runs in the background. */
+  onRate?: (questId: string, stars: number) => void;
+  onClose?: () => void;
 }) {
   const quest = data.quest,
     part = data.participation;
-  const place = part?.content.place || quest?.place;
-  const title = part?.content.title || quest?.title || tr("Your quest");
+  const content = part?.content;
+  const questId = part?.questId || quest?.id || "";
+  const place = content?.place || quest?.place;
+  const title = content?.title || quest?.title || tr("Your quest");
+  const description = content?.description || quest?.description || "";
+  const requirement = content?.requirement || quest?.requirement;
+  const photo = content?.photo || quest?.photo;
   const reportTarget = creatorReportTarget(quest, part);
   const creator = part?.creator || quest?.creator;
+  const own = quest?.creator.id === playerId;
+  const art: ArtKind = place?.template ?? "story";
+  const distance = placeDistance(place, position);
+  const target: QuestMapTarget | null = place?.points.length
+    ? { questId, title, points: place.points }
+    : null;
   // A paid quest starts only after the unlock below; the server enforces it too.
   const [unlocked, setUnlocked] = useState<boolean | null>(null);
-  const needsUnlock = !!quest?.price && !!money && unlocked !== true;
+  const needsUnlock = !!quest?.price && !!money && unlocked !== true && !part;
+  const [rating, setRating] = useState(quest?.rating ?? null);
+  const [more, setMore] = useState(false);
+  const long = description.length > 140 || description.includes("\n");
+  const revision = part?.revision ?? quest?.revision;
   return (
-    <>
-      <Back
-        onClick={() =>
-          navigate({ page: part ? "participations" : "community" })
-        }
-      >
-        {part ? tr("Your started quests") : tr("Creator quests")}
-      </Back>
-      <h3>{title}</h3>
-      {quest && (
-        <button
-          className="text-button"
-          onClick={() =>
-            navigate({ page: "creator", creatorId: quest.creator.id })
-          }
-        >
-          {tr("By")}{" "}{quest.creator.displayName}
-          <ArrowRight size={20} />
-        </button>
+    <article className="qd">
+      <QuestHero
+        photo={photo}
+        art={art}
+        backLabel={onClose ? tr("Close") : part && !quest ? tr("Your started quests") : tr("Creator quests")}
+        close={!!onClose}
+        onBack={onClose || (() => navigate({ page: part && !quest ? "participations" : "community" }))}
+      />
+      <div className="qd-head">
+        <h3>{title}</h3>
+        <InfoTip label={title}>
+          {quest?.price
+            ? tr("Paid unlock {0} NEAR, supports the creator", { 0: nearText(quest.price) })
+            : tr("Free quest")}
+          {" · "}{tr("Revision")}{" "}{revision}
+          {". "}{tr("A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.")}
+        </InfoTip>
+      </div>
+      <div className="qd-meta">
+        {creator && (
+          <button
+            type="button"
+            className="qd-by"
+            disabled={!quest}
+            onClick={() => quest && navigate({ page: "creator", creatorId: quest.creator.id })}
+          >
+            <ExplorerAvatar look={quest?.creator.look} size={24} />
+            <span>{creator.displayName || tr("Creator")}</span>
+          </button>
+        )}
+        <Stars rating={rating} />
+      </div>
+      <ul className="qd-facts">
+        {distance !== null && (
+          <li><MapPin size={16} weight="fill" aria-hidden="true" />{distanceText(distance)}</li>
+        )}
+        {place?.template === "trail" && (
+          <li><Path size={16} weight="bold" aria-hidden="true" />{tr("{0} stops · {1} walk", { 0: place.points.length, 1: distanceText(trailLength(place.points)) })}</li>
+        )}
+        {!place && <li><Globe size={16} weight="bold" aria-hidden="true" />{tr("Anywhere")}</li>}
+        <li className={quest?.price ? "" : "qd-free"}>
+          {quest?.price ? `${nearText(quest.price)} NEAR` : tr("Free")}
+        </li>
+      </ul>
+      {requirement && (
+        <p className="qd-goal">
+          <Target size={22} weight="fill" aria-hidden="true" />
+          <span>{requirement.prompt}</span>
+        </p>
       )}
-      {place && <PlaceSummary place={place} from={position} />}
-      {part ? (
-        <article className="creator-accepted">
-          <span className="creator-state">{statusName(part.state)}</span>
-          <h4>{tr("Your accepted instructions")}</h4>
-          <p className="creator-instructions">{part.content.description}</p>
-          <p className="creator-hint">
-            {tr("Revision")}{" "}{part.revision} · {statusName(part.questState)}
-            {quest && quest.revision !== part.revision
-              ? tr(" · Current public revision is {0}; your accepted version stays unchanged.", { 0: quest.revision })
-              : ""}
-          </p>
-          {data.completion && (
-            <CreatorCompletionSection
-              state={data.completion}
-              playerId={playerId}
-              busy={busy}
-              act={act}
-            />
+      {description && (
+        <div className={`qd-desc${long && !more ? " is-folded" : ""}`}>
+          <p id="qd-desc-text">{description}</p>
+          {long && (
+            <button type="button" className="text-button" aria-expanded={more} aria-controls="qd-desc-text" onClick={() => setMore((v) => !v)}>
+              {more ? tr("Less") : tr("More")}
+            </button>
           )}
-          <p>
-            {part.state === "resolved"
-              ? tr("Independent completion review is recorded. No XP, item or GOLD reward is configured for this quest.")
-              : tr("Your start is saved. Completion needs independent review; the author cannot confirm it for you. No XP, item or GOLD reward is configured.")}
-          </p>
-        </article>
+        </div>
+      )}
+      {part ? (
+        <QuestProgress
+          part={part}
+          state={data.completion}
+          playerId={playerId}
+          busy={busy}
+          act={act}
+          onMap={target && onGo ? () => onGo(target) : undefined}
+        />
+      ) : own ? (
+        <button className="secondary-button qd-cta" onClick={() => navigate({ page: "edit", questId })}>
+          <PencilSimple size={20} />{tr("Manage your quest")}
+        </button>
       ) : (
         quest && (
           <>
-            <p className="creator-instructions">{quest.description}</p>
-            <p className="creator-hint">
-              {quest.price
-                ? tr("Paid unlock {0} NEAR, supports the creator", { 0: nearText(quest.price) })
-                : tr("Free quest")}{" "}
-              {tr("· reviewed revision")}{" "}{quest.revision}{tr(". No XP, item or GOLD reward is configured. Starting saves these instructions; it does not prove a physical visit.")}</p>
-            {quest.requirement && (
-              <div className="creator-quote">
-                <h4>{tr("Declared observation requirement")}</h4>
-                <p>{quest.requirement.prompt}</p>
-                <p className="creator-hint">
-                  {tr("Policy")}{" "}{quest.requirement.policyVersion}{tr(": submit private text for independent review, with up to 3 attempts. A third rejection resolves participation as not completed. No GPS or physical visit is verified. No reward is configured. Accepted requirements and evidence stay available after closure or blocking.")}</p>
-              </div>
-            )}
-            {quest.creator.id === playerId ? (
-              <button
-                className="secondary-button"
-                onClick={() => navigate({ page: "edit", questId: quest.id })}
-              >
-                {tr("Manage your quest")}{" "}<PencilSimple size={20} />
-              </button>
-            ) : (
-              <button
-                className="primary-button"
-                disabled={busy || needsUnlock}
-                onClick={() =>
-                  void act(
-                    `/quests/${idPath(quest.id)}/participation`,
-                    "POST",
-                    {},
-                    tr("Your start is confirmed. The accepted instructions are saved."),
-                  )
-                }
-              >
-                {quest.price ? tr("Start quest") : tr("Start free quest")}{" "}
-                <ArrowRight size={20} />
-              </button>
-            )}
-            {quest.creator.id !== playerId && needsUnlock && (
+            <button
+              className="primary-button qd-cta"
+              disabled={busy || needsUnlock}
+              onClick={() =>
+                void act(
+                  `/quests/${idPath(quest.id)}/participation`,
+                  "POST",
+                  {},
+                  tr("Quest started."),
+                  () => target && onGo?.(target),
+                )
+              }
+            >
+              {tr("Go")}<ArrowRight size={22} />
+            </button>
+            {needsUnlock && (
               <p className="creator-hint" role="status">
-                {unlocked === null
-                  ? tr("Checking your unlock…")
-                  : tr("Unlock this quest below to start it.")}
+                {unlocked === null ? tr("Checking your unlock…") : tr("Unlock this quest below to start it.")}
               </p>
             )}
           </>
         )
       )}
       {money && quest && (
-        <CreatorSupport
-          questId={quest.id}
-          ownQuest={quest.creator.id === playerId}
-          money={money}
-          onAccess={setUnlocked}
-        />
+        <details className="qd-fold" open={needsUnlock || undefined}>
+          <summary>{tr("Support the creator")}</summary>
+          <CreatorSupport questId={quest.id} ownQuest={!!own} money={money} onAccess={setUnlocked} />
+        </details>
       )}
+      {questId && <QuestFeedback client={client} questId={questId} onRated={setRating} onStars={onRate && ((stars) => onRate(questId, stars))} />}
       {reportTarget && (
-        <details className="creator-safety-tools">
+        <details className="qd-fold creator-safety-tools">
           <summary>{tr("Quest safety")}</summary>
           <p className="creator-hint">
             {tr("If a place feels unsafe, stop. Reporting requests private review; blocking hides public content. Neither action completes or cancels an existing quest.")}</p>
@@ -1374,36 +1551,112 @@ function QuestDetail({
           </button>
         </details>
       )}
-    </>
+    </article>
   );
 }
 
-function PlaceSummary({ place, from }: { place: CreatorPlace; from?: Point }) {
-  const template = PLACE_TEMPLATES[place.template];
-  const first = place.points[0];
-  const distance = placeDistance(place, from);
+/**
+ * A started quest as three plain steps: go there, answer, reviewed. The answer
+ * is written right here; sending it is the consent to a private review.
+ */
+function QuestProgress({
+  part,
+  state,
+  playerId,
+  busy,
+  act,
+  onMap,
+}: {
+  part: CreatorParticipation;
+  state?: CreatorCompletionState;
+  playerId: string;
+  busy: boolean;
+  act: Action;
+  onMap?: () => void;
+}) {
+  const draft = useFormDraft({
+    playerId,
+    form: "creator-observation",
+    realm: `demo:creator-observation:${part.questId}:${part.revision}`,
+    fields: { evidence: 1000 },
+    initial: { evidence: "" },
+  });
+  const [error, setError] = useState("");
+  const done = !!state?.receipt || state?.state === "completed";
+  const failed = state?.state === "rejected-final";
+  const pending = state?.state === "pending";
+  const last = state?.attempts.at(-1);
+  const tries = state?.policy?.maxAttempts ?? 3;
+  const mapButton = onMap && (
+    <button type="button" className={`${state?.canSubmit || done || failed || pending ? "secondary-button" : "primary-button"} qd-cta`} onClick={onMap}>
+      <MapPin size={20} weight="fill" aria-hidden="true" />{tr("Show on map")}
+    </button>
+  );
+  function submit(event: FormEvent) {
+    event.preventDefault();
+    if (busy || !state || !draft.values.evidence.trim()) return;
+    const revision = draft.revision;
+    setError("");
+    void act(
+      `/quests/${idPath(part.questId)}/completion`,
+      "POST",
+      { revision: state.revision, evidence: draft.values.evidence, privateConsent: true },
+      tr("Answer sent. A reviewer will check it."),
+      () => draft.discard(revision),
+      (e) => setError(e.message),
+    );
+  }
   return (
-    <div className="creator-place">
-      <strong>{template.name}</strong>
-      <span>
-        {place.template === "trail"
-          ? tr("{0} stops · {1} walk", { 0: place.points.length, 1: distanceText(trailLength(place.points)) })
-          : tr("One pinned spot")}
-        {distance !== null ? tr(" · start {0} away", { 0: distanceText(distance) }) : ""}
+    <section className="qd-progress" aria-label={tr("Your progress")}>
+      <span className={`qd-state${done ? " is-done" : failed ? " is-failed" : ""}`}>
+        {done ? <Check size={18} weight="bold" aria-hidden="true" /> : null}
+        {done
+          ? tr("Done")
+          : failed
+            ? tr("Not completed")
+            : pending
+              ? tr("Waiting for review")
+              : tr("In progress")}
       </span>
-      {first && (
-        <a
-          className="text-button"
-          href={`https://www.openstreetmap.org/?mlat=${first.lat}&mlon=${first.lng}#map=18/${first.lat}/${first.lng}`}
-          target="_blank"
-          rel="noreferrer"
-        >
-          {tr("Open the start on a map")}{" "}<ArrowRight size={18} />
-        </a>
+      {!done && !failed && mapButton}
+      {state?.legacy && !done && (
+        <p className="creator-hint">{tr("This quest has no question to answer. Ask the host to close it for you.")}</p>
       )}
-    </div>
+      {state?.state === "rejected" && last?.feedback && (
+        <p className="qd-feedback-note"><b>{tr("Not quite:")}</b>{" "}{last.feedback}</p>
+      )}
+      {failed && last?.feedback && (
+        <p className="qd-feedback-note">{last.feedback}</p>
+      )}
+      {pending && last && <p className="qd-answer">{last.evidence}</p>}
+      {done && last && <p className="qd-answer">{last.evidence}</p>}
+      {state?.canSubmit && (
+        <form className="qd-answer-form" onSubmit={submit}>
+          <textarea
+            aria-label={tr("Your answer")}
+            placeholder={tr("Your answer")}
+            required
+            rows={2}
+            maxLength={state.policy?.maxEvidenceChars ?? 1000}
+            value={draft.values.evidence}
+            readOnly={busy}
+            onChange={(e) => draft.setField("evidence", e.target.value)}
+          />
+          {error && <p role="alert">{error}</p>}
+          <button type="submit" className="primary-button qd-cta" disabled={busy || !draft.values.evidence.trim()}>
+            {busy ? tr("Sending…") : tr("Send answer")}<ArrowRight size={20} />
+          </button>
+          <small className="qd-fine">
+            {tr("Only you and the reviewer see it.")}
+            {state.attempts.length > 0 ? ` ${tr("Try {0} of {1}", { 0: state.attempts.length + 1, 1: tries })}` : ""}
+          </small>
+        </form>
+      )}
+      {state?.receipt && <small className="qd-fine">{tr("Receipt:")}{" "}{state.receipt.id}</small>}
+    </section>
   );
 }
+
 function CreatorSafetyDialog({
   action,
   playerId,
@@ -1449,242 +1702,6 @@ function CreatorSafetyDialog({
             onConfirmed={onConfirmed}
           />
         )}
-      </div>
-    </Dialog>
-  );
-}
-function CreatorCompletionSection({
-  state,
-  playerId,
-  busy,
-  act,
-}: {
-  state: CreatorCompletionState;
-  playerId: string;
-  busy: boolean;
-  act: Action;
-}) {
-  const [open, setOpen] = useState(false);
-  return (
-    <section
-      className="creator-completion"
-      aria-label={tr("Private completion progress")}
-    >
-      <h4>
-        {state.receipt ? tr("Observation completed") : tr("Your completion progress")}
-      </h4>
-      {state.legacy ? (
-        <p>
-          {state.state === "legacy-resolved"
-            ? tr("This legacy participation has been resolved. It has no observation completion receipt and no configured reward. Your instructions remain available.")
-            : tr("This accepted revision has no declared observation requirement. A later author edit cannot add one to your existing start. Ask the host’s completion operator to review this legacy participation; your instructions remain available.")}
-        </p>
-      ) : (
-        <>
-          <p>
-            <strong>{tr("Accepted requirement · revision")}{" "}{state.revision}</strong>
-          </p>
-          <p className="creator-instructions">{state.requirement?.prompt}</p>
-          <p className="creator-hint">
-            {tr("Policy")}{" "}{state.policy?.version}{tr(": private text up to")}{" "}
-            {state.policy?.maxEvidenceChars} {" "}{tr("characters, one pending review at a time, up to")}{" "}{state.policy?.maxAttempts} {" "}{tr("attempts. An independent third rejection resolves the obligation as NOT completed. No evidence expires automatically. Review checks text against the prompt; it does not prove GPS, a physical visit or the path walked. No XP, GOLD or item reward is configured.")}</p>
-          {state.state === "pending" && (
-            <p role="status">
-              {tr("Your observation is awaiting independent review. Do not send another copy.")}</p>
-          )}
-          {state.state === "rejected" && (
-            <p>
-              {tr("The reviewer requested a correction. Read the private feedback before another attempt.")}</p>
-          )}
-          {state.state === "rejected-final" && (
-            <p>
-              {tr("The third review was rejected. Participation is resolved as NOT completed, with no completion receipt or reward. All submitted text and feedback remain below.")}</p>
-          )}
-          {state.receipt && (
-            <div className="creator-quote">
-              <strong>{tr("Completion confirmed · no reward configured")}</strong>
-              <p>
-                {tr("Reviewed observation completed for accepted revision")}{" "}
-                {state.receipt.revision}. {count(state.receipt.reward.xp)} {" "}{tr("XP ·")}{" "}
-                {count(state.receipt.reward.gold)} {" "}{tr("GOLD · no item. This receipt does not establish a physical visit.")}</p>
-              <small>{tr("Receipt:")}{" "}{state.receipt.id}</small>
-            </div>
-          )}
-          {state.canSubmit && (
-            <button
-              className="primary-button"
-              disabled={busy}
-              onClick={() => setOpen(true)}
-            >
-              {tr("Write private observation")}{" "}<PencilSimple size={20} />
-            </button>
-          )}
-          {state.attempts.map((a) => (
-            <details className="creator-safety-tools" key={a.id}>
-              <summary>
-                {tr("Attempt")}{" "}{a.attempt} ·{" "}
-                {a.state === "pending"
-                  ? tr("Awaiting review")
-                  : a.state === "accepted"
-                    ? tr("Accepted")
-                    : tr("Rejected")}
-              </summary>
-              <p className="creator-instructions">{a.evidence}</p>
-              {a.feedback && (
-                <>
-                  <strong>{tr("Private review feedback")}</strong>
-                  <p className="creator-instructions">{a.feedback}</p>
-                </>
-              )}
-            </details>
-          ))}
-        </>
-      )}
-      <details className="creator-safety-tools">
-        <summary>{tr("Help with this participation")}</summary>
-        <p>
-          {tr("For a pending, legacy or disputed review, give the host's completion operator this reference. No public support or appeal channel is configured in this local slice; this reference does not send a message or settle your participation.")}</p>
-        <p className="creator-instructions">
-          {tr("Quest:")}{" "}{state.questId}
-          <br />
-          {tr("Accepted revision:")}{" "}{state.revision}
-          <br />
-          {tr("Explorer:")}{" "}{playerId}
-        </p>
-      </details>
-      {open && (
-        <CreatorEvidenceDialog
-          state={state}
-          playerId={playerId}
-          busy={busy}
-          act={act}
-          onClose={() => setOpen(false)}
-        />
-      )}
-    </section>
-  );
-}
-function CreatorEvidenceDialog({
-  state,
-  playerId,
-  busy,
-  act,
-  onClose,
-}: {
-  state: CreatorCompletionState;
-  playerId: string;
-  busy: boolean;
-  act: Action;
-  onClose: () => void;
-}) {
-  const draft = useFormDraft({
-    playerId,
-    form: "creator-observation",
-    realm: `demo:creator-observation:${state.questId}:${state.revision}`,
-    fields: { evidence: 1000 },
-    initial: { evidence: "" },
-  });
-  const [consent, setConsent] = useState(false),
-    [error, setError] = useState("");
-  const attempt = state.attempts.length + 1;
-  function submit(e: FormEvent) {
-    e.preventDefault();
-    if (!consent || busy) return;
-    const revision = draft.revision;
-    setError("");
-    void act(
-      `/quests/${idPath(state.questId)}/completion`,
-      "POST",
-      {
-        revision: state.revision,
-        evidence: draft.values.evidence,
-        privateConsent: true,
-      },
-      tr("Your private observation was received. Independent review is pending; no reward or completion is confirmed yet."),
-      () => {
-        draft.discard(revision);
-        onClose();
-      },
-      (e) => setError(e.message),
-    );
-  }
-  return (
-    <Dialog label={tr("Submit private observation")} onClose={onClose}>
-      <div className="creator-safety-dialog">
-        <h2>{tr("Your observation")}</h2>
-        <p>
-          {tr("Accepted revision")}{" "}{state.revision} {" "}{tr("· attempt")}{" "}{attempt}/
-          {state.policy?.maxAttempts}
-        </p>
-        <p className="creator-instructions">{state.requirement?.prompt}</p>
-        <p className="creator-hint">
-          {tr("Text is private to you and authorized reviewers. Do not include contact details, precise location or other private information. No GPS, photo or file is attached. Acceptance confirms reviewed text, not physical presence. No reward is configured.")}</p>
-        {attempt === state.policy?.maxAttempts && (
-          <p>
-            {tr("This is the final permitted attempt. A third independent rejection resolves this participation as NOT completed; it creates no completion receipt or reward. Evidence and feedback remain available.")}</p>
-        )}
-        <form className="creator-form" onSubmit={submit}>
-          <label htmlFor="creator-observation-evidence">
-            {tr("Observation text")}<textarea
-              id="creator-observation-evidence"
-              required
-              maxLength={1000}
-              rows={5}
-              value={draft.values.evidence}
-              readOnly={busy}
-              onChange={(e) => {
-                draft.setField("evidence", e.target.value);
-                setConsent(false);
-              }}
-            />
-          </label>
-          <small>{draft.values.evidence.length}{tr("/1,000 characters")}</small>
-          <p className="creator-hint">
-            {draft.storageAvailable
-              ? draft.restored
-                ? tr("Your text was restored. Submission consent was not restored.")
-                : tr("Text stays in this browser until submitted or discarded; consent is never stored.")
-              : tr("Browser storage is unavailable. Keep this dialog open to retain your text.")}
-          </p>
-          <label className="creator-check">
-            <input
-              type="checkbox"
-              checked={consent}
-              disabled={busy}
-              onChange={(e) => setConsent(e.target.checked)}
-            />
-            <span>
-              {tr("Send this text privately for independent completion review.")}</span>
-          </label>
-          {error && (
-            <p className="creator-error" role="alert">
-              {error}
-            </p>
-          )}
-          <button
-            type="submit"
-            className="primary-button"
-            disabled={busy || !consent || !draft.values.evidence.trim()}
-          >
-            {busy ? tr("Sending observation…") : tr("Submit for independent review")}
-            <ArrowRight size={20} />
-          </button>
-          {draft.hasDraft && (
-            <button
-              className="text-button"
-              type="button"
-              disabled={busy}
-              onClick={() => {
-                draft.discard();
-                setConsent(false);
-              }}
-            >
-              {tr("Discard local observation text")}</button>
-          )}
-          <button className="secondary-button" type="button" onClick={onClose}>
-            {busy ? tr("Close · request may still finish") : tr("Cancel")}
-          </button>
-        </form>
       </div>
     </Dialog>
   );
@@ -2091,6 +2108,32 @@ function QuestEditor({
     priceProblem = (error as Error).message;
   }
   const priceChanged = priceValue !== (savedPrice || "0");
+  const [photo, setPhoto] = useState(quest?.draft.photo || "");
+  const [photoBusy, setPhotoBusy] = useState(false);
+  const [photoError, setPhotoError] = useState("");
+  async function choosePhoto(file?: File) {
+    if (!file || photoBusy) return;
+    setPhotoBusy(true);
+    setPhotoError("");
+    try {
+      const image = await questPhotoData(file);
+      const saved = await api<{ photo: string }>("/creator-photos", { image });
+      if (mounted.current) {
+        setPhoto(saved.photo);
+        setQuote(null);
+        setAccepted(false);
+      }
+    } catch (error) {
+      if (mounted.current)
+        setPhotoError(
+          error instanceof ApiError
+            ? error.message
+            : tr("That photo could not be opened. Choose it again."),
+        );
+    } finally {
+      if (mounted.current) setPhotoBusy(false);
+    }
+  }
   const placeChanged =
     JSON.stringify(template ? { template, points } : null) !==
     JSON.stringify(savedPlace ?? null);
@@ -2119,6 +2162,7 @@ function QuestEditor({
     requirementDraft.hasDraft ||
     placeChanged ||
     priceChanged ||
+    photo !== (quest?.draft.photo || "") ||
     observation !== !!quest?.draft.requirement;
   const newIdentity = useMemo(
     () => (quest ? null : creatorDraftIdentity(playerId)),
@@ -2200,6 +2244,7 @@ function QuestEditor({
         : {}),
       ...(template ? { place: { template, points } } : {}),
       ...(priceValue !== "0" ? { price: priceValue } : {}),
+      ...(photo ? { photo } : {}),
     };
     const saved = await act(
       quest ? `/quests/${idPath(quest.id)}/revisions` : "/quests",
@@ -2279,6 +2324,30 @@ function QuestEditor({
             }}
           />
         )}
+        <div className={`qe-photo${photo ? " has-photo" : ""}`}>
+          {photo && <img src={photo} alt="" />}
+          <label className={`secondary-button${!editable || busy || photoBusy ? " is-disabled" : ""}`}>
+            <Camera size={20} aria-hidden="true" />
+            {photoBusy ? tr("Opening photo…") : photo ? tr("Change photo") : tr("Add photo")}
+            <input
+              className="sr-only"
+              aria-label={tr("Choose a photo")}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={!editable || busy || photoBusy}
+              onChange={(e) => {
+                void choosePhoto(e.target.files?.[0]);
+                e.target.value = "";
+              }}
+            />
+          </label>
+          {photo && editable && (
+            <button type="button" className="text-button" disabled={busy} onClick={() => { setPhoto(""); setQuote(null); setAccepted(false); }}>
+              {tr("Remove photo")}
+            </button>
+          )}
+          {photoError && <p role="alert">{photoError}</p>}
+        </div>
         <fieldset className="creator-templates" disabled={!editable || busy}>
           <legend>{tr("Template")}</legend>
           {(Object.keys(PLACE_TEMPLATES) as CreatorPlaceTemplate[]).map(

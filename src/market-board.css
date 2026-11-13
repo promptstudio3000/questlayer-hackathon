@@ -1,0 +1,141 @@
+/* Shop → Market: illustrated listing cards (MarketBoard.tsx). */
+.market-board {
+  gap: 12px;
+}
+.market-board-tools {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.market-board-tools .inv-chips {
+  flex: 1 1 auto;
+}
+.market-board-sort select {
+  min-height: 48px;
+  padding: 0 10px;
+  border-radius: 10px;
+  border: 1px solid var(--inventory-border);
+  background: var(--inventory-raised);
+  color: var(--inventory-ink);
+  font: inherit;
+  font-size: 14px;
+}
+.market-board .market-refresh {
+  min-width: 48px;
+  min-height: 48px;
+  border-radius: 10px;
+  border: 1px solid var(--inventory-border);
+  background: var(--inventory-raised);
+  color: var(--inventory-action);
+  display: inline-grid;
+  place-items: center;
+}
+.market-board-credit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--inventory-soft);
+  font-size: 14px;
+}
+.market-board-grid {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+.market-card {
+  --frame: var(--inv-common);
+  position: relative;
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 10px 6px 8px;
+  border-radius: 14px;
+  border: 2px solid var(--frame);
+  background: var(--inventory-raised);
+  color: var(--inventory-ink);
+  font: inherit;
+  text-align: center;
+  box-shadow: inset 0 -3px 0 #441c6c1a;
+  cursor: pointer;
+}
+.market-card.rarity-rare { --frame: var(--inv-rare); }
+.market-card.rarity-epic { --frame: var(--inv-epic); }
+.market-card.rarity-legendary { --frame: var(--inv-legendary); box-shadow: inset 0 -3px 0 #441c6c26, 0 0 10px #e3a63266; }
+.market-card:focus-visible { outline: 3px solid var(--inventory-action); outline-offset: 2px; }
+.market-card-art {
+  width: 100%;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  background: radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--frame) 24%, #ffffff) 0, var(--inv-cell) 72%);
+}
+.market-card-art .aura-sprite { width: 86%; height: auto; }
+.market-card strong {
+  font-size: 14px;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.market-card small { font-size: 12px; }
+.market-card-price {
+  margin-top: 4px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--inventory-soft);
+  color: var(--inventory-action);
+  font-size: 14px;
+  font-weight: 700;
+}
+.market-card-mine {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: var(--inventory-action);
+  color: var(--inventory-on-action);
+  font-size: 12px;
+  font-weight: 700;
+}
+.market-detail-art {
+  --frame: var(--inv-common);
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 10;
+  border-radius: 16px;
+  border: 2px solid var(--frame);
+  background: radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--frame) 30%, #ffffff) 0, var(--inv-cell) 70%);
+}
+.market-detail-art.rarity-rare { --frame: var(--inv-rare); }
+.market-detail-art.rarity-epic { --frame: var(--inv-epic); }
+.market-detail-art.rarity-legendary { --frame: var(--inv-legendary); }
+.market-detail-art .aura-sprite { width: min(72%, 260px); height: auto; }
+.market-detail-facts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 0;
+}
+.market-detail-facts div {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--inventory-soft);
+}
+.market-detail-facts dt { font-size: 12px; color: var(--inventory-secondary); }
+.market-detail-facts dd { margin: 0; font-weight: 700; overflow-wrap: anywhere; }
+.market-detail .inventory-action { width: 100%; }
+.market-board-grid > li { min-width: 0; }
+.market-card { min-width: 0; overflow: hidden; }
+.market-card-art { overflow: hidden; }
+.market-card strong, .market-card small { max-width: 100%; }
+.market-card-price { white-space: nowrap; font-size: 13px; padding: 2px 8px; }

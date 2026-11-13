@@ -39,7 +39,7 @@ try {
   browser = await engine.launch();
   for (const [name, width, height] of [["phone-360", 360, 780], ["phone-390", 390, 844], ["landscape", 844, 390], ["desktop", 1440, 900]]) {
     if (process.env.E2E_VIEWPORT && process.env.E2E_VIEWPORT !== name) continue;
-    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });
+    const context = await browser.newContext({ viewport: { width, height }, reducedMotion: "reduce" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
     await context.addInitScript(({ offset }) => {
       const RealDate = Date;
       class PreviewDate extends RealDate {
@@ -132,9 +132,8 @@ try {
       const hide=page.getByRole("button",{name:"Hide objective",exact:true});
       if(await hide.isVisible()) {
         await hide.click();
-        await page.locator(".topbar .profile-pill").click();
-        await page.getByRole("tab",{name:"Settings",exact:true}).click();
-        await page.getByRole("button",{name:"Show first steps again",exact:true}).click();
+        await page.locator(".map-settings-toggle").click();
+        await page.getByRole("switch",{name:/First-time tips/}).click();
         await page.locator(".first-session").waitFor();
         assert.ok(await page.locator(".main-panel").isVisible(),"Settings restores a dismissed guide without resetting progress");
         await check("guide-restored");
@@ -187,14 +186,14 @@ try {
     if (width === 390) {
       await item.click();
       await page.getByRole("button", { name: "Sell", exact: true }).click();
-      await page.locator("#inventory-list-price").fill("0.05");
+      await page.locator("#inventory-list-price").fill("50M");
       await page.setViewportSize({ width, height: 420 });
       await page.locator("#inventory-list-price").focus();
       await check("item-keyboard-viewport");
       await page.setViewportSize({ width, height });
       await page.locator(".inv-detail *").evaluateAll(els => els.filter(el => el.matches("input,textarea,select") || [...el.childNodes].some(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim())).forEach(el => el.style.setProperty("font-size", `${parseFloat(getComputedStyle(el).fontSize) * 2}px`, "important")));
       await check("item-enlarged-text");
-      assert.equal(await page.locator("#inventory-list-price").inputValue(), "0.05");
+      assert.equal(await page.locator("#inventory-list-price").inputValue(), "50M");
     }
     assert.deepEqual(faults, [], "No browser errors");
     report.viewports.push({ name, width, height, mapReady, scans, faults });

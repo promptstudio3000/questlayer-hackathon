@@ -1,9 +1,12 @@
 // The QuestLayer wiki at /wiki (docs/WIKI.md): a public, read-only know-how
-// center that explains every mechanism in force, with diagrams, charts and
-// small simulators. Own lazy chunk; nothing here loads for the game itself.
+// center that explains every mechanism in force. Each chapter reads in three
+// layers: a TL;DR, a few key numbers and one picture; everything else sits
+// under "More details" so the page stays short. Own lazy chunk; nothing here
+// loads for the game itself.
 import React, { useEffect, useMemo, useState } from "react";
+import { ArrowsInLineVertical, ArrowsOutLineVertical, CaretDown, MagnifyingGlass } from "@phosphor-icons/react";
 import { CHAPTERS, GROUPS, STATUS_LABEL, type Block, type Chapter } from "./chapters";
-import { Viz } from "./diagrams";
+import { BigPicture, Viz } from "./diagrams";
 import "./wiki.css";
 import "../public-polish.css";
 import { scrollRegionKeys } from "../scroll-region";
@@ -75,39 +78,70 @@ function BlockView({ b }: { b: Block }) {
   return <aside className={`wk-note ${b.tone ?? "info"}`}>{inline(b.note)}</aside>;
 }
 
-const plain = (c: Chapter) =>
-  [c.title, c.summary, ...c.blocks.map((b) => ("p" in b ? b.p : "list" in b ? b.list.join(" ") : "h" in b ? b.h : "note" in b ? b.note : "table" in b ? b.table.rows.flat().join(" ") : ""))]
-    .join(" ")
-    .toLowerCase();
+const blockText = (b: Block) =>
+  "p" in b ? b.p : "list" in b ? b.list.join(" ") : "h" in b ? b.h : "note" in b ? b.note : "table" in b ? b.table.rows.flat().join(" ") : "facts" in b ? b.facts.flat().join(" ") : "";
 
-function ChapterView({ c, index }: { c: Chapter; index: number }) {
+const plain = (c: Chapter) => [c.title, c.tldr, ...c.keyFacts.flat(), ...c.blocks.map(blockText)].join(" ").toLowerCase();
+
+function KeyFacts({ facts }: { facts: Chapter["keyFacts"] }) {
+  if (!facts.length) return null;
+  return (
+    <dl className="wk-keyfacts">
+      {facts.map(([value, label]) => (
+        <div key={label}>
+          <dt>{inline(label)}</dt>
+          <dd>{inline(value)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+}
+
+function ChapterView({ c, index, open, onToggle }: { c: Chapter; index: number; open: boolean; onToggle: (open: boolean) => void }) {
+  const topics = c.blocks.filter((b): b is { h: string } => "h" in b).map((b) => b.h);
   return (
     <section id={c.id} className="wk-chapter" aria-labelledby={`${c.id}-title`}>
       <header>
-        <span className="wk-num">{String(index + 1).padStart(2, "0")}</span>
+        <span className="wk-num" aria-hidden="true">
+          {String(index + 1).padStart(2, "0")}
+        </span>
         <div>
           <h2 id={`${c.id}-title`}>
             <a href={`#${c.id}`}>{c.title}</a>
           </h2>
-          <p className="wk-summary">{c.summary}</p>
           <p className="wk-meta">
             <span className={`wk-status ${c.status}`}>{STATUS_LABEL[c.status]}</span>
             <span>Checked {c.updated}</span>
           </p>
         </div>
       </header>
-      {c.blocks.map((b, i) => (
-        <BlockView key={i} b={b} />
-      ))}
-      <details className="wk-sources">
-        <summary>Sources in the repository ({c.sources.length})</summary>
-        <ul>
-          {c.sources.map((s) => (
-            <li key={s}>
-              <code>{s}</code>
-            </li>
+      <div className="wk-tldr">
+        <span className="wk-tldr-tag">TL;DR</span>
+        <p>{inline(c.tldr)}</p>
+      </div>
+      <KeyFacts facts={c.keyFacts} />
+      {c.hero ? <Viz id={c.hero} /> : null}
+      <details className="wk-more" open={open} onToggle={(e) => onToggle((e.currentTarget as HTMLDetailsElement).open)}>
+        <summary>
+          <CaretDown className="wk-more-caret" size={20} weight="bold" aria-hidden="true" />
+          <span className="wk-more-label">{open ? "Fewer details" : "More details"}</span>
+          {topics.length ? <span className="wk-more-topics">{topics.join(" · ")}</span> : null}
+        </summary>
+        <div className="wk-more-body">
+          {c.blocks.map((b, i) => (
+            <BlockView key={i} b={b} />
           ))}
-        </ul>
+          <details className="wk-sources">
+            <summary>Sources in the repository ({c.sources.length})</summary>
+            <ul>
+              {c.sources.map((s) => (
+                <li key={s}>
+                  <code>{s}</code>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </div>
       </details>
     </section>
   );
@@ -117,6 +151,7 @@ export default function WikiPage() {
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(CHAPTERS[0].id);
   const [menu, setMenu] = useState(false);
+  const [open, setOpen] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
     document.title = "QuestLayer wiki";
@@ -126,7 +161,12 @@ export default function WikiPage() {
 
   const index = useMemo(() => new Map(CHAPTERS.map((c) => [c.id, plain(c)])), []);
   const q = query.trim().toLowerCase();
-  const visible = q ? CHAPTERS.filter((c) => q.split(/\s+/).every((w) => index.get(c.id)!.includes(w))) : CHAPTERS;
+  const visible = useMemo(() => (q ? CHAPTERS.filter((c) => q.split(/\s+/).every((w) => index.get(c.id)!.includes(w))) : CHAPTERS), [q, index]);
+
+  // A search opens the details of every matching chapter, so the match is on screen.
+  useEffect(() => {
+    if (q) setOpen(new Set(visible.map((c) => c.id)));
+  }, [q, visible]);
 
   useEffect(() => {
     if (!("IntersectionObserver" in window)) return;
@@ -150,6 +190,17 @@ export default function WikiPage() {
     if (id) requestAnimationFrame(() => document.getElementById(id)?.scrollIntoView());
   }, []);
 
+  const allOpen = visible.length > 0 && visible.every((c) => open.has(c.id));
+  const toggleAll = () => setOpen(allOpen ? new Set() : new Set(CHAPTERS.map((c) => c.id)));
+  const setChapter = (id: string, isOpen: boolean) =>
+    setOpen((prev) => {
+      if (prev.has(id) === isOpen) return prev;
+      const next = new Set(prev);
+      if (isOpen) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+
   const live = CHAPTERS.filter((c) => c.status === "live").length;
   return (
     <div className="wk">
@@ -167,20 +218,34 @@ export default function WikiPage() {
         </nav>
       </header>
       <div className="wk-hero">
-        <h1>How QuestLayer works, in detail</h1>
+        <h1>How QuestLayer works</h1>
         <p>
-          The know-how center: every mechanism in force, how it connects to the others and where it lives in the code. {CHAPTERS.length} chapters, {live} of them fully live on
-          testnet.
+          Every mechanism in force, short first: a TL;DR, the key numbers and one picture per chapter. Open <strong>More details</strong> only where you need them. {CHAPTERS.length}{" "}
+          chapters, {live} fully live on testnet.
         </p>
-        <label className="wk-search">
-          <span className="wk-visually-hidden">Search the wiki</span>
-          <input type="search" placeholder="Search: vault, waves, Intents, XP…" value={query} onChange={(e) => setQuery(e.target.value)} />
-        </label>
+        <div className="wk-hero-tools">
+          <label className="wk-search">
+            <MagnifyingGlass size={20} aria-hidden="true" />
+            <span className="wk-visually-hidden">Search the wiki</span>
+            <input type="search" placeholder="Search: vault, waves, Intents, XP…" value={query} onChange={(e) => setQuery(e.target.value)} />
+          </label>
+          <button type="button" className="wk-expand" aria-pressed={allOpen} onClick={toggleAll}>
+            {allOpen ? <ArrowsInLineVertical size={20} aria-hidden="true" /> : <ArrowsOutLineVertical size={20} aria-hidden="true" />}
+            {allOpen ? "Fold all details" : "Open all details"}
+          </button>
+        </div>
+        {q ? (
+          <p className="wk-search-count" role="status">
+            {visible.length ? `${visible.length} of ${CHAPTERS.length} chapters mention “${query.trim()}”; their details are open.` : ""}
+          </p>
+        ) : null}
       </div>
+      {!q ? <BigPicture /> : null}
       <div className="wk-body">
         <nav className={`wk-toc${menu ? " open" : ""}`} aria-label="Chapters">
           <button type="button" className="wk-toc-toggle" aria-expanded={menu} onClick={() => setMenu(!menu)}>
             Chapters
+            <CaretDown size={18} weight="bold" aria-hidden="true" />
           </button>
           <div className="wk-toc-list">
             {GROUPS.map((g) => {
@@ -206,7 +271,7 @@ export default function WikiPage() {
         </nav>
         <main className="wk-main">
           {visible.length ? (
-            visible.map((c) => <ChapterView key={c.id} c={c} index={CHAPTERS.indexOf(c)} />)
+            visible.map((c) => <ChapterView key={c.id} c={c} index={CHAPTERS.indexOf(c)} open={open.has(c.id)} onToggle={(o) => setChapter(c.id, o)} />)
           ) : (
             <p className="wk-empty-search">No chapter mentions “{query}”.</p>
           )}

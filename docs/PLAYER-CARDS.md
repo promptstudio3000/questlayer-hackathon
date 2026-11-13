@@ -47,14 +47,87 @@ Built 4 November 2026. Code: `server/gotchi-wearables.mjs`, `server/player-waves
 - Public data never includes the wallet address: other players see only
   "verified" per item.
 
+### Owned Aavegotchis by default (10 Nov 2026)
+
+Before, the snapshot was read only when the Wardrobe opened, so an owner who
+signed in with an ETH wallet saw the starter ghost and no wearables.
+
+- `server/origin-sync.mjs`: ETH sign-in, linking an address and `GET /api/me`
+  read a stale or empty snapshot at once (up to 4 to 6 s, then in the
+  background); any signed-in request refreshes a snapshot older than 4 minutes,
+  at most once a minute per explorer, so looks (5-minute window) stay on while
+  the explorer plays.
+- `readGotchis` (`server/aavegotchi.mjs`) adds each gotchi's name, rarity score
+  (`modifiedTraitsAndRarityScore`, BRS with wearables) and `claimed`; unopened
+  portals revert there and get no look. Gotchis come best first.
+- The first snapshot dresses the explorer in the best gotchi (highest BRS, then
+  lowest id) unless they wear an original already or chose the starter ghost
+  (`appearance.starter`, set by "Back to starter ghost").
+- Inventory → Items shows the owned gotchis as a row (tap to wear) and a peek at
+  the wallet's wearables that opens the Wardrobe (`src/OwnedGotchis.tsx`).
+- QA: `node scripts/qa-gotchi-owner.mjs [outDir] [address]` (needs Base RPC).
+
+## Player profile (10 Nov 2026)
+
+The explorer card became a compact profile in the Aavegotchi style
+(`src/PlayerCard.tsx`, `playerCard` in `server/player-waves.mjs`). Lubos's
+rules (10 Nov 2026): the profile is always visible, never with a position;
+others see only what is worn; the header shows finds and stats.
+
+- Header: avatar, name, level + XP bar, worn original's name and BRS.
+- Stats: finds (claimed coins), quests (quest claims), monsters won
+  (`actor_challenges.state='won'`), wearables found (clones from finds),
+  badges, month started.
+- Slots in Aavegotchi order (`PROFILE_SLOTS`): the worn original's own gear
+  from the ownership snapshot, else worn clones; Auras above and below.
+- `profileOriginal` reads a snapshot at most a day old, so the original shows
+  while the explorer is offline; `/api/players/skin` serves its art without
+  presence (blocks respected).
+- Own avatar on the map opens the own profile with **Change outfit**.
+- Dressing (phase 2, Lubos 10 Nov: "wear whatever you own or found as a
+  clone"): on the own profile each slot opens a picker. With an original worn,
+  `POST /api/aavegotchi/outfit {slot, itemId}` (`server/gotchi-outfit.mjs`)
+  stores `appearance.outfit` (slot index -> item id, 0 = empty, missing = the
+  gotchi's real gear). Only clones found on the map and originals the linked
+  wallet holds (verified, at most a day old) fit; `ownedOutfit` drops items no
+  longer owned. The art comes from the diamond's `previewAavegotchi(hauntId,
+  collateral, traits, wearables)` view on Base, cached per gotchi + outfit;
+  plain art when Base fails. Nothing changes on chain. The skin URLs carry
+  `look`/`skinVersion` so caches refresh. In 3D the outfit swaps slots 0-6
+  in the official renderer hash (`GotchiModels.describe({ outfit })`): a look
+  already rendered loads at once; a missing one is requested from
+  `aavegotchi.com/api/renderer/batch` (`force:true`, at most once per 15 min
+  per look, 40 looks an hour) and the 2D art shows meanwhile. On 10 Nov 2026
+  the renderer's kickoff answered 502, so new combinations stayed 2D; looks it
+  had drawn (e.g. every slot empty) worked in 3D. With the starter ghost the picker
+  equips clones (`/api/wearables/equip`). Others still see only what is worn.
+- Plan for the next phases (Badges, Messages): https://claude.ai/artifact/7ugX6XYGdTWUaz4k1Qzjpt
+
 ## Explorer card
 
 `GET /api/players/card?playerId=` (60 per minute). Available only while the
 other explorer shares their position (the existing 15-minute opt-in) and neither
-side blocked the other. It returns name, level, worn wearables with verified
-flags and Aura colours. No address, account, inventory, balance or history.
-The card offers waves and Block (the existing bilateral block from W10, which
-also hides presence, notes and waves).
+side blocked the other. It returns name, level, XP (available XP, the same
+number levels use), badge count, the day the explorer started, worn wearables
+with verified flags and Aura colours. No address, account, inventory, balance
+or history. The card offers waves and Block (the existing bilateral block from
+W10, which also hides presence, notes and waves).
+
+Since 10 November 2026 every explorer on the map opens this card as a dialog:
+
+- Tapping your own explorer opens your profile overview instead (the same
+  panel as the profile button in the top bar; a centred card on desktop).
+- Test-world bots (`TEST_SEED=1`, ids starting with `seed-`) stay on for the
+  first test weeks. Their card is the same dialog with a `demo-bot` tag after the
+  name and a short note. Bots take no waves and have no Block button.
+- A **Message** button sits in the dialog. For real explorers it opens the
+  encrypted inbox; without the explorer account (wallet-only sign-in) it is
+  disabled and a line under the buttons says why.
+- **Demo bots (11 November 2026):** Message opens a short demo chat inside the
+  card. `POST /api/players/bot-chat {playerId, text}` answers with one of a few
+  fixed in-character lines picked by keywords (English and Czech), see
+  `server/demo-bot-chat.mjs`. Nothing is stored, no AI call, no chain write and no
+  relayer operation; 12 lines a minute per explorer. The card says it is a demo.
 
 ## Messages: what is built and what is proposed
 
@@ -69,16 +142,10 @@ explore together?", "There is a find near here.", "Thanks!", "See you around!").
 - Delivered through the existing presence poll (every 8 s) as a toast, read once,
   deleted after an hour. A block drops unread waves.
 
-**Proposed next (not built): short chat between explorers who waved back.**
-
-1. Opens only after both sides waved at each other (mutual consent).
-2. Text up to 200 characters, links and digit runs (phone numbers) refused,
-   the same NEAR AI / Ollama safety filter as quest texts screens each message.
-3. Report button with the W10 report flow; three reports from different
-   players mute the sender until an operator reviews.
-4. No photos, no location in messages, history kept 24 hours.
-5. Under-age safety: chat stays off for accounts younger than a day and can be
-   switched off entirely in Settings.
+**Built 10 November 2026: private messages.** The card's Write a message button
+opens the encrypted player inbox (docs/PLAYER-INBOX.md): end-to-end encrypted
+messages of up to 500 characters stored on NEAR Social, open after a mutual wave
+or an accepted request, with Block and Report. Demo bots get the demo chat instead.
 
 ## Evidence
 

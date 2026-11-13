@@ -1,205 +1,195 @@
 # QuestLayer
 
-**Little adventures. Real discoveries.** A location-based exploration game on real OpenStreetMap geography,
-built on NEAR. Open it anywhere in Czechia and there is something to do nearby: street coins on mapped paths, quests
-at real public places, NPCs and monsters. In Plzeň, the funded showcase city, open a zone chest, receive an Aura and
-wear it on your character. The NEAR account, the rewards and the Aura NFTs exist, but the player never sees a wallet popup,
-a seed phrase or a gas prompt: the chain is a property of the items, not a screen.
+**Little adventures. Real discoveries.** QuestLayer is a game platform on NEAR for walk-and-discover games on the
+real map. Players start with a name only. Behind the scenes each player gets their own NEAR account, the rewards
+and items settle on chain, and the gas is sponsored, so there are no wallet popups, seed phrases or gas prompts.
+The chain lives in Settings and on the public treasury page, not in the game.
+
+The economy is **stake-to-play without loss**: NEAR goes into staking and yield vaults, the principal can always
+be withdrawn, and only the *realized yield* flows into the treasury and is paid out as daily rewards in **QGOLD**,
+the game's name for a share of that treasury. More players never print more money.
 
 Built for the [NEAR Hackathon](https://nearhackathon.com/) (1–14 November 2026), tracks **Games With Real
-Economies** and **Open Innovation**. Everything runs on NEAR **testnet**; nothing here has monetary value.
+Economies**, **Social Money** and **Open Innovation**. Everything runs on NEAR **testnet**; nothing here has
+monetary value yet.
 
-**Timeline, stated per the rules.** The hackathon window runs from the announcement on 19 October 2026 to
-14 November 2026 (HACKATHON.md, Q-001). Every commit in this repository was made inside that window: the first
-commit is dated 31 October 2026 and the alpha, the testnet pilots and all later work were built in the window. There
-is no pre-hackathon baseline to separate (Q-003); development continues on the branch `claude/upbeat-gauss-5czir7`
-and merges into `main`. Commit dates are real and were not rewritten.
+## Try it now (no install, no wallet)
 
-## For judges: 60 seconds, no install
-
-Open **https://questlayer.promptstudio3000.com/** on a phone or desktop. No wallet, no extension, no seed phrase.
-
-| # | Do | See |
-| --- | --- | --- |
-| 1 | Type a name under "What should we call you?", press **Start exploring** | The Plzeň map with your ghost explorer in the city centre and the chip "City demo · arrows or WASD". On desktop you move with the **Demo walk** pad (hold ↑ or W to run, ←/→ to turn, Shift walks); real play moves only with a phone's GPS. |
-| 2 | Walk over a gold coin on a path | The coin disappears for every player, the counter ticks and you get XP. |
-| 3 | Press the **Nearest discovery** card, then **Turn toward it** and walk there, then **Open chest** (beat the guardian first if one guards it) | The result sheet: exact XP and the Aura you received ("Reward collected"). |
-| 4 | Press **Try it on** | The same Aura is now worn by your character on the map. |
-| 5 | Press **Secure this Aura**, then **Share your Aura** | The Aura is minted as an NFT to your own NEAR account in the background (no popup, gas is sponsored); sharing opens the share sheet with a PNG card (downloads on desktop). |
-| 6 | Reload the page | Name, XP, Aura and equipment are still there. |
-| 7 | Profile → **Advanced** | Your NEAR account id and the network. This is the only place the chain is named. |
-
-### Anywhere in Czechia
-
-On a phone anywhere in Czechia, **Use GPS** (top bar) switches from the Plzeň city demo to your own surroundings.
-On desktop, set a location first (Chromium DevTools → Sensors → Location, e.g. Brno 49.1952, 16.6080).
-
-| Where you are | What you get |
+| Link | What opens |
 | --- | --- |
-| Any street cell (H3 res-7, about 5 km²) | Street coins on mapped paths, the generic NPC and monster cast, and up to six **place quests** a day at real public places (single visits and three-stop category hunts, one cell chest). "Nothing here yet" if the cell has no safe place. |
-| A town with at least 15,000 people | An **auto city**: daily zones built from map data with an **Unverified map** notice, plus the same place quests per cell. Never funded. Live when `/api/health` → `autoCities.status` is `on`; on 3 November the first build on the public host was still pending, so towns played as street cells. |
-| Plzeň (reviewed city) | The six daily zones with chests and the funded reward days. |
+| **https://questlayer.promptstudio3000.com/** | The main address. Until launch it opens the **Test Layer** demo in Plzeň. |
+| https://questlayer-test.promptstudio3000.com/ | The Test Layer directly. |
+| https://questlayer-test.promptstudio3000.com/?newyork | The same demo in another city: try `?praha`, `?london`, `?tokyo`, `?city=Buenos Aires`. |
+| https://questlayer.promptstudio3000.com/?world=1 | **GotchiGO**, the real GPS game (World). Play moves only with a phone's GPS. |
+| https://questlayer.promptstudio3000.com/treasury | The public treasury: what is staked, the yield, who decides. |
+| https://questlayer.promptstudio3000.com/api/health | Live status: network, build, enabled features, relayer, contracts. |
 
-The places come from one import of OpenStreetMap, Wikidata and GeoNames for Czechia, filtered for safety (no
-schools, military, private ground, places without a public path) before any quest is placed. Live numbers on
-[`/api/health`](https://questlayer.promptstudio3000.com/api/health) → `poiWorld` (3 November 2026: 290,817 places,
-197,999 quest-ready, place quests possible in 14,999 of the country's ~15,282 cells, 98 %). Away from Plzeň
-everything pays XP and cosmetics only, never GOLD or NEAR. Details: [docs/POI-PIPELINE.md](docs/POI-PIPELINE.md),
-[docs/POI-SAFETY.md](docs/POI-SAFETY.md), [docs/WORLD-COVERAGE.md](docs/WORLD-COVERAGE.md).
+### Three minutes in the Test Layer
 
-## What is on chain, and where to see it
+1. Type a name and press **Start**. Pip, the guide, offers a short tour; follow it or skip it.
+2. On desktop move with the **demo pad** (arrows or WASD); on a phone walk with GPS or use the pad.
+3. Walk over **coins** on the paths. They disappear for every player and pay XP; the Test Layer gives a one-time
+   welcome of Test QGOLD after the first coin.
+4. Open a **zone**: beat the guardian (a riddle, rhythm or duel), open the chest, receive an **Aura**, wear it and
+   **secure** it. Securing mints the NFT to your own NEAR account in the background.
+5. Talk to an **NPC** (Talk, Tasks, Profile). NPC conversations run on **NEAR AI Cloud** with signed, attested replies.
+6. Open a **creator quest** (the big pins with a photo): Go, then rate and discuss it.
+7. **Stake** from the profile, then see the money on **/treasury**. Settings → Account and devices shows the NEAR
+   account, the on-chain feed and the 12-word export.
 
-Every account below is on NEAR **testnet**, existed on 3 November 2026 (checked with `view_account` against
-`rpc.testnet.near.org`) and matches the manifests in `public/native-*-testnet.json` and
-`public/testnet-deployment.json`. Click an id to open it on NearBlocks.
+A longer judge guide with "do X, see Y" steps and terminal checks is [docs/JUDGE-WALKTHROUGH.md](docs/JUDGE-WALKTHROUGH.md).
 
-| Piece | Account (explorer link) | What to look for |
+## The layers
+
+QuestLayer is the platform; each layer is a game on it with the same code, the same account and its own contracts.
+
+| Layer | What it is | Where |
 | --- | --- | --- |
-| Player account factory (parent of every explorer) | [`play-20261101.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/play-20261101.questlayer-dev-20261101.testnet) | Your explorer is `<name-slug>.play-20261101.questlayer-dev-20261101.testnet`, shown in Profile → Advanced. Created after step 1, key held only by your device ([docs/RELAYER.md](docs/RELAYER.md)). |
-| Auras and avatars, NEP-171 ([contracts/collectibles](contracts/collectibles)) | [`nfts.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/nfts.questlayer-dev-20261101.testnet) | The mint from step 5 to your account, and equip calls. |
-| Game contract ([contracts/game](contracts/game)) | [`game.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/game.questlayer-dev-20261101.testnet) | Coin/zone buckets and claim batches (`public/testnet-deployment.json`). |
-| Gas sponsor, NEP-366 relayer | [`relay-20261101.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/relay-20261101.questlayer-dev-20261101.testnet) | Meta-transactions relayed for players. It never carries money. |
-| Rewards treasury: coins, zone prizes, XP ([contracts/rewards](contracts/rewards)) | [`questlayer-rewards-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-rewards-20261101b.testnet) | Published days and claims. Live books check: `/api/native/distribution` returns `status: verified`. |
-| Vault factory ([contracts/vault-factory](contracts/vault-factory)) | [`questlayer-vaults-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-vaults-20261101b.testnet) | Created the staking vault below. |
-| Staking vault that funds rewards from yield ([contracts/vault](contracts/vault)) | [`questlayer-vault-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-vault-20261101b.testnet) | Harvests into the treasury; timeline in `public/native-yield-cycle.json`. |
-| Aura market, fixed-price escrow ([contracts/market](contracts/market)) | [`questlayer-market-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-market-20261101b.testnet) | Profile → Market: list, buy, cancel. |
-| Creator money: paid quests, donations ([contracts/creators](contracts/creators)) | [`questlayer-creators-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-creators-20261101b.testnet) | Pilot, enabled on the public host. |
-| Sponsored tasks escrow ([contracts/tasks](contracts/tasks)) | [`questlayer-tasks-20261031.testnet`](https://testnet.nearblocks.io/address/questlayer-tasks-20261031.testnet) | Pilot, earlier generation. |
-| Public map notes (NEAR Social, not ours) | [`v1.social08.testnet`](https://testnet.nearblocks.io/address/v1.social08.testnet) | Notes written under the player's own namespace. |
-| Yield vault: stNEAR, LiNEAR, USDC, USDT deposits ([contracts/yield-vault](contracts/yield-vault)) | [`questlayer-yield-20261102.testnet`](https://testnet.nearblocks.io/address/questlayer-yield-20261102.testnet) | A deposit makes the player a Staker at once; yield is skimmed for map rewards ([docs/YIELD-VAULT.md](docs/YIELD-VAULT.md)). Treasury stNEAR record: `public/stnear-treasury-testnet.json`. |
-| Player badges, place badges ([contracts/badges](contracts/badges)) | [`questlayer-badges-20261102.testnet`](https://testnet.nearblocks.io/address/questlayer-badges-20261102.testnet) | Badges minted for visited places ([docs/BADGES.md](docs/BADGES.md)). |
-| Item games, commit-reveal rolls ([contracts/npc-games](contracts/npc-games)) | [`questlayer-npc-games-20261101.testnet`](https://testnet.nearblocks.io/address/questlayer-npc-games-20261101.testnet) | Earned roll tickets, `start_roll` / `resolve_roll` ([docs/NPC-GAMES.md](docs/NPC-GAMES.md)). |
-| NPC trader Vojtěch (plain account) | [`npc-kupec-vojtech.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/npc-kupec-vojtech.questlayer-dev-20261101.testnet) | Signed market orders from the trader's own funded account ([docs/NPC-TRADERS.md](docs/NPC-TRADERS.md)). |
-| Operator (deploys and owns the dev contracts) | [`questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/questlayer-dev-20261101.testnet) | Plain account, no contract code. |
+| **Test Layer** | The demo in Plzeň (or any city via `?cityname`): compact zones, demo bots and seed quests, Pip's tour. Test QGOLD is its own testnet token with no backing. Every new feature lands here first. | `questlayer-test.promptstudio3000.com`, [docs/TEST-LAYER.md](docs/TEST-LAYER.md) |
+| **GotchiGO** | The real-world GPS game: Aavegotchi lore on the real map. Coins on mapped paths, quests at real public places, NPCs and monsters at named places across Czechia, Slovakia and Austria, plus demo cities worldwide. Real QGOLD backed by yield. | `questlayer.promptstudio3000.com/?world=1` |
+| **MetaLayer** | A shared voxel world: mine, build, follow Keeper Nera's story "The Quiet Beacon". Its coin is MetaGold, with its own testnet contract. | World picker (logo, top left), [docs/LAYER.md](docs/LAYER.md) |
 
-[`GET /api/health`](https://questlayer.promptstudio3000.com/api/health) shows `"network":"testnet"`, the enabled features
-(collectibles, market, rewards, vaults, relayer, social, creators, tasks), the relayer account, the creator-money
-contract and `distribution.status: verified`. The 3-minute demo script is [docs/HACKATHON-DEMO.md](docs/HACKATHON-DEMO.md); the longer guided tour for judges, with terminal checks of the economy, is [docs/JUDGE-WALKTHROUGH.md](docs/JUDGE-WALKTHROUGH.md). Transaction proofs with hashes (no keys) are in `public/`; some were recorded on earlier testnet
-generations (`questlayer-dev-20261031`, `auratrail-dev-20261030`), so their account names differ from the table:
+The map uses several hundred thousand safety-filtered public places from OpenStreetMap, Wikidata and GeoNames (no schools,
+military or private ground). Live numbers: `/api/health` → `poiWorld` and `autoCities`.
 
-- `native-invisible-account-proof.json`: name → sponsored sub-account → relayed avatar mint, no wallet.
-- `earned-aura-testnet.json`: a chest Aura earned in play and secured to the player's own account.
-- `native-distribution-proof.json`: the treasury audit behind "Books checked".
-- `native-creators-proof.json`: paid quest access 80/20, donation, support round, creator withdrawal.
-- `native-public-record-proof.json`: a public map note under the player's own NEAR Social namespace.
-- `native-sponsored-stake-proof.json`: the stake is paid by the player's key; the relayer refuses money.
-- `native-rewards-testnet.json`, `native-market-testnet.json`, `native-claims-testnet.json`: contract manifests
-  with code hashes.
+## How NEAR is used
 
-## Testnet now, mainnet honestly
+- **Invisible accounts.** A name creates a sponsored sub-account `<name>.play-20261101.questlayer-dev-20261101.testnet`.
+  The key is held only by the player's device (with a separate signing-vault origin); a NEP-366 relayer pays gas
+  and refuses to move money. [docs/RELAYER.md](docs/RELAYER.md)
+- **Yield-funded QGOLD.** QGOLD is a NEP-141 token that is also its own vault: every QGOLD is a share of the NEAR
+  that backs it, minted only with that NEAR in the same call. Map coins and zone days are paid only from yield
+  that was actually realized: half to coins, half to zones. [docs/QGOLD-VAULT.md](docs/QGOLD-VAULT.md),
+  [docs/ECONOMY-RULES.md](docs/ECONOMY-RULES.md), [docs/YIELD-VAULT.md](docs/YIELD-VAULT.md)
+- **Stake to play, never lose.** Tier 2 and Tier 3 places open with a one-time stake that can only be withdrawn,
+  never spent. About 153 testnet NEAR are staked with validators through keyless vaults today
+  (`/api/treasury/mix`).
+- **Social money.** The treasury is governed by a stock **Sputnik DAO v2** (`questlayer-treasury.sputnik-v2.testnet`)
+  with Trezu's role names: explorers at level 3+ vote weekly on the treasury mix, one explorer one vote, and the
+  council approves every run. [docs/TREASURY-DAO.md](docs/TREASURY-DAO.md)
+- **NFTs and markets.** Auras and avatars are NEP-171 with royalties; a fixed-price escrow market and a QGOLD escrow
+  for player-to-player tasks; badges for visited places.
+- **NEAR Social.** Public map notes and quest ratings are written under the player's own namespace.
+- **NEAR AI Cloud.** NPC dialogue runs in TDX/confidential-GPU enclaves; each reply's signature is checked.
+  [docs/NEAR-AI-CLOUD.md](docs/NEAR-AI-CLOUD.md)
+- **Chain ledger.** Each day's game ledger is anchored on chain (`/api/health` → `chainLedger`).
 
-Everything runs on **testnet** today and nothing here has monetary value. GOLD on the map is practice GOLD unless
-the server publishes a funded day (then **Today's pot** shows the amounts and their source). Mainnet is a
-deliberate, gated step: [docs/MAINNET-PLAN.md](docs/MAINNET-PLAN.md) defines a minimal slice (collectibles,
-sponsored accounts and gas with daily caps, NEAR Social) behind `NEAR_NETWORK=mainnet` and `MAINNET_FEATURES`,
-with a go/no-go gate on 9 November 2026. The rewards treasury, vaults, market and creator money stay on testnet
-until they have an external review. If mainnet ships, this section will name the accounts; until then, any claim
-of "mainnet" elsewhere is wrong.
+### Contracts on testnet (World / GotchiGO)
 
-## Run it yourself
+Every id below exists on testnet and matches a manifest in `public/*-testnet.json`. The Test Layer has its own set
+in `public/*-testlayer.json` (suffix `tl1112`).
 
-Requirements: Node.js 24 (`.nvmrc`), npm. No wallet, no keys.
+| Piece | Account | Source |
+| --- | --- | --- |
+| Player account factory | [`play-20261101.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/play-20261101.questlayer-dev-20261101.testnet) | sponsored sub-accounts |
+| Gas relayer (NEP-366) | [`relay-20261101.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/relay-20261101.questlayer-dev-20261101.testnet) | `server/native` |
+| QGOLD token + vault | [`questlayer-qgold-vault-20261104.testnet`](https://testnet.nearblocks.io/address/questlayer-qgold-vault-20261104.testnet) | [contracts/qgold](contracts/qgold) |
+| Rewards treasury | [`questlayer-rewards-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-rewards-20261101b.testnet) | [contracts/rewards](contracts/rewards) |
+| Staking vault (validators) | [`stake-20261111.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/stake-20261111.questlayer-dev-20261101.testnet) | [contracts/vault](contracts/vault) |
+| Yield vault (stNEAR, LiNEAR, stablecoins on Rhea) | [`questlayer-yield-20261102.testnet`](https://testnet.nearblocks.io/address/questlayer-yield-20261102.testnet) | [contracts/yield-vault](contracts/yield-vault) |
+| Treasury DAO (Sputnik v2) | [`questlayer-treasury.sputnik-v2.testnet`](https://testnet.nearblocks.io/address/questlayer-treasury.sputnik-v2.testnet) | stock Sputnik DAO v2 |
+| Game ledger | [`questlayer-ledger-20261104.testnet`](https://testnet.nearblocks.io/address/questlayer-ledger-20261104.testnet) | [contracts/ledger](contracts/ledger) |
+| Auras and avatars (NEP-171) | [`nfts.questlayer-dev-20261101.testnet`](https://testnet.nearblocks.io/address/nfts.questlayer-dev-20261101.testnet) | [contracts/collectibles](contracts/collectibles) |
+| Aura market (escrow) | [`questlayer-market-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-market-20261101b.testnet) | [contracts/market](contracts/market) |
+| QGOLD task escrow | [`questlayer-qgold-escrow-20261109.testnet`](https://testnet.nearblocks.io/address/questlayer-qgold-escrow-20261109.testnet) | [contracts/qgold-escrow](contracts/qgold-escrow) |
+| Creator money | [`questlayer-creators-20261101b.testnet`](https://testnet.nearblocks.io/address/questlayer-creators-20261101b.testnet) | [contracts/creators](contracts/creators) |
+| Place badges | [`questlayer-badges-20261102.testnet`](https://testnet.nearblocks.io/address/questlayer-badges-20261102.testnet) | [contracts/badges](contracts/badges) |
+| Item rolls (commit-reveal) | [`questlayer-npc-games-20261101.testnet`](https://testnet.nearblocks.io/address/questlayer-npc-games-20261101.testnet) | [contracts/npc-games](contracts/npc-games) |
+| MetaLayer (MetaGold, land) | [`questlayer-metalayer-20261113.testnet`](https://testnet.nearblocks.io/address/questlayer-metalayer-20261113.testnet) | [contracts/metalayer](contracts/metalayer) |
+| Public notes and ratings | [`v1.social08.testnet`](https://testnet.nearblocks.io/address/v1.social08.testnet) | NEAR Social (not ours) |
+
+Transaction proofs with hashes (never keys) are in `public/*-proof.json` and the manifests. Details:
+[docs/NEAR-INTEGRATION-STATUS.md](docs/NEAR-INTEGRATION-STATUS.md), [docs/CHAIN-PROOF.md](docs/CHAIN-PROOF.md).
+
+### Reproducible contracts
+
+The Rust `near-sdk` workspace in [contracts/](contracts) builds in Docker (`rust:1.97.0`, linux/amd64, path
+remapping). CI rebuilds every WASM and fails if a hash differs from [contracts/wasm-sha256.json](contracts/wasm-sha256.json).
 
 ```bash
-npm ci
-npm run dev        # open http://127.0.0.1:5173/
+npm run contracts:docker            # rebuild and compare with contracts/wasm-sha256.json
+npm run test:contracts              # contract unit tests
 ```
-
-The steps above work the same locally (secure needs a relayer, see [docs/HOW-TO-TRY.md](docs/HOW-TO-TRY.md)).
-Automated checks: `npm run check` (build, application tests, mainnet-guard tests) and
-`bash scripts/build-contracts.sh --test` (contract tests). The full guide, including the isolated QA server,
-the testnet scripts and phone testing, is [docs/HOW-TO-TRY.md](docs/HOW-TO-TRY.md).
-
-The world has three layers: reviewed cities from `server/data/cities.json` (Plzeň is the only one, and the only one
-that can be funded), auto cities built on the server by the World worker for every Czech town with at least 15,000
-people, and H3 street cells everywhere else. Locally there is no country import, so outside Plzeň you get street
-cells; `npm run world:coverage -- --fixture` and `npm run e2e:world` exercise the Czechia layers on a small fixture.
-Promoting an auto city to a reviewed one follows [docs/SECOND-CITY-PLAYBOOK.md](docs/SECOND-CITY-PLAYBOOK.md).
-Money is global: one treasury and one daily budget, placed on the map by player demand
-([docs/GLOBAL-TREASURY.md](docs/GLOBAL-TREASURY.md)).
-
-## The economy, in one page
-
-[docs/ECONOMY-RULES.md](docs/ECONOMY-RULES.md) lists every live number with its source: 1 NEAR = 1,000 GOLD
-display units, coins worth 0.01 GOLD backed before publication, a 50/50 split of eligible income into coin and zone
-buckets, six daily Plzeň zones with shared prizes that pay once, personal XP once per account, level rewards as
-capped Auras. Practice-only numbers (the 120,000 GOLD welcome credit) are marked as such. Unclaimed backing
-returns to its bucket; more players never create money.
 
 ## Architecture
 
 ```mermaid
 flowchart LR
   subgraph Device["Player device (browser / phone)"]
-    UI["React + MapLibre client<br/>OpenFreeMap tiles, pixel explorer"]
-    KEY["Device key<br/>(+ optional passkey / wallet)"]
+    UI["React + MapLibre client<br/>pixel explorer, voxel MetaLayer"]
+    KEY["Device key in a signing vault<br/>(+ optional passkey / wallet)"]
   end
-  subgraph VPS["questlayer.promptstudio3000.com (Node 24)"]
-    API["Game API + SSE<br/>server-authoritative coins, chests, XP"]
-    DB[("SQLite WAL<br/>receipts, inventory, jobs")]
-    WORK["Durable workers<br/>world planner, reward relay, account jobs"]
+  subgraph VPS["VPS (Node 24): World and Test Layer services"]
+    API["Game API + SSE<br/>server-authoritative coins, zones, XP"]
+    DB[("SQLite WAL")]
+    WORK["Durable workers<br/>world planner, rewards, accounts, ledger"]
     REL["NEP-366 relayer<br/>pays gas only"]
+    AI["NEAR AI Cloud client<br/>attested NPC replies"]
   end
   subgraph NEAR["NEAR testnet"]
-    ACC["Player sub-account<br/>*.play-20261101.questlayer-dev-20261101"]
-    NFT["nfts.* NEP-171 Auras"]
-    RW["questlayer-rewards-20261101b<br/>coin + zone buckets"]
-    VLT["questlayer-vault-20261101b<br/>staking yield"]
-    MKT["questlayer-market-20261101b<br/>escrow"]
-    SOC["v1.social08<br/>public notes"]
+    ACC["Player sub-account"]
+    NFT["NFTs, market, badges"]
+    QG["QGOLD vault (NEP-141)"]
+    RW["Rewards treasury"]
+    STK["Staking + yield vaults"]
+    DAO["Sputnik DAO v2"]
   end
-  UI -->|play actions| API
+  UI --> API
   API --- DB
   API --> WORK
-  KEY -->|signs SignedDelegate| REL
-  REL -->|relays meta-tx| ACC
+  API --> AI
+  KEY -->|SignedDelegate| REL --> ACC
   ACC --> NFT
-  ACC --> MKT
-  ACC --> SOC
-  WORK -->|publish day, settle claims| RW
-  VLT -->|harvested yield| RW
-  RW -->|payouts| ACC
+  ACC --> QG
+  STK -->|realized yield| RW
+  RW -->|mint at backing price| QG
+  DAO -->|approves mix and runs| STK
 ```
 
-The player's key signs; the relayer only pays gas; contracts enforce backing and exactly-once claims; the server is
-trusted for location evidence only.
+The player's key signs, the relayer only pays gas, contracts enforce backing and exactly-once claims, and the
+server is trusted only for location evidence.
 
-- **Client**: React 19 + TypeScript + Vite, MapLibre on OpenFreeMap vector tiles, Aavegotchi-compatible pixel
-  character (official template layers, see `public/art/aavegotchi/provenance.json`).
-- **Server**: Node 24 ESM, SQLite (WAL), server-authoritative gameplay (coins, quests, receipts, equipment),
-  durable background workers (world planner, reward relay, account/relayer jobs) with leases and backoff.
-- **Contracts**: Rust `near-sdk` workspace with eleven members (game, collectibles, rewards, vault, vault-factory,
-  market, tasks, creators, npc-games, badges, yield-vault); CI checks every WASM hash against
-  `contracts/wasm-sha256.json`.
-- **World**: one POI file for Czechia (OSM, Wikidata, GeoNames; SQLite, read-only on the VPS) feeds auto cities,
-  place quests and NPC homes; quest titles get nightly AI flavour text that is validated and cached, never trusted
-  for rules or rewards.
-- **Identity**: name-only start, device key + sponsored sub-account, optional passkey, optional external wallet
-  (NEP-413 sign-in). The server never holds a player private key or seed.
+- **Client**: React 19 + TypeScript + Vite, MapLibre on OpenFreeMap vector tiles, Aavegotchi-compatible characters.
+- **Server**: Node 24 ESM, SQLite (WAL), durable workers with leases; one codebase, `QL_LAYER=test` switches the
+  Test Layer to its own contracts and database.
+- **Deploy**: a push to the release branch is tested and deployed by a release runner on the VPS
+  ([docs/VPS-RELEASE-RUNNER.md](docs/VPS-RELEASE-RUNNER.md)). [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) has more.
 
-Design policy: [DESIGN.md](DESIGN.md). Rules: [docs/GAME-RULES.md](docs/GAME-RULES.md). Roadmap and gates:
-[ROADMAP.md](ROADMAP.md). Current state and limits: [docs/STATUS.md](docs/STATUS.md). Audits from 1 November:
-[UI](docs/UI-AUDIT-2026-11.md), [code](docs/CODE-AUDIT-2026-11.md).
+## Run it locally
+
+Requirements: Node.js 24, npm. No wallet and no keys needed.
+
+```bash
+npm ci
+npm run dev          # http://127.0.0.1:5173/
+npm run check        # build, bundle budget, tests, mainnet guard
+```
+
+Locally there is no country import, so outside Plzeň you get plain street cells. The full guide (QA server,
+testnet scripts, phone testing) is [docs/HOW-TO-TRY.md](docs/HOW-TO-TRY.md).
 
 ## Repository map
 
 ```
-src/        client (App.tsx shell, GameMap, Inventory, native panels, player-key/relayed transport)
-server/     API, game, world planner, native adapters, relayer, creators (default off)
-contracts/  Rust NEAR contracts
+src/        client (map, dialogs, profile, MetaLayer, wiki)
+server/     game API, world planner, NPCs and NEAR AI, native NEAR adapters, relayer, treasury
+contracts/  Rust NEAR contracts (reproducible build, wasm-sha256.json)
 tests/      node --test suites (fake RPC, isolated SQLite)
-public/     static assets, official art, testnet manifests and proofs
-docs/       status, how-to-try, rules, design, audits, operations
-output/qa/  evidence per delivery (screenshots, logs)
-deploy/, scripts/  systemd units, VPS deployment and migration, testnet scripts
+public/     assets, testnet manifests and proofs
+docs/       rules, economy, layers, operations, audits
+deploy/     systemd units and the VPS release runner
 ```
 
-## Trust and limitations
+## Honest state
 
-Browser GPS can be spoofed; the location validator is trusted for physical evidence, while contracts enforce
-backing and exactly-once claims. Testnet operation is not a mainnet audit. A device-held key is the same custody
-class as a browser wallet; the passkey-derived recovery key and the external-wallet link are the recovery paths.
-Auto cities and place quests come from map data nobody has walked, so they carry an "Unverified map" notice and
-never pay money. Real-device field play, a complete staking yield cycle, NEAR Intents and store distribution remain
-open.
-See [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md). All product text and documentation are English.
+- Everything is on **testnet**. Mainnet is a later, gated step after phone testing and an external review
+  ([docs/MAINNET-PLAN.md](docs/MAINNET-PLAN.md)); until then any claim of "mainnet" is wrong.
+- Browser GPS can be spoofed; contracts still enforce backing and exactly-once claims.
+- Places away from the reviewed cities come from map data nobody has walked and carry an "Unverified map" notice.
+- MetaLayer is a first playable slice; its economy is not switched on yet.
+
+**Timeline.** Every commit in this repository was made inside the hackathon window (first commit 31 October 2026,
+after the 19 October announcement). Commit dates are real and were not rewritten. Development runs on
+`claude/upbeat-gauss-5czir7` and is merged into `main`.
+
+See [LICENSE](LICENSE) and [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).

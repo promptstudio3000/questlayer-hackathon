@@ -1,7 +1,5 @@
 import { ChainLink } from "./ChainLink";
 import {
-  lazy,
-  Suspense,
   useEffect,
   useLayoutEffect,
   useRef,
@@ -29,7 +27,7 @@ import {
 } from "@phosphor-icons/react";
 import { ArrowLeft, ArrowRight } from "./dir-icons";
 import { api, GOLD } from "./api";
-import { parseNearPrice } from "./native-amounts";
+import { parseQgoldPrice } from "./qgold-display";
 import { Character } from "./Character";
 import { GameObjectArt } from "./game-object-art";
 import { Character3D } from "./Character3D";
@@ -37,11 +35,8 @@ import { Dialog } from "./Dialog";
 import { useFormDraft } from "./useFormDraft";
 import { createReadEpoch } from "./read-epoch";
 import { Ghost } from "./Ghost";
-import { AuraCatalog, AuraSetStatus } from "./AuraWardrobe";
 import { AuraSprite, auraEdition } from "./aura-art";
 import {
-  AURA_RARITIES,
-  AURA_SETS,
   activeAuraSet,
   catalogEdition,
   editionSourceLabel,
@@ -50,20 +45,23 @@ import {
   DEFAULT_WARDROBE_FILTER,
   catalogProgress,
   filterAuras,
-  isFiltered,
   sortAuras,
-  type WardrobeFilter,
 } from "./aura-wardrobe.ts";
 import { OriginalItemGallery, type OriginalItem } from "./OriginalItemGallery";
-import type { Item, Player } from "./types";
+import type { Item, NativeItem, Player } from "./types";
 import "./inventory.css";
-// Aavegotchi wearable clones: own chunk, loaded when the Wardrobe opens.
-const GotchiWardrobe = lazy(() =>
-  import("./GotchiWardrobe").then((m) => ({ default: m.GotchiWardrobe })),
-);
+import {
+  RARITY_NAMES,
+  SLOT_NAMES,
+  useWardrobeWearables,
+  type WardrobeWearable,
+} from "./GotchiWardrobe";
+import { wearableArtUrl } from "./character-art";
+import "./wearables.css";
 import "./inventory-game.css";
 import "./inventory-polish.css";
 import { tr } from "./i18n";
+import { OwnedGotchis } from "./OwnedGotchis";
 
 const rarityNames: Record<string, string> = {
   get common() { return tr("Common"); },
@@ -84,17 +82,41 @@ export type OriginalInventory = {
   verifiedAt?: number;
   truncated?: boolean;
   wearables?: OriginalItem[];
-  gotchis?: { tokenId: string; name: string; hasImage: boolean }[];
+  gotchis?: { tokenId: string; name: string; hasImage: boolean; brs?: number | null; claimed?: boolean }[];
 };
 const readOriginals = (refresh: boolean) =>
   api<OriginalInventory>(`/aavegotchi${refresh ? "?refresh=1" : ""}`);
 
-export type InventoryTab = "items" | "wardrobe" | "history";
-const TABS: { id: InventoryTab; label: string; Icon: typeof Backpack }[] = [
-  { id: "items", get label() { return tr("Items"); }, Icon: Backpack },
-  { id: "wardrobe", get label() { return tr("Wardrobe"); }, Icon: TShirt },
-  { id: "history", get label() { return tr("History"); }, Icon: ClockCounterClockwise },
+/** Wardrobe filter the Inventory opens on, e.g. wearables after a pickup. */
+export type InventoryTab = "all" | "auras" | "wearables" | "worn";
+const FILTERS: { id: InventoryTab; label: () => string }[] = [
+  { id: "all", label: () => tr("All") },
+  { id: "auras", label: () => tr("Auras") },
+  { id: "wearables", label: () => tr("Wearables") },
+  { id: "worn", label: () => tr("Worn") },
 ];
+const RARITY_RANK: Record<string, number> = {
+  common: 0,
+  uncommon: 1,
+  rare: 2,
+  epic: 3,
+  legendary: 4,
+  mythical: 5,
+  godlike: 6,
+};
+/** A secured (NEAR) collection the wardrobe shows next to the game items. */
+export type SecuredCollection = {
+  accountId: string;
+  /** The NEAR character exists, so Auras can be equipped on chain. */
+  avatarReady: boolean;
+  equipment: { above: string | null; below: string | null };
+  items: NativeItem[];
+};
+type Entry = { key: string; name: string; rarity: string; worn: boolean } & (
+  | { type: "aura"; item: Item; count: number; ids: string[] }
+  | { type: "secured"; item: NativeItem; accountId: string; slot: "above" | "below"; avatarReady: boolean }
+  | { type: "wearable"; item: WardrobeWearable }
+);
 const slotName = (slot: string) => (slot === "above" ? tr("Above") : tr("Below"));
 const rarityName = (rarity: string) => rarityNames[rarity] || rarity;
 /** Same curve as the server and the HUD: level L starts at 100·(L-1)² XP. */
@@ -128,8 +150,8 @@ function stackAuras(items: Item[]) {
   }
   return [...stacks.entries()].map(([key, members]) => ({ key, members }));
 }
-/** Grid columns from the backpack's own width: 4 on a phone, up to 6. */
-function useGridColumns() {
+/** Grid columns from the backpack's own width: 4 on a phone, up to 8 on desktop. */
+function useGridColumns(present = true) {
   const ref = useRef<HTMLDivElement>(null);
   const [columns, setColumns] = useState(4);
   useLayoutEffect(() => {
@@ -137,24 +159,34 @@ function useGridColumns() {
     if (!node || typeof ResizeObserver === "undefined") return;
     const measure = () => {
       const width = node.clientWidth;
-      setColumns(width >= 520 ? 6 : width >= 420 ? 5 : 4);
+      setColumns(width >= 760 ? 8 : width >= 520 ? 6 : width >= 420 ? 5 : 4);
     };
     measure();
     const observer = new ResizeObserver(measure);
     observer.observe(node);
     return () => observer.disconnect();
-  }, []);
+  }, [present]);
   return [ref, columns] as const;
 }
 
+
+/**
+ * Inventory → Wardrobe: the character with its worn slots, then one grid of
+ * everything the explorer owns (game Auras, Auras secured on NEAR and
+ * Aavegotchi wearables). Tapping an item offers Try it on and Sell; selling
+ * lists it in Shop → Market.
+ */
 export function Inventory({
   onOriginalAppearance,
   map3D,
   onMap3D,
   player,
+  walletU = null,
   characterItems,
   nativeContent,
   nativeExtras,
+  rolls,
+  tourFocus,
   adventureResults,
   busy,
   onEquip,
@@ -162,23 +194,31 @@ export function Inventory({
   onEvm,
   onSkin,
   onExplore,
-  initialCollection,
   xp,
   loadOriginals = readOriginals,
   onWearables,
-  initialTab = "items",
+  initialTab = "all",
+  secured = [],
+  onSecuredEquip,
+  onSecuredSell,
 }: {
   onOriginalAppearance: (appearance: Player["appearance"]) => void;
   /** Wearing a wearable clone changes the player (their map character). */
   onWearables?: (player: Player) => void;
-  /** Opens straight on a section, e.g. the Wardrobe right after a wearable pickup. */
+  /** Opens on a filter, e.g. wearables right after a wearable pickup. */
   initialTab?: InventoryTab;
   map3D: boolean;
   onMap3D: () => void;
   player: Player;
+  /** QGOLD on the NEAR account (the one balance prices use); null while unknown. */
+  walletU?: number | null;
   characterItems: Item[];
   nativeContent: ReactNode;
   nativeExtras?: ReactNode;
+  /** The wisp roll: shown in the open, above the folds, while there is a ticket. */
+  rolls?: ReactNode;
+  /** The guided tour opens an Aura's card: one to wear, or one that can be sold. */
+  tourFocus?: { mode: "wear" | "sell"; revision: number } | null;
   adventureResults?: ReactNode;
   busy: string;
   onEvm: () => Promise<void>;
@@ -187,30 +227,31 @@ export function Inventory({
   /** Secures the Aura on NEAR and lists it on the market; price in yoctoNEAR. */
   onSell: (item: Item, priceYocto: string) => Promise<boolean>;
   onExplore?: () => void;
-  initialCollection?: "demo" | "near";
   /** XP shown in the level bar; defaults to the practice XP on `player`. */
   xp?: number | null;
   loadOriginals?: (refresh: boolean) => Promise<OriginalInventory>;
+  /** Auras already secured on NEAR, per linked account. */
+  secured?: SecuredCollection[];
+  onSecuredEquip?: (accountId: string, item: NativeItem, slot: "above" | "below") => Promise<void>;
+  /** Lists a secured Aura in Shop → Market; price in yoctoNEAR. */
+  onSecuredSell?: (accountId: string, tokenId: string, priceYocto: string) => Promise<boolean>;
 }) {
   const [origin, setOrigin] = useState<OriginalInventory | null>(null);
   const [originLoading, setOriginLoading] = useState(false);
   const [originError, setOriginError] = useState("");
   const [show3D, setShow3D] = useState(false);
-  const [collection, setCollection] = useState<"demo" | "near">(
-    initialCollection || (player.nativeOutfit ? "near" : "demo"),
-  );
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [lockedId, setLockedId] = useState<string | null>(null);
-  const [tab, setTab] = useState<InventoryTab>(initialTab);
-  const [filterOpen, setFilterOpen] = useState(false);
-  const [gridRef, columns] = useGridColumns();
+  const [filter, setFilter] = useState<InventoryTab>(initialTab);
   const [selling, setSelling] = useState(false);
+  const wearables = useWardrobeWearables((next) => onWearables?.(next));
+
   const priceDraft = useFormDraft({
     playerId: player.id,
-    form: "demo-aura-listing",
-    realm: `demo:${selectedId || "none"}`,
+    form: "aura-listing-qgold-b",
+    realm: `demo:${selectedKey || "none"}`,
     fields: PRICE_DRAFT_FIELDS,
-    initial: { price: "0.05" },
+    initial: { price: "50M" },
   });
   const price = priceDraft.values.price;
   const setPrice = (value: string) => priceDraft.setField("price", value);
@@ -220,7 +261,7 @@ export function Inventory({
   const currentOwner = useRef(player.id);
   currentOwner.current = player.id;
   const currentSelection = useRef("");
-  currentSelection.current = JSON.stringify([player.id, selectedId]);
+  currentSelection.current = JSON.stringify([player.id, selectedKey]);
   const originReads = useRef(createReadEpoch());
   const listingOperations = useRef(createReadEpoch());
   useEffect(() => {
@@ -235,27 +276,86 @@ export function Inventory({
   const auras = player.inventory.filter(
     (item) => item.kind === "aura" && item.native_claim_state !== "minted",
   );
-  const [wardrobeFilter, setWardrobeFilter] = useState<WardrobeFilter>(
-    DEFAULT_WARDROBE_FILTER,
+  const stacks = stackAuras(sortAuras(filterAuras(auras, DEFAULT_WARDROBE_FILTER)));
+  const securedAuras = secured.flatMap((account) =>
+    account.items
+      .filter((item) => item.kind === "aura")
+      .map((item) => ({ account, item })),
   );
-  const shownAuras = sortAuras(filterAuras(auras, wardrobeFilter));
-  const stacks = stackAuras(shownAuras);
-  const progress = catalogProgress(auras);
-  // Unowned editions remain in a separate catalog, after the owned collection.
-  const lockedEditions = filterAuras(
-    progress.entries
-      .filter((entry) => !entry.owned)
-      .map(({ edition }) => ({
-        name: edition.demoName,
-        rarity: edition.rarity,
-        slot: edition.slot,
-        catalog: edition,
-      })),
-    wardrobeFilter,
-  ).map((entry) => entry.catalog);
-  const filledSlots = stacks.length;
+  // Owned editions count secured Auras too, so the catalog only lists what is
+  // really still to find.
+  const progress = catalogProgress([
+    ...auras,
+    ...securedAuras.map(({ item }) => ({
+      name: item.title,
+      rarity: item.rarity,
+      slot: catalogEdition(item.edition)?.slot || "above",
+      color: item.color,
+      edition: item.edition,
+    })),
+  ] as Item[]);
+  const lockedEditions = progress.entries
+    .filter((entry) => !entry.owned)
+    .map(({ edition }) => edition);
+  // One list of everything owned: game Auras, secured Auras, wearables.
+  const entries: Entry[] = [
+    ...stacks.map(({ members }) => ({
+      type: "aura" as const,
+      key: `aura:${members[0].id}`,
+      item: members[0],
+      count: members.length,
+      ids: members.map((m) => m.id),
+      name: members[0].name,
+      rarity: members[0].rarity,
+      worn: !!members[0].equipped,
+    })),
+    ...securedAuras.map(({ account, item }) => {
+      const slot: "above" | "below" =
+        catalogEdition(item.edition)?.slot === "below" ? "below" : "above";
+      return {
+        type: "secured" as const,
+        key: `secured:${account.accountId}:${item.tokenId}`,
+        item,
+        accountId: account.accountId,
+        slot,
+        avatarReady: account.avatarReady,
+        name: item.title,
+        rarity: item.rarity,
+        worn: account.equipment[slot] === item.tokenId,
+      };
+    }),
+    ...(wearables.state?.items || []).map((item) => ({
+      type: "wearable" as const,
+      key: `wearable:${item.id}`,
+      item,
+      name: item.name,
+      rarity: item.rarity,
+      worn: item.equipped,
+    })),
+  ].sort(
+    (a, b) =>
+      Number(b.worn) - Number(a.worn) ||
+      (RARITY_RANK[b.rarity] ?? 0) - (RARITY_RANK[a.rarity] ?? 0) ||
+      a.name.localeCompare(b.name),
+  );
+  const [gridRef, columns] = useGridColumns(entries.length > 0);
+  const counts: Record<InventoryTab, number> = {
+    all: entries.length,
+    auras: entries.filter((e) => e.type !== "wearable").length,
+    wearables: entries.filter((e) => e.type === "wearable").length,
+    worn: entries.filter((e) => e.worn).length,
+  };
+  const shown = entries.filter((e) =>
+    filter === "all"
+      ? true
+      : filter === "auras"
+        ? e.type !== "wearable"
+        : filter === "wearables"
+          ? e.type === "wearable"
+          : e.worn,
+  );
   const emptySlots =
-    Math.ceil(filledSlots / columns) * columns - filledSlots;
+    Math.ceil(shown.length / columns) * columns - shown.length;
   const level = levelProgress(xp ?? player.availableXp ?? player.xp ?? 0);
   const wornAbove = characterItems.find(
       (item) => !!item.equipped && item.slot === "above",
@@ -265,30 +365,37 @@ export function Inventory({
     ),
     wornSet = activeAuraSet(wornAbove, wornBelow);
   const lockedEdition = lockedId ? catalogEdition(lockedId) : null;
-  const extraFilters =
-    (wardrobeFilter.rarity !== "all" ? 1 : 0) +
-    (wardrobeFilter.set !== "all" ? 1 : 0);
   // Resolve every action against current inventory: a removed or reserved item
   // must not stay actionable through an older selection.
-  const selected = auras.find((item) => item.id === selectedId);
-  const selectedCount = selected
-    ? auras.filter(
-        (item) =>
-          !item.equipped &&
-          item.name === selected.name &&
-          item.rarity === selected.rarity &&
-          item.slot === selected.slot,
-      ).length
-    : 0;
-  const locked = !!busy || listingPending;
-  const openItem = (id: string) => {
-    setSelectedId(id);
+  // A worn Aura taken off joins its stack, so an Aura selection follows the
+  // item id rather than the stack.
+  const selected =
+    entries.find((entry) => entry.key === selectedKey) ||
+    entries.find(
+      (entry) => entry.type === "aura" && !!selectedKey && entry.ids.includes(selectedKey.slice(5)),
+    ) ||
+    null;
+  const locked = !!busy || listingPending || wearables.busy !== null;
+  const openItem = (key: string) => {
+    setSelectedKey(key);
     setSelling(false);
-    setPrice("10");
     setListingError("");
   };
+  // The tour's "Show me" opens an Aura's own card. The list may still be loading when the
+  // screen opens, so the request waits until there is an Aura to show.
+  const tourRevision = tourFocus?.revision;
+  const tourShown = useRef(0);
+  const tourPick = entries.find((e) => (e.type === "aura" || e.type === "secured") && !e.worn) ??
+    entries.find((e) => e.type === "aura" || e.type === "secured");
+  const tourPickKey = tourPick?.key;
+  useEffect(() => {
+    if (!tourRevision || tourShown.current === tourRevision || !tourPickKey) return;
+    tourShown.current = tourRevision;
+    openItem(tourPickKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tourRevision, tourPickKey]);
   const closeItem = () => {
-    setSelectedId(null);
+    setSelectedKey(null);
     setSelling(false);
     setListingError("");
   };
@@ -312,6 +419,7 @@ export function Inventory({
         return;
       acceptOrigin(data);
       setFailedLooks(new Set());
+      wearables.reload();
     } catch (error) {
       if (
         !mounted.current ||
@@ -353,16 +461,17 @@ export function Inventory({
     if (
       !mounted.current ||
       currentOwner.current !== player.id ||
-      currentSelection.current !== JSON.stringify([player.id, selectedId])
+      currentSelection.current !== JSON.stringify([player.id, selectedKey])
     )
       return;
-    if (!selected || selected.native_claim_state === "issued" || locked) return;
-    // Aura trades settle on NEAR, so the price is in test NEAR (yocto).
+    if (!selected || selected.type === "wearable" || locked) return;
+    if (selected.type === "aura" && selected.item.native_claim_state === "issued") return;
+    // Typed in QGOLD (the game unit, src/qgold-display.ts); the trade itself settles in NEAR yocto.
     let amount: string;
     try {
-      amount = parseNearPrice(price.replace(",", "."));
+      amount = parseQgoldPrice(price);
     } catch {
-      setListingError(tr("Choose a price between 0.001 and 1,000 test NEAR."));
+      setListingError(tr("Choose a price between 1M and 1,000B QGOLD."));
       return;
     }
     setListingPending(true);
@@ -371,7 +480,10 @@ export function Inventory({
     const owner = player.id;
     const token = listingOperations.current.begin(currentSelection.current);
     try {
-      const confirmed = await onSell(selected, amount);
+      const confirmed =
+        selected.type === "aura"
+          ? await onSell(selected.item, amount)
+          : !!(await onSecuredSell?.(selected.accountId, selected.item.tokenId, amount));
       if (
         !mounted.current ||
         !listingOperations.current.isCurrent(token, currentSelection.current)
@@ -379,7 +491,7 @@ export function Inventory({
         return;
       if (confirmed) {
         priceDraft.discard(submittedRevision);
-        setSelectedId(null);
+        setSelectedKey(null);
         setSelling(false);
       } else {
         setListingError(
@@ -422,6 +534,41 @@ export function Inventory({
       animated={false}
     />
   );
+  const entryArt = (entry: Entry, size = 1) =>
+    entry.type === "aura" ? (
+      <AuraSprite
+        edition={auraEdition(entry.item)}
+        slot={entry.item.slot}
+        color={entry.item.color}
+        size={size}
+        animated={size > 1}
+      />
+    ) : entry.type === "secured" ? (
+      <AuraSprite
+        edition={entry.item.edition}
+        slot={entry.slot}
+        color={entry.item.color}
+        size={size}
+        animated={size > 1}
+      />
+    ) : (
+      <img className="inv-wearable-art" src={wearableArtUrl(entry.item.id)} alt="" loading="lazy" draggable={false} />
+    );
+  const entryKind = (entry: Entry) =>
+    entry.type === "wearable"
+      ? SLOT_NAMES[entry.item.slot]?.() || entry.item.slot
+      : slotName(entry.type === "aura" ? entry.item.slot : entry.slot);
+  const entryRarity = (entry: Entry) =>
+    entry.type === "wearable"
+      ? RARITY_NAMES[entry.rarity]?.() || entry.rarity
+      : rarityName(entry.rarity);
+  const entrySource = (entry: Entry) =>
+    // Auras secure themselves in the background; where they are kept is not the player's concern.
+    entry.type === "aura" || entry.type === "secured"
+      ? ""
+      : entry.item.verified
+          ? tr("Verified original in your wallet")
+          : tr("In-game copy");
 
   return (
     <div className="inventory-experience">
@@ -434,8 +581,10 @@ export function Inventory({
             ) : (
               <Check size={14} aria-hidden="true" />
             )}
-            {player.nativeOutfit ? tr("Secured outfit") : tr("Practice outfit")} ·{" "}
-            {player.appearance?.originTokenId ? tr("Original") : tr("Starter ghost")}
+            {player.nativeOutfit ? tr("Secured outfit") : tr("Game outfit")} ·{" "}
+            {player.appearance?.originTokenId
+              ? origin?.gotchis?.find((g) => g.tokenId === player.appearance?.originTokenId)?.name || tr("Original")
+              : tr("Starter ghost")}
           </span>
         </div>
         <div className="inv-hero-stage">
@@ -447,7 +596,7 @@ export function Inventory({
         <div className="inv-hero-gear" aria-label={tr("Equipped Aura slots")}>
           {(["above", "below"] as const).map((slot) => {
             const item = slot === "above" ? wornAbove : wornBelow;
-            const own = item && auras.find((entry) => entry.id === item.id);
+            const own = item && entries.find((entry) => entry.type === "aura" && entry.item.id === item.id);
             const label = tr("{0} slot: {1}", { 0: slotName(slot), 1: item ? item.name : tr("empty") });
             const art = item ? (
               sprite(item)
@@ -462,7 +611,7 @@ export function Inventory({
                   <button
                     className={`inv-gear-tile rarity-${own.rarity}`}
                     aria-label={tr("{0}. Open item", { 0: label })}
-                    onClick={(event) => { event.currentTarget.focus({ preventScroll: true }); openItem(own.id); }}
+                    onClick={(event) => { event.currentTarget.focus({ preventScroll: true }); openItem(own.key); }}
                     disabled={locked}
                   >
                     {art}
@@ -516,10 +665,10 @@ export function Inventory({
           </div>
           <dl className="inv-stats">
             <div>
-              <dt>{tr("QGOLD earned")}</dt>
+              <dt>{tr("QGOLD")}</dt>
               <dd>
                 <Coins size={16} weight="fill" aria-hidden="true" />
-                {compactGold(player.gold_u)}
+                {walletU === null ? "…" : compactGold(walletU)}
               </dd>
             </div>
             <div>
@@ -560,450 +709,310 @@ export function Inventory({
         </details>
       </header>
 
-      {tab === "items" ? (
-        <div className="inv-actions" aria-label={tr("Inventory sections")}>
-          {TABS.filter(({ id }) => id !== "items").map(({ id, label, Icon }) => (
-            <button key={id} className="inv-action-button" onClick={() => setTab(id)}>
-              <Icon size={18} aria-hidden="true" />
-              {label}
+      <section className="inv-panel" id="inv-panel-items" aria-label={tr("Wardrobe")}>
+        {origin?.linked && origin.status === "verified" && (origin.gotchis?.length || origin.wearables?.length) ? (
+          <OwnedGotchis
+            origin={origin}
+            wearing={player.appearance?.originTokenId}
+            locked={locked}
+            onWear={(id) => void onSkin(id)}
+            onWardrobe={() => setFilter("wearables")}
+          />
+        ) : null}
+        <div className="inv-chips" role="group" aria-label={tr("Filter Auras")}>
+          {FILTERS.map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              className="inv-chip"
+              aria-pressed={filter === id}
+              onClick={() => setFilter(id)}
+            >
+              {label()} {!!counts[id] && <span className="inv-chip-count">{counts[id]}</span>}
             </button>
           ))}
         </div>
-      ) : (
-        <div className="inv-subhead">
-          <button
-            className="panel-back"
-            aria-label={tr("Back to backpack")}
-            title={tr("Back to backpack")}
-            onClick={() => setTab("items")}
-          >
-            <ArrowLeft size={20} aria-hidden="true" />
-          </button>
-          <h3 id={`inv-tab-${tab}`}>{TABS.find(({ id }) => id === tab)?.label}</h3>
-        </div>
-      )}
-
-      {tab === "items" && (
-        <section className="inv-panel" id="inv-panel-items" aria-label={tr("Backpack")}>
-          <p className="sr-only" aria-live="polite">
-            {collection === "near"
-              ? tr("Secured on NEAR")
-              : isFiltered(wardrobeFilter)
-                ? tr("Showing {0} of {1}", { 0: shownAuras.length, 1: auras.length })
-                : lockedEditions.length
-                  ? tr("{0} still to find", { 0: lockedEditions.length })
-                  : tr("Catalog complete")}
+        {wearables.error && (
+          <p className="inventory-error" role="alert">
+            {wearables.error}
           </p>
-          <button type="button" className="inv-wearable-hint" onClick={() => setTab("wardrobe")}>
-            <TShirt size={18} aria-hidden="true" />
-            <span>{tr("Wearables you pick up on the map are in your Wardrobe.")}</span>
-          </button>
-          <div className="inv-chips" role="group" aria-label={tr("Filter Auras")}>
-            {(["all", "above", "below"] as const).map((slot) => (
-              <button
-                key={slot}
-                className="inv-chip"
-                aria-pressed={collection === "demo" && wardrobeFilter.slot === slot}
-                disabled={locked}
-                onClick={() => {
-                  setCollection("demo");
-                  setWardrobeFilter({ ...wardrobeFilter, slot });
-                }}
-              >
-                {slot === "all" ? (
-                  <>
-                    {tr("All")} <span className="inv-chip-count">{auras.length}</span>
-                  </>
-                ) : (
-                  slotName(slot)
-                )}
-              </button>
-            ))}
-            <button
-              className="inv-chip"
-              aria-pressed={collection === "near"}
-              disabled={locked}
-              onClick={() => setCollection("near")}
-            >
-              <Wallet size={16} aria-hidden="true" /> {tr("Secured")}
-            </button>
-            {collection === "demo" && (
-              <button
-                className="inv-chip inv-chip-icon"
-                aria-label={tr("More filters{0}", { 0: extraFilters ? `, ${extraFilters} active` : "" })}
-                aria-expanded={filterOpen}
-                aria-controls="inv-filter-more"
-                disabled={locked}
-                onClick={() => setFilterOpen((open) => !open)}
-              >
-                <Funnel
-                  size={18}
-                  weight={extraFilters ? "fill" : "regular"}
-                  aria-hidden="true"
-                />
-                {!!extraFilters && <em>{extraFilters}</em>}
+        )}
+        {!entries.length && (
+          <div className="inventory-empty inv-empty-compact">
+            <GameObjectArt kind="chest" size={96} />
+            <p>
+              <strong>{tr("Your backpack is empty.")}</strong> {" "}{tr("Open a chest on the map; every Aura you find lands here.")}</p>
+            {onExplore && (
+              <button className="inventory-action" onClick={onExplore}>
+                {tr("Explore the map")}{" "}
+                <ArrowRight size={20} aria-hidden="true" />
               </button>
             )}
           </div>
-          {collection === "demo" ? (
-            <>
-              {filterOpen && (
-                <div className="inv-filter-more" id="inv-filter-more">
-                  <label>
-                    {tr("Rarity")}<select
-                      value={wardrobeFilter.rarity}
-                      disabled={locked}
-                      onChange={(event) =>
-                        setWardrobeFilter({
-                          ...wardrobeFilter,
-                          rarity: event.target
-                            .value as WardrobeFilter["rarity"],
-                        })
-                      }
-                    >
-                      <option value="all">{tr("All rarities")}</option>
-                      {AURA_RARITIES.map((rarity) => (
-                        <option key={rarity} value={rarity}>
-                          {rarityName(rarity)}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    {tr("Set")}<select
-                      value={wardrobeFilter.set}
-                      disabled={locked}
-                      onChange={(event) =>
-                        setWardrobeFilter({
-                          ...wardrobeFilter,
-                          set: event.target.value,
-                        })
-                      }
-                    >
-                      <option value="all">{tr("All sets")}</option>
-                      {AURA_SETS.map((set) => (
-                        <option key={set.id} value={set.id}>
-                          {set.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  {isFiltered(wardrobeFilter) && (
-                    <button
-                      type="button"
-                      className="inv-filter-reset"
-                      onClick={() => setWardrobeFilter(DEFAULT_WARDROBE_FILTER)}
-                    >
-                      {tr("Clear filters")}</button>
-                  )}
-                </div>
-              )}
-              {!auras.length && (
-                <div className="inventory-empty inv-empty-compact">
-                  <GameObjectArt kind="chest" size={96} />
-                  <p>
-                    <strong>{tr("Your backpack is empty.")}</strong> {" "}{tr("Open a chest on the map; every Aura you find lands here.")}</p>
-                  {onExplore && (
-                    <button className="inventory-action" onClick={onExplore}>
-                      {tr("Explore the map")}{" "}
-                      <ArrowRight size={20} aria-hidden="true" />
-                    </button>
-                  )}
-                </div>
-              )}
-              <div
-                className="inv-grid"
-                role="group"
-                ref={gridRef}
-                style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-                aria-label={tr("Backpack")}
-              >
-                {stacks.map(({ key, members }) => {
-                  const item = members[0];
-                  const issued = item.native_claim_state === "issued";
-                  return (
-                    <div className="inv-item" key={key}>
-                    <button
-                      className={`inv-cell rarity-${item.rarity} ${item.equipped ? "worn" : ""}`}
-                      data-inventory-item={item.id}
-                      disabled={locked}
-                      onClick={(event) => { event.currentTarget.focus({ preventScroll: true }); openItem(item.id); }}
-                      title={item.name}
-                      aria-label={`${item.name}, ${rarityName(item.rarity)}, ${slotName(item.slot)}${members.length > 1 ? tr(", {0} held", { 0: members.length }) : ""}${item.equipped ? tr(", equipped") : ""}${issued ? tr(", being secured") : ""}`}
-                    >
-                      {sprite(item)}
-                      {!!item.equipped && (
-                        <span className="inv-cell-worn" aria-hidden="true">
-                          <Check size={12} weight="bold" />
-                        </span>
-                      )}
-                      {issued && (
-                        <span className="inv-cell-secured" aria-hidden="true">
-                          <Wallet size={12} weight="bold" />
-                        </span>
-                      )}
-                      {members.length > 1 && (
-                        <span className="inv-cell-count" aria-hidden="true">
-                          ×{members.length}
-                        </span>
-                      )}
-                      <span className="inv-cell-pip" aria-hidden="true" />
-                    </button>
-                    <span className="inv-item-name">{item.name}</span>
-                    <span className="inv-item-rarity">{rarityName(item.rarity)}</span>
-                    </div>
-                  );
-                })}
-                {Array.from({ length: emptySlots }, (_, index) => (
-                  <span
-                    key={`empty-${index}`}
-                    className="inv-cell empty"
-                    aria-hidden="true"
-                  />
-                ))}
-              </div>
-              {!!lockedEditions.length && (
-                <details className="inv-catalog">
-                  <summary>{tr("Aura catalog · {0} of {1} found", { 0: progress.found, 1: progress.total })}</summary>
-                  <div className="inv-catalog-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
-                {lockedEditions.map((edition) => (
+        )}
+        {!!entries.length && (
+          <div
+            className="inv-grid"
+            role="group"
+            ref={gridRef}
+            style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+            aria-label={tr("Wardrobe")}
+          >
+            {shown.map((entry) => {
+              const issued = entry.type === "aura" && entry.item.native_claim_state === "issued";
+              return (
+                <div className="inv-item" key={entry.key}>
                   <button
-                    key={edition.id}
-                    className="inv-cell locked"
-                    onClick={(event) => { event.currentTarget.focus({ preventScroll: true }); setLockedId(edition.id); }}
-                    title={tr("{0} (not found yet)", { 0: edition.demoName })}
-                    aria-label={tr("Locked: {0}, {1}, {2}, not found yet", { 0: edition.demoName, 1: rarityName(edition.rarity), 2: slotName(edition.slot) })}
+                    className={`inv-cell rarity-${entry.rarity} ${entry.worn ? "worn" : ""}`}
+                    data-inventory-item={entry.key}
+                    disabled={locked}
+                    onClick={(event) => { event.currentTarget.focus({ preventScroll: true }); openItem(entry.key); }}
+                    title={entry.name}
+                    aria-label={`${entry.name}, ${entryRarity(entry)}, ${entryKind(entry)}${entry.type === "aura" && entry.count > 1 ? tr(", {0} held", { 0: entry.count }) : ""}${entry.worn ? tr(", equipped") : ""}${issued ? tr(", being secured") : ""}`}
                   >
-                    <AuraSprite
-                      edition={edition.id}
-                      slot={edition.slot}
-                      size={1}
-                      animated={false}
-                    />
-                    <span className="inv-cell-lock" aria-hidden="true">
-                      <Lock size={12} weight="bold" />
-                    </span>
+                    {entryArt(entry)}
+                    {entry.worn && (
+                      <span className="inv-cell-worn" aria-hidden="true">
+                        <Check size={12} weight="bold" />
+                      </span>
+                    )}
+                    {(issued || entry.type === "secured") && (
+                      <span className="inv-cell-secured" aria-hidden="true">
+                        <Wallet size={12} weight="bold" />
+                      </span>
+                    )}
+                    {entry.type === "wearable" && (
+                      entry.item.verified ? (
+                        <i className="verified-check inv-cell-badge" aria-hidden="true" />
+                      ) : (
+                        <span className="clone-badge inv-cell-badge" aria-hidden="true">{tr("Clone")}</span>
+                      )
+                    )}
+                    {entry.type === "aura" && entry.count > 1 && (
+                      <span className="inv-cell-count" aria-hidden="true">
+                        ×{entry.count}
+                      </span>
+                    )}
                   </button>
-                ))}
-                  </div>
-                </details>
-              )}
-              {player.nativeOutfit && (
-                <p className="inventory-notice">
-                  {tr("Your map ghost wears the secured outfit. Equipping a practice Aura switches to the practice outfit.")}</p>
-              )}
-            </>
-          ) : (
-            <div className="inventory-native-content">
-              {nativeContent}
-              {nativeExtras && (
-                <details className="inventory-disclosure">
-                  <summary>{tr("Secure Auras & public profile")}</summary>
-                  <div className="inventory-disclosure-body">
-                    {nativeExtras}
-                  </div>
-                </details>
-              )}
+                  <span className="inv-item-name">{entry.name}</span>
+                  <span className="inv-item-rarity">{entryRarity(entry)}</span>
+                </div>
+              );
+            })}
+            {Array.from({ length: emptySlots }, (_, index) => (
+              <span
+                key={`empty-${index}`}
+                className="inv-cell empty"
+                aria-hidden="true"
+              />
+            ))}
+          </div>
+        )}
+        {rolls}
+        {!!lockedEditions.length && (
+          <details className="inv-catalog">
+            <summary>{tr("Aura catalog · {0} of {1} found", { 0: progress.found, 1: progress.total })}</summary>
+            <div className="inv-catalog-grid" style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}>
+              {lockedEditions.map((edition) => (
+                <button
+                  key={edition.id}
+                  className="inv-cell locked"
+                  onClick={(event) => { event.currentTarget.focus({ preventScroll: true }); setLockedId(edition.id); }}
+                  title={tr("{0} (not found yet)", { 0: edition.demoName })}
+                  aria-label={tr("Locked: {0}, {1}, {2}, not found yet", { 0: edition.demoName, 1: rarityName(edition.rarity), 2: slotName(edition.slot) })}
+                >
+                  <AuraSprite
+                    edition={edition.id}
+                    slot={edition.slot}
+                    size={1}
+                    animated={false}
+                  />
+                  <span className="inv-cell-lock" aria-hidden="true">
+                    <Lock size={12} weight="bold" />
+                  </span>
+                </button>
+              ))}
             </div>
-          )}
-        </section>
-      )}
-
-      {tab === "wardrobe" && (
-        <section
-          className="inv-panel"
-          id="inv-panel-wardrobe"
-          aria-labelledby="inv-tab-wardrobe"
-        >
-          <AuraSetStatus items={characterItems} />
-          <Suspense fallback={null}>
-            <GotchiWardrobe
-              key={origin?.verifiedAt || 0}
-              onPlayer={(next) => onWearables?.(next)}
-              onLink={() => void onEvm()}
-              linking={locked}
-            />
-          </Suspense>
-          {origin?.status === "unavailable" && (
-            <p className="inventory-notice" role="status">
-              {origin.error ||
-                tr("Your originals could not be checked. Your current look is unchanged.")}
-            </p>
-          )}
-          {origin?.lookUnavailable && (
-            <p className="inventory-notice" role="status">
-              {tr("Your chosen original could not be confirmed this time, so your starter ghost is shown.")}</p>
-          )}
-          <details className="inventory-disclosure inventory-originals" open>
-            <summary>
-              <LinkSimple size={20} aria-hidden="true" />
-              <span>
-                {tr("Original Aavegotchi look")}{" "}<small>{tr("Wear one you own")}</small>
-              </span>
-            </summary>
-            <div className="inventory-disclosure-body">
-              <p>
-                {tr("Wear an original you own. It stays in your wallet.")}</p>
+          </details>
+        )}
+        {player.nativeOutfit && (
+          <p className="inventory-notice">
+            {tr("Your map ghost wears the secured outfit. Equipping a practice Aura switches to the practice outfit.")}</p>
+        )}
+        {origin?.status === "unavailable" && (
+          <p className="inventory-notice" role="status">
+            {origin.error ||
+              tr("Your originals could not be checked. Your current look is unchanged.")}
+          </p>
+        )}
+        {origin?.lookUnavailable && (
+          <p className="inventory-notice" role="status">
+            {tr("Your chosen original could not be confirmed this time, so your starter ghost is shown.")}</p>
+        )}
+        <details className="inventory-disclosure inventory-originals">
+          <summary>
+            <LinkSimple size={20} aria-hidden="true" />
+            <span>
+              {tr("Original Aavegotchi look")}{" "}<small>{tr("Wear one you own")}</small>
+            </span>
+          </summary>
+          <div className="inventory-disclosure-body">
+            <p>
+              {tr("Wear an original you own. It stays in your wallet.")}</p>
+            <button
+              className="inventory-secondary"
+              onClick={() => void onEvm()}
+              disabled={locked}
+            >
+              <Wallet size={19} aria-hidden="true" />
+              {origin?.linked
+                ? tr("Link another address")
+                : tr("Link Aavegotchi wallet")}
+            </button>
+            {origin?.linked && (
               <button
                 className="inventory-secondary"
-                onClick={() => void onEvm()}
+                onClick={() => void refreshOrigin()}
+                disabled={locked || originLoading}
+              >
+                <ArrowsClockwise size={19} aria-hidden="true" />
+                {originLoading
+                  ? tr("Checking ownership…")
+                  : tr("Check originals again")}
+              </button>
+            )}
+            {originError && (
+              <p className="inventory-error" role="alert">
+                {originError}
+              </p>
+            )}
+            {origin?.linked && origin.status === "verified" && (
+              <>
+                <p>
+                  {origin.count === 1 ? tr("1 original verified") : tr("{0} originals verified", { 0: origin.count || 0 })}
+                  {origin.verifiedAt
+                    ? ` · ${new Date(origin.verifiedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
+                    : ""}
+                </p>
+                <div className="inventory-original-grid">
+                  {(origin.gotchis || []).map((gotchi) => {
+                    const available =
+                      gotchi.hasImage && !failedLooks.has(gotchi.tokenId);
+                    return (
+                      <button
+                        className={`inventory-original-choice ${player.appearance?.originTokenId === gotchi.tokenId ? "selected" : ""}`}
+                        key={gotchi.tokenId}
+                        onClick={() => void onSkin(gotchi.tokenId)}
+                        disabled={locked || !available}
+                      >
+                        {available ? (
+                          <img
+                            src={`/api/aavegotchi/skin?tokenId=${encodeURIComponent(gotchi.tokenId)}`}
+                            alt={gotchi.name}
+                            loading="lazy"
+                            onError={() =>
+                              setFailedLooks((current) =>
+                                new Set(current).add(gotchi.tokenId),
+                              )
+                            }
+                          />
+                        ) : (
+                          <Ghost />
+                        )}
+                        <strong>{gotchi.name}</strong>
+                        <span>
+                          {!available
+                            ? tr("Image unavailable")
+                            : player.appearance?.originTokenId ===
+                                gotchi.tokenId
+                              ? tr("Equipped")
+                              : tr("Wear this look")}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+                <details className="inventory-disclosure">
+                  <summary>
+                    {tr("Original item inventory")}{" "}
+                    <span>{origin.wearables?.length || 0}</span>
+                  </summary>
+                  <div className="inventory-disclosure-body">
+                    <OriginalItemGallery
+                      key={origin.verifiedAt}
+                      items={origin.wearables || []}
+                    />
+                    {origin.warnings?.map((warning) => (
+                      <p className="inventory-notice" key={warning}>
+                        {warning}
+                      </p>
+                    ))}
+                  </div>
+                </details>
+                {origin.truncated && (
+                  <p>{tr("Only the first 50 originals are checked for now.")}</p>
+                )}
+              </>
+            )}
+            {player.appearance?.originTokenId && (
+              <button
+                className="inventory-secondary"
+                onClick={() => void onSkin(null)}
                 disabled={locked}
               >
-                <Wallet size={19} aria-hidden="true" />
-                {origin?.linked
-                  ? tr("Link another address")
-                  : tr("Link Aavegotchi wallet")}
-              </button>
-              {origin?.linked && (
-                <button
-                  className="inventory-secondary"
-                  onClick={() => void refreshOrigin()}
-                  disabled={locked || originLoading}
-                >
-                  <ArrowsClockwise size={19} aria-hidden="true" />
-                  {originLoading
-                    ? tr("Checking ownership…")
-                    : tr("Check originals again")}
-                </button>
-              )}
-              {originError && (
-                <p className="inventory-error" role="alert">
-                  {originError}
-                </p>
-              )}
-              {origin?.linked && origin.status === "verified" && (
-                <>
-                  <p>
-                    {origin.count === 1 ? tr("1 original verified") : tr("{0} originals verified", { 0: origin.count || 0 })}
-                    {origin.verifiedAt
-                      ? ` · ${new Date(origin.verifiedAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" })}`
-                      : ""}
-                  </p>
-                  <div className="inventory-original-grid">
-                    {(origin.gotchis || []).map((gotchi) => {
-                      const available =
-                        gotchi.hasImage && !failedLooks.has(gotchi.tokenId);
-                      return (
-                        <button
-                          className={`inventory-original-choice ${player.appearance?.originTokenId === gotchi.tokenId ? "selected" : ""}`}
-                          key={gotchi.tokenId}
-                          onClick={() => void onSkin(gotchi.tokenId)}
-                          disabled={locked || !available}
-                        >
-                          {available ? (
-                            <img
-                              src={`/api/aavegotchi/skin?tokenId=${encodeURIComponent(gotchi.tokenId)}`}
-                              alt={gotchi.name}
-                              loading="lazy"
-                              onError={() =>
-                                setFailedLooks((current) =>
-                                  new Set(current).add(gotchi.tokenId),
-                                )
-                              }
-                            />
-                          ) : (
-                            <Ghost />
-                          )}
-                          <strong>{gotchi.name}</strong>
-                          <span>
-                            {!available
-                              ? tr("Image unavailable")
-                              : player.appearance?.originTokenId ===
-                                  gotchi.tokenId
-                                ? tr("Equipped")
-                                : tr("Wear this look")}
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <details className="inventory-disclosure">
-                    <summary>
-                      {tr("Original item inventory")}{" "}
-                      <span>{origin.wearables?.length || 0}</span>
-                    </summary>
-                    <div className="inventory-disclosure-body">
-                      <OriginalItemGallery
-                        key={origin.verifiedAt}
-                        items={origin.wearables || []}
-                      />
-                      {origin.warnings?.map((warning) => (
-                        <p className="inventory-notice" key={warning}>
-                          {warning}
-                        </p>
-                      ))}
-                    </div>
-                  </details>
-                  {origin.truncated && (
-                    <p>{tr("Only the first 50 originals are checked for now.")}</p>
-                  )}
-                </>
-              )}
-              {player.appearance?.originTokenId && (
-                <button
-                  className="inventory-secondary"
-                  onClick={() => void onSkin(null)}
-                  disabled={locked}
-                >
-                  {tr("Back to starter ghost")}</button>
-              )}
-            </div>
-          </details>
-
-          <details className="inventory-disclosure">
-            <summary>
-              <GearSix size={20} aria-hidden="true" /> {" "}{tr("Display & artwork")}</summary>
-            <div className="inventory-disclosure-body">
-              <button
-                className="inventory-secondary"
-                onClick={onMap3D}
-                aria-pressed={map3D}
+                {tr("Back to starter ghost")}</button>
+            )}
+          </div>
+        </details>
+        <details className="inventory-disclosure">
+          <summary>
+            <Wallet size={20} aria-hidden="true" /> {" "}{tr("Advanced")}</summary>
+          <div className="inventory-disclosure-body inventory-native-content">
+            {nativeContent}
+            {nativeExtras}
+          </div>
+        </details>
+        <details className="inventory-disclosure">
+          <summary>
+            <GearSix size={20} aria-hidden="true" /> {" "}{tr("Display & artwork")}</summary>
+          <div className="inventory-disclosure-body">
+            <button
+              className="inventory-secondary"
+              onClick={onMap3D}
+              aria-pressed={map3D}
+            >
+              <Cube size={20} aria-hidden="true" />
+              {map3D ? tr("Use 2D map character") : tr("Try 3D map character")}
+            </button>
+            <p>
+              {tr("2D is the default on phones. Looks without a 3D model stay in 2D.")}</p>
+            <p>
+              {tr("Character artwork:")}{" "}
+              <a
+                href="https://github.com/aavegotchi/aavegotchi-assets"
+                target="_blank"
+                rel="noreferrer"
               >
-                <Cube size={20} aria-hidden="true" />
-                {map3D ? tr("Use 2D map character") : tr("Try 3D map character")}
-              </button>
-              <p>
-                {tr("2D is the default on phones. Looks without a 3D model stay in 2D.")}</p>
-              <p>
-                {tr("Character artwork:")}{" "}
-                <a
-                  href="https://github.com/aavegotchi/aavegotchi-assets"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {tr("Aavegotchi assets")}</a>
-                {tr(". 3D models:")}{" "}
-                <a
-                  href="https://www.aavegotchi.com/sdk"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  {tr("Aavegotchi 3D SDK")}</a>
-                .
-              </p>
-            </div>
-          </details>
-        </section>
-      )}
-
-      {tab === "history" && (
-        <section
-          className="inv-panel"
-          id="inv-panel-history"
-          aria-labelledby="inv-tab-history"
-        >
-          {adventureResults || (
-            <p className="inv-grid-caption">
-              {tr("Practice adventure results appear here.")}</p>
-          )}
-          <AuraCatalog items={auras} />
-        </section>
-      )}
+                {tr("Aavegotchi assets")}</a>
+              {tr(". 3D models:")}{" "}
+              <a
+                href="https://www.aavegotchi.com/sdk"
+                target="_blank"
+                rel="noreferrer"
+              >
+                {tr("Aavegotchi 3D SDK")}</a>
+              .
+            </p>
+          </div>
+        </details>
+        {adventureResults}
+      </section>
 
       {show3D && (
         <Character3D
           items={characterItems}
           originTokenId={player.appearance?.originTokenId}
+          look={player.appearance?.look}
           onClose={() => setShow3D(false)}
         />
       )}
@@ -1045,12 +1054,12 @@ export function Inventory({
           </section>
         </Dialog>
       )}
-      {selectedId && (
+      {selectedKey && (
         <Dialog
           label={selling ? tr("List Aura") : tr("Aura details")}
           onClose={closeItem}
           fallbackFocus={() =>
-            gridRef.current?.querySelector<HTMLButtonElement>(`[data-inventory-item="${CSS.escape(selectedId)}"]`) ||
+            gridRef.current?.querySelector<HTMLButtonElement>(`[data-inventory-item="${CSS.escape(selectedKey)}"]`) ||
             gridRef.current?.closest(".inventory-experience")?.querySelector<HTMLButtonElement>(".inv-chip")
           }
         >
@@ -1079,27 +1088,23 @@ export function Inventory({
               <>
                 <header className="inv-detail-head">
                   <div className={`inv-detail-art rarity-${selected.rarity}`}>
-                    <AuraSprite
-                      edition={auraEdition(selected)}
-                      slot={selected.slot}
-                      color={selected.color}
-                      size={2}
-                    />
+                    {entryArt(selected, 2)}
                   </div>
                   <div className="inv-detail-title">
                     <h2>{selling ? tr("List Aura") : selected.name}</h2>
                     <p>
                       <span className={`inv-rarity rarity-${selected.rarity}`}>
-                        {rarityName(selected.rarity)}
+                        {entryRarity(selected)}
                       </span>{" "}
-                      · {slotName(selected.slot)}
-                      {selected.serial != null ? ` · #${selected.serial}` : ""}
+                      · {entryKind(selected)}
+                      {selected.type !== "wearable" && selected.item.serial != null ? ` · #${selected.item.serial}` : ""}
                     </p>
                     <span className="inventory-source">
-                      {tr("Practice Aura")}{selected.equipped ? tr(" · Equipped") : ""}
-                      {!selected.equipped && selectedCount > 1
-                        ? ` · ${selectedCount} held`
-                        : ""}
+                      {[
+                        entrySource(selected),
+                        selected.worn ? tr("Equipped") : "",
+                        selected.type === "aura" && !selected.worn && selected.count > 1 ? `${selected.count} held` : "",
+                      ].filter(Boolean).join(" · ")}
                     </span>
                   </div>
                   <button
@@ -1110,22 +1115,22 @@ export function Inventory({
                     <X size={16} />
                   </button>
                 </header>
-                {selected.native_claim_state === "issued" && (
+                {selected.type === "aura" && selected.item.native_claim_state === "issued" && (
                   <p className="inventory-notice">
                     {tr("This Aura is being secured and cannot be listed. Find it in the Secured collection.")}{" "}
-                    {selected.native_claim_id && (
+                    {selected.item.native_claim_id && (
                       <ChainLink
                         label
                         chain={{
-                          id: `aura:${selected.native_claim_id}`,
+                          id: `aura:${selected.item.native_claim_id}`,
                           status: "pending",
-                          account: selected.native_claim_receiver,
+                          account: selected.item.native_claim_receiver,
                         }}
                       />
                     )}
                   </p>
                 )}
-                {selling && selected.native_claim_state !== "issued" ? (
+                {selling && selected.type !== "wearable" ? (
                   <form
                     className="inventory-sale-form"
                     onSubmit={(event) => {
@@ -1133,31 +1138,20 @@ export function Inventory({
                       void listItem();
                     }}
                   >
-                    <p>
-                      {tr("Selling secures this Aura on NEAR and lists it on the market. You get test NEAR when another explorer buys it.")}</p>
                     <label htmlFor="inventory-list-price">
-                      {tr("Price in test NEAR")}</label>
+                      {tr("Price in QGOLD")}</label>
                     <div className="inventory-price-input">
                       <Coins size={22} aria-hidden="true" />
                       <input
                         id="inventory-list-price"
-                        inputMode="decimal"
-                        maxLength={32}
+                        inputMode="numeric"
+                        maxLength={16}
                         required
                         value={price}
                         disabled={locked}
                         onChange={(event) => setPrice(event.target.value)}
                       />
                     </div>
-                    <p className="inventory-sale-note">
-                      {tr("Every trade settles on NEAR. Cancel the listing any time in Market → Secured.")}</p>
-                    {priceDraft.hasDraft && (
-                      <p className="inventory-sale-note" role="status">
-                        {priceDraft.storageAvailable
-                          ? tr("Price draft saved here. Check the amount before listing.")
-                          : tr("Your price draft could not be saved. Keep this tab open.")}
-                      </p>
-                    )}
                     {priceDraft.hasDraft && (
                       <button
                         className="inventory-secondary"
@@ -1186,7 +1180,7 @@ export function Inventory({
                         type="submit"
                       >
                         <Tag size={20} aria-hidden="true" />
-                        {locked ? tr("Listing…") : tr("List")}
+                        {locked ? tr("Listing…") : tr("Sell")}
                       </button>
                     </div>
                   </form>
@@ -1195,33 +1189,49 @@ export function Inventory({
                     <div className="inv-detail-actions">
                       <button
                         className="inventory-action"
-                        disabled={locked}
-                        onClick={() => onEquip(selected)}
+                        disabled={locked || (selected.type === "secured" && (!selected.avatarReady || !onSecuredEquip))}
+                        onClick={() => {
+                          if (selected.type === "aura") onEquip(selected.item);
+                          else if (selected.type === "secured")
+                            void onSecuredEquip?.(selected.accountId, selected.item, selected.slot);
+                          else void wearables.toggle(selected.item);
+                        }}
                       >
-                        {selected.equipped ? (
+                        {selected.worn ? (
                           <X size={20} aria-hidden="true" />
                         ) : (
                           <Eye size={20} aria-hidden="true" />
                         )}
-                        {busy === "equip"
+                        {busy === "equip" || wearables.busy !== null
                           ? tr("Saving outfit…")
-                          : selected.equipped
+                          : selected.worn
                             ? tr("Take it off")
                             : tr("Try it on")}
                       </button>
                       <button
                         className="inventory-secondary"
-                        disabled={locked || !!selected.native_claim_state}
+                        disabled={
+                          locked ||
+                          selected.type === "wearable" ||
+                          (selected.type === "aura" && !!selected.item.native_claim_state) ||
+                          (selected.type === "secured" && (selected.worn || !onSecuredSell))
+                        }
                         onClick={() => setSelling(true)}
                       >
                         <Tag size={20} aria-hidden="true" />
                         {tr("Sell")}</button>
                     </div>
                     <p className="inventory-sale-note" role="status">
-                      {selected.equipped
-                        ? tr("Equipped. It glows on your map ghost.")
-                        : ""}
-                      {player.nativeOutfit
+                      {selected.type === "wearable"
+                        ? tr("Wearables can't be sold: clones are not NFTs and originals stay in your wallet.")
+                        : selected.type === "secured" && !selected.avatarReady
+                          ? tr("Getting your Aura ready to wear. Try again in a moment.")
+                          : selected.type === "secured" && selected.worn
+                            ? tr("Take it off before you sell it.")
+                            : selected.worn
+                              ? tr("Equipped. It glows on your map ghost.")
+                              : ""}
+                      {player.nativeOutfit && selected.type === "aura"
                         ? tr(" Your map ghost wears the secured outfit right now.")
                         : ""}
                     </p>

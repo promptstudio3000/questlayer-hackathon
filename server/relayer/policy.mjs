@@ -2,9 +2,32 @@ import { isDeepStrictEqual } from "node:util";
 import { GameError } from "../domain.mjs";
 import { publicKeyString } from "./delegate.mjs";
 import { SOCIAL_CONTRACT_ID } from "../native/network.mjs";
+import { MESSAGE_ID, validInboxKeyRecord, validInboxRecord } from "../inbox/crypto.mjs";
+import { isNativeEdition } from "../aura-catalog.mjs";
 
 export const SOCIAL_CONTRACT = SOCIAL_CONTRACT_ID;
 export const STORAGE_DEPOSIT = 50000000000000000000000n; // 0.05 NEAR
+// SocialDB storage that already covers a game record: below it a write
+// carries STORAGE_DEPOSIT, at or above it 1 yocto. The record prepare
+// (server/native/social-records.mjs) and relay admission must agree, or a
+// record prepared with a deposit is refused at send (map note "Keep on NEAR
+// Social", 12 Nov 2026: 0.01-0.02 NEAR free storage hit exactly that gap).
+export const SOCIAL_STORAGE_FLOOR = 2n * 10n ** 22n; // 0.02 NEAR
+/**
+ * Escrow storage deposits (contracts/qgold-escrow `storage_deposit`) are
+ * relayed on a ladder of 0.05 NEAR steps up to 0.5 NEAR (a 50-slot task needs
+ * about 0.43 NEAR): fixed storage-class amounts, like every other relayed deposit.
+ */
+export const ESCROW_STORAGE_DEPOSIT_MAX = 500000000000000000000000n; // 0.5 NEAR
+export const escrowStorageLadder = (deposit) => {
+  let d;
+  try {
+    d = BigInt(deposit);
+  } catch {
+    return false;
+  }
+  return d > 0n && d % STORAGE_DEPOSIT === 0n && d <= ESCROW_STORAGE_DEPOSIT_MAX;
+};
 export const MAX_ARGS_BYTES = 8192;
 export const MAX_METHOD_NAME = 64;
 
@@ -108,6 +131,11 @@ function checkContext(ctx) {
         typeof ctx.contracts.qgoldEscrow === "string"
           ? ctx.contracts.qgoldEscrow
           : null,
+      // Treasury DAO (docs/TREASURY-DAO.md): explorers vote on its polls.
+      treasuryDao:
+        typeof ctx.contracts.treasuryDao === "string"
+          ? ctx.contracts.treasuryDao
+          : null,
     },
     factorySetupDeposit:
       ctx.factorySetupDeposit === undefined || ctx.factorySetupDeposit === null
@@ -149,6 +177,68 @@ function parseArgs(bytes) {
     400,
   );
   return args;
+}
+// SocialDB writes the game quotes itself (server/native/social-profile.mjs,
+// server/native/social-records.mjs, server/gold-spend/social.mjs,
+// server/creators/feedback.mjs). Anything
+// else under the player's namespace is not sponsored: the relayer would pay
+// the gas and the storage of arbitrary writes.
+export const SOCIAL_MAX_ARGS_BYTES = 4096;
+const SOCIAL_RECORDS = {
+  profile: {
+    fields: ["schema", "name", "avatar_contract", "avatar_token_id", "updated_at", "mutation_id"],
+    valid: (r) => r.schema === "1" && /^profile_[a-f0-9-]{36}$/.test(r.mutation_id),
+  },
+  notes: {
+    key: /^message_[a-f0-9-]{36}$/,
+    fields: ["schema", "note_id", "state", "text", "lat", "lng", "anchor", "author_fix", "image", "image_sha256", "created_at", "updated_at", "mutation_id"],
+    valid: (r, key) =>
+      r.schema === "1" &&
+      r.note_id === key &&
+      ["published", "removed"].includes(r.state) &&
+      /^record_[a-f0-9-]{36}$/.test(r.mutation_id),
+  },
+  // Encrypted player inbox (docs/PLAYER-INBOX.md): the public X25519 inbox key
+  // and one ciphertext message, both under the sender's own namespace.
+  inbox_key: { whole: validInboxKeyRecord },
+  inbox: { key: MESSAGE_ID, whole: validInboxRecord },
+  // Stars an explorer gave a creator quest (server/creators/feedback.mjs).
+  ratings: {
+    key: /^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,127}$/,
+    fields: ["schema", "quest_id", "registry", "stars", "updated_at", "mutation_id"],
+    valid: (r, key) =>
+      r.schema === "questlayer.rating/1" &&
+      r.quest_id === key &&
+      /^[1-5]$/.test(r.stars) &&
+      /^rating_[a-f0-9-]{36}$/.test(r.mutation_id),
+  },
+  places: {
+    key: /^(place|post)_[a-f0-9-]{36}$/,
+    fields: ["schema", "kind", "thread", "title", "text", "cell", "place", "paid", "created_at", "mutation_id"],
+    valid: (r) =>
+      r.schema === "questlayer.place/1" &&
+      /^record_[a-f0-9-]{36}$/.test(r.mutation_id),
+  },
+};
+function gameSocialWrite(namespace) {
+  if (!keysOf(namespace, ["questlayer"]) || !plainObject(namespace.questlayer))
+    return false;
+  const sections = Object.keys(namespace.questlayer);
+  if (sections.length !== 1 || !Object.hasOwn(SOCIAL_RECORDS, sections[0]))
+    return false;
+  const spec = SOCIAL_RECORDS[sections[0]],
+    section = namespace.questlayer[sections[0]];
+  const record = (r, key) =>
+    spec.whole ? spec.whole(r) :
+    keysOf(r, spec.fields) &&
+    spec.fields.every((f) => typeof r[f] === "string") &&
+    spec.valid(r, key);
+  if (!spec.key) return record(section);
+  if (!plainObject(section)) return false;
+  const keys = Object.keys(section);
+  return (
+    keys.length === 1 && spec.key.test(keys[0]) && record(section[keys[0]], keys[0])
+  );
 }
 function keyActionPublicKey(value) {
   try {
@@ -345,6 +435,17 @@ export function validateDelegate(decoded, context) {
         "RELAY_ARGS",
         "An Aura can be redeemed only to the signing account.",
       );
+      // The relayer checks the voucher itself before admission (relay.mjs).
+      demand(
+        keysOf(args, ["claim_id", "edition", "receiver_id", "expires_at_ms", "signature"]) &&
+          /^earned:[!-~]{1,153}$/.test(args.claim_id) &&
+          isNativeEdition(args.edition) &&
+          integer(args.expires_at_ms) &&
+          typeof args.signature === "string" &&
+          /^[A-Za-z0-9+/]{86}==$/.test(args.signature),
+        "RELAY_ARGS",
+        "An Aura redemption takes one award-signed claim.",
+      );
     } else if (method === "equip_aura" || method === "unequip_aura")
       depositIs(0n, "Equipment");
     else if (method === "nft_transfer_call") {
@@ -477,6 +578,20 @@ export function validateDelegate(decoded, context) {
       depositIs(0n, "Position maintenance");
     else unsupported();
     }
+  } else if (c.treasuryDao && receiverId === c.treasuryDao) {
+    // A vote on a treasury poll: approve only, never a deposit, never a
+    // proposal or any other kind (the DAO's own roles enforce the rest).
+    depositIs(0n, "A treasury vote");
+    demand(
+      method === "act_proposal" &&
+        keysOf(args, ["id", "action", "proposal"]) &&
+        Number.isSafeInteger(args.id) &&
+        args.id >= 0 &&
+        args.action === "VoteApprove" &&
+        args.proposal === "Vote",
+      "RELAY_ARGS",
+      "Only a vote for a treasury poll option is sponsored.",
+    );
   } else if (c.npcGames && receiverId === c.npcGames) {
     // Earned mini-game rolls (docs/NPC-GAMES.md): never a deposit, so never a wager.
     depositIs(0n, "A mini-game roll");
@@ -553,6 +668,29 @@ export function validateDelegate(decoded, context) {
       "RELAY_ARGS",
       "QGOLD can be sent only into the market escrow.",
     );
+  } else if (c.qgoldEscrow != null && receiverId === c.qgoldEscrow) {
+    // The funder's native storage deposit for one market agreement
+    // (contracts/qgold-escrow `storage_deposit`). The relayer carries the NEAR
+    // within its daily deposit budget; `grant: true` makes the escrow book it
+    // as a grant the player can spend on agreements but never withdraw, so a
+    // relayed call (predecessor = the player) cannot turn sponsorship into NEAR.
+    demand(
+      method === "storage_deposit",
+      "RELAY_METHOD",
+      `${method} on ${receiverId} is not sponsored.`,
+    );
+    demand(
+      escrowStorageLadder(deposit),
+      "RELAY_DEPOSIT",
+      "An escrow storage deposit is a multiple of 0.05 NEAR, at most 0.5 NEAR.",
+    );
+    demand(
+      keysOf(args, ["account_id", "grant"]) &&
+        args.account_id === senderId &&
+        args.grant === true,
+      "RELAY_ARGS",
+      "An escrow storage deposit is a grant for your own account.",
+    );
   } else if (c.intents != null && receiverId === c.intents) {
     // Registering or removing the key that signs intents; trades and
     // withdrawals are signed intents the solver submits, never relayed calls.
@@ -605,10 +743,21 @@ export function validateDelegate(decoded, context) {
       "RELAY_ARGS",
       "Only your own SocialDB namespace can be published.",
     );
+    demand(
+      Buffer.byteLength(JSON.stringify(args)) <= SOCIAL_MAX_ARGS_BYTES &&
+        gameSocialWrite(args.data[senderId]),
+      "RELAY_SOCIAL_SHAPE",
+      "Only the game's own profile, note, place and inbox records are published through the relayer.",
+    );
   } else fail("RELAY_RECEIVER", "This contract is not sponsored.");
-  // Defense in depth: the branches above only accept these amounts.
+  // Defense in depth: the branches above only accept these amounts (plus the
+  // escrow storage ladder, bounded above).
   demand(
-    RELAYED_DEPOSITS.includes(deposit),
+    RELAYED_DEPOSITS.includes(deposit) ||
+      (c.qgoldEscrow != null &&
+        receiverId === c.qgoldEscrow &&
+        method === "storage_deposit" &&
+        escrowStorageLadder(deposit)),
     "RELAY_DEPOSIT",
     "Only storage-class deposits are relayed.",
   );

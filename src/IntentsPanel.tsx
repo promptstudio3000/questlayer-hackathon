@@ -8,16 +8,30 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import { Details } from "./ScreenTabs";
 import { formatNativeNear, parseNearPrice } from "./native-amounts";
-import { auraTokenDiff, grossForNet, signIntents, type IntentsAccount, type IntentsConfig } from "./intents-order";
+import { auraTokenDiff, grossForNet, signIntents, type IntentOrder, type IntentsAccount, type IntentsConfig } from "./intents-order";
 import type { OrderSigner } from "./order-signers";
 import type { LinkedEvmWallet } from "./evm-wallet";
 import type { NativeItem } from "./types";
-import { EXPLORER_BASE } from "./near-network";
+import { ChainLink } from "./ChainLink";
 import { tr } from "./i18n";
+import { FundsHelp } from "./FundsHelp";
+import { checkFunds, fundsReason, nearText, GAS_HEADROOM, type FundsShortfall } from "./funds-help";
 
 const GAS = "100000000000000",
   NFT_GAS = "200000000000000",
   WNEAR_STORAGE = "1250000000000000000000"; // 0.00125 NEAR, refunded if registered
+
+/** One of the explorer's own orders, as they would say it. */
+function ownOrderText(o: IntentOrder, accountId: string | null, feePips: number) {
+  const sold = o.side === "sell" ? o.maker === accountId : o.taker === accountId;
+  if (o.state === "filled")
+    return sold
+      ? tr("Sold for {0} wNEAR", { 0: formatNativeNear(o.price) })
+      : tr("Bought for {0} wNEAR", { 0: formatNativeNear(o.buyerPays ?? grossForNet(o.price, feePips)) });
+  if (o.state === "open") return tr("Listed for {0} wNEAR", { 0: formatNativeNear(o.price) });
+  if (o.state === "filling") return tr("Settling on NEAR…");
+  return tr("Listing ended");
+}
 
 export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner | null; owned: NativeItem[]; onEnabled?: (on: boolean) => void }) {
   const [config, setConfig] = useState<IntentsConfig | null>(null),
@@ -28,7 +42,9 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
     [error, setError] = useState(""),
     [done, setDone] = useState<{ text: string; tx?: string } | null>(null),
     [evmWallets, setEvmWallets] = useState<LinkedEvmWallet[]>([]),
-    [signWith, setSignWith] = useState("device");
+    [signWith, setSignWith] = useState("device"),
+    // Why a Buy can't go through (no NEAR, QGOLD to swap) instead of a bare error.
+    [help, setHelp] = useState<FundsShortfall | null>(null);
   const accountId = signer?.accountId ?? null;
   const canSign = !!signer?.key;
   // A linked Ethereum wallet (MetaMask, Rabby) can sign the same intents
@@ -96,8 +112,14 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
       await api("/native/intents/orders", { signed: await sign([auraTokenDiff("sell", c.nftContract, tokenId, yocto, c.wnear)]) });
       return { text: tr("Your Aura is listed. Anyone can buy it with one signed intent.") };
     });
-  const buy = (orderId: string, tokenId: string, yocto: string) =>
-    run(async () => {
+  const buy = async (orderId: string, tokenId: string, yocto: string) => {
+    const wrap = BigInt(grossForNet(yocto, c.fee || 0)) - BigInt(mine?.wnear || "0");
+    if (accountId && wrap > 0n) {
+      setStep(tr("Working…"));
+      const funds = await checkFunds(accountId, wrap + GAS_HEADROOM).finally(() => setStep(""));
+      if (fundsReason(funds) !== "unknown") return setHelp(funds);
+    }
+    await run(async () => {
       // The buyer pays the seller's price plus the verifier fee (to the treasury).
       let missing = BigInt(grossForNet(yocto, c.fee || 0)) - BigInt(mine?.wnear || "0");
       // A 0.05 NEAR deposit would look like a storage deposit and be routed
@@ -114,6 +136,7 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
       });
       return { text: tr("Done. Settled on chain."), tx: r.transactionHash };
     });
+  };
   const withdraw = () =>
     run(async () => {
       const intents: unknown[] = (mine?.auras || []).slice(0, 3).map((token_id) => ({ intent: "nft_withdraw", token: c.nftContract, token_id, receiver_id: accountId }));
@@ -124,6 +147,8 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
 
   const others = c.orders.filter((o) => o.maker !== accountId && o.side === "sell");
   const held = (mine?.auras.length || 0) > 0 || BigInt(mine?.wnear || "0") > 0n;
+  // The explorer's own listings and trades, each settled one with its proof.
+  const own = (mine?.orders || []).slice(0, 10);
   return (
     <section className="signed-orders intents-panel" aria-labelledby="intents-title">
       <h3 id="intents-title">{tr("NEAR Intents (test)")}</h3>
@@ -134,12 +159,7 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
       {step && <p role="status">{step}</p>}
       {done && !step && (
         <p role="status" className="native-market-message">
-          {done.text}{" "}
-          {done.tx && (
-            <a href={`${EXPLORER_BASE}/txns/${done.tx}`} target="_blank" rel="noreferrer">
-              {done.tx.slice(0, 8)}…
-            </a>
-          )}
+          {done.text} {done.tx && <ChainLink label chain={{ tx: done.tx, status: "confirmed" }} />}
         </p>
       )}
       {canSign && evmWallets.length > 0 && (
@@ -210,7 +230,28 @@ export function IntentsPanel({ signer, owned, onEnabled }: { signer: OrderSigner
               ))}
             </ul>
           )}
+          {own.length > 0 && (
+            <>
+              <h4>{tr("Your Intents trades")}</h4>
+              <ul className="signed-order-history">
+                {own.map((o) => (
+                  <li key={o.id}>
+                    <span>{o.tokenId}</span> <span>{ownOrderText(o, accountId, c.fee || 0)}</span>{" "}
+                    {o.settlementTx && <ChainLink label chain={{ tx: o.settlementTx, status: "confirmed" }} />}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </>
+      )}
+      {help && (
+        <FundsHelp
+          title={tr("Why you can't buy this yet")}
+          funds={help}
+          onRecheck={() => void checkFunds(help.account, help.need).then(setHelp)}
+          onClose={() => setHelp(null)}
+        />
       )}
     </section>
   );

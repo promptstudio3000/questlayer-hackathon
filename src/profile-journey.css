@@ -1,0 +1,280 @@
+/* Profile → Character totals and story (src/CharacterJourney.tsx) and the
+   Stake / Earnings screen (src/StakeEarn.tsx). Loaded with those chunks, so
+   rules carry the profile prefix to win over earlier sheets. */
+.journey-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.journey-stats div {
+  padding: 8px 4px;
+  border-radius: 12px;
+  background: var(--surface-soft, #f5f0ff);
+  text-align: center;
+  min-width: 0;
+}
+.journey-stats dt {
+  font-size: 12px;
+  color: var(--ink-secondary, #5b4a75);
+  overflow-wrap: anywhere;
+}
+.journey-stats dd {
+  margin: 2px 0 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--ink, #2c0a56);
+  overflow-wrap: anywhere;
+}
+
+.journey { margin: 16px 0 8px; }
+.app-shell[data-area="profile"] .journey h2 {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 8px;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.app-shell[data-area="profile"] .journey h2 small {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--ink-secondary);
+}
+.journey-empty { color: var(--ink-secondary); font-size: 14px; }
+.journey-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 4px;
+  position: relative;
+}
+/* A thin trail joins the moments, like a walked route. */
+.journey-list::before {
+  content: "";
+  position: absolute;
+  left: 21px;
+  top: 12px;
+  bottom: 12px;
+  width: 2px;
+  border-radius: 2px;
+  background: var(--surface-soft, #ece3ff);
+}
+.journey-list li {
+  position: relative;
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 10px;
+  min-height: 48px;
+  padding: 4px 0;
+}
+.journey-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--surface-raised, #fff);
+  border: 2px solid var(--surface-soft, #ece3ff);
+  color: var(--action, #6c2bd9);
+  z-index: 1;
+}
+.journey-badge .journey-icon,
+.journey-tier .journey-icon { border-color: #f2c94c; color: #8a5a00; }
+.journey-stake .journey-icon { border-color: #ff9bd2; color: #b0167a; }
+.journey-text { display: grid; min-width: 0; }
+.journey-text b {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.journey-text small { font-size: 13px; color: var(--ink-secondary); }
+.journey-list strong { font-size: 14px; color: var(--ink-secondary); white-space: nowrap; }
+.journey-list strong.journey-plus { color: #1d7a43; }
+.journey-more {
+  margin: 8px 0 0 46px;
+  padding: 8px 12px;
+  min-height: 40px;
+  border: 0;
+  border-radius: 10px;
+  background: var(--surface-soft);
+  color: var(--action);
+  font: inherit;
+  font-weight: 600;
+}
+
+/* Badges as a chapter of the Character tab: one row until opened. */
+.badge-chapter-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.app-shell .badge-chapter-toggle h2 { margin: 0; font-size: 20px; font-weight: 600; }
+.badge-chapter-toggle small { margin-left: auto; font-size: 14px; color: var(--ink-secondary); }
+.badge-chapter-toggle svg:last-child { transition: transform 0.15s; }
+.badge-chapter-toggle[aria-expanded="true"] svg:last-child { transform: rotate(180deg); }
+.badge-grid.badge-grid-row { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.app-shell .main-panel .badge-book.badge-chapter { margin: 0 0 8px; padding: 0; max-width: none; }
+
+/* ---------- Stake / Earnings ---------- */
+.stake-earn-switch {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+  padding: 4px;
+  margin: 0 0 16px;
+  border-radius: 14px;
+  background: var(--surface-soft, #f1eafe);
+}
+.stake-earn-switch button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-secondary);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.stake-earn-switch button[aria-pressed="true"] {
+  background: var(--surface-raised, #fff);
+  color: var(--ink);
+  box-shadow: 0 1px 3px rgb(40 10 90 / 0.15);
+}
+
+.stake-story-more { margin: 0 0 16px; }
+.stake-story-more > summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--action);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Tier ladder: Free → Staker → Tier 2 → Tier 3 on one bar. */
+.tier-card {
+  margin: 0 0 16px;
+  padding: 14px;
+  border-radius: 18px;
+  background: var(--surface-raised, #fff);
+  border: 1px solid var(--surface-soft, #e6dcfb);
+}
+.tier-card-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tier-card-head span { font-size: 14px; color: var(--ink-secondary); }
+.tier-card-head b { font-size: 22px; color: var(--ink); }
+.tier-ladder { position: relative; margin: 14px 6px 4px; height: 44px; }
+.tier-ladder-track,
+.tier-ladder-fill {
+  position: absolute;
+  left: 0;
+  top: 9px;
+  height: 8px;
+  border-radius: 8px;
+}
+.tier-ladder-track { right: 0; background: var(--surface-soft, #ece3ff); }
+.tier-ladder-fill { background: linear-gradient(90deg, #6c2bd9, #e83fd1); transition: width 0.6s ease; }
+.tier-ladder ol { list-style: none; margin: 0; padding: 0; }
+.tier-ladder li {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+}
+.tier-ladder li:first-child { transform: none; justify-items: start; }
+.tier-ladder li:last-child { transform: translateX(-100%); justify-items: end; }
+.tier-ladder li i {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-soft, #ece3ff);
+  border: 3px solid var(--surface-raised, #fff);
+  display: grid;
+  place-items: center;
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--ink-secondary);
+}
+.tier-ladder li.on i { background: #6c2bd9; color: #fff; }
+.tier-ladder li.here i { background: #e83fd1; color: #fff; box-shadow: 0 0 0 4px rgb(232 63 209 / 0.25); }
+.tier-ladder li.here { color: var(--ink); font-weight: 700; }
+.tier-card-next { margin: 8px 0 0; font-size: 14px; color: var(--ink-secondary); }
+.tier-card-numbers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+}
+.tier-card-numbers div { padding: 8px; border-radius: 12px; background: var(--surface-soft, #f5f0ff); text-align: center; }
+.tier-card-numbers dt { font-size: 12px; color: var(--ink-secondary); }
+.tier-card-numbers dd { margin: 2px 0 0; font-size: 16px; font-weight: 700; color: var(--ink); }
+
+/* Earnings */
+.earn-hero {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 16px;
+  padding: 16px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #fff6d6, #ffe7a3);
+  color: #4a3200;
+}
+.earn-hero > span { font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.earn-hero > div { display: flex; align-items: center; gap: 10px; }
+.earn-hero strong { font-size: 32px; line-height: 1.1; }
+.earn-hero small { font-size: 14px; color: #6b4d0a; overflow-wrap: anywhere; }
+.earn-hero .earn-pending {
+  justify-self: start;
+  margin-top: 4px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 0.7);
+  font-weight: 600;
+}
+.earn-sources {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin: 0 0 16px;
+}
+.earn-sources div {
+  display: grid;
+  gap: 2px;
+  padding: 12px;
+  border-radius: 14px;
+  background: var(--surface-soft, #f5f0ff);
+}
+.earn-sources dt { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-secondary); }
+.earn-sources dd { margin: 0; font-size: 18px; font-weight: 700; color: var(--ink); }
+.earn-sources dd small { display: block; font-size: 12px; font-weight: 400; color: var(--ink-secondary); }
+.earn-link { justify-self: start; margin-top: 8px; }
+/* Fuel: the explorer's own NEAR for storage and own payments */
+/* Wide screens: the picture keeps its phone size instead of filling the card. */
+.stake-story-art { max-width: 420px; margin: 0 auto; }
+.stake-story ol { max-width: 520px; margin-inline: auto; }
+.app-shell .main-panel .badge-chapter-toggle { width: 100%; justify-content: flex-start; }

@@ -451,8 +451,8 @@ the Mac, with a W4 stub until W4 lands._
 
 **W7 — Generic actors**
 
-> Status: wave 1 done (generic cast, POI homes, per-cell caps; see `docs/ACTORS-API.md`). POIs come from CityPack
-> parks, zones and path junctions until the W6 POI DB registers through `registerPoiSource`.
+> Status: wave 1 done (generic cast, POI homes, per-cell caps; see `docs/ACTORS-API.md`). Wave 2 (13 Nov 2026): the
+> W3 POI file registers through `registerPoiSource`, so generic NPCs live at real named places.
 
 > Add `server/data/actors/_generic.json` and `server/data/personas/_generic.json` (original characters, CS+EN,
 > archetype rules unchanged). In `server/actors/definitions.mjs`/`spawns.mjs` resolve actor homes from safe POIs

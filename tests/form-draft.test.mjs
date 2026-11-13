@@ -188,26 +188,6 @@ test("concurrent operation identities remain recoverable instead of replacing un
   assert.equal(journal.loadFirst(), null);
 });
 
-test("legacy tab-only intent is recovered and cleared only for the exact operation", () => {
-  const storage = memoryStorage(),
-    legacy = memoryStorage();
-  legacy.setItem(
-    "questlayer:note-operation:v1:explorer-a:arena",
-    "legacy-operation",
-  );
-  const journal = createNotePublicationJournal(
-    "explorer-a",
-    true,
-    storage,
-    legacy,
-  );
-  assert.deepEqual(journal.loadFirst(), { clientId: "legacy-operation" });
-  journal.clear("other-operation");
-  assert(journal.loadFirst());
-  journal.clear("legacy-operation");
-  assert.equal(journal.loadFirst(), null);
-});
-
 test("journal corruption cannot fabricate a receipt and blocked storage prevents a new send intent", () => {
   const storage = memoryStorage();
   const journal = createNotePublicationJournal("explorer-a", true, storage);

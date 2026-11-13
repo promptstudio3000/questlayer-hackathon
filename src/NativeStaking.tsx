@@ -215,7 +215,7 @@ export function NativeStaking({
                 className="staking-action staking-primary"
                 onClick={onConnect}
               >
-                <Wallet size={20} aria-hidden="true" /> {" "}{tr("Connect NEAR wallet")}</button>
+                <Wallet size={20} aria-hidden="true" /> {" "}{tr("Activate my account")}</button>
             )}
             <button
               className="staking-action staking-refresh"
@@ -579,7 +579,7 @@ export function NativeStaking({
                 <Plus size={20} aria-hidden="true" /> {" "}{tr("Create testnet position")}</button>
               {!account && (
                 <p className="staking-secondary">
-                  {tr("Connect a NEAR wallet above to create a position.")}</p>
+                  {tr("Activate your account above to create a position.")}</p>
               )}
               {data.config.created >= data.config.capacity && (
                 <p className="staking-secondary">

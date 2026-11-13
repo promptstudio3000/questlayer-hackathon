@@ -3,11 +3,14 @@ import { NETWORK } from "../native/network.mjs";
 
 // Player-facing routes. The parent server authenticates the player, parses the
 // body and owns the response helpers; this handler only dispatches.
-export function createRelayerRoutes({ relayer = null, accounts = null, authorizeEnrollment } = {}) {
-  const checkEnrollment = (req, player) => {
-    if (typeof authorizeEnrollment !== "function") throw new Error("Account authorization is unavailable.");
-    authorizeEnrollment(req, player);
+// `authorizeAccountCreation` guards the sponsored, funded account itself (proof of
+// play, per-network cap); `authorizeEnrollment` guards every key change.
+export function createRelayerRoutes({ relayer = null, accounts = null, authorizeEnrollment, authorizeAccountCreation = authorizeEnrollment } = {}) {
+  const guard = (authorize) => (req, player) => {
+    if (typeof authorize !== "function") throw new Error("Account authorization is unavailable.");
+    authorize(req, player);
   };
+  const checkEnrollment = guard(authorizeEnrollment), checkCreation = guard(authorizeAccountCreation);
   async function handle(req, res, url, { player, body, respond, assert }) {
     const path = url.pathname,
       method = req.method || "GET";
@@ -23,6 +26,18 @@ export function createRelayerRoutes({ relayer = null, accounts = null, authorize
       );
       return true;
     }
+    if (path === "/api/account/fuel" && method === "GET") {
+      assert(accounts, "Managed accounts are disabled on this host.", 503, "ACCOUNT_DISABLED");
+      respond(res, await accounts.fuel(player));
+      return true;
+    }
+    if (path === "/api/account/refuel" && method === "POST") {
+      // The game session is enough: it can only top up the player's own
+      // account, once a UTC day, inside the cap and the shared budget.
+      assert(accounts?.factory, "Managed accounts are disabled on this host.", 503, "ACCOUNT_DISABLED");
+      respond(res, await accounts.refuel(player));
+      return true;
+    }
     if (path === "/api/account/create" && method === "POST") {
       assert(
         accounts?.factory,
@@ -36,7 +51,27 @@ export function createRelayerRoutes({ relayer = null, accounts = null, authorize
         await accounts.create(player, {
           publicKey: input.publicKey,
           name: input.name,
-          authorizeEnrollment: () => checkEnrollment(req, player),
+          authorizeEnrollment: () => checkCreation(req, player),
+        }),
+        201,
+      );
+      return true;
+    }
+    // Testnet: an explorer whose account keys are on no device they still have
+    // (and no recovery passkey) starts a new account on this device.
+    if (path === "/api/account/start-over" && method === "POST") {
+      assert(
+        accounts?.factory,
+        "Managed accounts are disabled on this host.",
+        503,
+        "ACCOUNT_DISABLED",
+      );
+      const input = await body(req);
+      respond(
+        res,
+        await accounts.startOver(player, {
+          publicKey: input.publicKey,
+          authorizeEnrollment: () => checkCreation(req, player),
         }),
         201,
       );

@@ -99,11 +99,10 @@ try {
   await mira.page.goto(`${url}/?tab=inventory`);
   const bag = mira.page.getByRole("button", { name: "Inventory" }).first();
   if (await bag.isVisible().catch(() => false)) await bag.click();
-  const wardrobeTab = mira.page.getByRole("button", { name: "Wardrobe" }).first();
-  await wardrobeTab.click();
-  await mira.page.locator(".gotchi-wardrobe .wearable-tile").first().waitFor();
+  await mira.page.locator(".inv-chips").getByRole("button", { name: /^Wearables/ }).click();
+  await mira.page.locator(".inv-grid .inv-wearable-art").first().waitFor();
   await sleep(1500);
-  await mira.page.locator(".gotchi-wardrobe").screenshot({ path: join(OUT, "05-wardrobe-390.png") });
+  await mira.page.locator(".inv-grid").screenshot({ path: join(OUT, "05-wardrobe-390.png") });
   // Wearable finds on the map, zoomed in on the nearest one.
   const desk = await explorer("Desk", { viewport: { width: 1280, height: 800 }, reducedMotion: "reduce", locale: "en-GB" });
   await desk.page.locator(".wearable-find-marker").first().waitFor({ timeout: 20000 }).catch(() => {});

@@ -238,7 +238,7 @@ export function createHuntRewards(db, { now = () => Date.now(), altarFees = fals
         409,
         "CRAFT_AURA",
       );
-      assert(!v.needs.includes("gold"), `The altar asks ${altarFee(r.id)} GOLD for this offering.`, 402, "CRAFT_GOLD");
+      assert(!v.needs.includes("gold"), `The altar asks ${altarFee(r.id)} QGOLD for this offering.`, 402, "CRAFT_GOLD");
       db.prepare("INSERT OR IGNORE INTO players(id,name,gold_u,created_at) VALUES(?,?,0,?)").run(ALTAR_ACCOUNT, "Golden Altar", at);
       const item = grantEdition(db, player, r.edition, at);
       assert(item, "This edition is fully crafted. Your shards are safe.", 409, "CRAFT_SOLD_OUT");

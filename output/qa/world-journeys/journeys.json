@@ -10,7 +10,7 @@
       "cell": "871e06942ffffff",
       "worldId": "demo:871e06942ffffff:2026-11-07:v2",
       "cityId": null,
-      "coins": 8,
+      "coins": 6,
       "poiQuests": "ready",
       "poiZones": 3,
       "poiQuestsInCell": 3,
@@ -19,8 +19,8 @@
         "npc",
         "monster"
       ],
-      "coachQuest": "Visit Brněnský orloj",
-      "coachQuestKind": "visit"
+      "coachQuest": "Chest at Moravské náměstí",
+      "coachQuestKind": "chest"
     },
     {
       "device": "phone-390",
@@ -28,7 +28,7 @@
       "cell": "871e306d6ffffff",
       "worldId": "demo:871e306d6ffffff:2026-11-07:v2",
       "cityId": null,
-      "coins": 14,
+      "coins": 8,
       "poiQuests": "ready",
       "poiZones": 2,
       "poiQuestsInCell": 2,
@@ -46,7 +46,7 @@
       "cell": "871e32b31ffffff",
       "worldId": "demo:871e32b31ffffff:2026-11-07:v2",
       "cityId": null,
-      "coins": 16,
+      "coins": 9,
       "poiQuests": "empty",
       "poiZones": 0,
       "poiQuestsInCell": 0,

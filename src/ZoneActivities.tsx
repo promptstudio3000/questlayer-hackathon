@@ -3,9 +3,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import {
   ArrowRight,
   Check,
+  Clock,
   Flag,
-  MapPin,
-  NavigationArrow,
   Sparkle,
 } from "@phosphor-icons/react";
 import type { Point, Quest, Zone } from "./types";
@@ -14,7 +13,58 @@ import { Badge, CoinIcon, distanceLabel } from "./app-bits";
 import { tr } from "./i18n";
 import LandmarkClue from "./LandmarkClue";
 import { QuestThumbnail } from "./QuestThumbnail";
+import { zoneSchedule } from "./zone-landmarks";
 import "./zone-activities.css";
+
+const at = (ms: number, timeZone?: string) => {
+  try {
+    return new Date(ms).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone });
+  } catch {
+    return new Date(ms).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
+  }
+};
+
+/** Today in this zone as one row of icon facts: open window, progress, what is left, reset. */
+export function ZoneSchedule({ zone, quests, now, timezone }: { zone: Zone; quests: Quest[]; now: number; timezone?: string }) {
+  const s = zoneSchedule(zone, quests, now, timezone);
+  const allDay = s.closesAt >= s.resetAt - 60000;
+  const window =
+    s.phase === "upcoming"
+      ? tr("Opens at {0} (in {1})", { 0: at(s.opensAt, timezone), 1: remaining(s.opensAt) })
+      : s.phase === "open"
+        ? allDay
+          ? tr("Open now, all day")
+          : tr("Open now until {0} (in {1})", { 0: at(s.closesAt, timezone), 1: remaining(s.closesAt) })
+        : s.phase === "done"
+          ? tr("Everything here is done for today")
+          : tr("Closed for today");
+  const windowShort =
+    s.phase === "upcoming" ? at(s.opensAt, timezone)
+      : s.phase === "open" ? (allDay ? tr("All day") : tr("Until {0}", { 0: at(s.closesAt, timezone) }))
+        : s.phase === "done" ? tr("Done") : tr("Closed");
+  const fact = (label: string, icon: ReactNode, text: string, tone?: string) => (
+    <li title={label} data-tone={tone}>{icon}<span aria-hidden="true">{text}</span><span className="sr-only">{label}</span></li>
+  );
+  return (
+    <ul className="zone-facts" aria-label={tr("Today in this zone")}>
+      <li className="zone-facts-tier">
+        <Badge tone={zone.tier === 1 ? "green" : "purple"}>
+          {zone.tier === 1 ? tr("Free") : tr("Tier {0}", { 0: zone.tier })}
+        </Badge>
+      </li>
+      {fact(window, <Clock size={16} aria-hidden="true" />, windowShort, s.phase === "open" ? "open" : "closed")}
+      {fact(tr("Done today: {0} of {1} activities", { 0: s.done, 1: s.total }), <Flag size={16} aria-hidden="true" />, `${s.done}/${s.total}`)}
+      {s.xp > 0 && fact(tr("Still to win today:") + " " + tr("{0} XP", { 0: s.xp }), <Sparkle size={16} aria-hidden="true" />, tr("{0} XP", { 0: s.xp }))}
+      {s.gold_u > 0 && fact(tr("Still to win today:") + " " + tr("{0} QGOLD", { 0: gold(s.gold_u) }), <CoinIcon />, gold(s.gold_u))}
+      {s.loot.length > 0 && (
+        <li className="zone-facts-auras" title={tr("Still to win today:") + " " + tr("chest Auras: {0}", { 0: s.loot.map((l) => l.name).join(", ") })}>
+          {s.loot.map((l) => l.src && <img key={l.id} src={l.src} alt="" className={`rarity-${l.rarity || "common"}`} loading="lazy" />)}
+          <span className="sr-only">{tr("Still to win today:") + " " + tr("chest Auras: {0}", { 0: s.loot.map((l) => l.name).join(", ") })}</span>
+        </li>
+      )}
+    </ul>
+  );
+}
 
 export function ZoneActivities({
   zone,
@@ -31,7 +81,9 @@ export function ZoneActivities({
   onComplete,
   lockedContent,
   renderDetail,
+  timezone,
 }: {
+  timezone?: string;
   zone: Zone;
   quests: Quest[];
   selectedQuest?: Quest;
@@ -62,12 +114,7 @@ export function ZoneActivities({
       className="zone-activity-panel"
       aria-label={tr("Choose another activity")}
     >
-      <div className="zone-access">
-        <Badge tone={zone.tier === 1 ? "green" : "purple"}>
-          {zone.tier === 1 ? tr("Free zone") : tr("Tier {0}", { 0: zone.tier })}
-        </Badge>
-        <span>{tr("{0} activities", { 0: quests.length })}</span>
-      </div>
+      <ZoneSchedule zone={zone} quests={quests} now={now} timezone={timezone} />
       {zone.tier > playerTier ? (
         lockedContent
       ) : (
@@ -86,11 +133,8 @@ export function ZoneActivities({
                   className="activity-row"
                   data-quest-id={q.id}
                   onClick={() => {
-                    if (selected) setCollapsed(true);
-                    else {
-                      setCollapsed(false);
-                      onChoose(q.id);
-                    }
+                    setCollapsed(false);
+                    onChoose(q.id);
                   }}
                   aria-expanded={selected}
                   aria-controls={`quest-${q.id}`}
@@ -99,10 +143,8 @@ export function ZoneActivities({
                   <span className="activity-row-copy">
                     <strong>{questDisplayTitle(q.title)}</strong>
                     <small>
-                      {status(q)} · {distanceLabel(distance)}
-                      {q.kind === "route"
-                        ? ` · ${tr("{0}/{1} stops", { 0: q.checkpoint || 0, 1: q.checkpointCount })}`
-                        : ""}
+                      {[open && !q.completed ? "" : status(q), distanceLabel(distance), tr("{0} XP", { 0: q.xp }),
+                        q.kind === "route" ? tr("{0}/{1} stops", { 0: q.checkpoint || 0, 1: q.checkpointCount }) : ""].filter(Boolean).join(" · ")}
                     </small>
                   </span>
                   {q.completed ? <Check size={20} /> : <ArrowRight size={20} />}

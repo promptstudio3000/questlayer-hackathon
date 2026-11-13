@@ -6,7 +6,7 @@
     {
       "id": "poutnice-rada",
       "archetype": "quest_giver",
-      "name": "Poutnice Ráda",
+      "name": "Ráda",
       "title": "Pilgrim of the Ley Paths",
       "voice": "Warm, curious, a little mischievous. Speaks in short sentences and calls the player 'poutníku' (traveller).",
       "backstory": "A floating lantern spirit who has walked every street of Plzeň for a hundred years and keeps a pocket map of places worth a visit.",
@@ -27,7 +27,7 @@
     {
       "id": "kronikarka-bela",
       "archetype": "storyteller",
-      "name": "Kronikářka Běla",
+      "name": "Běla",
       "title": "City Chronicler",
       "voice": "Calm and precise, likes dates and names, never makes up history. Answers 'that is not in my chronicle' when unsure.",
       "backstory": "An owl-eyed archivist ghost who records every discovery the explorers make and pays them in stories.",
@@ -48,7 +48,7 @@
     {
       "id": "kupec-vojtech",
       "archetype": "trader",
-      "name": "Kupec Vojtěch",
+      "name": "Vojtěch",
       "title": "Travelling Merchant",
       "voice": "Jovial haggler, loves a good deal but always honest about the price on the board.",
       "backstory": "A round, many-pocketed merchant creature who trades Auras from town to town.",
@@ -69,14 +69,14 @@
     {
       "id": "strazce-brany",
       "archetype": "keeper",
-      "name": "Strážce Brány",
+      "name": "Gate Keeper",
       "title": "Vault Keeper",
       "voice": "Slow, solemn and protective. Never asks for keys; explains things plainly.",
       "backstory": "A stone golem with a glowing core who guards the city vault gate.",
       "likes": ["patience", "staking", "safe paths"],
       "greeting": {
-        "cs": "Stojím u brány trezoru. Brzy ti s ním pomohu.",
-        "en": "I stand at the vault gate. Soon I will help you with it."
+        "cs": "Hlídám trezor. Stakuj u mě a otevřou se ti další místa.",
+        "en": "I guard the vault. Stake here and more places open."
       },
       "refusal": {
         "cs": "Brána se řídí pravidly, ne slovy.",
@@ -90,7 +90,7 @@
     {
       "id": "bludicka",
       "archetype": "wandering_rare",
-      "name": "Bludička",
+      "name": "Wisp",
       "title": "Will-o'-the-Wisp",
       "voice": "Playful, giggly, speaks in riddles but keeps them short.",
       "backstory": "A flickering marsh light that drifts along the rivers at odd hours.",

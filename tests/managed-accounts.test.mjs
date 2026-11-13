@@ -6,6 +6,60 @@ import { FACTORY, NEAR, NOW, fixture } from "./relayer-fixture.mjs";
 
 const key = () => KeyPair.fromRandom("ed25519").getPublicKey().toString();
 
+test("proof of play for a sponsored account is earned XP, which the first find or the seed kit grants (F2)", async (t) => {
+  const f = fixture();
+  t.after(() => f.db.close());
+  const { hasPlayedFirstAdventure } = await import("../server/relayer/accounts.mjs");
+  assert.equal(hasPlayedFirstAdventure(f.db, f.player), false, "a fresh guest has not played yet");
+  assert.equal(hasPlayedFirstAdventure(f.db, "nobody"), false);
+  f.db.prepare("UPDATE players SET xp=xp+2 WHERE id=?").run(f.player);
+  assert.equal(hasPlayedFirstAdventure(f.db, f.player), true);
+});
+
+test("a creation transaction overtaken by another factory funding is signed again instead of staying 'creating' forever (N3)", async (t) => {
+  const f = fixture();
+  t.after(() => f.db.close());
+  const { FUNDING_SUPERSEDED_CONFIRM_MS } = await import("../server/relayer/funding-journal.mjs");
+  const { backoff } = await import("../server/relayer/relay.mjs");
+  const a = (await f.accounts.create(f.player, { publicKey: key() })).account.accountId;
+  const bob = createPlayer(f.db, "Bob", NOW);
+  const b = (await f.accounts.create(bob, { publicKey: key() })).account.accountId;
+  const job = f.db.prepare("SELECT * FROM relay_jobs WHERE account_id=?").get(a);
+  // The factory's first send (F1, nonce 1) times out after signing; Bob's creation (F2, nonce 2) lands.
+  let f1 = 0;
+  f.factory.fail = (_receiver, _list, _n, hash) => {
+    if (hash !== "F1") return null;
+    return ++f1 === 1 ? Error("fetch failed: ETIMEDOUT")
+      : Object.assign(Error("Invalid nonce (ak: 2, tx: 1)"), { name: "InvalidNonceError" });
+  };
+  assert.deepEqual(await f.relayer.runRelayJobs(), { completed: 1, failed: 0, retried: 1 });
+  assert.equal(f.accounts.view(bob).account.state, "ready");
+  assert.deepEqual([f.accounts.view(f.player).account.state, f.job(job.id).error_code], ["creating", "FUNDING_PENDING"]);
+  const attempts = () => f.db.prepare("SELECT attempt,hash,state,outcome FROM native_funding_attempts WHERE id=? ORDER BY attempt").all(job.id);
+  // Two sightings inside the window: exact bytes replayed, recorded, nothing re-signed.
+  f.advance(backoff(0)); await f.relayer.runRelayJobs();
+  f.advance(backoff(1)); await f.relayer.runRelayJobs();
+  assert.equal(attempts().length, 1); assert.equal(attempts()[0].state, "prepared");
+  assert.equal(JSON.parse(attempts()[0].outcome).superseded.count, 2);
+  assert.equal(f.accounts.view(f.player).account.state, "creating");
+  // Proven after the window: the attempt is rejected and its reservation released.
+  f.advance(Math.max(backoff(2), FUNDING_SUPERSEDED_CONFIRM_MS));
+  assert.deepEqual(await f.relayer.runRelayJobs(), { completed: 0, failed: 0, retried: 1 });
+  assert.equal(f.job(job.id).error_code, "FUNDING_RESIGN");
+  assert.equal(attempts()[0].state, "rejected");
+  assert.equal(f.db.prepare("SELECT state FROM subsidy_reservations WHERE id=?").get(job.id).state, "released");
+  // A fresh factory transaction creates the account; the player's device key gets full access once.
+  f.advance(backoff(3));
+  assert.deepEqual(await f.relayer.runRelayJobs(), { completed: 1, failed: 0, retried: 0 });
+  const view = f.accounts.view(f.player).account;
+  assert.deepEqual([view.state, view.transactionHash], ["ready", "F3"]);
+  assert.deepEqual(attempts().map((x) => [x.attempt, x.hash, x.state]), [[1, "F1", "rejected"], [2, "F3", "succeeded"]]);
+  assert.equal(f.db.prepare("SELECT state FROM subsidy_reservations WHERE id=?").get(`${job.id}:attempt:2`).state, "spent");
+  assert.equal(f.rows("managed_account_funding").filter((r) => r.account_id === a).length, 1);
+  assert.equal(f.state.accounts.get(a).amount, NEAR / 10n, "funded exactly once");
+  assert.equal(f.state.accounts.get(b).amount, NEAR / 10n);
+});
+
 test("slugs are lowercase ASCII, dash separated, bounded and never empty", (t) => {
   const f = fixture();
   t.after(() => f.db.close());
@@ -272,4 +326,82 @@ test("revocation during the account-name lookup prevents an account job or subsi
   }), /revoked/);
   assert.equal(f.rows("managed_accounts").length, 0);
   assert.equal(f.rows("relay_jobs").length, 0);
+});
+
+test("starting NEAR comes once: refuel is off unless switched on", async (t) => {
+  const f = fixture({ fundYocto: 2n * 10n ** 22n, topupCapYocto: 5n * 10n ** 22n });
+  t.after(() => f.db.close());
+  const acct = f.ready(f.player, "alice-novakova", { amount: 3n * 10n ** 21n });
+  const fuel = await f.accounts.fuel(f.player);
+  assert.deepEqual([fuel.canRefuel, fuel.reason], [false, "FUEL_START_ONLY"]);
+  await assert.rejects(f.accounts.refuel(f.player), (e) => e.code === "FUEL_START_ONLY");
+  assert.equal(f.state.accounts.get(acct.accountId).amount, 3n * 10n ** 21n);
+});
+
+test("refuel (PLAYER_REFUEL=1) tops a low explorer back to the starting amount once a UTC day, inside the cap", async (t) => {
+  const f = fixture({ fundYocto: 2n * 10n ** 22n, topupCapYocto: 5n * 10n ** 22n, refuel: true });
+  t.after(() => f.db.close());
+  const none = await f.accounts.fuel(f.player);
+  assert.deepEqual([none.canRefuel, none.reason], [false, "ACCOUNT_NOT_READY"]);
+  await assert.rejects(f.accounts.refuel(f.player), (e) => e.code === "ACCOUNT_NOT_READY");
+  const acct = f.ready(f.player, "alice-novakova", { amount: 15n * 10n ** 21n });
+  const full = await f.accounts.fuel(f.player);
+  assert.deepEqual([full.canRefuel, full.reason, full.targetYocto, full.belowYocto],
+    [false, "FUEL_NOT_LOW", (2n * 10n ** 22n).toString(), (10n ** 22n).toString()]);
+  await assert.rejects(f.accounts.refuel(f.player), (e) => e.code === "FUEL_NOT_LOW");
+  f.state.accounts.get(acct.accountId).amount = 3n * 10n ** 21n;
+  assert.equal((await f.accounts.fuel(f.player)).canRefuel, true);
+  const done = await f.accounts.refuel(f.player);
+  assert.equal(done.toppedUp, true);
+  assert.equal(done.amount, (17n * 10n ** 21n).toString());
+  assert.equal(f.state.accounts.get(acct.accountId).amount, 2n * 10n ** 22n);
+  // Spent again the same day: no second refuel.
+  f.state.accounts.get(acct.accountId).amount = 0n;
+  assert.equal((await f.accounts.fuel(f.player)).reason, "FUEL_REFUELED_TODAY");
+  await assert.rejects(f.accounts.refuel(f.player), (e) => e.code === "FUEL_REFUELED_TODAY");
+  // Next day it opens again, still under the per-account daily cap.
+  f.advance(86400000);
+  assert.equal((await f.accounts.refuel(f.player)).amount, (2n * 10n ** 22n).toString());
+  assert.equal(f.rows("managed_account_funding").filter((r) => r.kind === "topup").length, 2);
+});
+
+test("testnet: an explorer whose only device key is lost, with no recovery passkey, starts a new account on this device", async (t) => {
+  const f = fixture();
+  t.after(() => f.db.close());
+  f.accounts.network = "testnet";
+  const old = (await f.accounts.create(f.player, { publicKey: key() })).account.accountId;
+  await f.relayer.runRelayJobs();
+  assert.equal(f.accounts.view(f.player).account.state, "ready");
+  assert.equal(f.db.prepare("SELECT native_account FROM players WHERE id=?").get(f.player).native_account, old);
+  assert.equal(f.accounts.view(f.player).account.canStartOver, true);
+  const fresh = key();
+  const r = await f.accounts.startOver(f.player, { publicKey: fresh });
+  const next = r.account.accountId;
+  assert.notEqual(next, old);
+  assert.equal(r.account.state, "creating");
+  assert.equal(f.db.prepare("SELECT 1 FROM wallet_links WHERE account_id=?").get(old), undefined, "the old account is no longer the explorer's");
+  await f.relayer.runRelayJobs();
+  assert.equal(f.accounts.view(f.player).account.state, "ready");
+  assert.equal(f.db.prepare("SELECT native_account FROM players WHERE id=?").get(f.player).native_account, next);
+  assert.ok(f.db.prepare("SELECT 1 FROM wallet_links WHERE account_id=? AND player_id=?").get(next, f.player));
+  // Once a day.
+  await assert.rejects(() => f.accounts.startOver(f.player, { publicKey: key() }), /already started over today/);
+});
+
+test("start over is refused on mainnet, with a recovery passkey or for a key the account already has", async (t) => {
+  const f = fixture();
+  t.after(() => f.db.close());
+  const device = key();
+  const accountId = (await f.accounts.create(f.player, { publicKey: device })).account.accountId;
+  await f.relayer.runRelayJobs();
+  f.accounts.network = "mainnet";
+  assert.equal(f.accounts.view(f.player).account.canStartOver, false);
+  await assert.rejects(() => f.accounts.startOver(f.player, { publicKey: key() }), /only possible on testnet/);
+  f.accounts.network = "testnet";
+  await assert.rejects(() => f.accounts.startOver(f.player, { publicKey: device }), /can already use/);
+  f.db.prepare("INSERT INTO managed_account_keys VALUES(?,?,'recovery','active','passkey',?,?)").run(accountId, key(), NOW, NOW);
+  assert.equal(f.accounts.view(f.player).account.canStartOver, false);
+  await assert.rejects(() => f.accounts.startOver(f.player, { publicKey: key() }), /recovery passkey/);
+  const bob = createPlayer(f.db, "Bob", NOW);
+  await assert.rejects(() => f.accounts.startOver(bob, { publicKey: key() }), /no explorer account/);
 });

@@ -15,6 +15,7 @@ import "./chain-ledger/schema.mjs";
 import "./season/schema.mjs";
 import "./map-read-indexes.mjs";
 import "./hot-path-indexes.mjs";
+import "./coin-spots.mjs";
 import { GOLD, id, hash, dayKey, levelFor, assert } from "./domain.mjs";
 import { withChain } from "./native/chain-feed.mjs";
 
@@ -65,6 +66,7 @@ export function openDatabase(
     CREATE TABLE IF NOT EXISTS withdrawals(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), amount_u INTEGER NOT NULL, ready_at INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'pending', created_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS inventory(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), kind TEXT NOT NULL, name TEXT NOT NULL, rarity TEXT NOT NULL, slot TEXT NOT NULL, color TEXT NOT NULL, equipped INTEGER NOT NULL DEFAULT 0, serial INTEGER, created_at INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS editions(name TEXT PRIMARY KEY, minted INTEGER NOT NULL, max_supply INTEGER NOT NULL);
+    UPDATE editions SET max_supply=9007199254740991 WHERE max_supply<9007199254740991;
     CREATE TABLE IF NOT EXISTS listings(id TEXT PRIMARY KEY, item_id TEXT NOT NULL REFERENCES inventory(id), seller TEXT NOT NULL REFERENCES players(id), price_u INTEGER NOT NULL CHECK(price_u>0), state TEXT NOT NULL DEFAULT 'open', buyer TEXT REFERENCES players(id), created_at INTEGER NOT NULL);
     CREATE UNIQUE INDEX IF NOT EXISTS unique_open_listing ON listings(item_id) WHERE state='open';
     CREATE TABLE IF NOT EXISTS messages(id TEXT PRIMARY KEY, player_id TEXT NOT NULL REFERENCES players(id), text TEXT NOT NULL, lat REAL NOT NULL, lng REAL NOT NULL, image TEXT, author_fix TEXT, created_at INTEGER NOT NULL);
@@ -252,12 +254,24 @@ export function playerView(db, playerId) {
         )
         .all(playerId),
     ),
-    wallets: db
-      .prepare(
-        "SELECT account_id,verified_at FROM wallet_links WHERE player_id=?",
-      )
-      .all(playerId),
+    wallets: linkedWallets(db, playerId),
   };
+}
+// The explorer's own (managed) account comes first: every screen defaults to the
+// first linked account, and that account signs without a wallet popup.
+export function linkedWallets(db, playerId) {
+  const managed = db
+    .prepare(
+      "SELECT 1 FROM sqlite_master WHERE type='table' AND name='managed_accounts'",
+    )
+    .get();
+  return db
+    .prepare(
+      managed
+        ? "SELECT w.account_id,w.verified_at FROM wallet_links w LEFT JOIN managed_accounts m ON m.account_id=w.account_id AND m.player_id=w.player_id AND m.state='ready' WHERE w.player_id=? ORDER BY (m.account_id IS NULL), w.rowid"
+        : "SELECT account_id,verified_at FROM wallet_links WHERE player_id=? ORDER BY rowid",
+    )
+    .all(playerId);
 }
 // Existing commitments survive publication shutdown. This read creates no creator
 // tables and changes neither cumulative earned XP nor inventory/reward grants.
@@ -294,15 +308,10 @@ export function createPlayer(db, name, now = Date.now()) {
   const player = id("player");
   db.prepare(
     "INSERT INTO players(id,name,gold_u,created_at) VALUES (?,?,?,?)",
-  ).run(player, name, 120_000 * GOLD, now);
-  history(
-    db,
-    player,
-    "welcome",
-    "Welcome to your first adventure",
-    120_000 * GOLD,
-    { source: "demo-faucet", network: "demo" },
-  );
+  ).run(player, name, 0, now);
+  // A new explorer starts with no GOLD: every GOLD in the game is backed
+  // QGOLD earned on the map (no practice faucet).
+  history(db, player, "welcome", "Welcome to your first adventure", 0, {});
   db.prepare("INSERT INTO inventory VALUES (?,?,?,?,?,?,?,?,?,?)").run(
     id("item"),
     player,

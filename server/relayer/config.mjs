@@ -33,12 +33,15 @@ export function relayerConfiguration(env = process.env) {
     factoryAccount: env.PLAYER_FACTORY_ACCOUNT || null,
     fundYocto: yocto(
       env.PLAYER_FACTORY_FUND_YOCTO,
-      "100000000000000000000000",
+      "20000000000000000000000",
       "PLAYER_FACTORY_FUND_YOCTO",
     ),
+    // Daily refuel of starting NEAR: off unless PLAYER_REFUEL=1 (starting
+    // NEAR comes once, at account creation).
+    refuel: env.PLAYER_REFUEL === "1",
     topupCapYocto: yocto(
       env.RELAY_TOPUP_CAP_YOCTO,
-      "200000000000000000000000",
+      "50000000000000000000000",
       "RELAY_TOPUP_CAP_YOCTO",
     ),
     maxJobsPerDay: count(
@@ -53,6 +56,10 @@ export function relayerConfiguration(env = process.env) {
       "RELAY_MAX_DEPOSIT_YOCTO_PER_DAY",
     ),
     maxGas: yocto(env.RELAY_MAX_GAS, "300000000000000", "RELAY_MAX_GAS"),
+    // Sponsored single-order cancels (market v2 nonce slots), per account and
+    // service-wide per UTC day.
+    maxCancelsPerDay: count(env.RELAY_MAX_CANCELS_PER_DAY, 4, "RELAY_MAX_CANCELS_PER_DAY", 100),
+    maxCancelsGlobalPerDay: count(env.RELAY_MAX_CANCELS_GLOBAL_PER_DAY, 16, "RELAY_MAX_CANCELS_GLOBAL_PER_DAY", 500),
     blockTtl: count(env.RELAY_BLOCK_TTL, 120, "RELAY_BLOCK_TTL", 1000),
     // No guessed treasury allowance: financial sponsorship fails closed until
     // an operator reviews all three limits. Solo play has no dependency on it.

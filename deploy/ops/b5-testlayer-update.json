@@ -1,0 +1,6 @@
+{
+  "id": "b5-testlayer-update",
+  "deployTarget": "testlayer",
+  "installKeys": [],
+  "note": "Update the Test Layer to the World code of this deploy-branch head (tour fixes, NPC missions, Settings drawer, demo cities). Keys and runtime.env are already installed by b3."
+}

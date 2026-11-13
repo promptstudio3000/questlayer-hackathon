@@ -11,17 +11,19 @@
 // order never changes it.
 //
 // Rewards: XP only, plus one cosmetic chest per cell and day that mints an
-// Aura only while edition supply lasts (the ordinary chest path). Street coins
+// Aura (the ordinary chest path; editions are uncapped). Street coins
 // are unchanged. No GOLD, no NEAR: gold_u is always 0 here.
 import { DatabaseSync } from "node:sqlite";
 import { existsSync, realpathSync, statSync } from "node:fs";
 import { cellToParent, isValidCell, getResolution } from "h3-js";
 import { assert, distance, hash } from "./domain.mjs";
+import { organicRing } from "./spatial/organic-shape.mjs";
 import { atomic } from "./database.mjs";
 import { localDateBounds, shiftDate } from "./spatial/calendar.mjs";
 import { poiQuestActivity } from "./quest-templates.mjs";
 import { flavourText } from "./ai/flavour.mjs";
 import { DEFAULT_LAYER } from "./worlds/registry.mjs";
+import { TEST_LAYER } from "./native/network.mjs";
 import { CLUE_XP, MAX_CLUES_PER_CELL, buildLandmarkClue, clueReady } from "./landmark-clue.mjs";
 import {
   ensureModuleVersion,
@@ -166,6 +168,7 @@ export function cluePoolFromFile(db, cell) {
  * target changes (checked at most once a minute). A missing or unreadable file
  * reports `available() === false` and never throws on the request path.
  */
+const cellQueries = new WeakMap();
 export function openPoiFileSource(path = process.env.POI_DB_PATH || DEFAULT_POI_DB, { clock = Date.now } = {}) {
   let db = null,
     opened = null,
@@ -218,6 +221,25 @@ export function openPoiFileSource(path = process.env.POI_DB_PATH || DEFAULT_POI_
         return poiRowsFromFile(handle, cell);
       } catch {
         return null;
+      }
+    },
+    // True when the import mapped this res-7 cell (its street paths or a
+    // place): demo city clips abroad are answered from the file, not live.
+    hasCell(cell) {
+      const handle = refresh();
+      if (!handle) return false;
+      try {
+        let q = cellQueries.get(handle);
+        if (!q) {
+          q = {
+            path: handle.prepare("SELECT 1 FROM path_cell WHERE h3r7=?"),
+            poi: handle.prepare("SELECT 1 FROM poi WHERE h3r7=? LIMIT 1"),
+          };
+          cellQueries.set(handle, q);
+        }
+        return !!(q.path.get(cell) || q.poi.get(cell));
+      } catch {
+        return false;
       }
     },
     cluePool(cell) {
@@ -367,16 +389,24 @@ export function planCellPoiQuests({
 // ---------------------------------------------------------------------------
 // Materialisation into a street world.
 
-function circle(p, radius = POI_TARGET_RADIUS_M, steps = 16) {
-  const ring = [];
-  for (let i = 0; i <= steps; i++) {
-    const a = ((i % steps) / steps) * Math.PI * 2;
-    ring.push([
-      Number((p.lng + (Math.cos(a) * radius) / (111320 * Math.cos((p.lat * Math.PI) / 180))).toFixed(7)),
-      Number((p.lat + (Math.sin(a) * radius) / 110540).toFixed(7)),
-    ]);
+// POI zones are irregular blobs, not circles (Lubos, 11 Nov 2026). The blob
+// stays at least ~0.73× the radius from the spot, wider than the 25 m visit check.
+const blob = (p, seed, radius = POI_TARGET_RADIUS_M) => organicRing(p, radius, seed, 20);
+
+// One place per street-world cell is a Tier 3 zone (Lubos, 11 Nov 2026): shown
+// on the map but locked until the explorer reaches Tier 3 in the vault
+// (server/staker-gates.mjs placeTier). It is a plain visit, never the chest,
+// a hunt or a clue, and only when the cell has at least three quests so the
+// free places stay. Tier 3 zones are bigger and pay double visit XP.
+export const POI_TIER3_RADIUS_M = 70;
+export const POI_TIER3_XP_FACTOR = 2;
+export function tier3PoiIndex(quests) {
+  if (quests.length < 3) return -1;
+  for (let i = quests.length - 1; i >= 0; i--) {
+    const q = quests[i];
+    if (!q.chest && q.template !== "poi-category-hunt" && q.template !== "landmark-clue") return i;
   }
-  return ring;
+  return -1;
 }
 
 export function isStreetWorld(manifest) {
@@ -420,9 +450,14 @@ function recentPoiIds(db, manifest, cell) {
   return recent;
 }
 
-/** Play hours of the default layer (08:00-20:00), clamped to the local day. */
-function playWindow(day, timezone) {
+/**
+ * Play hours of the default layer (08:00-20:00), clamped to the local day.
+ * The Test Layer is a demo: its places stay open all day, like its zones, so
+ * a visitor at any hour finds quests to play. World keeps its play hours.
+ */
+function playWindow(day, timezone, allDay = TEST_LAYER) {
   const { startsAt, endsAt } = localDateBounds(day, timezone);
+  if (allDay) return { opensAt: startsAt, closesAt: endsAt };
   const hours = DEFAULT_LAYER.pack?.rules?.hours || DEFAULT_LAYER.pack?.hours;
   const [open, close] = Array.isArray(hours) && hours.length === 2 ? hours : ["08:00", "20:00"];
   const at = (hhmm) => {
@@ -480,6 +515,7 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
     const { opensAt, closesAt } = playWindow(current.day, current.timezone);
     const zones = [];
     const tag = street ? "" : `${target}-`;
+    const tier3 = street ? tier3PoiIndex(plan.quests) : -1;
     plan.quests.forEach((q, i) => {
       const slot = 100 + existing + i,
         zoneId = `${current.id}:zone:poi-${tag}${i}`,
@@ -491,14 +527,15 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
       const name = hunt
         ? `${label(q.category, true)[0].toUpperCase()}${label(q.category, true).slice(1)} hunt`
         : first.name || `${label(q.category)[0].toUpperCase()}${label(q.category).slice(1)}`;
+      const tier = i === tier3 ? 3 : 1;
       const geometry = hunt
-        ? { type: "MultiPolygon", coordinates: targets.map((t) => [circle(t)]) }
-        : { type: "Polygon", coordinates: [circle(first)] };
+        ? { type: "MultiPolygon", coordinates: targets.map((t, n) => [blob(t, `${zoneId}:${n}`)]) }
+        : { type: "Polygon", coordinates: [blob(first, zoneId, tier === 3 ? POI_TIER3_RADIUS_M : POI_TARGET_RADIUS_M)] };
       zones.push({
         id: zoneId,
         slot,
         name,
-        tier: 1,
+        tier,
         lat: first.lat,
         lng: first.lng,
         radius: 0,
@@ -511,7 +548,7 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
         poi: { category: q.category, ids: q.pois.map((p) => p.id) },
         opensAt,
         closesAt,
-        color: "#258b73",
+        color: tier === 3 ? "#c29222" : "#258b73",
       });
       const kind = q.chest ? "chest" : hunt ? "route" : "visit";
       const title = hunt
@@ -524,7 +561,7 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
       const objective = hunt
         ? `Visit ${HUNT_STOPS} ${label(q.category, true)} in this area today, in any order.`
         : q.chest
-          ? `Reach the chest next to ${name} and open it. An Aura may remain in its edition.`
+          ? `Reach the chest next to ${name} and open it. It holds a cosmetic Aura.`
           : clue
             ? `Reach the marked public spot next to ${name}, then answer one question about it. The answer comes from Wikidata.`
             : `Reach the marked public spot next to ${name} and confirm your visit.`;
@@ -538,10 +575,10 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
           s.label = q.pois[n].name ? `${q.pois[n].name}` : `${label(q.category)} ${n + 1}`;
         });
       if (clue)
-        activity.rewardConstraint = `Personal XP once: ${CLUE_XP.correct} for the right answer, ${CLUE_XP.miss} for the visit. One answer. No GOLD or NEAR prize.`;
+        activity.rewardConstraint = `Personal XP once: ${CLUE_XP.correct} for the right answer, ${CLUE_XP.miss} for the visit. One answer. No QGOLD or NEAR prize.`;
       if (q.chest)
         activity.rewardConstraint =
-          "Personal XP once; a cosmetic Aura only while edition supply remains. No GOLD or NEAR prize.";
+          "Personal XP once and a cosmetic Aura. No QGOLD or NEAR prize.";
       db.prepare(
         "INSERT INTO quests(id,world_id,title,description,lat,lng,tier,gold_u,xp,kind,opens_at,closes_at,zone_id,metadata) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
       ).run(
@@ -551,9 +588,9 @@ export function materializePoiQuests(db, manifest, { source = defaultPoiSource()
         objective.slice(0, 280),
         targets.at(-1).lat,
         targets.at(-1).lng,
-        1,
+        tier,
         0,
-        q.chest ? POI_XP.chest : hunt ? POI_XP.hunt : clue ? POI_XP.clue : POI_XP.visit,
+        q.chest ? POI_XP.chest : hunt ? POI_XP.hunt : clue ? POI_XP.clue : POI_XP.visit * (tier === 3 ? POI_TIER3_XP_FACTOR : 1),
         kind,
         opensAt,
         closesAt,

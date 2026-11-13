@@ -1,0 +1,18 @@
+{
+  "id": "a3-treasury-stake-cd-2",
+  "script": "scripts/treasury-stake-testnet.mjs",
+  "args": [
+    "stagger",
+    "20",
+    "3",
+    "--from-epoch",
+    "5437"
+  ],
+  "ref": "claude/upbeat-gauss-5czir7",
+  "sha": "99ec4c4068e71531c9c87ecbf8098be59fdb8945",
+  "outputs": [
+    "public/treasury-stake-testnet.json"
+  ],
+  "installKeys": [],
+  "note": "Stake 20 NEAR into treasury vaults C now and D at epoch 5439 (B already staked, skipped) (rerun after a2 funds the operator)"
+}

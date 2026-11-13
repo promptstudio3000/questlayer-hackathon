@@ -40,6 +40,7 @@ import {
   pathsAround,
 } from "../tests/fixtures/world-coverage/czechia.mjs";
 import { coverageReport, openPoiDb } from "../server/poi/coverage.mjs";
+import { closeOpenSheet, openMapSettings } from "./lib/e2e-nav.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS = resolve(
@@ -172,6 +173,7 @@ async function journey(browser, server, device, j, expected) {
     geolocation: { latitude: j.spot.lat, longitude: j.spot.lng, accuracy: 8 },
     permissions: ["geolocation"],
   });
+  await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});  // Start in the city demo (src/play-here.ts).
   const page = await context.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(String(e)));
@@ -195,7 +197,7 @@ async function journey(browser, server, device, j, expected) {
         r.request().postDataJSON()?.arena === false,
       { timeout: 30_000 },
     );
-    await page.getByRole("button", { name: "Use GPS, my location" }).click();
+    await (await openMapSettings(page)).getByRole("button", { name: "Use GPS, my location" }).click();
     const world = await (await gpsWorld).json();
     const cell = latLngToCell(j.spot.lat, j.spot.lng, 7);
     // A city pack for this place (W5 auto cities) may own it later; either
@@ -210,11 +212,14 @@ async function journey(browser, server, device, j, expected) {
       world.coins.length >= j.minCoins,
       `${world.coins.length} coins on mapped paths (want ≥ ${j.minCoins})`,
     );
+    // The GPS status is the first row of Settings behind the gear.
+    await openMapSettings(page);
     await page.waitForFunction(
-      () => /GPS ±\d+ m/.test(document.body.innerText),
+      () => /GPS ±\d+ m/.test(document.querySelector(".map-settings-status")?.textContent || ""),
       null,
       { timeout: 15_000 },
     );
+    await closeOpenSheet(page);
     const poiZones = world.zones.filter((z) => z.source === "poi");
     const result = {
       device,
@@ -330,15 +335,17 @@ async function journey(browser, server, device, j, expected) {
       // …and the coach opens it.
       if (pinOnly) await opener.dispatchEvent("click");
       else await opener.click();
-      await page
-        .getByRole("heading", { level: 1, name: zone.name })
-        .waitFor({ timeout: 10_000 });
+      // One tap starts the quest: straight to the map with the target chip
+      // when it is further away, the confirm button when the explorer is
+      // already there. The marker itself opens the zone's one-tap list.
+      const zoneQuestIds = world.quests.filter((q) => q.zone_id === zone.id).map((q) => q.id);
       await page
         .locator(
-          world.quests
-            .filter((q) => q.zone_id === zone.id)
-            .map((q) => `[id="quest-${q.id}"]`)
-            .join(", "),
+          [
+            ".compact-selection",
+            ...zoneQuestIds.map((id) => `[id="quest-${id}"]`),
+            ...zoneQuestIds.map((id) => `.activity-row[data-quest-id="${id}"]`),
+          ].join(", "),
         )
         .first()
         .waitFor({ state: "attached", timeout: 10_000 });

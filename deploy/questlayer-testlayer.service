@@ -1,0 +1,61 @@
+[Unit]
+Description=QuestLayer Test Layer (testnet only, docs/TEST-LAYER.md)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+DynamicUser=yes
+StateDirectory=questlayer-testlayer
+StateDirectoryMode=0700
+WorkingDirectory=/var/lib/questlayer-testlayer
+ExecStart=/usr/local/bin/node /opt/ps3000/apps/questlayer-testlayer/current/server/index.mjs
+Environment=NODE_ENV=production
+Environment=HOST=127.0.0.1
+Environment=TRUST_PROXY=loopback
+Environment=PORT=7093
+Environment=APP_ORIGIN=https://questlayer-test.promptstudio3000.com
+Environment=DATABASE_PATH=/var/lib/questlayer-testlayer/questlayer-testlayer.sqlite
+Environment=STATIC_ASSET_DIR=/opt/ps3000/apps/questlayer-testlayer/assets
+Environment=NEAR_NETWORK=testnet
+Environment=NEAR_RPC_URL=https://test.rpc.fastnear.com
+# The Test Layer: its own contract set (public/*-testlayer.json), Test QGOLD,
+# temporary accounts and the guided tour. Mainnet refuses QL_LAYER=test.
+Environment=QL_LAYER=test
+Environment=WORLD_ORIGIN=https://questlayer.promptstudio3000.com
+Environment=SIGNING_VAULT_ORIGIN=https://questlayer-test-signer.promptstudio3000.com
+# Everything that is only for testing lives here, never in QuestLayer World:
+# the bots and seed content (docs/TEST-SEED.md) and the compact Plzeň zones.
+Environment=TEST_SEED=1
+Environment=DEMO_ZONES=plzen-compact
+Environment=MAP_PAYOUTS=1
+Environment=TEST_STARTER_QGOLD=300
+Environment=TEST_STARTER_DAILY=200
+Environment=LEVEL_ITEM_EDITIONS=1
+Environment=LAYER_ENABLED=1
+Environment=CREATOR_COMMUNITY_ENABLED=1
+Environment=CREATOR_POLICY_VERSION=testnet-creators-v1
+Environment=CREATOR_XP_COMMITMENT=200
+# Temporary explorers: 0.02 NEAR each for storage, returned to the factory when
+# the cleanup deletes the account. Gas is sponsored from the Test Layer's own
+# relayer budget, separate from QuestLayer World (10 NEAR and 10,000 ops a day,
+# about 400 full tours).
+Environment=PLAYER_FACTORY_FUND_YOCTO=20000000000000000000000
+Environment=RELAY_TOPUP_CAP_YOCTO=50000000000000000000000
+Environment=RELAY_MAX_JOBS_PER_DAY=60
+Environment=SUBSIDY_DAILY_YOCTO=10000000000000000000000000
+Environment=SUBSIDY_DAILY_OPERATIONS=10000
+EnvironmentFile=-/opt/ps3000/apps/questlayer-testlayer/runtime.env
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+ReadWritePaths=/var/lib/questlayer-testlayer
+MemoryMax=512M
+CPUQuota=50%
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

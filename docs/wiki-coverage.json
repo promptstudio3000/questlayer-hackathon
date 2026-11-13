@@ -6,6 +6,7 @@
     "docs/AAVEGOTCHI-REUSE.md": "rights and asset research",
     "docs/ART-LIST.md": "art production list",
     "docs/CLAUDE-AUDIT-AND-STRATEGY.md": "audit",
+    "docs/CLAUDE-METALAYER-BRIEF.md": "owner continuation hand-off",
     "docs/CLAUDE-WORKER-HANDOFF-2026-11-01.md": "hand-off",
     "docs/CLOUD-DEVELOPMENT.md": "developer setup",
     "docs/CODE-AUDIT-2026-11.md": "audit",
@@ -44,6 +45,7 @@
     "docs/QGOLD-NIGHTLY-PAYOUT-FIX-2026-11-06.md": "payout repair audit and evidence",
     "docs/QGOLD-SANDBOX-2026-11-06.md": "local actual-WASM regression verification report",
     "docs/QGOLD-WITHDRAWAL-FIX-2026-11-06.md": "withdrawal callback repair audit",
-    "docs/SECURITY-AUDIT-2026-11-06.md": "Security audit (6 Nov 2026): findings and remediation order, not a mechanism."
+    "docs/SECURITY-AUDIT-2026-11-06.md": "Security audit (6 Nov 2026): findings and remediation order, not a mechanism.",
+    "docs/WIKI.md": "How the wiki is maintained (developer process, not a game mechanism)"
   }
 }

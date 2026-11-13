@@ -16,7 +16,7 @@ import {
   equipWearable,
   wornWearables,
 } from "../server/gotchi-wearables.mjs";
-import { playerCard, sendWave, takeWaves, WAVE_LIMITS } from "../server/player-waves.mjs";
+import { playerCard, profileOriginal, sendWave, takeWaves, WAVE_LIMITS } from "../server/player-waves.mjs";
 import { streetFindIds } from "../server/street-finds.mjs";
 import { wearableStarterMarkup, characterMarkerMarkup } from "../src/character-art.ts";
 
@@ -112,11 +112,14 @@ test("one wearable per slot; worn items reach the public appearance", async () =
   assert.deepEqual(wornWearables(db, a, now), []);
 });
 
-test("explorer card needs sharing and no block; waves are preset, both sharing, rate limited", () => {
+test("explorer profile is public without position unless blocked; waves are preset, both sharing, rate limited", () => {
   const db = openDatabase(":memory:");
   const a = createPlayer(db, "Alice", now),
     b = createPlayer(db, "Bob", now);
-  assert.throws(() => playerCard(db, a, b, null, now), /no longer sharing/);
+  const hidden = playerCard(db, a, b, null, now);
+  assert.equal(hidden.name, "Bob");
+  assert.equal(JSON.stringify(hidden).match(/lat|lng/), null, "no position");
+  assert.deepEqual(hidden.stats, { finds: 0, quests: 0, monsters: 0, wearables: 0 });
   share(db, b);
   const card = playerCard(db, a, b, null, now);
   assert.equal(card.name, "Bob");
@@ -138,7 +141,7 @@ test("explorer card needs sharing and no block; waves are preset, both sharing, 
   // A block hides the card, stops waves both ways and drops unread ones.
   new SocialContent(db).setBlock(b, a, true);
   assert.equal(takeWaves(db, b, later + 1).length, 0);
-  assert.throws(() => playerCard(db, a, b, null, later + 5), /no longer sharing/);
+  assert.throws(() => playerCard(db, a, b, null, later + 5), /not available/);
   assert.throws(() => sendWave(db, b, a, "hello", later + 10), /no longer sharing/);
 });
 
@@ -152,4 +155,57 @@ test("starter markup layers wearables by slot at their canvas place and rejects 
   assert.ok(svg.includes('x="15" y="2" width="34" height="20"'));
   assert.ok(!svg.includes("/art/3.svg"), "out-of-canvas dims are dropped");
   assert.ok(!characterMarkerMarkup({ wearables: [{ id: 1, slot: "head", dims: [1, 1, 1, 1] }], skinUrl: "/api/aavegotchi/skin?tokenId=5" }).includes("/art/1.svg"));
+});
+
+test("explorer card shows XP and badges; test-world bots get a demo-bot card and wave back", () => {
+  const db = openDatabase(":memory:");
+  const a = createPlayer(db, "Alice", now),
+    b = createPlayer(db, "Bob", now);
+  db.prepare("UPDATE players SET xp=? WHERE id=?").run(340, b);
+  share(db, a);
+  share(db, b);
+  const card = playerCard(db, a, b, null, now);
+  assert.equal(card.xp, 340);
+  assert.equal(card.demoBot, false);
+  assert.equal(card.joinedAt, now);
+  assert.equal(typeof card.badges, "number");
+  // A seed bot walking the map (server/test-seed).
+  const bot = "seed-p-vera";
+  db.prepare("INSERT INTO players(id,name,gold_u,xp,appearance,created_at) VALUES (?,?,?,?,?,?)").run(bot, "Vera", 0, 900, "{}", now);
+  db.prepare(
+    "INSERT OR REPLACE INTO presence(player_id,lat,lng,expires_at,updated_at,arena,lease_id) VALUES(?,?,?,?,?,?,'seed')",
+  ).run(bot, HOME.lat, HOME.lng, now + 900_000, now, 1);
+  const botCard = playerCard(db, a, bot, null, now);
+  assert.equal(botCard.demoBot, true);
+  assert.equal(botCard.name, "Vera");
+  assert.equal(botCard.xp, 900);
+  assert.equal(botCard.canWave, true);
+  assert.equal(botCard.waveHint, null);
+  // The guided tour's wave step: the bot waves straight back.
+  assert.deepEqual(sendWave(db, a, bot, "hello", now), { sent: true, phrase: "Hello!", reply: { key: "hello", text: "Hello!" } });
+  assert.equal(db.prepare("SELECT COUNT(*) AS n FROM player_waves WHERE from_id=? AND to_id=?").get(bot, a).n, 1);
+  assert.throws(() => sendWave(db, a, bot, "thanks", now + 1000), /Give them a minute/);
+  assert.throws(() => sendWave(db, a, "seed-p-nobody", "hello", now + 2000), /not available/);
+  assert.throws(() => playerCard(db, a, "seed-'; DROP", null, now), /Invalid explorer/);
+});
+
+test("public profile names the worn original from a day-old snapshot, never the address", () => {
+  const db = openDatabase(":memory:");
+  const a = createPlayer(db, "Alice", now),
+    b = createPlayer(db, "Bob", now);
+  const address = "0x" + "c".repeat(40);
+  db.prepare("INSERT INTO external_links VALUES (?,?,?,?)").run(
+    address, b,
+    JSON.stringify({ gotchis: [{ tokenId: "1126", name: "Coinmandeer", brs: 630, svg: "<svg/>", equipped: ["0", "0", "0", "0", "0", "26", "0", "0"] }] }),
+    now - 3600_000,
+  );
+  db.prepare("UPDATE players SET appearance=? WHERE id=?").run(JSON.stringify({ originTokenId: "1126", address }), b);
+  const card = playerCard(db, a, b, null, now);
+  assert.deepEqual(card.gotchi, { name: "Coinmandeer", brs: 630 });
+  assert.equal(card.original, true);
+  assert.equal(card.slots.length, 7);
+  assert.deepEqual(card.slots.find((s) => s.slot === "handRight").item?.name, "Thaave Hammer");
+  assert.equal(card.slots.find((s) => s.slot === "head").item, null);
+  assert.equal(JSON.stringify(card).includes("0xcccc"), false);
+  assert.equal(profileOriginal(db, b, now + 2 * 86_400_000), null, "stale after a day");
 });

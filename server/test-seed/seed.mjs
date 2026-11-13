@@ -2,7 +2,9 @@
 // listings, tasks, published creator quests and a starter kit for every real
 // explorer. Everything it writes has an id starting with "seed-", and purge()
 // removes all of it, including rows real explorers made that point at it.
-import { readFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { atomic } from "../database.mjs";
 import { buyItem } from "../game.mjs";
 import { editionForDemoName } from "../aura-catalog.mjs";
@@ -10,6 +12,10 @@ import { initSocialContent } from "../social-content.mjs";
 import { GOLD } from "../domain.mjs";
 import { ensureModuleVersion } from "../schema-compatibility.mjs";
 import { DAILY_BOARD_SCHEMA } from "../daily-board/schema.mjs";
+import { ensureMarketSchema, fogCentre } from "../market/service.mjs";
+import { ensureGoldSpend } from "../gold-spend/ledger.mjs";
+import { COMMUNITY_PLACES_SCHEMA } from "../community-places.mjs";
+import { latLngToCell } from "h3-js";
 import {
   SEED_VERSION,
   SEED_PREFIX,
@@ -20,8 +26,12 @@ import {
   BUYER_DELAY_MS,
   REVIEW_DELAY_MS,
   SEED_NOTES,
+  SEED_COMMUNITY_PLACES,
+  SEED_PLACE_THREADS,
   SEED_LISTINGS,
-  SEED_BOUNTIES,
+  SEED_TASKS,
+  SEED_FOLLOWS,
+  SEED_SECRETS,
   SEED_CREATORS,
   SEED_CREATOR_QUESTS,
   STARTER_KIT,
@@ -54,6 +64,7 @@ const REFERENCE_COLUMNS = [
   "quest_id",
   "note_id",
   "bounty_id",
+  "thread_id",
   "submission_id",
   "operation_id",
 ];
@@ -134,7 +145,7 @@ function auraRow(name) {
  * @param {import("node:sqlite").DatabaseSync} db
  * @param {{ creators?: { services: any, moderator: string, completionAuthority: string, policyVersion: string } | null, clock?: () => number, log?: (msg: string) => void }} options
  */
-export function createTestSeed(db, { creators = null, clock = Date.now, log = () => {} } = {}) {
+export function createTestSeed(db, { creators = null, clock = Date.now, log = () => {}, photoDirectory = null } = {}) {
   const routes = walkerRoutes(SEED_PLAYERS.filter((p) => p.walk).length);
   let routeFor = new Map();
   SEED_PLAYERS.filter((p) => p.walk).forEach((p, i) => routeFor.set(p.id, routes[i]));
@@ -192,9 +203,47 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
           const id = `seed-note-${n.slug}-${arena ? "a" : "g"}`;
           db.prepare(
             "INSERT OR IGNORE INTO messages(id,player_id,text,lat,lng,image,author_fix,created_at) VALUES(?,?,?,?,?,NULL,NULL,?)",
-          ).run(id, n.author, n.text, n.at.lat, n.at.lng, now);
-          db.prepare("INSERT OR IGNORE INTO social_note_meta VALUES(?,?,'published',?)").run(id, arena, now);
+          ).run(id, n.author, n.text, n.at.lat, n.at.lng, now - (n.ago || 0) * 60_000);
+          db.prepare("INSERT OR IGNORE INTO social_note_meta VALUES(?,?,'published',?)").run(id, arena, now - (n.ago || 0) * 60_000);
+          // The clock starts the first time the seed sees the note, so a note
+          // seeded before expiry existed still gets its full day or week.
+          db.prepare("INSERT OR IGNORE INTO social_note_expiry VALUES(?,?)").run(id, now + n.days * DAY);
         }
+    });
+  }
+
+  function applyCommunityPlaces(now) {
+    ensureModuleVersion(db, COMMUNITY_PLACES_SCHEMA);
+    atomic(db, () => {
+      for (const p of SEED_COMMUNITY_PLACES)
+        for (const arena of [1, 0])
+          db.prepare(
+            "INSERT OR IGNORE INTO community_places(id,author,name,note,kind,lat,lng,arena,state,created_at,updated_at) VALUES(?,?,?,?,?,?,?,?,'published',?,?)",
+          ).run(`seed-cp-${p.slug}-${arena ? "a" : "g"}`, p.author, p.name, p.note, p.kind, p.at.lat, p.at.lng, arena, now, now);
+    });
+  }
+
+  function applyPlaceThreads(now) {
+    ensureGoldSpend(db);
+    atomic(db, () => {
+      for (const t of SEED_PLACE_THREADS) {
+        const threadId = `seed-pt-${t.slug}`;
+        const replies = t.replies || [];
+        const authors = new Set([t.author, ...replies.map((r) => r.author)]).size;
+        db.prepare(
+          "INSERT OR IGNORE INTO place_threads(id,kind,author,title,text,lat,lng,cell,place,paid_until,free_forever,state,posts,authors,reads,paid_u,last_post_at,last_read_at,created_at) VALUES(?,?,?,?,?,?,?,?,'',?,?,'published',?,?,0,0,?,?,?)",
+        ).run(threadId, t.kind, t.author, t.title || "", t.text, t.at.lat, t.at.lng, latLngToCell(t.at.lat, t.at.lng, 7), now + 7 * DAY, t.kind === "topic" ? 1 : 0, replies.length, authors, now, now, now);
+        // Shouts lapse after their 7 paid days like a player's; the seed does not renew them.
+        replies.forEach((r, i) =>
+          db.prepare("INSERT OR IGNORE INTO place_posts(id,thread_id,author,text,state,created_at) VALUES(?,?,?,?,'published',?)").run(
+            `seed-pp-${t.slug}-${i}`,
+            threadId,
+            r.author,
+            r.text,
+            now + i + 1,
+          ),
+        );
+      }
     });
   }
 
@@ -218,32 +267,72 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return created;
   }
 
-  function ensureBounties(now) {
+  function ensureSecrets(now) {
+    ensureMarketSchema(db);
     let created = 0;
     atomic(db, () => {
-      for (const b of SEED_BOUNTIES) {
-        const prefix = `seed-b-${b.slug}-`;
-        const open = db
-          .prepare("SELECT 1 FROM bounties WHERE substr(id,1,?)=? AND state='open' AND deadline>?")
-          .get(prefix.length, prefix, now);
-        if (open) continue;
-        db.prepare(
-          "INSERT INTO bounties(id,creator,title,description,amount_u,lat,lng,deadline,created_at) VALUES (?,?,?,?,?,?,?,?,?)",
-        ).run(
-          `${prefix}${now.toString(36)}`,
-          b.creator,
-          b.title,
-          b.description,
-          b.reward * GOLD,
-          b.at.lat,
-          b.at.lng,
-          now + 7 * DAY,
-          now,
+      for (const s of SEED_SECRETS) {
+        const id = `seed-s-${s.slug}`;
+        const radius = 600,
+          fog = fogCentre(id, s.at.lat, s.at.lng, radius);
+        created += Number(
+          db
+            .prepare(
+              "INSERT OR IGNORE INTO mk_secrets(id,creator,kind,title,teaser,reveal,lat,lng,route,fog_lat,fog_lng,fog_radius_m,price_u,link_key,visit_reward_u,visits_left,held_u,fee_held_u,currency,state,created_at,updated_at) VALUES (?,?,'place',?,?,?,?,?,'[]',?,?,?,0,NULL,0,0,0,0,'qgold','open',?,?)",
+            )
+            .run(id, s.creator, s.title, s.teaser, s.reveal, s.at.lat, s.at.lng, fog.lat, fog.lng, radius, now, now).changes,
         );
-        created++;
       }
     });
     return created;
+  }
+
+  /** Demo-bot example tasks in Community · Tasks. No QGOLD is held; they cannot be taken. */
+  function ensureTasks(now) {
+    ensureMarketSchema(db);
+    let created = 0;
+    atomic(db, () => {
+      for (const t of SEED_TASKS) {
+        const id = `seed-t-${t.slug}`;
+        created += Number(
+          db
+            .prepare(
+              "INSERT OR IGNORE INTO mk_tasks(id,poster,title,description,type,visibility,lat,lng,radius_m,reward_u,slots,payout_mode,currency,held_u,fee_held_u,state,deadline,created_at,updated_at) VALUES (?,?,?,?,?,'public',?,?,80,?,?,'review','qgold',0,0,'open',?,?,?)",
+            )
+            .run(id, t.poster, t.title, t.description, t.type, t.at.lat, t.at.lng, t.reward * GOLD, t.slots, now + 7 * DAY, now, now).changes,
+        );
+        // Keep the examples open while the test world runs.
+        db.prepare("UPDATE mk_tasks SET deadline=?,state='open' WHERE id=? AND deadline<?").run(now + 7 * DAY, id, now + 3 * DAY);
+      }
+    });
+    return created;
+  }
+
+  // Example ratings and discussion so quest lists and details are not empty.
+  // Deterministic: the same seed players always leave the same stars.
+  function applyQuestFeedback() {
+    if (!tableExists(db, "creator_quest_ratings")) return;
+    const now = clock();
+    const lines = [
+      "Nice short walk, the answer is easy to spot.",
+      "Took me ten minutes. Good one for a lunch break.",
+      "Look up, not down. That is all I will say.",
+      "Did it with my kid, she loved it.",
+    ];
+    SEED_CREATOR_QUESTS.forEach((q, qi) => {
+      const raters = SEED_PLAYERS.filter((p) => p.id !== q.author).slice(0, 2 + ((qi * 3) % 6));
+      raters.forEach((p, pi) => {
+        const stars = 5 - ((qi + pi * 2) % 3 === 0 ? 1 : 0) - ((qi * 5 + pi) % 7 === 0 ? 1 : 0);
+        db.prepare(
+          "INSERT OR IGNORE INTO creator_quest_ratings(quest_id,player_id,stars,created_at,updated_at) VALUES (?,?,?,?,?)",
+        ).run(q.id, p.id, stars, now, now);
+      });
+      raters.slice(0, qi % 3).forEach((p, pi) =>
+        db.prepare(
+          "INSERT OR IGNORE INTO creator_quest_comments(id,quest_id,player_id,body,created_at) VALUES (?,?,?,?,?)",
+        ).run(`seed-qc-${qi}-${pi}`, q.id, p.id, lines[(qi + pi) % lines.length], now - (pi + 1) * 3_600_000),
+      );
+    });
   }
 
   function applyCreators() {
@@ -260,6 +349,8 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
           publicConsent: true,
         });
     }
+    for (const [follower, creator] of SEED_FOLLOWS)
+      db.prepare("INSERT OR IGNORE INTO creator_follows(follower,creator,created_at) VALUES (?,?,?)").run(follower, creator, clock());
     let published = 0;
     for (const q of SEED_CREATOR_QUESTS) {
       const row = () => db.prepare("SELECT state,version FROM creator_quests WHERE id=?").get(q.id);
@@ -284,7 +375,33 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
         });
       if (row().state === "published") published++;
     }
-    return { published };
+    applyQuestFeedback();
+    return { published, photos: applyQuestPhotos() };
+  }
+
+  // Header photos for the bot quests, so their pins and pages look like a
+  // real creator's (credits in server/test-seed/photos/credits.json). The
+  // files are copied into the quest photo store under fixed names and named
+  // in every revision of the seed quest, with the credit in its description.
+  function applyQuestPhotos() {
+    if (!photoDirectory) return 0;
+    const from = fileURLToPath(new URL("./photos/", import.meta.url));
+    let set = 0;
+    for (const p of JSON.parse(readFileSync(resolve(from, "credits.json"), "utf8"))) {
+      if (!String(p.quest).startsWith(SEED_PREFIX)) continue;
+      const target = resolve(photoDirectory, p.media);
+      if (!existsSync(target)) {
+        mkdirSync(photoDirectory, { recursive: true, mode: 0o700 });
+        copyFileSync(resolve(from, p.file), target);
+      }
+      const credit = ` Photo: ${p.author}, ${p.license}, Wikimedia Commons.`;
+      set += db
+        .prepare(
+          "UPDATE creator_revisions SET content=json_set(content,'$.photo',?,'$.description',json_extract(content,'$.description')||?) WHERE quest_id=? AND json_extract(content,'$.photo') IS NULL",
+        )
+        .run(`/api/creator-photos/${p.media}`, credit, p.quest).changes;
+    }
+    return set;
   }
 
   /** Idempotent. Safe to call on every start. */
@@ -292,8 +409,15 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     const now = clock();
     applyPlayers(now);
     applyNotes(now);
+    applyCommunityPlaces(now);
+    applyPlaceThreads(now);
     ensureListings(now);
-    ensureBounties(now);
+    ensureTasks(now);
+    // The practice-GOLD tasks of earlier seed versions are gone (Lubos, 11 Nov 2026).
+    if (tableExists(db, "bounty_submissions"))
+      db.prepare("DELETE FROM bounty_submissions WHERE substr(bounty_id,1,7)='seed-b-'").run();
+    db.prepare("DELETE FROM bounties WHERE substr(id,1,7)='seed-b-'").run();
+    ensureSecrets(now);
     let creatorResult;
     try {
       creatorResult = applyCreators();
@@ -403,33 +527,6 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return bought;
   }
 
-  function tickBounties(now) {
-    const pending = db
-      .prepare(
-        "SELECT s.id FROM bounty_submissions s JOIN bounties b ON b.id=s.bounty_id WHERE substr(b.id,1,7)='seed-b-' AND b.state='open' AND s.state='pending' AND s.created_at<=? AND NOT EXISTS(SELECT 1 FROM bounty_submissions e WHERE e.bounty_id=s.bounty_id AND e.state='pending' AND e.id<s.id) LIMIT 10",
-      )
-      .all(now - REVIEW_DELAY_MS);
-    for (const { id } of pending)
-      atomic(db, () => {
-        const s = db.prepare("SELECT * FROM bounty_submissions WHERE id=?").get(id);
-        const b = db.prepare("SELECT * FROM bounties WHERE id=?").get(s.bounty_id);
-        if (s.state !== "pending" || b.state !== "open") return;
-        db.prepare("UPDATE bounties SET state='paid',winner=? WHERE id=?").run(s.player_id, b.id);
-        db.prepare("UPDATE bounty_submissions SET state='approved' WHERE id=?").run(s.id);
-        db.prepare("UPDATE players SET gold_u=gold_u+? WHERE id=?").run(b.amount_u, s.player_id);
-        db.prepare("INSERT INTO history VALUES (?,?,?,?,?,?,?)").run(
-          `seed-h-${s.bounty_id}-${s.id}`,
-          s.player_id,
-          "bounty",
-          b.title,
-          b.amount_u,
-          JSON.stringify({ seed: SEED_VERSION }),
-          now,
-        );
-      });
-    return pending.length;
-  }
-
   function tickCompletions(now) {
     if (!creators?.services?.completion || !creators.completionAuthority) return 0;
     let accepted = 0;
@@ -473,15 +570,14 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return finished;
   }
 
-  /** Economy step: buyer, task approvals, creator completions, restocking. */
+  /** Economy step: buyer, creator completions, restocking. */
   function tickEconomy(now = clock()) {
     return {
       boards: tickBoards(now),
       bought: tickBuyer(now),
-      approved: tickBounties(now),
       completions: tickCompletions(now),
       listings: ensureListings(now),
-      bounties: ensureBounties(now),
+      tasks: ensureTasks(now),
     };
   }
 
@@ -491,8 +587,11 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     return {
       players: n("SELECT count(*) n FROM players WHERE substr(id,1,5)='seed-'"),
       notes: n("SELECT count(*) n FROM messages WHERE substr(id,1,5)='seed-'"),
+      communityPlaces: has("community_places") ? n("SELECT count(*) n FROM community_places WHERE substr(id,1,5)='seed-'") : 0,
+      placeThreads: has("place_threads") ? n("SELECT count(*) n FROM place_threads WHERE substr(id,1,5)='seed-'") : 0,
       openListings: n("SELECT count(*) n FROM listings WHERE substr(id,1,5)='seed-' AND state='open'"),
-      openBounties: n("SELECT count(*) n FROM bounties WHERE substr(id,1,5)='seed-' AND state='open'"),
+      openTasks: has("mk_tasks") ? n("SELECT count(*) n FROM mk_tasks WHERE substr(id,1,5)='seed-' AND state='open'") : 0,
+      secrets: has("mk_secrets") ? n("SELECT count(*) n FROM mk_secrets WHERE substr(id,1,5)='seed-' AND state='open'") : 0,
       creatorQuests: has("creator_quests")
         ? n("SELECT count(*) n FROM creator_quests WHERE substr(id,1,5)='seed-' AND state='published'")
         : 0,
@@ -518,6 +617,21 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
   /** Removes every seed row and reverts starter kits. One transaction; a failure changes nothing. */
   function purge() {
     if (!present()) return { removed: 0 };
+    return removeRows("seed-", { marker: true });
+  }
+
+  /**
+   * Takes starter kits back from real explorers (Auras, kit XP and shards) and
+   * leaves the rest of the test world. Runs on every start while kits are off
+   * (TEST_SEED_KIT unset), so a kit granted earlier does not linger.
+   */
+  function revertKits() {
+    if (!db.prepare("SELECT 1 FROM history WHERE substr(id,1,9)='seed-kit-' LIMIT 1").get()) return { removed: 0 };
+    return removeRows("seed-kit-", { marker: false });
+  }
+
+  function removeRows(prefix, { marker }) {
+    const like = (column) => `substr(${column},1,${prefix.length})='${prefix}'`;
     const fkKey = (r) => `${r.table}:${r.rowid}`;
     const baseline = new Set(db.prepare("PRAGMA foreign_key_check").all().map(fkKey));
     return atomic(db, () => {
@@ -551,11 +665,11 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
           .map((c) => c.name)
           .filter((c) => REFERENCE_COLUMNS.includes(c));
         if (!columns.length) continue;
-        const where = columns.map((c) => `substr(${quote(c)},1,5)='seed-'`).join(" OR ");
+        const where = columns.map((c) => like(quote(c))).join(" OR ");
         removed += Number(db.prepare(`DELETE FROM ${quote(table)} WHERE ${where}`).run().changes);
       }
       // Creator money jobs name quests only inside their JSON arguments.
-      if (tableExists(db, "creator_money_jobs"))
+      if (marker && tableExists(db, "creator_money_jobs"))
         removed += Number(
           db
             .prepare(
@@ -573,10 +687,11 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
         for (const r of orphans)
           removed += Number(db.prepare(`DELETE FROM ${quote(r.table)} WHERE rowid=?`).run(r.rowid).changes);
       }
-      db.prepare("DELETE FROM daily_jobs WHERE substr(job_key,1,?)=?").run(MARKER_PREFIX.length, MARKER_PREFIX);
+      if (marker)
+        db.prepare("DELETE FROM daily_jobs WHERE substr(job_key,1,?)=?").run(MARKER_PREFIX.length, MARKER_PREFIX);
       return { removed };
     });
   }
 
-  return { apply, purge, status, grantKit, tickPresence, tickEconomy, tickBoards };
+  return { apply, purge, revertKits, status, grantKit, tickPresence, tickEconomy, tickBoards };
 }

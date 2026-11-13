@@ -1,7 +1,9 @@
 import { grantWearableFind } from "./gotchi-wearables.mjs";
 import { coinMeta } from "./map-rewards/service.mjs";
+import { spotTakenBy } from "./coin-spots.mjs";
 import { earnGlobalQuest } from './global-rewards.mjs';
 import { randomBytes } from "node:crypto";
+import { SESSION_TTL_MS } from "./native/network.mjs";
 import {
   GOLD,
   DAY,
@@ -13,8 +15,6 @@ import {
   point,
   dayKey,
   levelFor,
-  positionTier,
-  tierFor,
   validateFix,
   GPS_MAX_AGE_MS,
   splitYield,
@@ -38,6 +38,7 @@ import {
   streetFindIds,
 } from "./street-finds.mjs";
 import { atomic, history, playerView, createPlayer } from "./database.mjs";
+import { placeTier } from "./staker-gates.mjs";
 import { recordChainAction, fixEvidence } from "./chain-ledger/service.mjs";
 import {
   XP_CAP_NOTES,
@@ -65,7 +66,7 @@ export function session(db, name, now = Date.now()) {
     db.prepare("INSERT INTO sessions VALUES (?,?,?)").run(
       hash(token),
       player,
-      now + 30 * DAY,
+      now + SESSION_TTL_MS,
     );
     return { token, player: playerView(db, player) };
   });
@@ -119,6 +120,17 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
     );
     assert(
       !coin.claimant,
+      "Another explorer got this coin first. Pick another one nearby.",
+      409,
+      "ALREADY_CLAIMED",
+    );
+    // The same street coin can sit in several worlds (GPS city, demo arena):
+    // whoever picks it up first, in any of them, takes it (coin-spots.mjs).
+    const sibling = spotTakenBy(db, coin);
+    if (sibling?.claimant === player)
+      return { alreadyClaimed: true, value: coin.value_u };
+    assert(
+      !sibling,
       "Another explorer got this coin first. Pick another one nearby.",
       409,
       "ALREADY_CLAIMED",
@@ -314,10 +326,7 @@ function validateQuestEvidence(db, player, q, fix, now, target) {
     "This place is closed for today. Find another discovery.",
     410,
   );
-  const positions = db
-      .prepare("SELECT * FROM positions WHERE player_id=?")
-      .all(player),
-    tier = tierFor(positions.reduce((sum, p) => sum + positionTier(p, now), 0));
+  const tier = placeTier(db, player);
   assert(
     tier >= q.tier,
     `This place opens at Tier ${q.tier}. Try a free place nearby.`,
@@ -508,7 +517,7 @@ export function stake(db, player, value, contribution, pool, now = Date.now()) {
   );
   return atomic(db, () => {
     const p = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
-    assert(p.gold_u >= value, "Not enough practice GOLD for this stake.");
+    assert(p.gold_u >= value, "Not enough practice QGOLD for this stake.");
     db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=?").run(
       value,
       player,
@@ -616,7 +625,7 @@ export function redeem(db, player, withdrawalId, now = Date.now()) {
     assert(w.state === "pending", "Withdrawal is already complete.", 409);
     assert(
       w.ready_at <= now,
-      "Your GOLD is still unlocking. Check back in a moment.",
+      "Your QGOLD is still unlocking. Check back in a moment.",
     );
     db.prepare("UPDATE withdrawals SET state='paid' WHERE id=?").run(w.id);
     db.prepare("UPDATE players SET gold_u=gold_u+? WHERE id=?").run(
@@ -744,7 +753,7 @@ export function buyItem(db, player, listingId, now = Date.now()) {
       409,
     );
     const p = db.prepare("SELECT gold_u FROM players WHERE id=?").get(player);
-    assert(p.gold_u >= x.price_u, "Not enough practice GOLD for this price.");
+    assert(p.gold_u >= x.price_u, "Not enough practice QGOLD for this price.");
     db.prepare("UPDATE players SET gold_u=gold_u-? WHERE id=?").run(
       x.price_u,
       player,

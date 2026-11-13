@@ -160,6 +160,8 @@
 .creator-message {
   padding: 12px;
   border-left: 3px solid var(--action, #672eeb);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   background: var(--surface-soft, #f2ebff);
 }
 .creator-error {
@@ -388,6 +390,8 @@
 .creator-accepted {
   padding: 16px;
   border-left: 3px solid var(--action, #672eeb);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   background: var(--surface-soft, #f2ebff);
   margin: 16px 0;
 }
@@ -416,6 +420,8 @@
 }
 .creator-review-note {
   border-left: 3px solid var(--action, #672eeb);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
   padding: 12px 16px;
   margin: 12px 0;
   background: var(--surface-soft, #f2ebff);

@@ -122,8 +122,10 @@ const config = await view(escrowId, "get_config");
 assert.equal(config.token_id, tokenId);
 assert.equal(config.publisher_id, publisherId);
 
-// 3. Token registration of the escrow (and the operator treasury).
-for (const id of [escrowId, operator.accountId])
+// 3. Token registration of the escrow, the operator treasury and the publisher
+//    (the smoke send below is not an earned payout, so withdraw_for does not
+//    register its recipient on the token).
+for (const id of [escrowId, operator.accountId, publisherId])
   if (!(await view(tokenId, "storage_balance_of", { account_id: id })))
     await callAs(root, `Register ${id} on QGOLD`, tokenId, "storage_deposit", { account_id: id, registration_only: true }, 1_250_000_000_000_000_000_000n);
 
@@ -160,7 +162,16 @@ if (opBalance < amount) {
   const quote = await view(tokenId, "quote_deposit", { near: (2n * 10n ** 22n).toString() });
   await callAs(root, "Smoke: buy a little QGOLD for the test", tokenId, "deposit", { min_out: quote.qgold }, 2n * 10n ** 22n);
 }
+// The funder holds native storage on the escrow for its agreements (M6): a
+// send needs PAIR_GROWTH plus the deposit record, well inside 0.1 NEAR.
+const reserve = await view(escrowId, "get_storage_reserve");
+const needed = (BigInt(reserve.pair_growth_bytes) + BigInt(reserve.entry_bytes)) * BigInt(reserve.storage_byte_cost_yocto);
+const operatorStorage = await view(escrowId, "storage_balance_of", { account_id: operator.accountId });
+if (!operatorStorage || BigInt(operatorStorage.available) < needed)
+  await callAs(root, "Smoke: operator storage deposit on the escrow", escrowId, "storage_deposit", { account_id: operator.accountId, grant: true }, 10n ** 23n);
 const smokeId = `smoke-${Date.now()}`;
+// Compared as a delta, so a re-run of the smoke test on the same publisher passes.
+const publisherBefore = BigInt(await view(tokenId, "ft_balance_of", { account_id: publisherId }));
 await callAs(root, "Smoke: fund a both_confirm transfer", tokenId, "ft_transfer_call", {
   receiver_id: escrowId,
   amount: amount.toString(),
@@ -170,7 +181,7 @@ await callAs(root, "Smoke: fund a both_confirm transfer", tokenId, "ft_transfer_
 assert.equal((await view(escrowId, "get_transfer", { id: smokeId }))?.status, "held", "The smoke transfer was not funded");
 await callAs(publisher, "Smoke: publisher releases the transfer", escrowId, "confirm_transfer", { id: smokeId });
 await callAs(publisher, "Smoke: publisher pushes the payout", escrowId, "withdraw_for", { account_id: publisherId }, 0n, 120n * TGAS);
-assert.equal(BigInt(await view(tokenId, "ft_balance_of", { account_id: publisherId })), amount, "The payout did not arrive");
+assert.equal(BigInt(await view(tokenId, "ft_balance_of", { account_id: publisherId })) - publisherBefore, amount, "The payout did not arrive");
 const stats = await view(escrowId, "get_stats");
 assert.equal(stats.conserved, true, "Escrow stats are not conserved");
 

@@ -1,0 +1,160 @@
+/* Creator quest detail (src/CreatorCommunity.tsx QuestDetail, src/QuestFeedback.tsx):
+   photo, title, one goal, one button. Lazy with the Community chunk. */
+.cl-stars {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: none;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.cl-stars svg { color: #e5a100; }
+.cl-where .cl-stars { margin-inline-end: 4px; }
+.cl-stars span { color: var(--ink-secondary); }
+.cl-art img.cl-photo { width: 52px; height: 52px; border-radius: 14px; object-fit: cover; image-rendering: auto; }
+
+.qd { display: grid; gap: 12px; max-width: 640px; margin: 0 auto; }
+.qd > * { margin: 0; }
+.qd-hero {
+  position: relative;
+  display: grid;
+  place-items: center;
+  height: 132px;
+  border-radius: 16px;
+  overflow: hidden;
+  background: linear-gradient(135deg, color-mix(in srgb, var(--action) 22%, var(--surface-soft)), var(--surface-soft));
+}
+.qd-hero.has-photo { height: clamp(150px, 30vh, 240px); background: var(--surface-soft); }
+.qd-hero-photo { width: 100%; height: 100%; object-fit: cover; }
+.qd-hero-art { width: 96px; height: 96px; image-rendering: pixelated; }
+.qd .qd-back {
+  position: absolute;
+  top: 8px;
+  inset-inline-start: 8px;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 2px 8px #1a033533;
+  cursor: pointer;
+}
+.qd-kind {
+  position: absolute;
+  bottom: 8px;
+  inset-inline-start: 8px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.qd-head { display: flex; align-items: flex-start; gap: 8px; }
+.qd-head h3 { flex: 1; min-width: 0; margin: 0; font-size: 22px; line-height: 1.2; overflow-wrap: anywhere; }
+.qd-meta { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.qd .qd-by {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 2px 10px 2px 2px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font: 600 14px/1.2 inherit;
+  cursor: pointer;
+}
+.qd .qd-by:disabled { cursor: default; }
+.qd-meta .cl-stars { font-size: 15px; }
+.qd-facts { display: flex; flex-wrap: wrap; gap: 6px; padding: 0; list-style: none; }
+.qd-facts li {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 600;
+}
+.qd-facts svg { color: var(--action); }
+.qd-facts .qd-free { background: var(--success-surface, #e5f7ec); color: var(--success, #16703d); }
+.qd-goal {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--action) 10%, var(--surface));
+  color: var(--ink);
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.qd-goal svg { flex: none; margin-top: 1px; color: var(--action); }
+.qd-desc p { margin: 0; color: var(--ink-secondary); font-size: 16px; line-height: 1.5; white-space: pre-wrap; overflow-wrap: anywhere; }
+.qd-desc.is-folded p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.qd-desc .text-button { min-height: 32px; padding: 0; }
+.qd .qd-cta { width: 100%; min-height: 56px; justify-content: center; gap: 8px; font-size: 18px; font-weight: 700; }
+.qd .secondary-button.qd-cta { min-height: 48px; font-size: 16px; }
+.qd-progress { display: grid; gap: 10px; }
+.qd-progress > * { margin: 0; }
+.qd-state {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  justify-self: start;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--action) 12%, transparent);
+  color: var(--action);
+  font-size: 14px;
+  font-weight: 700;
+}
+.qd-state.is-done { background: var(--success-surface, #e5f7ec); color: var(--success, #16703d); }
+.qd-state.is-failed { background: var(--error-surface, #fdecec); color: var(--error, #a11c1c); }
+.qd-answer-form { display: grid; gap: 8px; }
+.qd-answer-form textarea { width: 100%; resize: vertical; padding: 12px; }
+.qd-answer, .qd-feedback-note { padding: 10px 12px; border-radius: 12px; background: var(--surface-soft); color: var(--ink); font-size: 15px; line-height: 1.4; white-space: pre-wrap; overflow-wrap: anywhere; }
+.qd-fine { color: var(--ink-secondary); font-size: 13px; }
+.qd-fold { border-top: 1px solid var(--decorative-border); padding-top: 4px; }
+.qd-fold > summary { min-height: 44px; display: flex; align-items: center; color: var(--ink-secondary); font-size: 14px; font-weight: 600; cursor: pointer; }
+.qd-feedback { display: grid; gap: 10px; padding-top: 12px; border-top: 1px solid var(--decorative-border); }
+.qd-feedback > * { margin: 0; }
+.qd-rate { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+.qd-rate-title { font-size: 16px; }
+.qd-rate-hint { color: var(--ink-secondary); font-size: 14px; }
+.qd-stars { display: inline-flex; }
+.qd-stars button { display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 0; background: none; color: #e5a100; cursor: pointer; }
+.qd-stars button:disabled { opacity: 0.6; }
+.qd-comments { display: grid; gap: 10px; padding: 0; list-style: none; }
+.qd-comments li { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.qd-comments p { margin: 2px 0 0; font-size: 15px; line-height: 1.4; overflow-wrap: anywhere; }
+.qd-comment-by { display: flex; align-items: center; gap: 6px; font-size: 13px; color: var(--ink-secondary); }
+.qd-comment-by b { color: var(--ink); }
+.qd-comment-creator { padding: 1px 6px; border-radius: 999px; background: color-mix(in srgb, var(--action) 12%, transparent); color: var(--action); font-size: 12px; font-weight: 700; }
+.qd .qd-comment-remove { display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; background: none; color: var(--ink-secondary); cursor: pointer; }
+.qd-comment-form { display: grid; grid-template-columns: minmax(0, 1fr) 48px; gap: 8px; }
+.qd-comment-form input { width: 100%; padding: 0 14px; border-radius: 24px; }
+.qd .qd-comment-form .primary-button { width: 48px; min-width: 48px; min-height: 48px; padding: 0; border-radius: 50%; justify-content: center; }
+/* Editor: header photo */
+.qe-photo { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.qe-photo img { width: 100%; max-height: 180px; border-radius: 14px; object-fit: cover; }
+.qe-photo label.secondary-button { display: inline-flex; align-items: center; gap: 8px; padding: 0 16px; font-size: 16px; font-weight: 600; cursor: pointer; }
+.qe-photo label.is-disabled { opacity: 0.5; cursor: default; }
+/* One creator quest opened from its map pin: only the quest, no Community tabs. */
+.game-dialog.game-dialog-map:has(.map-quest-dialog) { width: min(520px, calc(100vw - 32px)); }
+.map-quest-dialog .creator-community { margin: 0; padding: 0; border: 0; }
+.map-quest-dialog .qd { max-width: none; }
+@media (max-width: 600px) {
+  .game-dialog.game-dialog-map:has(.map-quest-dialog) { width: calc(100vw - 16px); }
+}

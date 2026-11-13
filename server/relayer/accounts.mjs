@@ -5,6 +5,14 @@ import { assert, dayKey, id } from "../domain.mjs";
 import { nearAccountId } from "../identity/near.mjs";
 import { rpcErrorText } from "../near-provider.mjs";
 import { initializeManagedAccounts } from "./schema.mjs";
+import { ensureModuleVersion, registerModuleSchema } from "../schema-compatibility.mjs";
+
+// Testnet "start over" log (startOver below): once a day per explorer.
+export const START_OVER_SCHEMA = registerModuleSchema({
+  name: "managed-account-start-over",
+  version: 1,
+  sql: `CREATE TABLE IF NOT EXISTS managed_account_start_over(player_id TEXT NOT NULL REFERENCES players(id),day TEXT NOT NULL,old_account_id TEXT NOT NULL,created_at INTEGER NOT NULL,PRIMARY KEY(player_id,day))`,
+});
 import { RelayJobError, retryLater, terminal } from "./errors.mjs";
 import { classifyFailure, relayFailure } from "./outcome.mjs";
 import { NETWORK, NETWORK_LABEL } from "../native/network.mjs";
@@ -37,6 +45,16 @@ function devicePublicKey(value) {
   return key.toString();
 }
 
+/**
+ * Proof of play before the game sponsors a funded NEAR account: the explorer
+ * earned XP (a GPS-verified find, coin or quest; the test seed kit grants it
+ * too). A fresh guest cookie alone is not enough to draw on the factory.
+ */
+export function hasPlayedFirstAdventure(db, playerId) {
+  const row = db.prepare("SELECT xp FROM players WHERE id=?").get(playerId);
+  return !!row && Number(row.xp) > 0;
+}
+
 // One sponsored sub-account per player under the factory. The player's device key
 // is the only full-access key; the service holds no player key.
 export class ManagedAccounts {
@@ -44,8 +62,9 @@ export class ManagedAccounts {
     db,
     provider,
     factory,
-    { factoryId, fundYocto, topupCapYocto = 0n, clock = Date.now, subsidyBudget = null } = {},
+    { factoryId, fundYocto, topupCapYocto = 0n, clock = Date.now, subsidyBudget = null, network = NETWORK, refuel = false } = {},
   ) {
+    this.network = network;
     this.db = db;
     this.provider = provider;
     this.factory = factory;
@@ -57,10 +76,14 @@ export class ManagedAccounts {
     );
     this.fundYocto = yoctoText(fundYocto ?? 0n);
     this.topupCapYocto = yoctoText(topupCapYocto);
+    // Starting NEAR is given once, when the account is created (owner,
+    // 11 Nov 2026). The daily refuel stays available only behind PLAYER_REFUEL=1.
+    this.refuelEnabled = refuel === true;
     this.clock = clock;
     this.subsidyBudget = subsidyBudget ?? new SubsidyBudget(db, { clock });
     this.funding = new FundingJournal(db, factory, this.subsidyBudget, clock);
     initializeManagedAccounts(db);
+    ensureModuleVersion(db, START_OVER_SCHEMA);
   }
   /** NEAR account ids are at most 64 characters: slug + "." + factory. */
   get maxSlug() {
@@ -245,6 +268,65 @@ export class ManagedAccounts {
         );
     });
     return this.view(player);
+  }
+  /**
+   * Testnet only: whether this explorer may abandon an account no device can
+   * sign for any more (keys from before the signing vault, no recovery passkey).
+   */
+  canStartOver(row) {
+    return (
+      this.network === "testnet" &&
+      !!row &&
+      row.state === "ready" &&
+      !this.db
+        .prepare("SELECT 1 FROM managed_account_keys WHERE account_id=? AND kind='recovery' AND state='active'")
+        .get(row.account_id)
+    );
+  }
+  /**
+   * Testnet only (Lubos, 11 Nov 2026): an explorer whose account keys live on no
+   * device they still have, and who has no recovery passkey, starts a new
+   * account on this device. The old account stays on chain untouched (the
+   * service never held its keys); the game forgets it and creates a new one
+   * with `publicKey` as its first device key. Once a day per explorer.
+   */
+  async startOver(player, { publicKey, name, authorizeEnrollment = () => {} } = {}) {
+    assert(this.network === "testnet", "Starting over is only possible on testnet.", 403, "ACCOUNT_START_OVER_OFF");
+    const row = this.row(player);
+    assert(row, "You have no explorer account yet.", 404, "ACCOUNT_MISSING");
+    assert(this.canStartOver(row), "Use your recovery passkey to add this device.", 409, "ACCOUNT_HAS_RECOVERY");
+    const key = devicePublicKey(publicKey);
+    assert(
+      !this.keys(row.account_id, ["active", "pending"]).includes(key),
+      "This device can already use your explorer account.",
+      409,
+      "ACCOUNT_KEY_KNOWN",
+    );
+    const today = dayKey(this.clock());
+    assert(
+      !this.db
+        .prepare("SELECT 1 FROM managed_account_start_over WHERE player_id=? AND day=?")
+        .get(player, today),
+      "You already started over today. Try again tomorrow.",
+      429,
+      "ACCOUNT_START_OVER_LIMIT",
+    );
+    authorizeEnrollment();
+    atomic(this.db, () => {
+      const now = this.clock();
+      this.db
+        .prepare("INSERT INTO managed_account_start_over(player_id,day,old_account_id,created_at) VALUES(?,?,?,?)")
+        .run(player, today, row.account_id, now);
+      // The old account becomes "failed" so create() replaces it; the game no
+      // longer treats it as this explorer's own.
+      this.db
+        .prepare("UPDATE managed_accounts SET state='failed',error_code='DEVICE_KEY_LOST',last_error=?,updated_at=? WHERE account_id=?")
+        .run("Started over on a new device.", now, row.account_id);
+      this.db.prepare("DELETE FROM wallet_links WHERE account_id=? AND player_id=?").run(row.account_id, player);
+      if (this.db.prepare("PRAGMA table_info(players)").all().some((c) => c.name === "native_account"))
+        this.db.prepare("UPDATE players SET native_account=NULL WHERE id=? AND native_account=?").run(player, row.account_id);
+    });
+    return this.create(player, { publicKey: key, name, authorizeEnrollment });
   }
   async requestKey(player, { publicKey, kind = "device", label = null } = {}) {
     const row = this.row(player);
@@ -537,6 +619,41 @@ export class ManagedAccounts {
     });
     return { toppedUp: true, amount: amount.toString(), transactionHash: hash };
   }
+  /**
+   * Fuel: the explorer's own NEAR for storage and the first self-paid trade.
+   * A refuel tops a low account back up to the starting amount, at most once
+   * per UTC day, inside the per-account top-up cap and the service-wide
+   * sponsorship budget. Gas is sponsored separately and never needs fuel.
+   */
+  fuelPolicy() {
+    return { targetYocto: this.fundYocto, belowYocto: this.fundYocto / 2n };
+  }
+  refuelOperation(accountId) {
+    return `refuel:${accountId}:${dayKey(this.clock(), "UTC")}`;
+  }
+  async fuel(playerId) {
+    const row = this.row(playerId);
+    const { targetYocto, belowYocto } = this.fuelPolicy();
+    const base = { network: NETWORK, targetYocto: targetYocto.toString(), belowYocto: belowYocto.toString() };
+    if (!row || row.state !== "ready") return { ...base, accountId: row?.account_id ?? null, balanceYocto: null, canRefuel: false, reason: "ACCOUNT_NOT_READY" };
+    const balance = await this.balance(row.account_id);
+    const usedToday = !!this.funding.latest(`topup:${this.refuelOperation(row.account_id)}`);
+    const reason = !this.factory ? "ACCOUNT_DISABLED" : !this.refuelEnabled ? "FUEL_START_ONLY" : usedToday ? "FUEL_REFUELED_TODAY" : balance >= belowYocto ? "FUEL_NOT_LOW" : null;
+    return { ...base, accountId: row.account_id, balanceYocto: balance.toString(), canRefuel: !reason, reason };
+  }
+  async refuel(playerId) {
+    const row = this.row(playerId);
+    assert(row && row.state === "ready", "Your explorer account is not ready yet.", 409, "ACCOUNT_NOT_READY");
+    assert(this.factory, "Managed accounts are disabled on this host.", 503, "ACCOUNT_DISABLED");
+    assert(this.refuelEnabled, "Starting NEAR comes once, with your account. Add your own NEAR or convert QGOLD.", 409, "FUEL_START_ONLY");
+    const op = this.refuelOperation(row.account_id);
+    assert(!this.funding.latest(`topup:${op}`), "You already refuelled today. Try again tomorrow, buy NEAR or convert QGOLD.", 429, "FUEL_REFUELED_TODAY");
+    const { targetYocto, belowYocto } = this.fuelPolicy();
+    const balance = await this.balance(row.account_id);
+    assert(balance < belowYocto, "Your account still has enough NEAR.", 409, "FUEL_NOT_LOW");
+    const result = await this.ensureFunded(row.account_id, targetYocto, { jobId: op });
+    return { ...result, accountId: row.account_id };
+  }
   view(playerId) {
     const row = this.row(playerId);
     if (!row)
@@ -577,6 +694,8 @@ export class ManagedAccounts {
         errorCode: row.error_code,
         error: row.last_error,
         keys,
+        // Testnet: no recovery passkey, so a device without a key may start over.
+        canStartOver: this.canStartOver(row),
         creation: pending
           ? {
               jobId: pending.id,

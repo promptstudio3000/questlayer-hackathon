@@ -22,24 +22,8 @@ html:lang(hi) body {
 }
 /* Spatial controls are not text: arrows, turn left/right and the walk pad
  * keep their real-world layout in a right-to-left language. */
-[dir="rtl"] .demo-pad-grid,
 [dir="rtl"] .model-controls {
   direction: ltr;
 }
 /* Location chip: longer translations must not slide under the map rail. */
-.map-top-chip.map-status-chip .map-status-text {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-@media (max-width: 760px) {
-  .map-top-chip.map-status-chip {
-    max-width: calc(100vw - 100px);
-  }
-}
-[dir="rtl"] .map-top-chip.map-status-chip {
-  padding: 0 12px 0 0;
-}
-[dir="rtl"] .map-top-chip.map-status-chip > button {
-  margin: 0 0 0 2px;
-}
+

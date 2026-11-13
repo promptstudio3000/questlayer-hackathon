@@ -97,7 +97,7 @@ export function createGoldSpend(db, { actors = null, poiSource = null, now = () 
 
   /** Unlock a premium emote or a cosmetic once. */
   function buy(player, { sku } = {}) {
-    assert(player, "Sign in to spend GOLD.", 401, "AUTH");
+    assert(player, "Sign in to spend QGOLD.", 401, "AUTH");
     assert(typeof sku === "string" && /^(emote|cosmetic):[a-z0-9-]{2,30}$/.test(sku), "Pick something from the shop.", 400, "SKU");
     const [kind, itemId] = sku.split(":");
     const item = kind === "emote" ? PREMIUM_EMOTES.find((e) => e.id === itemId) : COSMETICS.find((c) => c.id === itemId);
@@ -147,7 +147,7 @@ export function createGoldSpend(db, { actors = null, poiSource = null, now = () 
 
   // ---- NPC premium gear --------------------------------------------------------
   async function buyGear(player, { actorId, encounter, edition } = {}) {
-    assert(player, "Sign in to spend GOLD.", 401, "AUTH");
+    assert(player, "Sign in to spend QGOLD.", 401, "AUTH");
     assert(actors, "Characters on the map are not enabled here.", 503, "ACTORS_DISABLED");
     const enc = await actors.requireEncounter({ token: encounter, player, actorId });
     assert(enc.actor?.archetype === "trader", "Only a trader sells premium gear.", 409, "NOT_TRADER");
@@ -158,7 +158,7 @@ export function createGoldSpend(db, { actors = null, poiSource = null, now = () 
       assert(gearToday(player, at) < GOLD_SPEND.gear.perDay, "One premium piece per day. Come back tomorrow.", 429, "GEAR_DAILY");
       const burn = burnGold(db, { player, kind: "gear", ref: `${g.id}@${actorId}`, amountU: priceU(g.price), title: `Premium gear: ${g.name}`, now: at, meta: { trader: actorId } });
       const item = grantEdition(db, player, g.id, at);
-      assert(item, "This edition is sold out. Your GOLD is safe.", 409, "GEAR_SOLD_OUT");
+      assert(item, "This edition is sold out. Your QGOLD is safe.", 409, "GEAR_SOLD_OUT");
       return { item, burn, balanceU: burn.balanceU };
     });
   }
@@ -251,7 +251,7 @@ export function createGoldSpend(db, { actors = null, poiSource = null, now = () 
       const a = pick(archetypes);
       options.push(
         a
-          ? { kind, actorId: a.id, name: a.name, archetype: a.archetype, distanceM: Math.round(a.d), price: LURE.price[a.archetype] ?? LURE.price[kind] ?? 10 }
+          ? { kind, actorId: a.id, name: a.name, archetype: a.archetype, distanceM: Math.round(a.d), price: LURE.price[a.archetype] ?? LURE.price[kind] ?? 1000 }
           : { kind, actorId: null, name: null, archetype: null, distanceM: null, price: null, reason: kind === "trader" ? "No trader is out near you right now." : "No monster is out near you right now." },
       );
     }
@@ -324,5 +324,10 @@ export function createGoldSpend(db, { actors = null, poiSource = null, now = () 
     return r ? { luredUntil: r.ends_at } : null;
   });
 
-  return { shop, buy, equip, emote, lookOf, buyGear, lureQuote, setLure, luresNear, burns: () => burnTotals(db, now()), GOLD };
+  /** The game balance; with the QGOLD vault open the routes replace it with the wallet. */
+  const wallet = (player) => {
+    assert(player, "Sign in first.", 401, "AUTH");
+    return { realm: "practice", balanceU: balance(player) };
+  };
+  return { shop, wallet, buy, equip, emote, lookOf, buyGear, lureQuote, setLure, luresNear, burns: () => burnTotals(db, now()), GOLD };
 }

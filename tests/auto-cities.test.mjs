@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, statSync, utimesSync } from "node:fs";
 import { join } from "node:path";
 import {
   citySlug,
@@ -36,6 +36,30 @@ const row = (geonameid, name, lat, lng, population, extra = {}) => ({
   population,
   timezone: "Europe/Prague",
   ...extra,
+});
+
+test("a country import leaves a demo city's box to the demo city", () => {
+  const at = (id, name, lat, lng, pop) =>
+    row(id, name, lat, lng, pop, { country: "AT", timezone: "Europe/Vienna" });
+  const rows = [
+    at(2761369, "Vienna", 48.20849, 16.37208, 1691468),
+    at(7, "Floridsdorf", 48.25, 16.4, 30000),
+    at(2778067, "Graz", 47.06667, 15.45, 222326),
+  ];
+  const viennaDemo = [16.3315, 48.1814, 16.4126, 48.2356];
+  const { cities, skipped } = selectAutoCities(rows, {
+    countries: ["AT"],
+    reservedIds: ["vienna"],
+    reservedBoxes: [viennaDemo],
+  });
+  assert.deepEqual(cities.map((c) => c.id), ["graz"]);
+  assert.deepEqual(
+    skipped.map((s) => [s.name, s.reason]),
+    [
+      ["Vienna", "inside-demo-city"],
+      ["Floridsdorf", "inside-larger-city"],
+    ],
+  );
 });
 
 test("city selection: Czech cities from 15k, reviewed Plzeň wins, stable ids", () => {
@@ -250,6 +274,10 @@ test("the index directory reloads after a worker run without a restart", async (
     join(dir, "index.json"),
     JSON.stringify({ ...index, cities: [] }),
   );
+  // Linux file systems can keep the same mtime for a write in the same tick;
+  // a worker run changes it, so move it forward explicitly.
+  const later = new Date(statSync(join(dir, "index.json")).mtimeMs + 2000);
+  utimesSync(join(dir, "index.json"), later, later);
   assert.equal(auto.entries.length, 1, "cached within refreshMs");
   t = 5000;
   assert.equal(auto.entries.length, 0);

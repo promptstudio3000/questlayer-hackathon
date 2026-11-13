@@ -2,7 +2,8 @@
 // server for an encounter (distance, GPS and speed are checked there), shows
 // the animated 3D model and the offer menu, and hands off to the NPC talk
 // sheet or the monster challenge when those slices are present.
-import { lazy, Suspense, useEffect, useRef, useState, type ComponentType } from "react";
+import { lazy, Suspense, useEffect, useRef, useState, type ComponentType, type ReactNode } from "react";
+import { Brain, MapPin, MusicNotes, Path, Question, Sword } from "@phosphor-icons/react";
 import { Dialog } from "./Dialog";
 import { api, ApiError } from "./api";
 import type { ActorEncounter, ActorView } from "./actor-types";
@@ -10,6 +11,7 @@ import { actorRoleLabel } from "./actors-layer";
 import "./actors.css";
 import { tr } from "./i18n";
 import { FORMAT_COPY, type ChallengeFormat } from "./monster-challenge";
+import { comeBackLine } from "./come-back";
 
 type Location = { lat: number; lng: number; accuracy?: number; timestamp?: number };
 type HandoffProps = {
@@ -21,6 +23,7 @@ type HandoffProps = {
   onClose: () => void;
   onQuest?: (questId: string) => void;
   format?: ChallengeFormat | null;
+  keeperPanel?: ReactNode;
 };
 
 // Optional slices: NPC talk (N1/N2) and monster challenges (M1/M2).
@@ -35,7 +38,7 @@ const MonsterChallenge = optional(import.meta.glob("./MonsterChallenge.tsx"), "M
 const BossFight = lazy(async () => ({ default: (await import("./BossFight")).BossFight }));
 
 const PROBLEM: Record<string, string> = {
-  get OUT_OF_RANGE() { return tr("Too far away. Walk closer: you need to be within about 35 m."); },
+  get OUT_OF_RANGE() { return tr("Too far. Get within 35 m."); },
   get GPS_ACCURACY() { return tr("Your GPS is not precise enough yet. Step into the open and try again."); },
   get GPS_STALE() { return tr("Waiting for a fresh location. Try again in a moment."); },
   get IMPLAUSIBLE_MOVE() { return tr("Your location jumped too fast. Wait for a steady GPS fix."); },
@@ -46,25 +49,40 @@ const PROBLEM: Record<string, string> = {
   get ACTORS_DISABLED() { return tr("Characters are not available on this server."); },
 };
 
+const FORMAT_ICON: Record<ChallengeFormat, ReactNode> = {
+  quiz: <Question size={22} weight="bold" aria-hidden="true" />,
+  rhythm: <MusicNotes size={22} weight="bold" aria-hidden="true" />,
+  trace: <Path size={22} weight="bold" aria-hidden="true" />,
+  memory: <Brain size={22} weight="bold" aria-hidden="true" />,
+  duel: <Sword size={22} weight="bold" aria-hidden="true" />,
+};
+
 export function ActorSheet({
   actor,
   playerId,
   worldId,
   location,
   onQuest,
+  onShow,
   onClose,
+  keeperPanel,
 }: {
   actor: ActorView;
   playerId: string;
   worldId: string;
   location: Location | null;
   onQuest?: (questId: string) => void;
+  /** Too far away: close the sheet and show this character on the map. */
+  onShow?: () => void;
   onClose: () => void;
+  /** The stake form shown at a keeper (the same one as Profile → Stake). */
+  keeperPanel?: ReactNode;
 }) {
   const [state, setState] = useState<
     | { kind: "loading" }
     | { kind: "ready"; encounter: ActorEncounter }
-    | { kind: "error"; message: string; retry: boolean }
+    | { kind: "error"; message: string; retry: boolean; far?: boolean }
+    | { kind: "rest"; message: string }
   >({ kind: "loading" });
   const [handoff, setHandoff] = useState<"npc" | "challenge" | "boss" | null>(null);
   // The format picked here starts right away: the challenge sheet never asks again.
@@ -90,10 +108,16 @@ export function ActorSheet({
     } catch (e) {
       if (mine !== attempt.current) return;
       const code = e instanceof ApiError ? e.code : "";
+      // A monster resting after a try: say when it can be tried again.
+      if (code === "ACTOR_COOLDOWN" && actor.cooldownUntil && actor.cooldownUntil > Date.now()) {
+        setState({ kind: "rest", message: comeBackLine(actor, undefined) });
+        return;
+      }
       setState({
         kind: "error",
         message: PROBLEM[code] || (e instanceof ApiError ? e.message : tr("Could not reach the game. Try again.")),
         retry: code !== "ACTORS_DISABLED",
+        far: code === "OUT_OF_RANGE",
       });
     }
   }
@@ -122,7 +146,7 @@ export function ActorSheet({
   if (ready && handoff === "npc" && NpcSheet)
     return (
       <Suspense fallback={null}>
-        <NpcSheet playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} onQuest={onQuest} />
+        <NpcSheet playerId={playerId} draftRealm={worldId} actor={ready.actor} actorId={actor.id} encounter={ready} onClose={onClose} onQuest={onQuest} keeperPanel={keeperPanel} />
       </Suspense>
     );
   if (ready && handoff === "boss")
@@ -155,10 +179,15 @@ export function ActorSheet({
           )}
         </header>
         {state.kind === "loading" && <p className="actor-status" role="status">{tr("Walking up…")}</p>}
+        {state.kind === "rest" && <RestNote message={state.message} />}
         {state.kind === "error" && (
-          <div className="actor-status actor-problem" role="alert">
+          <div className={`actor-status actor-problem${state.far && onShow ? " actor-far" : ""}`} role="alert">
             <p>{state.message}</p>
-            {state.retry && (
+            {state.far && onShow ? (
+              <button className="primary-button" onClick={onShow}>
+                <MapPin size={18} aria-hidden="true" /><span>{tr("Go")}</span>
+              </button>
+            ) : state.retry && (
               <button className="secondary-button" onClick={() => void meet()}>
                 {tr("Try again")}</button>
             )}
@@ -166,13 +195,11 @@ export function ActorSheet({
         )}
         {ready && (
           <>
-            <p className="actor-status" role="status">
-              {tr("You are")}{" "}{ready.distanceM} {" "}{tr("m away. This meeting lasts 5 minutes.")}</p>
             {ready.actor.boss && (
               <p className="actor-note">
-                {tr("Shared boss health:")}{" "}{ready.actor.boss.hp} / {ready.actor.boss.maxHp} · {ready.actor.boss.participants} {" "}{tr("hunters this week.")}</p>
+                {tr("HP {0}/{1} · {2} hunters", { 0: ready.actor.boss.hp, 1: ready.actor.boss.maxHp, 2: ready.actor.boss.participants })}</p>
             )}
-            {ready.actor.state === "defeated" && (
+            {ready.actor.state === "defeated" && ready.menu.length > 0 && (
               <p className="actor-note">{tr("You already beat this one today.")}</p>
             )}
             {ready.menu.length ? (
@@ -186,30 +213,41 @@ export function ActorSheet({
                       <button
                         className="primary-button"
                         disabled={!canChallenge}
+                        title={picked ? FORMAT_COPY[picked].hint : undefined}
+                        aria-label={picked ? `${FORMAT_COPY[picked].label}. ${FORMAT_COPY[picked].hint}` : undefined}
                         onClick={() => {
                           if (!canChallenge) return;
                           setFormat(picked);
                           setHandoff(isBoss ? "boss" : "challenge");
                         }}
                       >
-                        {offer.label}
+                        {picked ? <>{FORMAT_ICON[picked]}<span>{FORMAT_COPY[picked].short}</span></> : offer.label}
                       </button>
-                      {picked && <small className="actor-offer-hint">{FORMAT_COPY[picked].hint}</small>}
                       {!canChallenge && <small>{tr("Opens in an upcoming update.")}</small>}
                     </li>
                   );
                 })}
               </ul>
-            ) : (
+            ) : actor.kind === "npc" && !ready.comeBack ? (
               <p className="actor-note">
-                {actor.kind === "npc"
-                  ? tr("They nod and go back to their errands. Conversations open in an upcoming update.")
-                  : tr("Nothing to do here right now.")}
+                {tr("They nod and go back to their errands. Conversations open in an upcoming update.")}
               </p>
+            ) : (
+              <RestNote message={comeBackLine(ready.actor, ready.comeBack)} />
             )}
           </>
         )}
       </section>
     </Dialog>
+  );
+}
+
+// "Nothing today, come back then": an empty menu is a state, not a dead end.
+function RestNote({ message }: { message: string }) {
+  return (
+    <div className="actor-rest" role="status" data-testid="actor-rest">
+      <strong>{tr("Come back later")}</strong>
+      <p>{message}</p>
+    </div>
   );
 }

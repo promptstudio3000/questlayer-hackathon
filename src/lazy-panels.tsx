@@ -53,6 +53,8 @@ const adventureResults = () => import("./AdventureResults");
 export const GameIntro = lazyNamed(() => import("./GameIntro"), "GameIntro", true);
 export const QuestBrief = lazyNamed(() => import("./QuestBrief"), "QuestBrief");
 export const WearableMoment = lazyNamed(() => import("./WearableMoment"), "WearableMoment");
+export const LockedZoneCard = lazyNamed(() => import("./LockedZone"), "LockedZoneCard", true);
+export const LockedZoneDialog = lazyNamed(() => import("./LockedZone"), "LockedZoneDialog", true);
 export const AdventureResultDialog = lazyNamed(
   adventureResults,
   "AdventureResultDialog",
@@ -69,16 +71,21 @@ export const PendingNativeTransactions = lazyNamed(
   () => import("./PendingNativeTransactions"),
   "PendingNativeTransactions",
 );
+export const SettingsReceipts = lazyNamed(
+  () => import("./PendingNativeTransactions"),
+  "SettingsReceipts",
+);
 export const CreatorCommunity = lazyNamed(
   () => import("./CreatorCommunity"),
   "CreatorCommunity",
 );
-export const CommunityBonusVote = lazyNamed(
-  () => import("./CommunityBonusVote"),
-  "CommunityBonusVote",
+export const TreasuryVoteDialog = lazyNamed(
+  () => import("./TreasuryVote"),
+  "TreasuryVoteDialog",
 );
 export const MapNotes = lazyNamed(() => import("./MapNotes"), "MapNotes");
 export const PlayerCard = lazyNamed(() => import("./PlayerCard"), "PlayerCard");
+export const Inbox = lazyNamed(() => import("./inbox/Inbox"), "Inbox");
 export const NativeCollectionControl = lazyNamed(
   () => import("./NativeCollectionControl"),
   "NativeCollectionControl",
@@ -94,6 +101,8 @@ export const AccountSessions = lazyNamed(
 );
 export const DeviceKeys = lazyNamed(() => import("./DeviceKeys"), "DeviceKeys");
 export const BadgeBook = lazyNamed(() => import("./BadgeBook"), "BadgeBook");
+export const GasWatch = lazyNamed(() => import("./FuelCard"), "GasWatch", true);
+export const CharacterJourney = lazyNamed(() => import("./CharacterJourney"), "CharacterJourney");
 export const NativeLevelRewards = lazyNamed(
   () => import("./NativeLevelRewards"),
   "NativeLevelRewards",
@@ -102,17 +111,24 @@ export const NativeMarketPanel = lazyNamed(
   () => import("./NativeMarketPanel"),
   "NativeMarketPanel",
 );
+export const MarketBoard = lazyNamed(() => import("./MarketBoard"), "MarketBoard");
 export const NativeExpeditions = lazyNamed(
   () => import("./NativeExpeditions"),
   "NativeExpeditions",
 );
-export const NativeEconomyPanel = lazyNamed(
-  () => import("./NativeEconomyPanel"),
-  "NativeEconomyPanel",
+export const GameEconomy = lazyNamed(
+  () => import("./GameEconomy"),
+  "GameEconomy",
 );
 const rewardFunding = () => import("./RewardFunding");
 export const RewardFundingPage = lazyNamed(rewardFunding, "RewardFundingPage");
 export const TodaysPot = lazyNamed(rewardFunding, "TodaysPot");
+export const PotRow = lazyNamed(() => import("./PotRow"), "PotRow");
+const mapHud = () => import("./map-hud-controls");
+export const MapSettings = lazyNamed(mapHud, "MapSettings", true);
+export const MapActions = lazyNamed(mapHud, "MapActions", true);
+export const InfoTip = lazyNamed(mapHud, "InfoTip", true);
+export const SettingsScreen = lazyNamed(() => import("./SettingsScreen"), "SettingsScreen");
 export const SecureAndShare = lazyNamed(
   () => import("./SecureAndShare"),
   "SecureAndShare",
@@ -152,15 +168,20 @@ export const AutoSocialProfile = lazyNamed(chainProof, "AutoSocialProfile", true
 // Practice wallet, fund and bounty screens (split from App.tsx).
 const walletScreens = () => import("./WalletScreens");
 export const WalletPanel = lazyNamed(walletScreens, "WalletPanel");
-export const FundPanel = lazyNamed(walletScreens, "FundPanel");
 export const Bounties = lazyNamed(walletScreens, "Bounties");
 // Explorer · Nearby: player tasks, Secrets and conditional sends.
-export const NearbyMarket = lazyNamed(() => import("./NearbyMarket"), "NearbyMarket");
+export const NearbyList = lazyNamed(() => import("./NearbyList"), "NearbyList");
+// Community · Tasks reuses the Nearby chunk (NearbyList re-exports NearbyMarket).
+export const NearbyMarket = lazyNamed(() => import("./NearbyList"), "NearbyMarket");
 export const GoldShop = lazyNamed(() => import("./GoldShop"), "GoldShop");
-export const PlaceMessages = lazyNamed(
-  () => import("./PlaceMessages"),
-  "PlaceMessages",
+export const LocalChat = lazyNamed(
+  () => import("./LocalChat"),
+  "LocalChat",
 );
+export const PlaceCompose = lazyNamed(() => import("./PlaceMessages"), "PlaceCompose");
+export const TourHelper = lazyNamed(() => import("./TourHelper"), "default");
+export const CommunityPlaces = lazyNamed(() => import("./CommunityPlaces"), "CommunityPlaces");
+export const AddPlaceDialog = lazyNamed(() => import("./CommunityPlaces"), "AddPlaceDialog");
 export const EmotePicker = lazyNamed(
   () => import("./EmotePicker"),
   "EmotePicker",
@@ -181,3 +202,9 @@ export const SeasonCard = lazyNamed(() => import("./Season"), "SeasonCard");
 export const LandmarkClue = lazyNamed(() => import("./LandmarkClue"), "default");
 
 export const FindDetails = lazyNamed(() => import("./FindDetails"), "FindDetails");
+
+// The virtual voxel Layer (docs/LAYER.md), shown only when the server enables it.
+const LazyLayer = lazy(() => import("./layer/Layer").then((m) => ({ default: m.Layer })));
+export function Layer(props: ComponentProps<typeof import("./layer/Layer").Layer>) {
+  return <PanelBoundary><Suspense fallback={<EmptyState title={tr("Opening the layer…")} status />}><LazyLayer {...props} /></Suspense></PanelBoundary>;
+}

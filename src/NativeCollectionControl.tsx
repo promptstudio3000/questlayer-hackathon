@@ -3,16 +3,9 @@ import type { NativeAutoView } from "./native-autocollect";
 import { GameObjectArt } from "./game-object-art";
 import "./native-collection.css";
 import { tr } from "./i18n";
+import { goldFromYocto } from "./gold-units.ts";
 
-function rewardGold(value: string) {
-  const amount = BigInt(value),
-    unit = 10n ** 21n;
-  const fraction = (amount % unit)
-    .toString()
-    .padStart(21, "0")
-    .replace(/0+$/, "");
-  return `${amount / unit}${fraction ? `.${fraction}` : ""}`;
-}
+const rewardGold = (value: string) => goldFromYocto(value);
 export function NativeCollectionControl({
   collection,
   ready,
@@ -53,7 +46,7 @@ export function NativeCollectionControl({
         >
           <GameObjectArt kind="coin" size={24} />
           <span>
-            <b>{rewardGold(collection.confirmed.amount)} GOLD</b> ·{" "}
+            <b>{rewardGold(collection.confirmed.amount)} QGOLD</b> ·{" "}
             {collection.confirmed.count} {" "}{tr("confirmed this session")}</span>
         </div>
       )}

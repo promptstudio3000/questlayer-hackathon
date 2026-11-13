@@ -22,9 +22,31 @@ Environment=NEAR_RPC_URL=https://test.rpc.fastnear.com
 # Testnet test world (docs/TEST-SEED.md). Delete this line (or set TEST_SEED=0
 # in runtime.env) and the next start removes everything it seeded.
 Environment=TEST_SEED=1
+# City days are funded only by realized staking yield (docs/GLOBAL-TREASURY.md):
+# each day takes one seventh of the yield that is still free, so every day
+# carries some yield, however small. Delete both lines to fall back to the
+# sponsor-funded 0.012 NEAR per day.
+Environment=NATIVE_YIELD_BACKED_DAYS=1
+Environment=NATIVE_YIELD_DRIP_DAYS=7
+# Plzeň demo layout (docs/DEMO-ZONES.md): six zones on the ring of parks around
+# náměstí Republiky, all open the whole day (no countdown), NPCs and monsters
+# near the centre. Delete this line for the final product: the next world goes
+# back to citywide zones with rarity windows. Refused on mainnet.
+Environment=DEMO_ZONES=plzen-compact
+# Guided tour with helper Pip (docs/GUIDED-TOUR.md). Here only until the Test
+# Layer is live (docs/TEST-LAYER.md), which runs it by default; delete at cut-over.
+Environment=TOUR_ENABLED=1
 # Level item editions L5-L10 (docs/LEVELS.md, owner-approved 1 Nov). Testnet only;
 # each stays unavailable until the deployed collectibles contract lists it.
 Environment=LEVEL_ITEM_EDITIONS=1
+# Virtual voxel Layer (docs/LAYER.md): shared nonfinancial 3D world in the world
+# picker. Testnet only (ignored on mainnet); delete this line to hide it.
+Environment=LAYER_ENABLED=1
+# New explorer funding, the same as mainnet (Lubos, 11 Nov 2026): 0.02 NEAR covers
+# account storage and a first self-paid trade; gas is sponsored separately. Top-ups
+# (storage shortfalls and the once-a-day Refuel) stay under 0.05 NEAR per account a day.
+Environment=PLAYER_FACTORY_FUND_YOCTO=20000000000000000000000
+Environment=RELAY_TOPUP_CAP_YOCTO=50000000000000000000000
 EnvironmentFile=-/opt/ps3000/apps/questlayer-hackathon/runtime.env
 Restart=on-failure
 RestartSec=3

@@ -35,6 +35,8 @@ const RARITY_LABEL: Record<AuraRarity, string> = {
   get legendary() { return tr("Legendary"); },
 };
 
+export const rarityLabel = (r: AuraRarity) => RARITY_LABEL[r] || r;
+
 // Rarer zones are taller so they read from further away.
 const TOTEM_HEIGHT = { 1: 14, 2: 18, 3: 22 } as Record<number, number>;
 // Presentation heights: the boundary aura is the long-distance signal.
@@ -107,7 +109,7 @@ export function zoneCountdown(
       ? { phase, text: tr("Open now"), window }
       : { phase, text: tr("Closes in {0}", { 0: clock(zone.closesAt - now) }), window };
   if (phase === "done") return { phase, text: tr("Cleared"), window };
-  if (phase === "closed") return { phase, text: tr("Closed"), window };
+  if (phase === "closed") return { phase, text: tr("Closed · new zones tomorrow"), window };
   return { phase, text: "", window };
 }
 
@@ -203,9 +205,9 @@ type Feature = {
     | { type: "LineString"; coordinates: Ring };
 };
 
-/** Presentation-only tint of the existing maximum chest rarity (not a reward promise). */
+/** Presentation-only tier tint: Tier 1 green, Tier 2 yellow, Tier 3 red (not a reward promise). */
 export function zoneAuraColor(tier: number) {
-  return {common: "#45d6a0", rare: "#45d6a0", epic: "#ae77ff", legendary: "#ffd25a"}[zoneRarity(tier)];
+  return tier >= 3 ? "#ff5d6c" : tier === 2 ? "#ffd25a" : "#45d6a0";
 }
 
 /** Boundary paths for open sky curtains. No filled polygon, roof or offset footprint. */
@@ -213,11 +215,18 @@ export function zoneWallFeatures(zones: readonly Zone[], quests: readonly Quest[
   const out: Feature[] = [];
   for (const z of zones) {
     const phase = zonePhase(z, quests, now);
-    if (phase === "closed" || phase === "done" || phase === "unknown") continue;
-    const height = (WALL_HEIGHT[z.tier] || WALL_HEIGHT[1]) * (phase === "open" ? 1 : .82);
+    // Every zone stays visible all day (owner, 11 Nov 2026): closed and
+    // cleared zones keep a low, dimmed wall instead of disappearing.
+    if (phase === "unknown") continue;
+    const spent = phase === "closed" || phase === "done";
+    // Tier 2 and 3 open for a short window only: outside it they keep the
+    // full wall and colour, so the rarer zones can be seen all day. A zone
+    // the player cleared still steps back.
+    const lit = phase === "open" || (z.tier >= 2 && phase !== "done");
+    const height = (WALL_HEIGHT[z.tier] || WALL_HEIGHT[1]) * (lit ? 1 : spent ? .5 : .82);
     for (const poly of zonePolygons(z)) for (const ring of poly) {
       if (ring.length < 4) continue;
-      out.push({type:"Feature",properties:{id:z.id,color:zoneAuraColor(z.tier),height,halo:height*WALL_HALO,dim:phase!=="open",rarity:zoneRarity(z.tier)},geometry:{type:"LineString",coordinates:ring}});
+      out.push({type:"Feature",properties:{id:z.id,color:zoneAuraColor(z.tier),height,halo:height*WALL_HALO,dim:!lit,rarity:zoneRarity(z.tier)},geometry:{type:"LineString",coordinates:ring}});
     }
   }
   return out;
@@ -239,8 +248,8 @@ export function zoneTotemFeatures(
     const h = ({1:42,2:56,3:72} as Record<number,number>)[z.tier] || 42,
       visualScale = totemHeight(z.tier) / h,
       kind = zoneObjectPresentation(z, quests, context).kind;
-    const spent = phase === "closed" || phase === "done" || phase === "unknown";
-    const color = spent ? "#a59aa9" : z.color;
+    const spent = phase === "done" || phase === "unknown" || (phase === "closed" && z.tier < 2);
+    const color = spent ? "#a59aa9" : zoneAuraColor(z.tier);
     const part = (
       r: number,
       sides: number,
@@ -334,69 +343,6 @@ export function beamFeatures(spots: readonly BeamSpot[]): Feature[] {
   return out;
 }
 
-function inside([x, y]: [number, number], ring: Ring) {
-  let hit = false;
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
-    const [xi, yi] = ring[i],
-      [xj, yj] = ring[j];
-    if (yi > y !== yj > y && x < ((xj - xi) * (y - yi)) / (yj - yi) + xi)
-      hit = !hit;
-  }
-  return hit;
-}
-
-/** Spots for item icons: around the totem, kept inside the zone outline. */
-function lootSpots(zone: Zone, count: number): [number, number][] {
-  const polys = zonePolygons(zone);
-  const within = (p: [number, number]) =>
-    polys.some((poly) => poly[0] && inside(p, poly[0]));
-  const spots: [number, number][] = [];
-  for (const r of [20, 14, 28, 9, 38, 50]) {
-    for (let i = 0; i < 12 && spots.length < count; i++) {
-      const a = Math.PI / 2 + (i % 2 ? 1 : -1) * Math.ceil(i / 2) * (Math.PI / 6);
-      const p = offset(zone.lng, zone.lat, Math.cos(a) * r, -Math.sin(a) * r);
-      if (
-        within(p) &&
-        spots.every(
-          (q) =>
-            Math.hypot(q[0] - p[0], q[1] - p[1]) * M_PER_DEG > 6,
-        )
-      )
-        spots.push(p);
-    }
-    if (spots.length >= count) break;
-  }
-  return spots;
-}
-
-/** Item icons scattered inside each zone, so a player sees what is there. */
-export function zoneLootFeatures(
-  zones: readonly Zone[],
-  quests: readonly Quest[],
-  now: number,
-): Feature[] {
-  const out: Feature[] = [];
-  for (const z of zones) {
-    const phase = zonePhase(z, quests, now);
-    if (phase === "closed" || phase === "done" || phase === "unknown") continue;
-    const loot = zoneLoot(z, quests),
-      spots = lootSpots(z, loot.length);
-    loot.forEach((item, i) => {
-      if (!spots[i]) return;
-      out.push({
-        type: "Feature",
-        properties: {
-          id: `${z.id}:${item.id}`,
-          image: item.image,
-          dim: phase !== "open",
-        },
-        geometry: { type: "Point", coordinates: spots[i] },
-      });
-    });
-  }
-  return out;
-}
-
 /** One-line description for the zone pin's accessible name. */
 export function zoneLandmarkLabel(
   zone: Zone,
@@ -420,4 +366,81 @@ export function zoneLandmarkLabel(
   return [window, when, loot.length ? `find: ${loot.join(", ")}` : ""]
     .filter(Boolean)
     .join(" · ");
+}
+
+/** Milliseconds `timeZone` is ahead of UTC at instant `t`. */
+function tzOffset(t: number, timeZone: string) {
+  const parts = new Intl.DateTimeFormat("en-GB", {
+    timeZone,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(t);
+  const v = (type: string) => Number(parts.find((p) => p.type === type)?.value);
+  const wall = Date.UTC(v("year"), v("month") - 1, v("day"), v("hour"), v("minute"), v("second"));
+  return wall - Math.floor(t / 1000) * 1000;
+}
+
+/**
+ * The next local midnight in the world's time zone: when the daily world
+ * swaps and a zone gets fresh activities and rewards (docs/WORLD-GENERATION.md,
+ * GEO08). DST-safe; an unknown zone name falls back to Europe/Prague.
+ */
+export function nextLocalMidnight(now: number, timeZone = "Europe/Prague") {
+  let zoneName = timeZone;
+  try {
+    tzOffset(now, zoneName);
+  } catch {
+    zoneName = "Europe/Prague";
+  }
+  const local = new Date(now + tzOffset(now, zoneName));
+  const wallMidnight = Date.UTC(
+    local.getUTCFullYear(),
+    local.getUTCMonth(),
+    local.getUTCDate() + 1,
+  );
+  // Two passes settle the offset on a DST change day.
+  let at = wallMidnight - tzOffset(wallMidnight, zoneName);
+  at = wallMidnight - tzOffset(at, zoneName);
+  return at;
+}
+
+export type ZoneSchedule = {
+  phase: ZonePhase;
+  opensAt: number;
+  closesAt: number;
+  /** Activities finished today / all of today's activities in the zone. */
+  done: number;
+  total: number;
+  /** When the daily world swaps and the zone's rewards are fresh again. */
+  resetAt: number;
+  xp: number;
+  gold_u: number;
+  loot: ZoneLoot[];
+};
+
+/** Everything the zone detail says about today's rewards and their reset. */
+export function zoneSchedule(
+  zone: Zone,
+  quests: readonly Quest[],
+  now: number,
+  timeZone?: string,
+): ZoneSchedule {
+  const linked = linkedQuests(zone, quests);
+  const open = linked.filter((q) => !q.completed);
+  return {
+    phase: zonePhase(zone, quests, now),
+    opensAt: zone.opensAt,
+    closesAt: zone.closesAt,
+    done: linked.length - open.length,
+    total: linked.length,
+    resetAt: nextLocalMidnight(now, timeZone),
+    xp: open.reduce((sum, q) => sum + (q.xp || 0), 0),
+    gold_u: open.reduce((sum, q) => sum + (q.gold_u || 0), 0),
+    loot: zoneLoot(zone, quests).filter((l) => l.kind === "aura"),
+  };
 }

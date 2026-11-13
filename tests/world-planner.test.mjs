@@ -146,7 +146,10 @@ test("a new local day immediately recovers uncollected backing before publishing
     const coins = (id) =>
       db.prepare("SELECT count(*) n,COALESCE(SUM(value_u),0) v FROM coins WHERE world_id=?").get(id);
     assert.ok(coins(next.id).n > 0);
-    assert.equal(balances(db).find((b) => b.bucket === "coins").reserved_u, coins(next.id).v);
+    // Map coins are backed by the on-chain day budget: the DB treasury
+    // reserves nothing for them.
+    assert.ok(coins(next.id).v > 0);
+    assert.equal(balances(db).find((b) => b.bucket === "coins").reserved_u, first.find((b) => b.bucket === "coins").reserved_u);
     assert.equal(balances(db).find((b) => b.bucket === "zones").reserved_u, first.find((b) => b.bucket === "zones").reserved_u);
     for (const row of balances(db)) {
       const original = before.find((b) => b.bucket === row.bucket);

@@ -271,3 +271,72 @@ test("dust remains visible across nights and follows its eventual confirmed leaf
     db.close();
   }
 });
+
+test("payout rounds mint within minutes, and the city demo pays like the map", async () => {
+  const { db, walker, coins } = await setup();
+  try {
+    // The city demo (arena) carries the same backed coins as the real map.
+    const demo = await ensureWorld(db, PLZEN, true, NOW);
+    const demoCoins = worldView(db, demo.id, walker, { now: NOW }).coins;
+    assert.ok(demoCoins.length > 0);
+    // Same value as a plain map coin (the first GPS world here is a pioneer, x2).
+    assert.ok(demoCoins.every((c) => c.value_u > 0 && c.value_u * 2 === coins[0].value_u));
+    claimCoin(db, walker, demoCoins[0].id, fix(demoCoins[0], NOW), NOW);
+    assert.equal(unpaidRewards(db, NOW + 1).length, 1);
+
+    const chain = paidChain(),
+      { calls } = chain,
+      roundMs = 5 * 60_000;
+    // The first round after the pickup (one minute of lag) pays it.
+    const r = await runPayoutWorker(db, { ...chain, now: NOW + 2 * 60_000, roundMs });
+    assert.equal(r.prepared, "payout-2026-11-05-v1");
+    assert.equal(r.sent, 1);
+    assert.equal(
+      db.prepare("SELECT date FROM payout_days WHERE day_id=?").get(r.prepared).date,
+      "2026-11-05T21:31",
+    );
+
+    // Within the round interval nothing new is built.
+    // (Not the demo coin's twin: one spot pays once, in either world.)
+    const c = coins.find((x) => x.lat !== demoCoins[0].lat || x.lng !== demoCoins[0].lng);
+    claimCoin(db, walker, c.id, fix(c, NOW + 3 * 60_000), NOW + 3 * 60_000);
+    const quiet = await runPayoutWorker(db, { ...chain, now: NOW + 4 * 60_000, roundMs });
+    assert.equal(quiet.prepared, null);
+    assert.equal(quiet.paid, 1, "the first round's leaf is confirmed paid");
+
+    // The next round pays the new coin under the next contract id.
+    const next = await runPayoutWorker(db, { ...chain, now: NOW + 8 * 60_000, roundMs });
+    assert.equal(next.prepared, "payout-2026-11-05-v2");
+    assert.equal(calls.filter((x) => x.method === "claim_payout").length, 2);
+
+    // A round with nothing to pay writes nothing.
+    const empty = await runPayoutWorker(db, { ...chain, now: NOW + 20 * 60_000, roundMs });
+    assert.equal(empty.prepared, null);
+    assert.equal(db.prepare("SELECT COUNT(*) n FROM payout_days").get().n, 2);
+
+    // The nightly mode picks the next free version for its date.
+    const nightly = await runPayoutWorker(db, { ...chain, now: NEXT });
+    assert.equal(nightly.prepared, "payout-2026-11-05-v3");
+  } finally {
+    setPotentialSource(null);
+    db.close();
+  }
+});
+
+test("Test Layer starter grant: once per explorer with an account and a coin, capped per day, never on World", async () => {
+  const { grantStarters } = await import("../server/payouts/worker.mjs");
+  const { db, walker, guest, w, coins } = await setup();
+  const env = { TEST_STARTER_QGOLD: "250", TEST_STARTER_DAILY: "1" };
+  assert.equal(grantStarters(db, NOW + 1000, env, true), 0, "no coin yet");
+  void w;
+  claimCoin(db, walker, coins[0].id, fix(coins[0], NOW), NOW);
+  claimCoin(db, guest, coins[1].id, fix(coins[1], NOW), NOW);
+  assert.equal(grantStarters(db, NOW + 1000, env, false), 0, "World never grants");
+  assert.equal(grantStarters(db, NOW + 1000, {}, true), 0, "off by default");
+  assert.equal(grantStarters(db, NOW + 1000, env, true), 1, "only the linked explorer");
+  assert.equal(grantStarters(db, NOW + 2000, env, true), 0, "once");
+  const starter = unpaidRewards(db, NOW + 1000).find((r) => r.ref === `starter:${walker}`);
+  assert.equal(starter.kind, "zone");
+  assert.equal(starter.accountId, "walker.testnet");
+  assert.equal(starter.amountYocto, 250n * 10n ** 15n); // 250 game QGOLD at R = 0.001
+});

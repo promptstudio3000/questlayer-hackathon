@@ -1,15 +1,18 @@
-// Nightly QGOLD payouts for map coins and cell zones (docs/DAILY-PAYOUTS.md).
+// QGOLD payouts for map coins and cell zones (docs/DAILY-PAYOUTS.md).
 //
 // Off until MAP_PAYOUTS=1 (testnet only) and the reward worker key holds the
-// payout methods. Then, once per local day after midnight (Europe/Prague):
-//   1. every backed map coin and funded cell-zone prize collected before
-//      midnight in a GPS world, by a player with a NEAR account, and not yet
-//      paid (neither here nor by an older claim_map), becomes a payout item in
-//      yoctoNEAR at the backing rate its day was priced at;
-//   2. items are summed per account (plus yesterday's carry), the tree is
-//      built with server/payouts/payout-tree.mjs and published with
-//      publish_payout_day; amounts below one QGOLD unit carry to the next day;
-//   3. claim_payout sends the leaves in batches of 10: the contract mints each
+// payout methods. Then in rounds (every PAYOUT_ROUND_MINUTES, default 5 on
+// testnet; 0 = once per local day after midnight, Europe/Prague):
+//   1. every backed map coin and funded cell-zone prize collected before the
+//      round's cutoff, in a GPS world or the city demo (the demo behaves like
+//      the real map; only movement differs), by a player with a NEAR account,
+//      and not yet paid (neither here nor by an older claim_map), becomes a
+//      payout item in yoctoNEAR at the backing rate its day was priced at;
+//   2. items are summed per account (plus earlier carry), the tree is built
+//      with server/payouts/payout-tree.mjs and published with
+//      publish_payout_day (payout-<date>-v<n>, one id per round); amounts
+//      below one QGOLD unit carry to a later round;
+//   3. claim_payout sends the leaves in batches of PAYOUT_MAX_BATCH (8): the contract mints each
 //      account's QGOLD in the vault, so players sign nothing;
 //   4. reconcile finalized per-leaf mint status; close only fully paid days.
 // Items of players who have no account yet stay unassigned and join the first
@@ -17,7 +20,7 @@
 // payouts are on, so a coin is never paid twice.
 import { atomic } from "../database.mjs";
 import { randomUUID } from "node:crypto";
-import { NETWORK } from "../native/network.mjs";
+import { NETWORK, TEST_LAYER } from "../native/network.mjs";
 import {
   registerModuleSchema,
   ensureModuleVersion,
@@ -28,6 +31,7 @@ import { MAP_TIMEZONE, readDay } from "../map-rewards/day-plan.mjs";
 import { DEFAULT_QGOLD_RATE_YOCTO } from "../map-rewards/policy.mjs";
 import {
   PAYOUT_GRACE_MS,
+  PAYOUT_MAX_BATCH,
   buildPayoutDay,
   payoutDayId,
 } from "./payout-tree.mjs";
@@ -52,11 +56,20 @@ export const PAYOUT_SETTLEMENT_SCHEMA = registerModuleSchema({
 CREATE TABLE IF NOT EXISTS payout_confirmations(day_id TEXT NOT NULL,idx INTEGER NOT NULL,confirmed_at INTEGER NOT NULL,PRIMARY KEY(day_id,idx));
 CREATE TABLE IF NOT EXISTS payout_worker_lease(id INTEGER PRIMARY KEY CHECK(id=1),owner TEXT,until_ms INTEGER NOT NULL DEFAULT 0)`,
 });
+// Test Layer welcome grant: one per explorer, paid from the zone pool like a
+// zone prize (ref starter:<player>), so a new explorer can try the shop and
+// the tour's spend steps even when their first coins are below one payout.
+export const STARTER_GRANTS_SCHEMA = registerModuleSchema({
+  name: "starter-grants",
+  version: 1,
+  sql: `CREATE TABLE IF NOT EXISTS starter_grants(player_id TEXT PRIMARY KEY, units TEXT NOT NULL, day TEXT NOT NULL, granted_at INTEGER NOT NULL)`,
+});
 const ready = new WeakSet();
 export function ensurePayoutSchema(db) {
   if (ready.has(db)) return;
   ensureModuleVersion(db, MAP_PAYOUTS_SCHEMA);
   ensureModuleVersion(db, PAYOUT_SETTLEMENT_SCHEMA);
+  ensureModuleVersion(db, STARTER_GRANTS_SCHEMA);
   db.prepare("INSERT OR IGNORE INTO payout_worker_lease(id) VALUES(1)").run();
   ready.add(db);
 }
@@ -89,6 +102,37 @@ function dayRate(db, day, cache) {
 }
 
 /**
+ * Test Layer only (TEST_STARTER_QGOLD > 0, off by default): every explorer
+ * with a NEAR account who has picked up a map coin gets TEST_STARTER_QGOLD
+ * once, at most TEST_STARTER_DAILY (default 20) explorers per local day.
+ * World never grants. Returns how many grants were written.
+ */
+export function grantStarters(db, before, env = process.env, testLayer = TEST_LAYER) {
+  const qgold = Number(env.TEST_STARTER_QGOLD || 0);
+  if (!testLayer || !(Number.isSafeInteger(qgold) && qgold > 0 && qgold <= 10_000)) return 0;
+  const cap = Number(env.TEST_STARTER_DAILY || 20);
+  ensurePayoutSchema(db);
+  if (!has(db, "coins") || !has(db, "wallet_links")) return 0;
+  const day = localDay(before);
+  const used = db.prepare("SELECT COUNT(*) n FROM starter_grants WHERE day=?").get(day).n;
+  const room = Math.max(0, (Number.isSafeInteger(cap) ? cap : 20) - used);
+  if (!room) return 0;
+  const players = db
+    .prepare(
+      `SELECT DISTINCT c.claimant p FROM coins c
+       WHERE c.claimant IS NOT NULL AND c.claimed_at<?
+         AND EXISTS(SELECT 1 FROM wallet_links w WHERE w.player_id=c.claimant)
+         AND NOT EXISTS(SELECT 1 FROM starter_grants g WHERE g.player_id=c.claimant)
+       LIMIT ?`,
+    )
+    .all(before, room);
+  const units = String(qgold); // game QGOLD = the token's smallest unit
+  const insert = db.prepare("INSERT OR IGNORE INTO starter_grants VALUES(?,?,?,?)");
+  for (const { p } of players) insert.run(p, units, day, before - 1);
+  return players.length;
+}
+
+/**
  * Backed rewards collected before `before` and not paid yet, with the
  * collector's NEAR account (rows without one are left for a later payout).
  */
@@ -113,7 +157,6 @@ export function unpaidRewards(db, before, { unlinked = false } = {}) {
          JOIN map_cell_drops d ON d.world_id=m.world_id AND d.cell=m.cell
          JOIN worlds w ON w.id=x.world_id
          WHERE x.claimant IS NOT NULL AND x.claimed_at<? AND x.value_u>0
-           AND COALESCE(json_extract(w.manifest,'$.arena'),0)=0
            AND NOT EXISTS(SELECT 1 FROM payout_items p WHERE p.ref=x.id) ${viaMapDays}
          ORDER BY x.claimed_at,x.id`,
       )
@@ -134,7 +177,6 @@ export function unpaidRewards(db, before, { unlinked = false } = {}) {
       `SELECT x.id,x.gold_u,x.claimant,w.day FROM quests x JOIN worlds w ON w.id=x.world_id
        WHERE x.claimant IS NOT NULL AND x.claimed_at<? AND x.gold_u>0
          AND json_valid(x.metadata) AND json_extract(x.metadata,'$.cellZone.cell') IS NOT NULL
-         AND COALESCE(json_extract(w.manifest,'$.arena'),0)=0
          AND NOT EXISTS(SELECT 1 FROM payout_items p WHERE p.ref=x.id) ${viaMapDays}
        ORDER BY x.claimed_at,x.id`,
     )
@@ -150,29 +192,103 @@ export function unpaidRewards(db, before, { unlinked = false } = {}) {
       amountYocto: BigInt(q.gold_u) * dayRate(db, q.day, rates),
     });
   }
+  for (const g of db
+    .prepare(
+      `SELECT g.player_id,g.units,g.day FROM starter_grants g
+       WHERE g.granted_at<? AND NOT EXISTS(SELECT 1 FROM payout_items p WHERE p.ref='starter:'||g.player_id)
+       ORDER BY g.granted_at,g.player_id`,
+    )
+    .all(before)) {
+    const acc = account(g.player_id);
+    if (!acc && !unlinked) continue;
+    out.push({
+      kind: "zone",
+      ref: `starter:${g.player_id}`,
+      player: g.player_id,
+      accountId: acc,
+      units: BigInt(g.units),
+      amountYocto: BigInt(g.units) * dayRate(db, g.day, rates),
+    });
+  }
   return out;
 }
+
+/** Next free contract day id for a local date: payout-<date>-v<n>. */
+function nextDayId(db, date) {
+  let version = 0;
+  for (const { day_id } of db
+    .prepare("SELECT day_id FROM payout_days WHERE day_id LIKE ?")
+    .all(`payout-${date}-v%`)) {
+    const n = Number(day_id.slice(`payout-${date}-v`.length));
+    if (Number.isSafeInteger(n) && n > version) version = n;
+  }
+  return payoutDayId(date, version + 1);
+}
+
+/**
+ * Payout rounds (testnet default every 5 minutes, PAYOUT_ROUND_MINUTES; 0 =
+ * one nightly payout). A round pays everything collected up to a minute ago,
+ * so a player sees the QGOLD mint minutes after picking up the coins.
+ */
+export const PAYOUT_ROUND_LAG_MS = 60_000;
+export function payoutRoundMs(env = process.env) {
+  const raw = env.PAYOUT_ROUND_MINUTES;
+  const n = raw === undefined || raw === "" ? 5 : Number(raw);
+  return Number.isSafeInteger(n) && n >= 0 && n <= 1440 ? n * 60_000 : 5 * 60_000;
+}
+
+const localTime = (at) =>
+  new Intl.DateTimeFormat("en-GB", {
+    timeZone: MAP_TIMEZONE,
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  }).format(at);
 
 /**
  * Builds and stores yesterday's payout day once (local time). Returns the
  * stored day row, or null when it already exists or today is not over.
  */
-export function preparePayoutDay(
-  db,
-  now = Date.now(),
-  { assertOwned = () => {} } = {},
-) {
+export function preparePayoutDay(db, now = Date.now(), options = {}) {
   ensurePayoutSchema(db);
-  const date = shiftDate(localDay(now), -1),
-    dayId = payoutDayId(date);
+  const date = shiftDate(localDay(now), -1);
   if (db.prepare("SELECT 1 FROM payout_days WHERE date=?").get(date))
     return null;
   const { endsAt } = localDateBounds(date, MAP_TIMEZONE);
+  return storePayoutDay(db, now, { ...options, date, label: date, before: endsAt });
+}
+
+/**
+ * Builds and stores one payout round when `roundMs` has passed since the last
+ * stored day or round. Its `date` column holds the local cutoff
+ * (YYYY-MM-DDTHH:MM); its contract id is the next payout-<date>-v<n>. A round
+ * with nothing to pay yet (no account over the minimum leaf) writes nothing,
+ * so the collected rewards simply wait for a later round.
+ */
+export function preparePayoutRound(db, now = Date.now(), { roundMs, ...options } = {}) {
+  ensurePayoutSchema(db);
+  if (!(roundMs > 0)) throw Error("A payout round needs a positive interval");
+  const last = db.prepare("SELECT MAX(created_at) at FROM payout_days").get()?.at;
+  if (last && now - last < roundMs) return null;
+  const before = now - PAYOUT_ROUND_LAG_MS,
+    date = localDay(before),
+    label = `${date}T${localTime(before)}`;
+  if (db.prepare("SELECT 1 FROM payout_days WHERE date=?").get(label)) return null;
+  return storePayoutDay(db, now, { ...options, date, label, before, skipEmpty: true });
+}
+
+function storePayoutDay(
+  db,
+  now,
+  { date, label, before, skipEmpty = false, assertOwned = () => {} },
+) {
   return atomic(db, () => {
     assertOwned();
-    if (db.prepare("SELECT 1 FROM payout_days WHERE date=?").get(date))
+    if (db.prepare("SELECT 1 FROM payout_days WHERE date=?").get(label))
       return null;
-    const items = unpaidRewards(db, endsAt);
+    const dayId = nextDayId(db, date);
+    grantStarters(db, before);
+    const items = unpaidRewards(db, before);
     const carry = db.prepare("SELECT * FROM payout_carry").all();
     const carriedItems = db
       .prepare(
@@ -200,6 +316,7 @@ export function preparePayoutDay(
           .filter((i) => i.kind === "coin")
           .reduce((n, i) => n + BigInt(i.amount_yocto), 0n),
     });
+    if (skipEmpty && !day.root) return null;
     // Keep each original player/item attached to the eventual leaf, including
     // dust carried across empty days. A carry is never a second earned item.
     const moveCarry = db.prepare(
@@ -228,7 +345,7 @@ export function preparePayoutDay(
       "INSERT INTO payout_days VALUES(?,?,?,?,?,?,?,NULL,NULL,NULL,NULL,?,?)",
     ).run(
       dayId,
-      date,
+      label,
       day.root || null,
       empty ? null : JSON.stringify(day.publish),
       String(day.total),
@@ -315,6 +432,7 @@ export async function runPayoutWorker(
     clock = Date.now,
     maxBatches = 10,
     maxChecks = 1024,
+    roundMs = 0,
   },
 ) {
   ensurePayoutSchema(db);
@@ -382,7 +500,10 @@ export async function runPayoutWorker(
         "Payout contract does not expose finalized settlement status",
       );
     result.prepared =
-      preparePayoutDay(db, now, { assertOwned: fence })?.day_id || null;
+      (roundMs > 0
+        ? preparePayoutRound(db, now, { roundMs, assertOwned: fence })
+        : preparePayoutDay(db, now, { assertOwned: fence })
+      )?.day_id || null;
     const days = db
       .prepare(
         `SELECT d.* FROM payout_days d WHERE d.state IN ('pending','published') OR
@@ -477,9 +598,9 @@ export async function runPayoutWorker(
         for (
           let offset = 0;
           offset < retry.length && batchesLeft > 0;
-          offset += 10
+          offset += PAYOUT_MAX_BATCH
         ) {
-          const rowsToSend = retry.slice(offset, offset + 10);
+          const rowsToSend = retry.slice(offset, offset + PAYOUT_MAX_BATCH);
           const batch = {
             day_id: d.day_id,
             claims: rowsToSend.map((c) => ({

@@ -1,5 +1,5 @@
 import { api } from "../api.ts";
-import { trustedVaultMessage } from "./policy.ts";
+import { approvalTtl, trustedVaultMessage } from "./policy.ts";
 type Reply = {
   channel: string;
   id: string;
@@ -79,6 +79,7 @@ export async function vaultRequest<T>(
     let popup: Window | null = null;
     const finish = (error?: Error, result?: unknown) => {
       clearTimeout(timeout);
+      clearInterval(watch);
       window.removeEventListener("message", receive);
       if (popup && !popup.closed) popup.close();
       error ? reject(error) : resolve(result as T);
@@ -115,8 +116,18 @@ export async function vaultRequest<T>(
             "The secure account did not finish. Saved payments remain recoverable.",
           ),
         ),
-      180000,
+      approvalTtl(method),
     );
+    // The wallet-words window stays open for minutes. If the player closes it
+    // without finishing, stop waiting instead of holding the game busy.
+    let closedFor = 0;
+    const watch =
+      method === "exportWallet"
+        ? setInterval(() => {
+            closedFor = popup?.closed ? closedFor + 1 : 0;
+            if (closedFor >= 3) finish(Error("Account action cancelled."));
+          }, 1000)
+        : undefined;
     window.addEventListener("message", receive);
     frame.contentWindow!.postMessage(
       { channel: "questlayer-signing-vault", id, method, input },

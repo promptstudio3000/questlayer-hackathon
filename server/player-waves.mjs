@@ -15,7 +15,8 @@
 import { assert, id } from "./domain.mjs";
 import { demoProgression } from "./database.mjs";
 import { isSocialBlocked } from "./social-content.mjs";
-import { wornWearables } from "./gotchi-wearables.mjs";
+import { wornWearables, publicWearable, verifiedItemIds, VERIFIED_FOR_MS, WEARABLES } from "./gotchi-wearables.mjs";
+import { outfitEquipped, outfitVersion, ownedOutfit } from "./gotchi-outfit.mjs";
 import {
   ensureModuleVersion,
   registerModuleSchema,
@@ -53,6 +54,12 @@ function ensureWavesSchema(db) {
 
 const validPlayerId = (value) =>
   typeof value === "string" && /^player_[a-f0-9-]{36}$/.test(value);
+// Test-world bots (TEST_SEED=1, server/test-seed) walk the map with "seed-"
+// ids. Their card is the same dialog, labelled "demo-bot"; no block. A wave to
+// a bot is answered at once with a wave back, so the guided tour's wave step
+// always works (docs/GUIDED-TOUR.md).
+export const isDemoBot = (value) =>
+  typeof value === "string" && /^seed-[a-z0-9-]{1,60}$/.test(value);
 
 function sharing(db, player, now) {
   return db
@@ -67,31 +74,69 @@ function sharing(db, player, now) {
  * look the map uses (colors only). No wallet address, account or inventory.
  */
 export function playerCard(db, viewer, target, appearance, now = Date.now()) {
-  assert(validPlayerId(target), "Invalid explorer.", 400);
+  assert(validPlayerId(target) || isDemoBot(target), "Invalid explorer.", 400);
   const self = viewer === target;
+  const demoBot = isDemoBot(target);
   const theirs = sharing(db, target, now);
+  // The profile is public (Lubos, 10 Nov 2026): visible without sharing the
+  // position, never with it. A block hides it both ways.
   assert(
-    self || (theirs && !isSocialBlocked(db, viewer, target)),
-    "This explorer is no longer sharing their position.",
+    self || !isSocialBlocked(db, viewer, target),
+    "This explorer's profile is not available.",
     404,
   );
-  const row = db.prepare("SELECT id,name,xp FROM players WHERE id=?").get(target);
-  assert(row, "This explorer is no longer sharing their position.", 404);
-  const { level } = demoProgression(db, target, row);
-  const mine = !self && sharing(db, viewer, now);
+  const row = db
+    .prepare("SELECT id,name,xp,created_at FROM players WHERE id=?")
+    .get(target);
+  assert(row, "This explorer's profile is not available.", 404);
+  const { level, availableXp } = demoProgression(db, target, row);
+  const original = profileOriginal(db, target, now);
+  const worn = wornWearables(db, target, now);
+  const mine = !self && !demoBot && sharing(db, viewer, now);
+  const count = (sql) => {
+    try {
+      return db.prepare(sql).get(target)?.n || 0;
+    } catch {
+      return 0; // table not created yet on this database
+    }
+  };
   return {
     id: row.id,
     name: row.name,
     level,
+    xp: availableXp,
+    demoBot,
+    joinedAt: row.created_at,
+    badges:
+      count("SELECT COUNT(*) AS n FROM place_badge_awards WHERE player_id=?") +
+      count("SELECT COUNT(*) AS n FROM user_badge_claims WHERE player_id=?"),
+    stats: {
+      finds: count("SELECT COUNT(*) AS n FROM coins WHERE claimant=?"),
+      quests: count("SELECT COUNT(*) AS n FROM quest_claims WHERE player_id=?"),
+      monsters: count("SELECT COUNT(*) AS n FROM actor_challenges WHERE player_id=? AND state='won'"),
+      wearables: count("SELECT COUNT(*) AS n FROM wearable_clones WHERE player_id=? AND source='find'"),
+    },
     self,
-    wearables: wornWearables(db, target, now),
+    wearables: worn,
+    slots: profileSlots(worn, original),
     auras: {
       above: appearance?.above || null,
       below: appearance?.below || null,
     },
-    original: !!appearance?.skinTokenId,
-    canWave: !self && !!mine && mine.arena === theirs?.arena,
-    waveHint: self
+    original: !!(appearance?.skinTokenId || original),
+    // Changes when the outfit does, so the avatar art is fetched again.
+    look: outfitVersion(original?.outfit),
+    // Own profile only: whether slots dress the gotchi, and which differ from its real gear.
+    dress: self
+      ? {
+          gotchi: !!original,
+          dressed: PROFILE_SLOTS.filter((_, i) => Object.hasOwn(original?.outfit || {}, String(i))),
+        }
+      : null,
+    // Name and rarity score of the worn original; never the token's wallet.
+    gotchi: original ? { name: original.name, brs: original.brs } : null,
+    canWave: demoBot ? !self && !!sharing(db, viewer, now) : !self && !!mine && mine.arena === theirs?.arena,
+    waveHint: self || demoBot
       ? null
       : mine
         ? mine.arena === theirs?.arena
@@ -102,22 +147,81 @@ export function playerCard(db, viewer, target, appearance, now = Date.now()) {
   };
 }
 
+// Equipment slots in Aavegotchi order (equippedWearables indexes 0-6).
+export const PROFILE_SLOTS = ["body", "face", "eyes", "head", "handLeft", "handRight", "pet"];
+
+/** What sits in each slot: the worn original's own gear, else worn clones. */
+export function profileSlots(worn, original) {
+  const slots = Object.fromEntries(PROFILE_SLOTS.map((slot) => [slot, null]));
+  if (original) {
+    PROFILE_SLOTS.forEach((slot, index) => {
+      const item = WEARABLES.get(original.equipped?.[index]);
+      if (!item) return;
+      // Real gear is the gotchi's own; an outfit item is gold only when the wallet holds it.
+      const dressed = Object.hasOwn(original.outfit || {}, String(index));
+      const verified = !dressed || !!original.verified?.has(item.id);
+      slots[slot] = { ...publicWearable(item), verified, source: verified ? "original" : "clone" };
+    });
+  } else {
+    for (const w of worn) {
+      const slot = w.slot === "hand" ? (slots.handRight ? "handLeft" : "handRight") : w.slot;
+      if (slot in slots && !slots[slot]) slots[slot] = { ...w, source: "clone" };
+    }
+  }
+  return PROFILE_SLOTS.map((slot) => ({ slot, item: slots[slot] }));
+}
+
+/**
+ * The original Aavegotchi an explorer wears, for their public profile: read
+ * from an ownership snapshot at most a day old (the same window as verified
+ * wearables), so the profile shows it while they are offline too.
+ */
+export function profileOriginal(db, player, now = Date.now()) {
+  try {
+    const row = db.prepare("SELECT appearance FROM players WHERE id=?").get(player);
+    const appearance = JSON.parse(row?.appearance || "{}");
+    if (!/^\d{1,24}$/.test(appearance.originTokenId || "")) return null;
+    const link = db
+      .prepare("SELECT data FROM external_links WHERE player_id=? AND address=? AND verified_at>=?")
+      .get(player, appearance.address, now - VERIFIED_FOR_MS);
+    const g = link && JSON.parse(link.data).gotchis?.find((x) => x.tokenId === appearance.originTokenId);
+    if (!g || typeof g.svg !== "string" || g.svg.length > 200000) return null;
+    const outfit = ownedOutfit(db, player, appearance.outfit, now);
+    return {
+      name: String(g.name || "").slice(0, 40),
+      brs: Number.isFinite(g.brs) ? g.brs : null,
+      svg: g.svg,
+      equipped: outfitEquipped(g, outfit),
+      gotchi: g,
+      outfit,
+      verified: verifiedItemIds(db, player, now),
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function sendWave(db, from, to, phrase, now = Date.now()) {
   ensureWavesSchema(db);
-  assert(validPlayerId(to) && to !== from, "Invalid explorer.", 400);
+  const bot = isDemoBot(to);
+  assert((validPlayerId(to) || bot) && to !== from, "Invalid explorer.", 400);
   assert(
     typeof phrase === "string" && Object.hasOwn(WAVE_PHRASES, phrase),
     "Pick one of the ready phrases.",
     400,
   );
-  const mine = sharing(db, from, now),
-    theirs = sharing(db, to, now);
+  const mine = sharing(db, from, now);
   assert(mine, "Share your position to wave.", 403);
-  assert(
-    theirs && theirs.arena === mine.arena && !isSocialBlocked(db, from, to),
-    "This explorer is no longer sharing their position.",
-    404,
-  );
+  if (bot) {
+    assert(db.prepare("SELECT 1 FROM players WHERE id=?").get(to), "This explorer's profile is not available.", 404);
+  } else {
+    const theirs = sharing(db, to, now);
+    assert(
+      theirs && theirs.arena === mine.arena && !isSocialBlocked(db, from, to),
+      "This explorer is no longer sharing their position.",
+      404,
+    );
+  }
   db.prepare("DELETE FROM player_waves WHERE created_at<?").run(
     now - WAVE_LIMITS.keepMs,
   );
@@ -153,7 +257,13 @@ export function sendWave(db, from, to, phrase, now = Date.now()) {
   db.prepare(
     "INSERT INTO player_waves(id,from_id,to_id,phrase,created_at,seen) VALUES(?,?,?,?,?,0)",
   ).run(id("wave"), from, to, phrase, now);
-  return { sent: true, phrase: WAVE_PHRASES[phrase] };
+  if (!bot) return { sent: true, phrase: WAVE_PHRASES[phrase] };
+  // The bot waves back right away; it is shown on the card, so it is stored as seen.
+  const back = phrase === "thanks" ? "see-you" : phrase === "hello" ? "hello" : "thanks";
+  db.prepare(
+    "INSERT INTO player_waves(id,from_id,to_id,phrase,created_at,seen) VALUES(?,?,?,?,?,1)",
+  ).run(id("wave"), to, from, back, now);
+  return { sent: true, phrase: WAVE_PHRASES[phrase], reply: { key: back, text: WAVE_PHRASES[back] } };
 }
 
 /** Unseen waves for a sharing explorer; reading marks them seen. */

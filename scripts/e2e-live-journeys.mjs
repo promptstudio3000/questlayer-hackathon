@@ -26,13 +26,14 @@ import { join, resolve } from "node:path";
 import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
 import { loadQuizBank } from "../server/actors/challenges/quiz.mjs";
-import { openScreen } from "./lib/e2e-nav.mjs";
+import { openScreen, openMapSettings } from "./lib/e2e-nav.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const BASE = (process.env.E2E_BASE_URL || "https://questlayer.promptstudio3000.com").replace(/\/$/, "");
 const SHOTS = resolve(process.env.E2E_SHOTS || join(ROOT, "output/qa/live-journeys"));
 const BRNO = { lat: 49.19522, lng: 16.60796 };
 const PLZEN = { lat: 49.74745, lng: 13.3774 };
+const PRAGUE = { lat: 50.0875, lng: 14.4213 };
 const VILLAGE = { name: "Holašovice", lat: 48.96965, lng: 14.27406 };
 const RUN = Date.now().toString(36).slice(-4);
 
@@ -135,15 +136,21 @@ async function meet(e, world, actorId, spot) {
  */
 async function beatLurker(name) {
   const scout = await explorer(`test ${RUN} lurker scout`);
-  const w = await worldAt(scout, PLZEN);
+  // Lurkers hide next to street finds and show only within 60 m, and the
+  // finds they picked can sit in a later coin wave. Scan the visible finds
+  // first, then the other coins, city by city, until one shows.
   let lurker = null;
-  for (const c of w.coins.slice(0, 200)) {
-    await sleep(300); // a live server: one gentle request at a time
-    const near = await actorsIn(scout, w, c);
-    lurker = near.find((a) => a.archetype === "lurker" && a.state === "active");
-    if (lurker) break;
+  search: for (const spot of [BRNO, PRAGUE, PLZEN]) {
+    const w = await worldAt(scout, spot);
+    const coins = [...w.coins.filter((c) => c.find), ...w.coins.filter((c) => !c.find)];
+    for (const c of coins.slice(0, 120)) {
+      await sleep(300); // a live server: one gentle request at a time
+      const near = await actorsIn(scout, w, c);
+      lurker = near.find((a) => a.archetype === "lurker" && a.state === "active");
+      if (lurker) break search;
+    }
   }
-  assert.ok(lurker, "a lurker hides next to a street find in Plzeň");
+  assert.ok(lurker, "a lurker hides next to a street find in Brno, Prague or Plzeň");
   const at = actorAt(lurker);
   const e = await explorer(name);
   const w2 = await worldAt(e, at);
@@ -267,7 +274,7 @@ const API_JOURNEYS = {
       e.call("POST", "/api/quests/claim", { questId: place.id, fix: fix(place), answer: place.clue?.options?.[0]?.id }),
     );
     assert.equal(v.status, 200, `errand visit: ${JSON.stringify(v.data)}`);
-    // The travel guard must make the trip take walking/cycling time (15 m/s).
+    // The travel guard must make the trip take walking/cycling time (about 15 km/h).
     if (trip > 500) assert.ok(Date.now() - started > 10_000, "the travel guard made the explorer travel");
     note(`visited after ${Math.round((Date.now() - started) / 1000)} s, walking back…`);
     const back = Date.now();
@@ -336,7 +343,7 @@ const API_JOURNEYS = {
     assert.equal(g.data.access.staker, false);
     const gate = Object.values(g.data.gates)[0];
     const label = gate.missing.find((m) => m.kind === "stake")?.label || "";
-    assert.match(label, /^Stake 2 NEAR \(~\d+ €\)$/);
+    assert.match(label, /^Stake 2 NEAR \(~\d+(?:[.,]\d+)? €\)$/);
     note(`gates: ${Object.keys(g.data.gates).length}, newcomer sees "${label}" at ${g.data.priceEur} €/NEAR`);
     const y = await e.call("GET", "/api/yield/markets");
     assert.equal(y.status, 200);
@@ -385,6 +392,7 @@ async function newPlayer(browser, device, name, spot, { account = false, cookie 
       ? { geolocation: { latitude: spot.lat, longitude: spot.lng, accuracy: 8 }, permissions: ["geolocation"] }
       : {}),
   });
+  await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});  // Start in the city demo (src/play-here.ts).
   // Every new explorer gets an invisible NEAR account funded from the
   // testnet factory (0.1 NEAR). Bot explorers skip it unless the journey
   // needs to sign (wisp roll); the app plays on without one.
@@ -422,7 +430,7 @@ async function newPlayer(browser, device, name, spot, { account = false, cookie 
       (r) => r.url().endsWith("/api/world") && r.request().method() === "POST" && r.request().postDataJSON()?.arena === false,
       { timeout: 30_000 },
     );
-    await page.getByRole("button", { name: "Use GPS, my location" }).click();
+    await (await openMapSettings(page)).getByRole("button", { name: "Use GPS, my location" }).click();
     world = await (await gps).json();
     await page.waitForFunction(() => /GPS ±\d+ m/.test(document.body.innerText), null, { timeout: 15_000 });
   }
@@ -624,7 +632,7 @@ function uiJourneys(device) {
         await page.getByText(/2 NEAR/).first().waitFor({ timeout: 15_000 });
         await shot(page, "staker-step");
         note("staking tab names the 2 NEAR step");
-        await page.getByRole("tab", { name: "Settings" }).first().click();
+        await openMapSettings(page);
         // Picking a language reloads the app in it (src/i18n.ts setLang).
         await page.locator("select.language-select").selectOption("cs");
         await page.waitForURL(/[?&]lang=cs/, { timeout: 15_000 });

@@ -27,6 +27,12 @@
   image-rendering: pixelated;
   pointer-events: none;
 }
+.wearable-find-marker.art-missing::after {
+  content: "✦";
+  color: #2c0a56;
+  font-size: 22px;
+  line-height: 1;
+}
 .wearable-find-marker:focus-visible {
   outline: 3px solid #fffa65;
   outline-offset: 2px;
@@ -70,12 +76,6 @@
 }
 
 /* Wearable tile (wardrobe and explorer card). */
-.wearable-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
-  gap: 10px;
-  margin: 10px 0;
-}
 .wearable-tile {
   position: relative;
   display: grid;
@@ -125,18 +125,6 @@ button.wearable-tile {
   font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.02em;
-}
-.wearable-legend {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 14px;
-  font-size: 14px;
-}
-.wearable-legend span {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
 }
 
 /* Explorer card (inside the shared game dialog). */
@@ -207,4 +195,170 @@ button.wearable-tile {
 }
 .player-card-actions .danger {
   border-color: #c82ac2;
+}
+.player-card-bot {
+  margin-inline-start: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #ece3ff;
+  color: #4b1fa3;
+  font-size: 13px;
+  font-weight: 600;
+  vertical-align: middle;
+}
+.player-card-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 12px 0 0;
+}
+.player-card-stats div {
+  padding: 8px;
+  border-radius: 12px;
+  background: #f5f0ff;
+  text-align: center;
+}
+.player-card-stats dt {
+  font-size: 12px;
+  color: #5b4a75;
+}
+.player-card-stats dd {
+  margin: 2px 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: #2c0a56;
+}
+.player-card-actions {
+  align-items: center;
+  flex-wrap: wrap;
+}
+.player-card-actions button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.player-card-actions button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+/* Profile layout (10 Nov 2026): XP bar, original chip, stats, slot grid. */
+.player-card-who { min-width: 0; flex: 1; }
+.player-card-who h2 { overflow-wrap: anywhere; }
+.player-card-xp { height: 6px; margin: 6px 0 4px; border-radius: 999px; background: #ece3ff; overflow: hidden; }
+.player-card-xp span { display: block; height: 100%; background: #8348ff; }
+.player-card-gotchi { display: flex; align-items: center; gap: 4px; color: #6b3fd6; font-weight: 600; }
+.player-card-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.player-card-stats dd { overflow-wrap: anywhere; }
+.player-card-actions .danger { min-width: 48px; justify-content: center; }
+.player-card-waves { margin-top: 10px; }
+.player-card-slots { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+.player-card-slots li { position: relative; display: grid; justify-items: center; gap: 4px; padding: 8px 4px 6px; border: 2px solid #e3d8fb; border-radius: 12px; background: #faf7ff; }
+.player-card-slots li.empty { border-style: dashed; }
+.player-card-slots li.rarity-rare { border-color: #59bcff; }
+.player-card-slots li.rarity-legendary { border-color: #ffc36b; }
+.player-card-slots li.rarity-mythical { border-color: #ff96ff; }
+.player-card-slots li.rarity-godlike { border-color: #51ffa8; }
+.player-card-slots li.rarity-uncommon { border-color: #8ad0b0; }
+.player-card-slots img, .player-card-slots li > span, .player-card-slots li > button > span { width: 44px; height: 44px; image-rendering: pixelated; }
+.player-card-slots li:has(> button) { padding: 0; }
+.player-card-slots li > button { display: grid; justify-items: center; gap: 4px; width: 100%; padding: 8px 4px 6px; border: 0; border-radius: 10px; background: none; font: inherit; color: inherit; cursor: pointer; }
+.player-card-slots li.picking { outline: 3px solid #7b5cd6; outline-offset: 1px; }
+.player-card-hint { margin: -4px 0 8px; font-size: 13px; color: #5b4a75; }
+.player-card-picker { margin-top: 10px; padding: 10px; border-radius: 12px; background: #f3edff; }
+.player-card-picker ul { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.player-card-picker button { position: relative; display: grid; justify-items: center; align-content: center; gap: 2px; width: 100%; min-height: 72px; padding: 6px 4px; border: 2px solid #e3d8fb; border-radius: 10px; background: #fff; font: inherit; font-size: 12px; color: #2d2340; cursor: pointer; }
+.player-card-picker button[aria-pressed="true"] { border-color: #7b5cd6; }
+.player-card-picker button.rarity-rare { border-color: #59bcff; }
+.player-card-picker button.rarity-legendary { border-color: #ffc36b; }
+.player-card-picker button.rarity-mythical { border-color: #ff96ff; }
+.player-card-picker button.rarity-godlike { border-color: #51ffa8; }
+.player-card-picker img { width: 36px; height: 36px; image-rendering: pixelated; }
+.player-card-picker button svg { position: absolute; top: 4px; right: 4px; color: #e0a100; }
+.player-card-picker p { margin: 6px 0 0; font-size: 13px; }
+.player-card-slots small { font-size: 12px; color: #5b4a75; }
+.player-card-verified { position: absolute; top: 4px; right: 4px; color: #e0a100; }
+.player-card-aura { display: block; border-radius: 50%; }
+.player-card-slots li.filled .player-card-aura { box-shadow: inset 0 0 0 5px var(--aura); }
+/* Demo-bot chat (test world): ready-line answers, nothing stored. */
+.player-card-botchat {
+  margin-top: 12px;
+  padding: 12px;
+  border-radius: 12px;
+  background: var(--surface-soft, #f6f1ff);
+}
+.player-card-botchat ol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 220px;
+  margin: 8px 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+}
+.player-card-botchat li {
+  max-width: 85%;
+  padding: 8px 12px;
+  border-radius: 14px;
+  font-size: 14px;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+.player-card-botchat li.mine {
+  align-self: flex-end;
+  background: #8348ff;
+  color: #fff;
+}
+.player-card-botchat li.theirs {
+  align-self: flex-start;
+  background: var(--surface, #fff);
+  color: var(--ink, #2c0a56);
+  border: 1px solid var(--decorative-border, #d9ccf5);
+}
+.player-card-botchat li.typing {
+  opacity: 0.7;
+  font-style: italic;
+}
+.player-card-botchat form {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+.player-card-botchat textarea {
+  flex: 1;
+  min-height: 48px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--decorative-border, #d9ccf5);
+  background: var(--surface, #fff);
+  color: var(--ink, #2c0a56);
+  font: inherit;
+  font-size: 16px;
+  resize: none;
+}
+.player-card-botchat button {
+  min-height: 48px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 2px solid #8348ff;
+  background: #8348ff;
+  color: #fff;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
+}
+.player-card-botchat button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+.player-card-message-off button {
+  min-height: 44px;
+  padding: 0 14px;
+  border-radius: 999px;
+  border: 2px solid #8348ff;
+  background: #fff;
+  color: #2c0a56;
+  font: inherit;
+  font-size: 15px;
+  cursor: pointer;
 }

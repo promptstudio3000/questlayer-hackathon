@@ -102,20 +102,6 @@
   min-height: 44px;
   border-radius: 999px;
 }
-.screen-tab-stack {
-  position: sticky;
-  top: calc(-1 * var(--panel-pad));
-  z-index: 4;
-  margin: 0 calc(-1 * var(--panel-pad)) 12px;
-  padding: 0 var(--panel-pad) 2px;
-  background: var(--surface);
-  box-shadow: 0 6px 14px -12px #1a033566;
-}
-.screen-tab-stack .screen-tabs {
-  position: static;
-  box-shadow: none;
-  margin-bottom: 8px;
-}
 .screen-tab-panel:focus-visible {
   outline: 3px solid var(--focus);
   outline-offset: 2px;
@@ -198,22 +184,6 @@
 .profile-hero-avatar .ghost-art {
   width: 84px;
   height: 84px;
-}
-.profile-hero-level {
-  position: absolute;
-  right: -6px;
-  bottom: -6px;
-  min-width: 30px;
-  height: 30px;
-  padding: 0 6px;
-  display: grid;
-  place-items: center;
-  border-radius: 15px;
-  background: var(--coin);
-  color: var(--on-coin);
-  font-weight: 700;
-  font-size: 15px;
-  border: 2px solid var(--shell);
 }
 .profile-hero h2 {
   font-size: 22px;
@@ -431,15 +401,11 @@ button.settings-row:hover {
   }
 }
 /* Market: one-line leads replace stacked paragraphs. */
-.market-lead,
 .native-market-lead {
   margin: 4px 0 8px;
   font-size: 14px;
   line-height: 1.45;
   color: var(--ink-secondary);
-}
-.creator-intro-details .creator-intro {
-  margin: 0;
 }
 /* A tab panel starts its own screen: no divider above the first section. */
 .screen-tab-panel > .creator-community:first-child {
@@ -447,3 +413,15 @@ button.settings-row:hover {
   padding-top: 0;
   border-top: 0;
 }
+.settings-links { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 0 4px; }
+.settings-links a { display: inline-flex; align-items: center; min-height: 40px; padding: 0 14px; border: 1px solid var(--control-border); border-radius: 999px; color: var(--ink); font-size: 14px; text-decoration: none; }
+.settings-links a:hover { background: var(--surface-soft); }
+
+/* Settings hierarchy (10 Nov 2026): icon per section, links and developer switches last. */
+.app-shell .main-panel .settings-group > h2 { display: flex; align-items: center; gap: 8px; padding-left: 0; color: var(--ink); font-size: 16px; font-weight: 600; }
+.app-shell .settings-group > h2 svg { color: var(--action); }
+.settings-row-with-tip { display: flex; align-items: center; gap: 4px; }
+.settings-row-with-tip > .settings-row { flex: 1; min-width: 0; }
+.settings-developer { margin-top: 24px; opacity: 0.8; }
+.settings-developer > summary { display: flex; align-items: center; gap: 6px; font-size: 14px; color: var(--ink-secondary); }
+.app-shell .screen-details > summary svg { vertical-align: -4px; margin-right: 8px; }

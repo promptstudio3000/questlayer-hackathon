@@ -215,3 +215,7 @@ An intentional re-extraction first restores those originals from their verified
 receipts. Raw PBFs, complete selected geometry, audit evidence and prior published
 days remain intact. This is storage maintenance, not a change to public access or
 safety classification.
+
+## Czechia fallback
+
+Everywhere on Earth, `/api/world` falls back to the normal street world (POI quests, landmark clues, NPC errand targets, coins) whenever no ready prepared region covers the spot, for example after the daily manifest was not supplied (Lubos, 11 Nov 2026: open the whole world). Outside Czechia the street world takes its places live from OpenStreetMap (`server/poi/live-source.mjs`). `GLOBAL_STREET_FALLBACK=czechia` limits the fallback to Czechia and `GLOBAL_STREET_FALLBACK=off` (or the older `GLOBAL_CZECHIA_FALLBACK=off`) restores the strict behaviour. Test: `tests/global-czechia-fallback.test.mjs`.

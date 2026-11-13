@@ -119,10 +119,12 @@ export function ScreenTabs<T extends string>({
 export function ScreenTabPanel({
   idBase,
   value,
+  className,
   children,
 }: {
   idBase: string;
   value: string;
+  className?: string;
   children: ReactNode;
 }) {
   return (
@@ -130,7 +132,7 @@ export function ScreenTabPanel({
       role="tabpanel"
       id={`${idBase}-panel`}
       aria-labelledby={`${idBase}-tab-${value}`}
-      className="screen-tab-panel"
+      className={className ? `screen-tab-panel ${className}` : "screen-tab-panel"}
     >
       {children}
     </div>

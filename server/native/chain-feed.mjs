@@ -39,6 +39,9 @@ const RELAY_KIND = {
   cancel_all_orders: "market",
   add_signing_key: "market",
   remove_signing_key: "market",
+  // The key that signs NEAR Intents trades, at the verifier.
+  add_public_key: "key",
+  remove_public_key: "key",
   start_roll: "roll",
   resolve_roll: "roll",
   claim_timeout: "roll",
