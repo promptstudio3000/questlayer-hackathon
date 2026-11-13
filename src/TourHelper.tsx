@@ -70,6 +70,16 @@ export function Pip({ mood = "talk" }: { mood?: "talk" | "point" | "cheer" }) {
   );
 }
 
+// The wisp roll sits in Inventory's "Secured on NEAR" fold: open it and scroll there.
+function openRolls(t: TourTarget) {
+  if (t.kind !== "screen" || t.screen !== "rolls") return;
+  window.setTimeout(() => {
+    const rolls = document.querySelector<HTMLElement>(".wisp-rolls");
+    const fold = rolls?.closest("details");
+    if (fold) fold.open = true;
+    rolls?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, 600);
+}
 export default function TourHelper({
   position,
   heading,
@@ -192,7 +202,7 @@ export default function TourHelper({
             </p>
           )}
           <div className="tour-buttons">
-            <button type="button" className="tour-go" onClick={() => { onGo(step.target); void load(); }}>{tr("Show me")}</button>
+            <button type="button" className="tour-go" onClick={() => { onGo(step.target); openRolls(step.target); void load(); }}>{tr("Show me")}</button>
             <button type="button" className="tour-quiet" disabled={busy} onClick={() => void act("skip", step.id)}>{tr("Skip")}</button>
           </div>
         </div>
