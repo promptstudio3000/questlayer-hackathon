@@ -3193,5 +3193,18 @@
   "recorded": "записано",
   "steps": "шагов",
   "Public at this map spot. QGOLD is not returned if the message is removed.": "Публично в этой точке карты. QGOLD не возвращается, если сообщение удалено.",
-  "Public at this pin with its time and photo. Photo metadata is removed.": "Публично на этой метке со временем и фото. Метаданные фото удаляются."
+  "Public at this pin with its time and photo. Photo metadata is removed.": "Публично на этой метке со временем и фото. Метаданные фото удаляются.",
+  " · Equipped": " · Надето",
+  ". Secure it on NEAR below.": ". Закрепи её в NEAR ниже.",
+  "Aura taken off your secured outfit.": "Аура снята с закреплённого наряда.",
+  "Equipped. Your secured Aura is glowing on the map.": "Надето. Твоя закреплённая Аура сияет на карте.",
+  "Not on NEAR yet": "Пока не в NEAR",
+  "from lurkers and the weekly boss. A roll is free: the draw happens on NEAR and the odds are fixed on chain.": "от Наблюдателей и еженедельного босса. Бросок бесплатный: розыгрыш проходит в NEAR, а шансы зафиксированы в блокчейне.",
+  "Public at this pin ({0}) with its time and photo. Photo metadata is removed. Stored by QuestLayer only.": "Публично у этой метки ({0}) вместе со временем и фото. Метаданные фото удаляются. Хранится только у QuestLayer.",
+  "Secure your explorer under Secured on NEAR to wear secured Auras.": "Закрепи своего исследователя в разделе «Закреплено в NEAR», чтобы носить закреплённые ауры.",
+  "See the treasury DAO": "Открыть DAO казны",
+  "Back to QuestLayer": "Назад в QuestLayer",
+  "Moving here never counts as GPS movement in QuestLayer.": "Движение здесь никогда не считается перемещением по GPS в QuestLayer.",
+  "Tour done: {0} transactions on NEAR.": "Экскурсия окончена: {0} транзакций в NEAR.",
+  "Public at this map spot. QGOLD is burned and not returned if the message is removed.": "Публично в этой точке карты. QGOLD сжигается и не возвращается, если сообщение удалят."
 }

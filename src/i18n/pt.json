@@ -3193,5 +3193,18 @@
   "recorded": "registadas",
   "steps": "passos",
   "Public at this map spot. QGOLD is not returned if the message is removed.": "Público neste ponto do mapa. O QGOLD não é devolvido se a mensagem for removida.",
-  "Public at this pin with its time and photo. Photo metadata is removed.": "Público neste pin com a hora e a foto. Os metadados da foto são removidos."
+  "Public at this pin with its time and photo. Photo metadata is removed.": "Público neste pin com a hora e a foto. Os metadados da foto são removidos.",
+  " · Equipped": " · Equipada",
+  ". Secure it on NEAR below.": ". Proteja na NEAR abaixo.",
+  "Aura taken off your secured outfit.": "Aura removida do seu visual protegido.",
+  "Equipped. Your secured Aura is glowing on the map.": "Equipada. Sua Aura protegida está brilhando no mapa.",
+  "Not on NEAR yet": "Ainda não está na NEAR",
+  "from lurkers and the weekly boss. A roll is free: the draw happens on NEAR and the odds are fixed on chain.": "de espreitadores e do chefe semanal. Um sorteio é grátis: o sorteio acontece na NEAR e as chances são fixas on-chain.",
+  "Public at this pin ({0}) with its time and photo. Photo metadata is removed. Stored by QuestLayer only.": "Público neste pino ({0}) com hora e foto. Os metadados da foto são removidos. Guardado só pelo QuestLayer.",
+  "Secure your explorer under Secured on NEAR to wear secured Auras.": "Protege o teu explorador em Protegido na NEAR para usar auras protegidas.",
+  "See the treasury DAO": "Ver a DAO da tesouraria",
+  "Back to QuestLayer": "Voltar ao QuestLayer",
+  "Moving here never counts as GPS movement in QuestLayer.": "Mover-se aqui nunca conta como movimento GPS no QuestLayer.",
+  "Tour done: {0} transactions on NEAR.": "Tour concluído: {0} transações na NEAR.",
+  "Public at this map spot. QGOLD is burned and not returned if the message is removed.": "Público neste ponto do mapa. O QGOLD é queimado e não volta se a mensagem for removida."
 }

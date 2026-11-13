@@ -3193,5 +3193,18 @@
   "recorded": "festgehalten",
   "steps": "Schritte",
   "Public at this map spot. QGOLD is not returned if the message is removed.": "Öffentlich an dieser Kartenstelle. QGOLD wird nicht erstattet, wenn die Nachricht entfernt wird.",
-  "Public at this pin with its time and photo. Photo metadata is removed.": "Öffentlich an diesem Pin mit Zeit und Foto. Foto-Metadaten werden entfernt."
+  "Public at this pin with its time and photo. Photo metadata is removed.": "Öffentlich an diesem Pin mit Zeit und Foto. Foto-Metadaten werden entfernt.",
+  " · Equipped": " · Ausgerüstet",
+  ". Secure it on NEAR below.": ". Sichere es unten auf NEAR.",
+  "Aura taken off your secured outfit.": "Aura vom gesicherten Outfit abgelegt.",
+  "Equipped. Your secured Aura is glowing on the map.": "Ausgerüstet. Deine gesicherte Aura leuchtet auf der Karte.",
+  "Not on NEAR yet": "Noch nicht auf NEAR",
+  "from lurkers and the weekly boss. A roll is free: the draw happens on NEAR and the odds are fixed on chain.": "von Lauerern und dem Wochen-Boss. Ein Wurf ist gratis: Die Ziehung passiert auf NEAR und die Chancen sind on-chain festgelegt.",
+  "Public at this pin ({0}) with its time and photo. Photo metadata is removed. Stored by QuestLayer only.": "Öffentlich an dieser Markierung ({0}) mit Zeit und Foto. Foto-Metadaten werden entfernt. Nur bei QuestLayer gespeichert.",
+  "Secure your explorer under Secured on NEAR to wear secured Auras.": "Sichere deinen Entdecker unter „Auf NEAR gesichert“, um gesicherte Auren zu tragen.",
+  "See the treasury DAO": "Treasury-DAO ansehen",
+  "Back to QuestLayer": "Zurück zu QuestLayer",
+  "Moving here never counts as GPS movement in QuestLayer.": "Bewegung hier zählt in QuestLayer nie als GPS-Bewegung.",
+  "Tour done: {0} transactions on NEAR.": "Tour fertig: {0} Transaktionen auf NEAR.",
+  "Public at this map spot. QGOLD is burned and not returned if the message is removed.": "Öffentlich an diesem Kartenpunkt. QGOLD wird verbrannt und nicht erstattet, wenn die Nachricht entfernt wird."
 }
