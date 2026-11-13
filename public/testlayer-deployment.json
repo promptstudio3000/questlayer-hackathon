@@ -1,0 +1,33 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-12T14:04:34.238Z",
+  "gameContract": null,
+  "collectiblesContract": "nfts-tl1112.questlayer-dev-20261101.testnet",
+  "operator": "questlayer-dev-20261101.testnet",
+  "slice": [
+    "collectibles",
+    "relayer",
+    "social"
+  ],
+  "playerFactory": "play-tl1112.questlayer-dev-20261101.testnet",
+  "relayer": "relay-tl1112.questlayer-dev-20261101.testnet",
+  "socialContract": "v1.social08.testnet",
+  "transactions": [
+    {
+      "step": "create nfts-tl1112.questlayer-dev-20261101.testnet, deploy and init collectibles",
+      "transaction": "ESxXofwhXJQpKmWGTjEVJXQogz4Z2EqMKMdfG7Yc6iH8"
+    },
+    {
+      "step": "configure the award signer public key",
+      "transaction": "HmAE5o7UrpFccFC4qMYm5bxEwwdyur9p249CUfBeVoux"
+    },
+    {
+      "step": "create play-tl1112.questlayer-dev-20261101.testnet (20 NEAR)",
+      "transaction": "DkWSakL1vwrbjndWyxU18fW3tsMayE7nffJLkvQs5rCy"
+    },
+    {
+      "step": "create relay-tl1112.questlayer-dev-20261101.testnet (5 NEAR)",
+      "transaction": "FcWjtutdESkEe7ztocbX1jQ8eqiHK422jBcBNsQJrkLw"
+    }
+  ]
+}

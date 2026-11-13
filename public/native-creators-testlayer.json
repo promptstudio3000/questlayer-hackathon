@@ -1,0 +1,24 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-12T15:50:47.153Z",
+  "contractId": "questlayer-creators-tl1112.testnet",
+  "codeHash": "G1nTwodsTba4NPRKFCvRrav5sg6eNVH1zT5aDFJePdmc",
+  "wasmSha256": "df12b5f9f544ebbfa545df7d80d0a7834fafc22605da366664472b063360c40b",
+  "rewardsReceiver": "questlayer-rewards-tl1112.testnet",
+  "publisherPublicKey": "ed25519:Cz7tTFeDj4qeKQW38XHoFpEmbxxBfrQCysfd63t8mkx1",
+  "policy": {
+    "version": "creator-money-v1",
+    "like_weight": 1,
+    "completion_weight": 3,
+    "max_score_per_creator": 30,
+    "max_round_budget": "5000000000000000000000000"
+  },
+  "treasuryBps": "2000",
+  "capabilities": [
+    "paid-access-80-20",
+    "donations-100",
+    "support-rounds",
+    "withdraw",
+    "treasury-flush"
+  ]
+}

@@ -62,6 +62,7 @@ const KEYS = join(HOME, "keys");
 const WORK = join(HOME, "work");
 const NODE = process.execPath;
 // Files the runner installs from main; a change on main updates the runner.
+const LEAN = { NODE_OPTIONS: "--max-old-space-size=2048", TEST_CONCURRENCY: "2" };
 const RUNNER_FILES = [
   "scripts/release-runner.mjs",
   "scripts/lib/release-runner.mjs",
@@ -169,14 +170,19 @@ function switchTo(release, state) {
   state.deploy = { ...state.deploy, live: release, pinned: release, switchedAt: now() };
 }
 
-function build(sha, target = APP, dir = worktree("deploy", sha)) {
+// phase(name) is called before each long step so a deploy job's status shows where it is.
+function build(sha, target = APP, dir = worktree("deploy", sha), phase = () => {}) {
   try {
     const log = [];
+    phase("npm ci");
     log.push(must(asUser(["npm", "ci", "--no-audit", "--no-fund"], { cwd: dir }), "npm ci"));
-    log.push(must(asUser(["npm", "run", "check"], { cwd: dir, timeout: 45 * 60_000 }), "npm run check"));
+    phase("npm run check");
+    // The VPS is shared (about 3-4 GB free): cap each node heap and run fewer test files at once.
+    log.push(must(asUser(["npm", "run", "check"], { cwd: dir, env: LEAN, timeout: 45 * 60_000 }), "npm run check"));
     // The client pins its manifests at build time (vite.config.ts): rebuild for the target.
+    if (Object.keys(target.buildEnv).length) phase("target build");
     if (Object.keys(target.buildEnv).length)
-      log.push(must(asUser(["npm", "run", "build"], { cwd: dir, env: target.buildEnv, timeout: 20 * 60_000 }), "target build"));
+      log.push(must(asUser(["npm", "run", "build"], { cwd: dir, env: { ...LEAN, ...target.buildEnv }, timeout: 20 * 60_000 }), "target build"));
     writeFileSync(join(dir, "build-id.txt"), `${sha}\n`);
     const files = RELEASE_FILES.map((f) => (f === "deploy/questlayer-hackathon.service" ? `deploy/${target.name}.service` : f)).filter((f) => existsSync(join(dir, f)));
     const pub = readdirSync(join(dir, "public")).filter((f) => f.endsWith(".json")).map((f) => `public/${f}`);
@@ -257,8 +263,20 @@ function queueOps(state, head) {
   const running = Object.entries(state.ops).find(([id, o]) => o.status === "running");
   if (running) {
     if (unitActive(running[0])) return; // one operation at a time: they share the operator key
-    const result = readJson(join(STATUS_DIR, "ops", `${running[0]}.json`), null);
-    state.ops[running[0]] = { ...running[1], status: result?.status === "done" ? "done" : "failed", finishedAt: result?.finishedAt || now(), error: result?.error || (result ? null : "The operation stopped without a result.") };
+    const file = join(STATUS_DIR, "ops", `${running[0]}.json`);
+    const result = readJson(file, null);
+    const died = !result || result.status === "running";
+    const error = died ? "The operation stopped without a result (killed, e.g. out of memory; see journalctl -u " + opUnit(running[0]) + ")." : result.error;
+    state.ops[running[0]] = { ...running[1], status: result?.status === "done" ? "done" : "failed", finishedAt: (!died && result.finishedAt) || now(), error: result?.status === "done" ? null : error };
+    // A killed op never wrote its result: correct the public file too, keeping the steps it saved.
+    if (died) writeJson(file, { ...(result || { id: running[0] }), status: "failed", error, finishedAt: state.ops[running[0]].finishedAt });
+  }
+  // Public files left at "running" by an op that was killed earlier (state already says failed).
+  for (const [id, o] of Object.entries(state.ops)) {
+    if (o.status !== "failed" || unitActive(id)) continue; // a unit started again by hand is still running
+    const file = join(STATUS_DIR, "ops", `${id}.json`);
+    const pub = readJson(file, null);
+    if (pub?.status === "running") writeJson(file, { ...pub, status: "failed", error: o.error || "The operation stopped without a result.", finishedAt: o.finishedAt || now() });
   }
   const names = listing.out.split("\n").filter((n) => n.endsWith(".json")).sort();
   if (!state.opsBaselineAt) {
@@ -278,7 +296,7 @@ function queueOps(state, head) {
       writeJson(join(STATUS_DIR, "ops", `${id}.json`), { id, status: "refused", error: e.message, finishedAt: now() });
       continue;
     }
-    asRoot(["systemd-run", `--unit=${opUnit(id)}`, "--collect", "--property=TimeoutStartSec=infinity", NODE, join(INSTALL, "scripts/release-runner.mjs"), "run-op", id, head]);
+    asRoot(["systemd-run", `--unit=${opUnit(id)}`, "--collect", "--property=TimeoutStartSec=infinity", "--property=MemoryHigh=3G", NODE, join(INSTALL, "scripts/release-runner.mjs"), "run-op", id, head]);
     state.ops[id] = { status: "running", sha: head, startedAt: now() };
     return;
   }
@@ -313,10 +331,17 @@ function runOp(id, deploySha) {
       // Install keys and runtime.env first: the activation refuses a target without its keys.
       result.installedKeys = op.installKeys.map((item) => installKey(keyInstallTarget(item, allowlist())));
       if (op.runtimeEnv) result.runtimeEnv = writeRuntimeEnv(op.runtimeEnv);
+      save();
       const target = targetOf(op.deployTarget);
-      const built = build(sha, target, dir);
+      const phase = (step) => {
+        result.steps.push({ step, startedAt: now() });
+        save();
+      };
+      const built = build(sha, target, dir, phase);
       try {
+        phase("activate");
         activate(built, target);
+        phase("signing vault");
         result.deploy = { target: op.deployTarget, release: built.release, log: built.log, signingVault: signingVault(dir, target) };
       } finally {
         rmSync(built.archive, { force: true });

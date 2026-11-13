@@ -28,6 +28,7 @@ import {
 } from "./day-plan.mjs";
 import { placeCellCoins, unit, waveTimes } from "./placement.mjs";
 import {
+  ARENA_COINS,
   CELL_COINS,
   COIN_TIER,
   MAP_REWARDS_POLICY,
@@ -243,11 +244,15 @@ export async function materializeCellRewards(
     // behaves like the real map (only movement differs): its coins carry the
     // same backed value and are paid in QGOLD, at a fixed count per cell.
     const worldCoins = abroad && plan ? worldCoinCount(db, plan) : 0;
-    const count = current.arena ? CELL_COINS : leaf?.coins || worldCoins;
     const valueU =
-      leaf || worldCoins
+      leaf || worldCoins || (current.arena && plan)
         ? (plan.summary.coinValueU || 0) * (pioneer ? PIONEER_MULT : 1)
         : 0;
+    // CELL_COINS per opened street cell, ARENA_COINS in the Plzeň city demo,
+    // and never more than the day's coin budget still unplaced (coinRoom).
+    const want = current.arena ? ARENA_COINS : leaf?.coins || worldCoins;
+    const count =
+      valueU > 0 ? Math.min(want, coinRoom(db, plan, valueU)) : current.arena ? want : 0;
     // Zones first, so coins gather around them.
     const zoneIds = promoteCellZones(
       db,
@@ -341,24 +346,31 @@ export async function materializeCellRewards(
 /**
  * Backed coins outside the Czech day plan (docs/MAP-REWARDS.md, "Outside
  * Czechia"): every street cell elsewhere gets up to CELL_COINS coins of the
- * day's coin value, paid from the day's unplaced coin budget, until that
- * budget is spent. MAP_WORLD_COINS=off turns it off; it needs MAP_PAYOUTS.
+ * day's coin value from the same day budget as Czech cells, until that
+ * budget is placed. MAP_WORLD_COINS=off turns it off; it needs MAP_PAYOUTS.
  */
 export function worldCoinsEnabled(env = process.env) {
   return env.MAP_WORLD_COINS !== "off" && payoutsEnabled(env);
 }
 export function worldCoinCount(db, plan) {
-  const valueU = plan?.summary?.coinValueU || 0,
-    reserveU = plan?.summary?.unplacedU?.coins || 0;
-  if (valueU <= 0 || reserveU <= 0) return 0;
-  let spentU = 0;
-  for (const r of db
-    .prepare(
-      "SELECT d.cell,d.coins_u FROM map_cell_drops d JOIN worlds w ON w.id=d.world_id WHERE d.day=? AND json_extract(w.manifest,'$.arena')=0",
-    )
-    .all(plan.day))
-    if (!isCzechiaCell(r.cell)) spentU += r.coins_u;
-  return Math.max(0, Math.min(CELL_COINS, Math.floor((reserveU - spentU) / valueU)));
+  const valueU = plan?.summary?.coinValueU || 0;
+  return valueU > 0 ? Math.min(CELL_COINS, coinRoom(db, plan, valueU)) : 0;
+}
+
+/**
+ * Coins of `valueU` that still fit in the day's coin budget: the budget
+ * (summary.unplacedU.coins) minus every coin already placed today in any
+ * world, the city demo and pioneer doubles included. Runs inside the
+ * placement transaction, so two worlds cannot place the same budget.
+ */
+export function coinRoom(db, plan, valueU) {
+  const budgetU = plan?.summary?.unplacedU?.coins || 0;
+  if (valueU <= 0 || budgetU <= 0) return 0;
+  const placedU =
+    db
+      .prepare("SELECT COALESCE(SUM(coins_u),0) n FROM map_cell_drops WHERE day=?")
+      .get(plan.day)?.n || 0;
+  return Math.max(0, Math.floor((budgetU - placedU) / valueU));
 }
 
 /** Coin ids of a world whose wave has not opened yet at `now`. */

@@ -170,6 +170,8 @@ const operatorStorage = await view(escrowId, "storage_balance_of", { account_id:
 if (!operatorStorage || BigInt(operatorStorage.available) < needed)
   await callAs(root, "Smoke: operator storage deposit on the escrow", escrowId, "storage_deposit", { account_id: operator.accountId, grant: true }, 10n ** 23n);
 const smokeId = `smoke-${Date.now()}`;
+// Compared as a delta, so a re-run of the smoke test on the same publisher passes.
+const publisherBefore = BigInt(await view(tokenId, "ft_balance_of", { account_id: publisherId }));
 await callAs(root, "Smoke: fund a both_confirm transfer", tokenId, "ft_transfer_call", {
   receiver_id: escrowId,
   amount: amount.toString(),
@@ -179,7 +181,7 @@ await callAs(root, "Smoke: fund a both_confirm transfer", tokenId, "ft_transfer_
 assert.equal((await view(escrowId, "get_transfer", { id: smokeId }))?.status, "held", "The smoke transfer was not funded");
 await callAs(publisher, "Smoke: publisher releases the transfer", escrowId, "confirm_transfer", { id: smokeId });
 await callAs(publisher, "Smoke: publisher pushes the payout", escrowId, "withdraw_for", { account_id: publisherId }, 0n, 120n * TGAS);
-assert.equal(BigInt(await view(tokenId, "ft_balance_of", { account_id: publisherId })), amount, "The payout did not arrive");
+assert.equal(BigInt(await view(tokenId, "ft_balance_of", { account_id: publisherId })) - publisherBefore, amount, "The payout did not arrive");
 const stats = await view(escrowId, "get_stats");
 assert.equal(stats.conserved, true, "Escrow stats are not conserved");
 

@@ -22,6 +22,12 @@ Environment=NEAR_RPC_URL=https://test.rpc.fastnear.com
 # Testnet test world (docs/TEST-SEED.md). Delete this line (or set TEST_SEED=0
 # in runtime.env) and the next start removes everything it seeded.
 Environment=TEST_SEED=1
+# City days are funded only by realized staking yield (docs/GLOBAL-TREASURY.md):
+# each day takes one seventh of the yield that is still free, so every day
+# carries some yield, however small. Delete both lines to fall back to the
+# sponsor-funded 0.012 NEAR per day.
+Environment=NATIVE_YIELD_BACKED_DAYS=1
+Environment=NATIVE_YIELD_DRIP_DAYS=7
 # Plzeň demo layout (docs/DEMO-ZONES.md): six zones on the ring of parks around
 # náměstí Republiky, all open the whole day (no countdown), NPCs and monsters
 # near the centre. Delete this line for the final product: the next world goes

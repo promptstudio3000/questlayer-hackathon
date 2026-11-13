@@ -25,6 +25,7 @@ import {
   AREA_CAP_BPS,
   CELL_CAP_BPS,
   CELL_COINS,
+  COIN_TARGET,
   COIN_SPACING_NEAR_ZONE_M,
 } from "../server/map-rewards/policy.mjs";
 import { mapDayBudget, recordMapBudget } from "../server/map-rewards/budget.mjs";
@@ -140,19 +141,21 @@ test("the day plan backs every coin equally and spreads zone prizes with caps", 
       pioneers,
     },
     plan = buildDayPlan(args);
-  // One coin = the coin budget over all shares (400 per cell, 800 per pioneer cell).
-  const shares = CELL_COINS * (cells.length + pioneers.size);
-  const value = Math.floor(coinsU / shares);
+  // One coin = the coin budget over the day's coin target; every opened cell
+  // may place CELL_COINS of them and the whole budget is the commitment
+  // (placement stops when it is placed: service.mjs coinRoom).
+  const value = Math.floor(coinsU / COIN_TARGET);
   assert.equal(plan.summary.coinValueU, value);
-  assert.equal(coinValue(coinsU, cells.length, pioneers.size), value);
+  assert.equal(coinValue(coinsU), value);
+  assert.equal(coinValue(coinsU, 50), Math.floor(coinsU / 50));
   assert.ok(value > 0);
   assert.equal(plan.rows.length, cells.length, "every cell has backed coins");
   assert.ok(plan.rows.every((r) => r.coinsU === CELL_COINS * value && r.coins === CELL_COINS));
   assert.equal(plan.rows.filter((r) => r.pioneer).length, pioneers.size);
-  // Pioneer coins count twice and the day never commits more than its budget.
-  assert.equal(plan.pioneerU, pioneers.size * CELL_COINS * value);
-  assert.ok(plan.coinsU + plan.pioneerU <= coinsU);
-  assert.ok(coinsU - plan.coinsU - plan.pioneerU < shares);
+  assert.equal(plan.pioneerU, 0);
+  assert.equal(plan.coinsU, coinsU);
+  assert.equal(plan.summary.unplacedU.coins, coinsU);
+  assert.equal(plan.summary.coinTarget, COIN_TARGET);
   // Zone prizes keep the formula and its caps.
   assert.ok(plan.rows.every((r) => r.zonesU <= (zonesU * CELL_CAP_BPS) / 10000));
   const areas = new Map();
@@ -171,7 +174,7 @@ test("the day plan backs every coin equally and spreads zone prizes with caps", 
   assert.ok(rank < 50, `rank ${rank}`);
   // Same inputs, same root; a budget too small for one unit per share gives no coins.
   assert.equal(buildDayPlan(args).root, plan.root);
-  const poor = buildDayPlan({ ...args, coinsU: 1000 });
+  const poor = buildDayPlan({ ...args, coinsU: COIN_TARGET - 1 });
   assert.equal(poor.summary.coinValueU, 0);
   assert.ok(poor.rows.every((r) => r.coinsU === 0 && r.coins === 0));
   assert.equal(zonesForPotential(0), 1);
