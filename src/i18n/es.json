@@ -3215,7 +3215,6 @@
   "The Quiet Beacon": "El Faro Silencioso",
   "The beacon is awake": "El faro ha despertado",
   "The diamonds will focus the beacon. Keep them in your backpack.": "Los diamantes enfocarán el faro. Guárdalos en la mochila.",
-  "These resources belong to this MetaLayer play preview.": "Estos recursos pertenecen a esta vista previa jugable de MetaLayer.",
   "This transaction does not verify the selected MetaLayer action. Keep its reference and retry.": "Esta transacción no verifica la acción de MetaLayer elegida. Guarda su referencia e inténtalo de nuevo.",
   "Three forgotten signals": "Tres señales olvidadas",
   "Tide": "Marea",
@@ -3312,5 +3311,12 @@
   "Play preview. MetaGold coins and rewards open later.": "Vista previa. Las monedas MetaGold y las recompensas llegarán más adelante.",
   "Show minimap": "Mostrar minimapa",
   "This golden vault will hold MetaGold, the coin of this world. Coins and rewards open later; the expedition is ready now.": "Esta cámara dorada guardará MetaGold, la moneda de este mundo. Las monedas y recompensas llegarán más adelante; la expedición ya está lista.",
-  "World": "Mundo"
+  "World": "Mundo",
+  "In the vault: {0} MetaGold · paid today {1} of {2}": "En la cámara: {0} MetaGold · pagado hoy {1} de {2}",
+  "MetaGold": "MetaGold",
+  "On the way: {0} MetaGold from {1} story steps.": "En camino: {0} MetaGold de {1} pasos de la historia.",
+  "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "Asegura tu explorador en Ajustes → Cuenta para recibir MetaGold. Tus recompensas esperan hasta entonces.",
+  "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "Esta cámara dorada guarda MetaGold, la moneda de este mundo. Los pasos de la historia se pagan de ella y la tierra comprada con MetaGold vuelve a pagarle.",
+  "Your land": "Tu tierra",
+  "MetaXP": "MetaXP"
 }

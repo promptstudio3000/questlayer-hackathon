@@ -31,6 +31,9 @@ import { MapActions } from "../MapActions";
 import { ScreenTabs, Details } from "../ScreenTabs";
 import { InfoTip } from "../InfoTip";
 import { LayerSettings } from "./LayerSettings";
+import { CoinIcon } from "../app-bits";
+import { formatGold } from "../gold-units";
+import { LayerEconomy, type Economy } from "./LayerEconomy";
 import { MapSettings } from "../MapSettings";
 import type { DemoControl } from "../useDemoWalk";
 import { STARTER_SPRITE } from "../character-art";
@@ -116,6 +119,7 @@ export function Layer({
   const [held, setHeld] = useState<Set<DemoControl>>(() => new Set()),
     [run, setRun] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [economy, setEconomy] = useState<Economy | null>(null);
   const [place, setPlace] = useState<WorldPlaceId>("nera");
   const openPlace = (id: WorldPlaceId) => { setPlace(id); setNotice(""); setSheet("place"); };
   const heldRef = useRef(new Set<DemoControl>()),
@@ -164,6 +168,16 @@ export function Layer({
       playFailure(failure),
     );
 
+  // MetaGold, MetaXP, badges and parcels come from the MetaLayer contract.
+  const storyKey = `${progress?.story.stage}:${progress?.quest.state}:${progress?.story.signals?.length}:${progress?.discoveries?.length}`;
+  useEffect(() => {
+    let live = true;
+    const load = () => api<Economy>(`/layer/expedition/economy?layer=${encodeURIComponent(layer.id)}`)
+      .then(next => { if (live) setEconomy(next); }).catch(() => {});
+    void load();
+    const timer = setInterval(load, 20_000);
+    return () => { live = false; clearInterval(timer); };
+  }, [layer.id, storyKey]);
   useEffect(() => {
     let active = true,
       view: LayerEngine | null = null,
@@ -503,7 +517,9 @@ export function Layer({
             <button className="profile-pill ml-player" onClick={onProfile} aria-label={tr("Profile")}>
               <Character items={items} {...player.appearance} compact />
             </button>
-            <button className="balance-pill ml-pocket" onClick={() => setSheet("inventory")} aria-label={tr("Open resource inventory")}><span className="gold-icon ml-resource-icon"><Diamond size={18} /></span><b>{progress?.inventory.diamonds ?? 0}</b></button>
+            {economy?.active
+              ? <button className="balance-pill ml-pocket ml-metagold" onClick={() => setSheet("inventory")} aria-label={tr("MetaGold")}><CoinIcon /><b>{economy.metagold === null ? "—" : formatGold(Number(economy.metagold))}</b><span>{tr("MetaGold")}</span></button>
+              : <button className="balance-pill ml-pocket" onClick={() => setSheet("inventory")} aria-label={tr("Open resource inventory")}><span className="gold-icon ml-resource-icon"><Diamond size={18} /></span><b>{progress?.inventory.diamonds ?? 0}</b></button>}
           </div>
           <MapSettings demo={false} open={sheet === "settings"} onOpen={() => setSheet("settings")} />
         </div>
@@ -658,7 +674,7 @@ export function Layer({
               onAccount={() => onNavigate({ tab: "settings", profileView: "settings" })} onExit={onExit} />}
             {notice && <p className="ml-sheet-error" role="alert">{notice}</p>}
             {sheet === "activity" && <LayerActivity layer={layer.id} />}
-            {sheet === "place" && progress && <PlacePanel id={place} progress={progress} position={position} busy={saving} demoActors={!!layer.demoActors}
+            {sheet === "place" && progress && <PlacePanel id={place} progress={progress} position={position} busy={saving} demoActors={!!layer.demoActors} economy={economy}
               onFace={facePlace} onPlace={openPlace} onStory={showQuests} onStart={() => void startQuest()} onInteract={body => interactRef.current(body)}
               onObjective={faceObjective} onBuild={buildFreely} onActivity={() => setSheet("activity")} />}
             {sheet === "materials" && <div className="ml-palette" role="radiogroup" aria-label={tr("Blocks")}>{BUILD_BLOCKS.map(b => <button className="secondary-button" key={b} role="radio" aria-checked={block === b} aria-label={blockName(b)} onClick={() => { setBlock(b); close(); }}><span style={{ background: cssColor(b) }} /><span>{blockName(b)}</span></button>)}</div>}
@@ -701,6 +717,7 @@ export function Layer({
             {sheet === "community" && communityView === "journal" && progress && <Details summary={tr("Places in this world")}><PlaceDirectory progress={progress} onPlace={openPlace} /></Details>}
             {sheet === "inventory" && (
               <>
+                {economy?.active && <LayerEconomy economy={economy} />}
                 <h2>{tr("Your resources")}</h2>
                 <div className="ml-inventory">
                   <div>
@@ -714,9 +731,6 @@ export function Layer({
                     <span>{tr("Basalt")}</span>
                   </div>
                 </div>
-                <p>
-                  {tr("These resources belong to this MetaLayer play preview.")}
-                </p>
                 <button className="primary-button ml-wide" onClick={() => setSheet("community")}>{tr("Continue the story")}</button>
                 <div className="ml-story-actions">
                   <button className="secondary-button ml-wide" onClick={() => setSheet("parcel")}>{tr("Land and building")}</button>

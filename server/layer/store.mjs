@@ -114,9 +114,9 @@ export const spawnOf = (plot) => ({
   z: plot.z0 + plot.size / 2,
 });
 
-export function createLayerStore(db, { now = () => Date.now() } = {}) {
+export function createLayerStore(db, { now = () => Date.now(), economy = null } = {}) {
   ensureModuleVersion(db, LAYER_SCHEMA);
-  const expedition = createExpeditionStore(db, { now });
+  const expedition = createExpeditionStore(db, { now, onRecord: economy?.onRecord ?? null });
   const presence = new Map();
   const plotRow = db.prepare(
     "SELECT p.*, pl.name AS owner_name FROM layer_plots p JOIN players pl ON pl.id=p.owner_id WHERE p.id=?",
@@ -326,5 +326,9 @@ export function createLayerStore(db, { now = () => Date.now() } = {}) {
     return { left: true };
   }
 
-  return { home, plotsNear, plot, edit, visit, leave, expedition, progress: (actor, l) => progress(actor, layerOf(l)) };
+  const economyOf = (actor, l) => {
+    const layer = layerOf(l);
+    return economy ? economy.summary(actor, layer.id) : { active: false, metagold: "0", metaXp: 0, badges: [], parcels: [], pending: [], treasury: null };
+  };
+  return { home, plotsNear, plot, edit, visit, leave, expedition, economy: economyOf, progress: (actor, l) => progress(actor, layerOf(l)) };
 }

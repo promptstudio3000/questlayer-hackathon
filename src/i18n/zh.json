@@ -3215,7 +3215,6 @@
   "The Quiet Beacon": "静默灯塔",
   "The beacon is awake": "灯塔苏醒了",
   "The diamonds will focus the beacon. Keep them in your backpack.": "钻石能聚焦灯塔光芒。请把它们留在背包里。",
-  "These resources belong to this MetaLayer play preview.": "这些资源属于此次 MetaLayer 试玩预览。",
   "This transaction does not verify the selected MetaLayer action. Keep its reference and retry.": "此交易无法验证所选的MetaLayer操作。请保留交易信息后重试。",
   "Three forgotten signals": "三个遗忘的信号",
   "Tide": "潮汐",
@@ -3312,5 +3311,12 @@
   "Play preview. MetaGold coins and rewards open later.": "游戏预览。MetaGold 金币和奖励稍后开放。",
   "Show minimap": "显示小地图",
   "This golden vault will hold MetaGold, the coin of this world. Coins and rewards open later; the expedition is ready now.": "这座金库将存放 MetaGold，这个世界的金币。金币和奖励稍后开放；探险现在就能开始。",
-  "World": "世界"
+  "World": "世界",
+  "In the vault: {0} MetaGold · paid today {1} of {2}": "金库中：{0} MetaGold · 今日已发放 {1} / {2}",
+  "MetaGold": "MetaGold",
+  "On the way: {0} MetaGold from {1} story steps.": "即将到账：{1} 个故事步骤的 {0} MetaGold。",
+  "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "在 设置 → 账户 中保护你的探险者即可领取 MetaGold。奖励会一直等你。",
+  "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "这座金库存放着这个世界的金币 MetaGold。故事步骤的奖励从这里支付，用 MetaGold 购买土地的钱也回到这里。",
+  "Your land": "你的土地",
+  "MetaXP": "MetaXP"
 }

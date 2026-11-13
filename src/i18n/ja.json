@@ -3215,7 +3215,6 @@
   "The Quiet Beacon": "静かな灯台",
   "The beacon is awake": "灯台が目覚めた",
   "The diamonds will focus the beacon. Keep them in your backpack.": "ダイヤが灯台の光を集める。リュックに入れておこう。",
-  "These resources belong to this MetaLayer play preview.": "この資源は今回の MetaLayer プレイプレビュー用です。",
   "This transaction does not verify the selected MetaLayer action. Keep its reference and retry.": "この取引は選んだMetaLayerの操作を証明していません。参照情報を保存して再試行してください。",
   "Three forgotten signals": "忘れられた三つの信号",
   "Tide": "潮",
@@ -3312,5 +3311,12 @@
   "Play preview. MetaGold coins and rewards open later.": "プレビュー版です。MetaGoldコインと報酬は後日開始します。",
   "Show minimap": "ミニマップを表示",
   "This golden vault will hold MetaGold, the coin of this world. Coins and rewards open later; the expedition is ready now.": "この金色の金庫には、この世界のコインMetaGoldが入ります。コインと報酬は後日、探検は今すぐ遊べます。",
-  "World": "ワールド"
+  "World": "ワールド",
+  "In the vault: {0} MetaGold · paid today {1} of {2}": "金庫: {0} MetaGold · 本日の支払い {1} / {2}",
+  "MetaGold": "MetaGold",
+  "On the way: {0} MetaGold from {1} story steps.": "受け取り待ち: ストーリー {1} 件分の {0} MetaGold。",
+  "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "MetaGoldを受け取るには、設定 → アカウントで探検者を保護してください。報酬はそれまで待機します。",
+  "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "この金色の金庫には、この世界のコインMetaGoldが入っています。ストーリーの報酬はここから支払われ、MetaGoldで買った土地の代金はここに戻ります。",
+  "Your land": "あなたの土地",
+  "MetaXP": "MetaXP"
 }

@@ -239,6 +239,13 @@
       "execute": null,
       "contracts": false,
       "env": []
+    },
+    "scripts/deploy-metalayer-testnet.mjs": {
+      "execute": null,
+      "contracts": true,
+      "env": [
+        "NEAR_METALAYER_ACCOUNT"
+      ]
     }
   },
   "keyDirs": {

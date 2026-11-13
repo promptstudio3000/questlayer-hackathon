@@ -7,6 +7,8 @@ import { PLACE_REACH, WORLD_PLACES, type WorldPlaceId } from "../../server/layer
 import { objectivePlace, placeName, placeTarget } from "./place-ui";
 import { StoryBoard } from "./StoryBoard";
 import type { ExpeditionProgress } from "./story-ui";
+import type { Economy } from "./LayerEconomy";
+import { formatGold } from "../gold-units";
 
 const TOUR: WorldPlaceId[] = ["treasury", "workshop", "hollow", "garden"];
 export function PlaceDirectory({ progress, onPlace, tour = false }: {
@@ -19,8 +21,8 @@ export function PlaceDirectory({ progress, onPlace, tour = false }: {
   </button></li>)}</ul>;
 }
 
-export function PlacePanel({ id, progress: p, position, busy, demoActors, onFace, onStory, onStart, onInteract, onObjective, onBuild, onActivity, onPlace }: {
-  id: WorldPlaceId; progress: ExpeditionProgress; position: {x: number; y: number; z: number}; busy: boolean; demoActors: boolean;
+export function PlacePanel({ id, progress: p, position, busy, demoActors, economy, onFace, onStory, onStart, onInteract, onObjective, onBuild, onActivity, onPlace }: {
+  id: WorldPlaceId; progress: ExpeditionProgress; position: {x: number; y: number; z: number}; busy: boolean; demoActors: boolean; economy?: Economy | null;
   onFace: (id: WorldPlaceId) => void; onPlace: (id: WorldPlaceId) => void; onStory: () => void;
   onStart: () => void; onInteract: (body: Record<string,unknown>) => void; onObjective: () => void;
   onBuild: () => void; onActivity: () => void;
@@ -28,6 +30,8 @@ export function PlacePanel({ id, progress: p, position, busy, demoActors, onFace
   const place = placeTarget(id), current = objectivePlace(p);
   const nearby = Math.hypot(position.x-place.x,position.z-place.z) <= PLACE_REACH && Math.abs(position.y-15) <= 3;
   const face = <button className="primary-button ml-wide" onClick={() => onFace(id)}>{tr("Face this place")}</button>;
+  // One main action per sheet: far away, turn towards the place; here, turn to the objective.
+  const go = nearby ? <button className="primary-button ml-wide" onClick={onObjective}>{tr("Face objective")}</button> : face;
   if (id === "nera") return <>
     <div className="ml-sheet-hero"><img src={STARTER_SPRITE} alt="" /><div><span className="section-label">{tr("Guide")}</span><h2>{placeName(id)}</h2></div></div>
     <p>{tr("The Fold scattered our signals. Bring light back to the square, one discovery at a time.")}</p>
@@ -42,10 +46,15 @@ export function PlacePanel({ id, progress: p, position, busy, demoActors, onFace
     </Details>
   </>;
   if (id === "treasury") return <>
-    <div className="ml-sheet-hero"><GameObjectArt kind="coin" state="locked" size={48} /><h2>{placeName(id)}</h2></div>
-    <p className="badge">{tr("Treasury inactive")}</p>
-    <p>{tr("This golden vault will hold MetaGold, the coin of this world. Coins and rewards open later; the expedition is ready now.")}</p>
-    <div className="ml-story-actions">{!nearby && face}<button className="primary-button ml-wide" onClick={onObjective}>{tr("Face objective")}</button></div>
+    <div className="ml-sheet-hero"><GameObjectArt kind="coin" state={economy?.treasury ? "ready" : "locked"} size={48} /><h2>{placeName(id)}</h2></div>
+    {economy?.treasury ? <>
+      <p>{tr("This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.")}</p>
+      <p className="ml-story-note">{tr("In the vault: {0} MetaGold · paid today {1} of {2}", { 0: formatGold(Number(economy.treasury.available)), 1: formatGold(Number(economy.treasury.paidToday)), 2: formatGold(Number(economy.treasury.dailyCap)) })}</p>
+    </> : <>
+      <p className="badge">{tr("Treasury inactive")}</p>
+      <p>{tr("This golden vault will hold MetaGold, the coin of this world. Coins and rewards open later; the expedition is ready now.")}</p>
+    </>}
+    <div className="ml-story-actions">{go}</div>
   </>;
   if (id === "workshop") return <>
     <div className="ml-sheet-hero"><img src={STARTER_SPRITE} alt="" /><h2>{placeName(id)}</h2></div>
@@ -67,7 +76,7 @@ export function PlacePanel({ id, progress: p, position, busy, demoActors, onFace
   return <>
     <span className="section-label">{tr("Quest board")}</span><h2>{placeName(id)}</h2><p>{description}</p>
     <p className="ml-story-note">{completed ? tr("Complete") : tr("Continue the current chapter with Nera before tuning this place.")}</p>
-    <div className="ml-story-actions">{!nearby && face}<button className="primary-button ml-wide" onClick={onObjective}>{tr("Face objective")}</button>
+    <div className="ml-story-actions">{go}
       <button className="secondary-button ml-wide" onClick={onStory}>{tr("The Quiet Beacon")}</button></div>
   </>;
 }

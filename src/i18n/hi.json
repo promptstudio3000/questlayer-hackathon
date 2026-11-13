@@ -3215,7 +3215,6 @@
   "The Quiet Beacon": "शांत प्रकाशस्तंभ",
   "The beacon is awake": "प्रकाशस्तंभ जाग गया",
   "The diamonds will focus the beacon. Keep them in your backpack.": "हीरे प्रकाश को केंद्रित करेंगे। उन्हें बैग में रखें।",
-  "These resources belong to this MetaLayer play preview.": "ये संसाधन इस MetaLayer खेल पूर्वावलोकन के हैं।",
   "This transaction does not verify the selected MetaLayer action. Keep its reference and retry.": "यह लेनदेन चुनी गई MetaLayer क्रिया सत्यापित नहीं करता। उसका संदर्भ सहेजें और फिर कोशिश करें।",
   "Three forgotten signals": "तीन भूले हुए संकेत",
   "Tide": "ज्वार",
@@ -3312,5 +3311,12 @@
   "Play preview. MetaGold coins and rewards open later.": "खेल पूर्वावलोकन। MetaGold सिक्के और इनाम बाद में खुलेंगे।",
   "Show minimap": "मिनीमैप दिखाएँ",
   "This golden vault will hold MetaGold, the coin of this world. Coins and rewards open later; the expedition is ready now.": "यह सुनहरी तिजोरी MetaGold रखेगी, इस दुनिया का सिक्का। सिक्के और इनाम बाद में खुलेंगे; अभियान अभी तैयार है।",
-  "World": "दुनिया"
+  "World": "दुनिया",
+  "In the vault: {0} MetaGold · paid today {1} of {2}": "तिजोरी में: {0} MetaGold · आज दिए गए {1} / {2}",
+  "MetaGold": "MetaGold",
+  "On the way: {0} MetaGold from {1} story steps.": "रास्ते में: {1} कहानी चरणों से {0} MetaGold।",
+  "Secure your explorer in Settings → Account to receive MetaGold. Your rewards wait until then.": "MetaGold पाने के लिए सेटिंग्स → खाता में अपना खोजी सुरक्षित करें। तब तक इनाम इंतज़ार करेंगे।",
+  "This golden vault holds MetaGold, the coin of this world. Story steps pay from it, and land bought with MetaGold pays back into it.": "यह सुनहरी तिजोरी इस दुनिया का सिक्का MetaGold रखती है। कहानी के चरण इसी से भुगतान पाते हैं, और MetaGold से खरीदी ज़मीन का पैसा इसमें लौटता है।",
+  "Your land": "आपकी ज़मीन",
+  "MetaXP": "MetaXP"
 }

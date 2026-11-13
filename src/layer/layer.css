@@ -100,3 +100,11 @@
 .layer-screen .game-dialog .ml-sheet .panel-heading .panel-close { min-width: 48px; min-height: 48px; }
 .layer-screen .demo-pad .demo-run::after { content: ""; position: absolute; inset: -2px; }
 .layer-screen .demo-pad .demo-pad-min::after { content: ""; position: absolute; inset: -8px; }
+/* MetaGold: this world's own coin keeps the QGOLD pill shape, in MetaLayer cyan. */
+.ml-metagold .gold-icon, .ml-economy .gold-icon { filter: hue-rotate(150deg) saturate(1.2); }
+.ml-economy { display: grid; gap: 8px; margin-bottom: 12px; }
+.ml-economy h3 { margin: 4px 0 0; font-size: 15px; }
+.ml-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ml-badges li { padding: 4px 10px; border-radius: 999px; background: var(--surface-2, #f1edff); font-weight: 700; font-size: 13px; }
+/* Small phones: four world tiles in one row break their words; use two rows. */
+@media (max-width: 400px) { .ml-sheet .settings-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -47,6 +47,7 @@ for (const relative of [
   "./layer/expedition.mjs",
   "./layer/story.mjs",
   "./layer/activity.mjs",
+  "./layer/economy.mjs",
   "./global-activities.mjs",
   "./global-rewards.mjs",
   "./landmark-clue.mjs",

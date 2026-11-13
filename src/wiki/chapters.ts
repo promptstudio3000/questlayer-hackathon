@@ -727,6 +727,14 @@ export const CHAPTERS: Chapter[] = [
         "Block edits, discoveries, extraction receipts and resource inventories are stored in the dedicated MetaLayer module. This preview issues no QuestLayer items, XP or money. The Actions and NEAR proofs panel (Settings → Advanced) separates locally saved actions from verified chain references and offers the existing platform account feed as separately labelled history.",
       ] },
       { note: "The read-only verifier requires a reviewed MetaLayer testnet contract, recorder and code hash. It checks final execution, every receipt, receipt reachability, the action’s own layer/actor/evidence event, inclusion blocks and historical/current contract code. It submits no transaction and grants no ownership or rewards. The local preview has no activated contract or genuine MetaLayer chain proof.", tone: "warn" },
+      { h: "MetaGold, MetaXP, badges and land on NEAR" },
+      { list: [
+        "The MetaLayer contract (contracts/metalayer, testnet) holds MetaGold, this world's own NEP-141 coin, in its own treasury. The treasury grows only from funding: NEAR sent to fund, or QGOLD sent with ft_transfer_call, which converts one way (1 QGOLD unit = 1 MetaGold unit; 1 NEAR = 1,000,000,000 MetaGold). Nothing converts MetaGold back.",
+        "Story steps pay from the treasury once each: Crystal Hollow 20 MetaGold, 50 MetaXP and the Crystal Hollow badge; the quarry 20 MetaXP; each signal 5 MetaGold and 15 MetaXP; the trail marker 20 MetaXP; the beacon 60 MetaGold, 100 MetaXP and the Quiet Beacon badge; each found place 5 MetaXP. Walking, mining and building pay nothing. A daily cap (100,000 MetaGold) and the treasury balance bound every payout; a step that does not fit waits for the next day. These amounts are testnet placeholders.",
+        "The game server sends steps with a recorder key that can call only award and record_batch. Each award emits the questlayer_metalayer action_recorded event with the action's hashed actor and evidence hash. MetaXP and badges are soulbound counters in the contract and never change city XP.",
+        "Parcels are 16 × 16 NFTs (NEP-171) bought with MetaGold (100 on testnet), which returns to the treasury. The central square is never sold. Parcels transfer freely.",
+        "A player without a secured NEAR account keeps rewards waiting; the backpack shows them as on the way. Backpack and HUD show MetaGold instead of diamonds once the contract is live.",
+      ] },
       { h: "Accepted contract integration" },
       { list: [
         "MetaGold is the planned MetaLayer currency with its own treasury. Project funding, local receipts and actually received attributable yield will fund terrain coins and system quests. Player tasks reserve their poster's MetaGold in escrow.",

@@ -77,7 +77,7 @@ const coordinates = (input) => {
   return { x, y, z };
 };
 
-export function createExpeditionStore(db, { now = () => Date.now(), near } = {}) {
+export function createExpeditionStore(db, { now = () => Date.now(), near, onRecord = null } = {}) {
   ensureModuleVersion(db, EXPEDITION_SCHEMA);
   const explorer = db.prepare(
     "SELECT * FROM ml_explorers WHERE layer=? AND player_id=?",
@@ -131,7 +131,7 @@ export function createExpeditionStore(db, { now = () => Date.now(), near } = {})
       return row.block;
     return naturalExpeditionBlock(layer.seed, x, y, z);
   }
-  const activity = createLayerActivity(db, { now, ...near });
+  const activity = createLayerActivity(db, { now, ...near, onRecord });
   const story = createStoryStore(db, { now, readBlock, record: activity.record });
   function progress(actor, layer) {
     const row = actorRow(actor, layer);
@@ -487,9 +487,10 @@ export function createExpeditionStore(db, { now = () => Date.now(), near } = {})
         layer.id,
         actor.id,
       );
-      db.prepare(
-        "UPDATE ml_explorers SET completed_at=COALESCE(completed_at,?) WHERE layer=? AND player_id=? AND quest_diamonds>=?",
+      const finished = db.prepare(
+        "UPDATE ml_explorers SET completed_at=? WHERE layer=? AND player_id=? AND completed_at IS NULL AND quest_diamonds>=?",
       ).run(at, layer.id, actor.id, DIAMOND_GOAL);
+      if (finished.changes) activity.record(actor, layer, "expedition-complete", "expedition-complete", { diamonds: DIAMOND_GOAL });
       db.prepare("DELETE FROM ml_mining WHERE layer=? AND player_id=?").run(
         layer.id,
         actor.id,
