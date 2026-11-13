@@ -52,7 +52,7 @@ export type SettingsMap = {
   onGlobe: () => void;
 };
 
-function Group({ id, icon: GroupIcon, title, children }: { id: string; icon: Icon; title: string; children: ReactNode }) {
+export function Group({ id, icon: GroupIcon, title, children }: { id: string; icon: Icon; title: string; children: ReactNode }) {
   return (
     <section className="settings-group" aria-labelledby={`settings-${id}-title`}>
       <h2 id={`settings-${id}-title`} tabIndex={-1}><GroupIcon size={20} aria-hidden="true" />{title}</h2>
@@ -61,7 +61,7 @@ function Group({ id, icon: GroupIcon, title, children }: { id: string; icon: Ico
   );
 }
 
-function LinkRow({ icon: RowIcon, label, onClick }: { icon: Icon; label: string; onClick: () => void }) {
+export function LinkRow({ icon: RowIcon, label, onClick }: { icon: Icon; label: string; onClick: () => void }) {
   return (
     <button type="button" className="settings-row" onClick={onClick}>
       <RowIcon size={22} aria-hidden="true" /><span>{label}</span><ArrowRight size={18} aria-hidden="true" />
