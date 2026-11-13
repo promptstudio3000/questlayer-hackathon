@@ -376,3 +376,90 @@ export function attributionMarkdown(manifest, inputs = []) {
 export function writeJson(path, value) {
   writeFileSync(path, `${JSON.stringify(value, null, 2)}\n`);
 }
+
+/**
+ * Builds the database in parts and merges them (demo cities, 13 Nov 2026):
+ * one build over Czechia plus 300 city clips held every place in memory at
+ * once and passed the worker's 3 GB limit. parts: [{ inputs, regions }], each
+ * spatially separate (a country, or a chunk of far-apart city clips). The
+ * merge is plain SQLite (ATTACH + INSERT), so memory stays at one part.
+ */
+export async function buildPoiDatabaseInParts({ parts, outPath, version, regions, w4, log = () => {} }) {
+  if (parts.length === 1)
+    return buildPoiDatabase({ inputs: parts[0].inputs, outPath, version, regions, w4, log });
+  const files = [],
+    manifests = [];
+  try {
+    for (const [i, part] of parts.entries()) {
+      const partPath = `${outPath}.part${i}`;
+      log(`building part ${i + 1}/${parts.length} (${part.regions.length} regions)`);
+      manifests.push(
+        await buildPoiDatabase({ inputs: part.inputs, outPath: partPath, version, regions: part.regions, w4, log }),
+      );
+      files.push(partPath);
+    }
+    const tmp = `${outPath}.tmp`;
+    rmSync(tmp, { force: true });
+    const db = new DatabaseSync(tmp);
+    db.exec("PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF; PRAGMA page_size=4096;");
+    db.exec(SCHEMA_SQL);
+    for (const f of files) {
+      db.prepare("ATTACH DATABASE ? AS part").run(f);
+      db.exec(`BEGIN;
+        INSERT OR IGNORE INTO poi SELECT * FROM part.poi;
+        INSERT INTO partition SELECT * FROM part.partition WHERE true
+          ON CONFLICT(h3r5) DO UPDATE SET pois=pois+excluded.pois, ok=ok+excluded.ok,
+            review=review+excluded.review, excluded=partition.excluded+excluded.excluded,
+            hash=partition.hash||excluded.hash;
+        INSERT OR IGNORE INTO path_cell SELECT * FROM part.path_cell;
+        INSERT OR IGNORE INTO city SELECT * FROM part.city;
+        COMMIT;`);
+      db.exec("DETACH DATABASE part");
+    }
+    const meta = {
+      schema: POI_SCHEMA,
+      version,
+      regions: regions.join(","),
+      taxonomyVersion: w4.taxonomyVersion,
+      safetyVersion: w4.safetyVersion,
+      w4Source: w4.source,
+      attribution: ATTRIBUTION_LINE,
+    };
+    const insertMeta = db.prepare("INSERT INTO meta VALUES(?,?)");
+    for (const [k, v] of Object.entries(meta).sort(([a], [b]) => a.localeCompare(b)))
+      insertMeta.run(k, String(v));
+    db.exec("VACUUM");
+    db.close();
+    renameSync(tmp, outPath);
+  } finally {
+    for (const f of files) rmSync(f, { force: true });
+  }
+  const sum = (key) => manifests.reduce((n, m) => n + (m.counts[key] || 0), 0);
+  const addMaps = (key) => {
+    const out = {};
+    for (const m of manifests)
+      for (const [k, v] of Object.entries(m.counts[key] || {})) out[k] = (out[k] || 0) + v;
+    return Object.fromEntries(Object.entries(out).sort(([a], [b]) => a.localeCompare(b)));
+  };
+  return {
+    schema: MANIFEST_SCHEMA,
+    version,
+    regions,
+    file: outPath.split("/").pop(),
+    bytes: statSync(outPath).size,
+    sha256: createHash("sha256").update(readFileSync(outPath)).digest("hex"),
+    taxonomyVersion: w4.taxonomyVersion,
+    safetyVersion: w4.safetyVersion,
+    w4Source: w4.source,
+    parts: parts.length,
+    counts: {
+      ...Object.fromEntries(
+        ["pois", "osmPlaces", "overtureCandidates", "overtureFolded", "overtureAdded", "overtureDroppedNoPath",
+          "wikidataEnriched", "exclusionAreas", "partitions", "cities", "pathCells", "pathWays", "pathPoints"].map((k) => [k, sum(k)]),
+      ),
+      bySafety: addMaps("bySafety"),
+      byCategory: addMaps("byCategory"),
+      byReason: addMaps("byReason"),
+    },
+  };
+}

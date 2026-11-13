@@ -183,3 +183,7 @@
 .game-dialog .npc-linear .npc-role {
   font-size: var(--text-note);
 }
+
+/* NPC mission question (shared memory, docs/NPC-MEMORY.md). */
+.npc-mission-ask { display: grid; gap: 8px; padding: 12px; border-radius: 12px; background: var(--surface-soft, #f3eefc); color: var(--ink, #1a0335); }
+.npc-mission-ask p { margin: 0; font-size: 16px; }

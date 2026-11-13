@@ -110,3 +110,32 @@ export function extractOsm({
   }
   return outputs;
 }
+
+/**
+ * Cuts a demo city clip ([west, south, east, north]) out of a larger extract.
+ * "simple": one pass, about 2 GB peak for any planet-wide id range ("smart"
+ * peaked at 3.9 GB on BBBike New York and the worker's 3 GB limit killed it).
+ * Ways that cross the edge keep only their inside part; that is enough for a
+ * clip whose centre is 3-4 km from every edge.
+ */
+export function clipOsm({ pbf, out, bbox, osmium = "osmium" }) {
+  const part = `${out}.part.osm.pbf`;
+  execFileSync(
+    osmium,
+    [
+      "extract",
+      "-b",
+      bbox.join(","),
+      "-s",
+      "simple",
+      pbf,
+      "-o",
+      part,
+      "--overwrite",
+      "--no-progress",
+    ],
+    { stdio: "inherit" },
+  );
+  renameSync(part, out);
+  return out;
+}

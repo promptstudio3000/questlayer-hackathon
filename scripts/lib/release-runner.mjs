@@ -35,10 +35,16 @@ function assertTestnet(args, env) {
 // deploy/release-ops-allowlist.json as installed on the VPS (from main).
 export function validateOp(op, allowlist, fileId) {
   if (!op || typeof op !== "object" || Array.isArray(op)) refuse("Operation must be a JSON object.");
-  const known = new Set(["id", "script", "args", "env", "ref", "sha", "wasm", "outputs", "installKeys", "runtimeEnv", "deployTarget", "note"]);
+  const known = new Set(["id", "script", "args", "env", "ref", "sha", "wasm", "outputs", "installKeys", "runtimeEnv", "deployTarget", "startUnit", "note"]);
   for (const k of Object.keys(op)) if (!known.has(k)) refuse(`Unknown field "${k}".`);
   if (!OP_ID.test(op.id || "")) refuse("id must be 3-64 characters of a-z, 0-9 and -.");
   if (fileId !== undefined && fileId !== op.id) refuse(`File name ${fileId}.json does not match id ${op.id}.`);
+  // startUnit: root starts one allowlisted oneshot unit (--no-block) and runs nothing else.
+  if (op.startUnit !== undefined) {
+    if (!(allowlist.startUnits || []).includes(op.startUnit)) refuse(`Unit ${op.startUnit} is not allowlisted.`);
+    for (const k of Object.keys(op)) if (!["id", "startUnit", "note"].includes(k)) refuse("A startUnit job takes only id, startUnit and note.");
+    return { id: op.id, startUnit: op.startUnit, script: null, args: [], env: {}, ref: null, sha: null, wasm: null, outputs: [], installKeys: [], runtimeEnv: null, execute: null, deployTarget: null, note: typeof op.note === "string" ? op.note.slice(0, 300) : "" };
+  }
   if (op.deployTarget !== undefined) {
     if (!allowlist.deployTargets?.[op.deployTarget] || /mainnet/i.test(op.deployTarget)) refuse(`Deploy target ${op.deployTarget} is not allowlisted.`);
     if (op.script !== undefined || op.args !== undefined || op.env !== undefined || op.wasm !== undefined) refuse("A deploy job runs no script.");

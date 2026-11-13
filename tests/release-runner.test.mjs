@@ -134,3 +134,11 @@ test("a deploy job targets an allowlisted service and runs no script", () => {
   assert.throws(() => validateOp({ id: "deploy-x", deployTarget: "world-root" }, allowlist), /not allowlisted/);
   assert.throws(() => validateOp({ id: "deploy-x", deployTarget: "testlayer", script: "scripts/deploy-testlayer.mjs" }, allowlist), /no script/);
 });
+
+test("a startUnit job starts only an allowlisted unit and takes no script", () => {
+  const op = validateOp({ id: "poi-worker-run-1", startUnit: "questlayer-poi", note: "demo cities" }, allowlist);
+  assert.equal(op.startUnit, "questlayer-poi");
+  assert.equal(op.script, null);
+  assert.throws(() => validateOp({ id: "unit-x", startUnit: "questlayer-hackathon" }, allowlist), /not allowlisted/);
+  assert.throws(() => validateOp({ id: "unit-y", startUnit: "questlayer-poi", script: "scripts/deploy-testlayer.mjs" }, allowlist), /only id, startUnit/);
+});

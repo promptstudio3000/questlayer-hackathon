@@ -237,7 +237,8 @@ function worldPoiSource(db, mapData = {}) {
       combinedPoiSource(
         file,
         liveOverpassPoiSource(db, {
-          covers: (cell) => !isCzechiaCell(cell),
+          // Czechia and the demo city clips abroad come from the file.
+          covers: (cell) => !isCzechiaCell(cell) && !file.hasCell?.(cell),
           ...(mapData.poiFetcher ? { fetcher: mapData.poiFetcher } : {}),
         }),
       ),
