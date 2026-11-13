@@ -570,7 +570,7 @@ export const CHAPTERS: Chapter[] = [
           "Signing in with an ETH wallet (or linking one) reads its Aavegotchis on Base. You are dressed in the one with the highest rarity score (BRS) unless you chose the starter ghost; Inventory → Wardrobe lists them, best first, to switch in one tap.",
           "The wallet is re-read every few minutes while you play; a gotchi that left the wallet is taken off.",
           "Restyle your gotchi with anything you own (map clones and wallet originals). The outfit is a look in the game only and changes nothing on Base.",
-          "**3D:** a Settings switch turns 3D characters on. The official Aavegotchi renderer draws a restyled look (at most once per 15 minutes per look, 40 looks an hour); a new combination shows in 2D until it is ready. Textures are shrunk to 512 px so every owned gotchi fits a phone.",
+          "**3D:** a Settings switch turns 3D characters on. The official Aavegotchi renderer draws a restyled look (at most once per 15 minutes per look, 40 looks an hour); a new combination shows in 2D until it is ready. Once your 3D character is on the map it stays 3D while a find, an NPC or a zone sheet is open; if the phone drops the 3D view it tries again on its own. Textures are shrunk to 512 px so every owned gotchi fits a phone.",
         ],
       },
       { h: "Explorer cards and waves" },
