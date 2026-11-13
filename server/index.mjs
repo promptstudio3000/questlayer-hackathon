@@ -1588,6 +1588,8 @@ async function api(req, res, url) {
         ? auditSummary(publicAudit(nativeRewards.lastAudit))
         : { status: "not-configured" },
       yieldBackedDays: nativeRewards?.yieldBackedDays === true,
+      // Dates the publisher could not fund (docs/GLOBAL-TREASURY.md).
+      unfundedDays: nativeRewards?.unfundedDays || {},
       relayer: relayer ? relayer.workerStatus() : { status: "not-configured" },
       creatorMoney: creatorMoney
         ? creatorMoney.workerStatus()

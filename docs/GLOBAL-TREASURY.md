@@ -29,9 +29,20 @@ would strand funds in quiet cities and starve busy ones, and every new city woul
    visible; it is not a guaranteed budget.
 4. **Nothing is stranded.** Integer rounding leftovers are never reserved, and coins or zone prizes nobody
    collects return to the same global `available` balance when `close_day` runs.
+   In yield-backed mode the same holds for the yield budget: a closed day keeps only what its players were
+   awarded (confirmed claims) against the realized yield, so the unclaimed part is free yield again.
 5. **Eligibility.** By default every live city in `server/data/cities.json` is eligible.
    `NATIVE_FUNDED_CITIES` stays as an optional allowlist; its weights apply only with
    `NATIVE_BUDGET_SPLIT=weights` (the old fixed split, kept as an operator fallback).
+
+6. **Yield-backed days drip.** With `NATIVE_YIELD_BACKED_DAYS=1` a city day may spend only realized
+   staking yield (the vaults' `game_paid`), and only one drip of what is free: `free / NATIVE_YIELD_DRIP_DAYS`
+   (default 7), split 50/50 into coins and zones. A vault settles its yield every few epochs, so without the
+   drip the first day took everything and the following dates had nothing to publish (2026-11-07 was never
+   published). Each coin gets `coin budget / coins` in whole yoctoNEAR; a date whose drip is smaller than one
+   yocto per coin is not published and is listed in `/api/health` → `unfundedDays`. The testnet unit
+   (`deploy/questlayer-hackathon.service`) sets the flag since 11 Nov 2026. The map-wide coin budget
+   (`server/map-rewards/`) still follows the per-date cap, not the yield.
 
 With one live city (Plzeň today) the result is byte-identical to before: it receives the full global
 budget. The difference shows once a second city goes live.

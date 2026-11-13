@@ -787,10 +787,10 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "At the first request of a local day the server builds the plan once from the **real daily budget**: the map's share of the rewards contract's per-date cap, priced in micro-QGOLD at the vault's rate R.",
-          "**One coin = coin budget ÷ all shares.** At a 0.05 NEAR map budget and R = 0.001 NEAR that is 50 QGOLD tokens (50,000,000 in game units) over 6.5–13 million shares, a few QGOLD per coin on screen. The value grows with the treasury; shares a cell cannot hold stay in the treasury.",
+          "**Few coins, each worth something.** One coin = the day's coin budget ÷ 200 (`MAP_COIN_TARGET`). An opened street cell places 10 coins, the Plzeň city demo 50, and placement stops once the whole day budget is on the map, so every coin is covered. With yield-only days (`NATIVE_YIELD_BACKED_DAYS=1`) the budget is the day's drip of realized staking yield, shared with city days: 0.0005 NEAR for coins at 1 QGOLD = 1 microNEAR is 500 QGOLD, 2.5 QGOLD a coin.",
           "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area; what a capped cell cannot take goes to the others.",
           "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest.",
-          "The city demo pays the same backed coins. Outside Czechia a street cell gets up to 400 coins of the same value, drawn from the day's unplaced coin budget until it is spent, and paid through the payout rounds (`MAP_WORLD_COINS=off` stops it). Funded cell zones and pioneer bonuses stay in Czechia.",
+          "The city demo pays the same backed coins. Outside Czechia a street cell gets up to 10 coins of the same value, drawn from the same day budget until it is placed, and paid through the payout rounds (`MAP_WORLD_COINS=off` stops it). Funded cell zones and pioneer bonuses stay in Czechia.",
         ],
       },
       { viz: "map-coins" },
@@ -839,6 +839,7 @@ export const CHAPTERS: Chapter[] = [
           "**No streaks, energy or loot purchases.** Spending only burns your own QGOLD (`ft_burn`) for cosmetics and conveniences; the backing stays in the vault, so every burn raises R for all holders.",
           "**No practice money and no welcome credit.** A new explorer starts at 0 QGOLD; every coin and zone prize is backed by the day's budget and paid as QGOLD within minutes.",
           "**Players never fund the prizes.** Stake principal stays yours; only the yield share you choose goes to the game.",
+          "**City days run on yield only** (`NATIVE_YIELD_BACKED_DAYS=1`, set in the testnet unit since 13 Nov 2026, after the first realized yield reached the treasury). A day may spend one seventh (`NATIVE_YIELD_DRIP_DAYS`) of the realized staking yield that is still free: what the vaults paid into the pool, minus what open yield days hold and what closed ones actually awarded. Yield arrives in lumps every few epochs, so the drip keeps every day funded, however small the coin. A date that cannot be funded shows in `/api/health` under `unfundedDays`. Map coins take their drip from the same yield (map days count against it first).",
           "Unclaimed budget stays for later days. Money follows players, not cities.",
           "Everything is published: [Economy](/economy) lists treasury, audits and payouts with transaction links; [Treasury](/treasury) shows the dashboard.",
         ],
