@@ -2,7 +2,9 @@
 // listings, tasks, published creator quests and a starter kit for every real
 // explorer. Everything it writes has an id starting with "seed-", and purge()
 // removes all of it, including rows real explorers made that point at it.
-import { readFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 import { atomic } from "../database.mjs";
 import { buyItem } from "../game.mjs";
 import { editionForDemoName } from "../aura-catalog.mjs";
@@ -143,7 +145,7 @@ function auraRow(name) {
  * @param {import("node:sqlite").DatabaseSync} db
  * @param {{ creators?: { services: any, moderator: string, completionAuthority: string, policyVersion: string } | null, clock?: () => number, log?: (msg: string) => void }} options
  */
-export function createTestSeed(db, { creators = null, clock = Date.now, log = () => {} } = {}) {
+export function createTestSeed(db, { creators = null, clock = Date.now, log = () => {}, photoDirectory = null } = {}) {
   const routes = walkerRoutes(SEED_PLAYERS.filter((p) => p.walk).length);
   let routeFor = new Map();
   SEED_PLAYERS.filter((p) => p.walk).forEach((p, i) => routeFor.set(p.id, routes[i]));
@@ -372,7 +374,32 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
       if (row().state === "published") published++;
     }
     applyQuestFeedback();
-    return { published };
+    return { published, photos: applyQuestPhotos() };
+  }
+
+  // Header photos for the bot quests, so their pins and pages look like a
+  // real creator's (credits in server/test-seed/photos/credits.json). The
+  // files are copied into the quest photo store under fixed names and named
+  // in every revision of the seed quest, with the credit in its description.
+  function applyQuestPhotos() {
+    if (!photoDirectory) return 0;
+    const from = fileURLToPath(new URL("./photos/", import.meta.url));
+    let set = 0;
+    for (const p of JSON.parse(readFileSync(resolve(from, "credits.json"), "utf8"))) {
+      if (!String(p.quest).startsWith(SEED_PREFIX)) continue;
+      const target = resolve(photoDirectory, p.media);
+      if (!existsSync(target)) {
+        mkdirSync(photoDirectory, { recursive: true, mode: 0o700 });
+        copyFileSync(resolve(from, p.file), target);
+      }
+      const credit = ` Photo: ${p.author}, ${p.license}, Wikimedia Commons.`;
+      set += db
+        .prepare(
+          "UPDATE creator_revisions SET content=json_set(content,'$.photo',?,'$.description',json_extract(content,'$.description')||?) WHERE quest_id=? AND json_extract(content,'$.photo') IS NULL",
+        )
+        .run(`/api/creator-photos/${p.media}`, credit, p.quest).changes;
+    }
+    return set;
   }
 
   /** Idempotent. Safe to call on every start. */
