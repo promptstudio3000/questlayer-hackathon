@@ -64,6 +64,7 @@ export async function withQgoldBurn<T>(path: string, input: Record<string, unkno
         // Invalid/free requests must not fill all recovery slots indefinitely.
         await locked(() => write(read().filter(row => row.id !== pending.id)));
       }
+      if (error instanceof ApiError && error.code === "QGOLD_SHORT") throw Error(tr("Not enough QGOLD in your account."));
       if (!(error instanceof ApiError) || error.code !== "QGOLD_BURN") throw error;
       const call = await api<QgoldBurnCall>("/gold/burn/prepare", { purchaseId: pending.id, submitterId: pending.submitterId });
       await locked(() => write(read().map(row => row.id === pending.id ? { ...row, signatureKeys: [...new Set([
