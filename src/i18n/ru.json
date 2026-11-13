@@ -3324,14 +3324,15 @@
   "Buying…": "Покупаем…",
   "Buy land for {0} MetaGold": "Купить землю за {0} MetaGold",
   "Space": "Пробел",
-  "This rock is too hard. Dig in Crystal Hollow or Basalt Quarry, or on blocks built on the square.": "Эта скала слишком твёрдая. Копайте в Кристальной пещере, в Базальтовом карьере или постройки на площади.",
+  "Quests here are closed for today. Street coins still count; new quests open tomorrow.": "Квесты здесь на сегодня закрыты. Монеты на улицах по-прежнему засчитываются; новые квесты откроются завтра.",
   "City demo: {0}": "Демо-город: {0}",
-  "Sight": "Достопримечательность",
-  "Pub": "Паб",
-  "No places yet. Tell me about one in Talk.": "Пока мест нет. Расскажи мне об одном в разговоре.",
-  "Places I know": "Места, которые я знаю",
+  "{0} tasks waiting": "Ждут заданий: {0}",
   "Likes: {0}": "Любит: {0}",
+  "Sight": "Достопримечательность",
+  "This rock is too hard. Dig in Crystal Hollow or Basalt Quarry, or on blocks built on the square.": "Эта скала слишком твёрдая. Копайте в Кристальной пещере, в Базальтовом карьере или постройки на площади.",
   "Food": "Еда",
-  "1 task waiting": "Ждёт 1 задание",
-  "{0} tasks waiting": "Ждут заданий: {0}"
+  "Pub": "Паб",
+  "Places I know": "Места, которые я знаю",
+  "No places yet. Tell me about one in Talk.": "Пока мест нет. Расскажи мне об одном в разговоре.",
+  "1 task waiting": "Ждёт 1 задание"
 }

@@ -23,6 +23,7 @@ import { localDateBounds, shiftDate } from "./spatial/calendar.mjs";
 import { poiQuestActivity } from "./quest-templates.mjs";
 import { flavourText } from "./ai/flavour.mjs";
 import { DEFAULT_LAYER } from "./worlds/registry.mjs";
+import { TEST_LAYER } from "./native/network.mjs";
 import { CLUE_XP, MAX_CLUES_PER_CELL, buildLandmarkClue, clueReady } from "./landmark-clue.mjs";
 import {
   ensureModuleVersion,
@@ -449,9 +450,14 @@ function recentPoiIds(db, manifest, cell) {
   return recent;
 }
 
-/** Play hours of the default layer (08:00-20:00), clamped to the local day. */
-function playWindow(day, timezone) {
+/**
+ * Play hours of the default layer (08:00-20:00), clamped to the local day.
+ * The Test Layer is a demo: its places stay open all day, like its zones, so
+ * a visitor at any hour finds quests to play. World keeps its play hours.
+ */
+function playWindow(day, timezone, allDay = TEST_LAYER) {
   const { startsAt, endsAt } = localDateBounds(day, timezone);
+  if (allDay) return { opensAt: startsAt, closesAt: endsAt };
   const hours = DEFAULT_LAYER.pack?.rules?.hours || DEFAULT_LAYER.pack?.hours;
   const [open, close] = Array.isArray(hours) && hours.length === 2 ? hours : ["08:00", "20:00"];
   const at = (hhmm) => {

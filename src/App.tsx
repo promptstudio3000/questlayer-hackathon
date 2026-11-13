@@ -3853,7 +3853,9 @@ export default function App() {
           ? tr("Quests here open at {0}. Street coins count already.", { 0: new Date(poiOutlook.opensAt).toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", timeZone: world?.timezone || undefined }) })
           : poiOutlook.state === "empty"
             ? tr("No quests in this spot today. Street coins still count; quests wait near parks, squares and landmarks.")
-            : tr("You've done every quest here today. New ones open tomorrow.")}
+            : poiOutlook.state === "closed"
+              ? tr("Quests here are closed for today. Street coins still count; new quests open tomorrow.")
+              : tr("You've done every quest here today. New ones open tomorrow.")}
       </p>
     );
   // The map marks one "next" place: the coach's POI quest, else the nearest

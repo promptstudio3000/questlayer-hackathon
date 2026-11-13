@@ -3324,14 +3324,15 @@
   "Buying…": "A comprar…",
   "Buy land for {0} MetaGold": "Comprar terreno por {0} MetaGold",
   "Space": "Espaço",
-  "This rock is too hard. Dig in Crystal Hollow or Basalt Quarry, or on blocks built on the square.": "Esta rocha é dura demais. Escave na Gruta de Cristal, na Pedreira de Basalto ou em blocos construídos na praça.",
+  "Quests here are closed for today. Street coins still count; new quests open tomorrow.": "As missões daqui estão fechadas por hoje. As moedas da rua ainda contam; novas missões abrem amanhã.",
   "City demo: {0}": "Demo da cidade: {0}",
-  "Sight": "Ponto turístico",
-  "Pub": "Bar",
-  "No places yet. Tell me about one in Talk.": "Ainda não há lugares. Fala-me de um na conversa.",
-  "Places I know": "Lugares que conheço",
+  "{0} tasks waiting": "{0} tarefas à espera",
   "Likes: {0}": "Gosta de: {0}",
+  "Sight": "Ponto turístico",
+  "This rock is too hard. Dig in Crystal Hollow or Basalt Quarry, or on blocks built on the square.": "Esta rocha é dura demais. Escave na Gruta de Cristal, na Pedreira de Basalto ou em blocos construídos na praça.",
   "Food": "Comida",
-  "1 task waiting": "1 tarefa à espera",
-  "{0} tasks waiting": "{0} tarefas à espera"
+  "Pub": "Bar",
+  "Places I know": "Lugares que conheço",
+  "No places yet. Tell me about one in Talk.": "Ainda não há lugares. Fala-me de um na conversa.",
+  "1 task waiting": "1 tarefa à espera"
 }

@@ -3324,14 +3324,15 @@
   "Buying…": "ख़रीद रहे हैं…",
   "Buy land for {0} MetaGold": "{0} MetaGold में ज़मीन ख़रीदें",
   "Space": "स्पेस",
-  "This rock is too hard. Dig in Crystal Hollow or Basalt Quarry, or on blocks built on the square.": "यह चट्टान बहुत कठोर है। क्रिस्टल गुफा या बेसाल्ट की खदान में खोदें, या चौक पर बने ब्लॉकों को।",
+  "Quests here are closed for today. Street coins still count; new quests open tomorrow.": "यहाँ की क्वेस्ट आज के लिए बंद हैं। सड़क के सिक्के अब भी गिने जाते हैं; नई क्वेस्ट कल खुलेंगी।",
   "City demo: {0}": "शहर डेमो: {0}",
-  "Sight": "दर्शनीय स्थल",
-  "Pub": "पब",
-  "No places yet. Tell me about one in Talk.": "अभी कोई जगह नहीं। बातचीत में मुझे किसी के बारे में बताओ।",
-  "Places I know": "जगहें जिन्हें मैं जानता हूँ",
+  "{0} tasks waiting": "{0} काम इंतज़ार में",
   "Likes: {0}": "पसंद: {0}",
+  "Sight": "दर्शनीय स्थल",
+  "This rock is too hard. Dig in Crystal Hollow or Basalt Quarry, or on blocks built on the square.": "यह चट्टान बहुत कठोर है। क्रिस्टल गुफा या बेसाल्ट की खदान में खोदें, या चौक पर बने ब्लॉकों को।",
   "Food": "खाना",
-  "1 task waiting": "1 काम इंतज़ार में",
-  "{0} tasks waiting": "{0} काम इंतज़ार में"
+  "Pub": "पब",
+  "Places I know": "जगहें जिन्हें मैं जानता हूँ",
+  "No places yet. Tell me about one in Talk.": "अभी कोई जगह नहीं। बातचीत में मुझे किसी के बारे में बताओ।",
+  "1 task waiting": "1 काम इंतज़ार में"
 }
