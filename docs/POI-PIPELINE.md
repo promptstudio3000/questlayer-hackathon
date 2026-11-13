@@ -153,3 +153,37 @@ keeps the safe places with a path target in `geo_cache` under `poi:<cell>`
 for 7 days (failures retry after 10 minutes). The first visitor's world load
 waits up to 20 s for it; POI quests then use the rows like the imported file.
 `POI_LIVE=off` disables it, `POI_LIVE_URL` changes the Overpass endpoint.
+
+## Demo cities abroad (13 Nov 2026)
+
+Public Overpass is not reliable from the VPS (London returned `map-data-unavailable`
+for every retry on 13 Nov), so judges and visitors outside Czechia found an empty
+map. `scripts/poi/demo-cities.mjs` lists 28 demo cities (three waves, centre on a
+walkable public square or park). For each one the worker:
+
+1. downloads the smallest public extract that contains it (BBBike city extract,
+   download.openstreetmap.fr, or Geofabrik for Bolivia and Taiwan), skipping the
+   download when Last-Modified/ETag are unchanged;
+2. cuts an 8 × 8 km clip (`osmium extract -s smart`, `clipOsm`), keeps only the
+   clip and deletes the source extract;
+3. runs the same osmium filters as a country (`osm-city-<id>-*.geojsonseq`), so the
+   places, paths and exclusions go into the same `current.sqlite`. No Overture
+   query for clips.
+
+The auto city step then builds one pinned auto CityPack per clip (id = the city
+id, coverage = the clip, timezone from the list, no GeoNames row needed). The
+server answers a cell abroad from the file when the file mapped it
+(`hasCell`), otherwise from live Overpass as before. Auto city rules are
+unchanged: unverified notice, zone gold 0, coins from the global daily budget.
+
+`WORLD_CITIES` picks the set: `demo` (default, all), `off`, `wave1`..`wave3` or
+ids. A city whose source fails is skipped and reported in `last-run.json`
+(`demoCities.skipped`); its previous clip stays in use. The version gets
+`-c<count>`. After a deploy, `scripts/vps-activate-release.sh` starts one worker
+run when the release lacks a listed city (`scripts/poi/demo-cities-stale.mjs`).
+
+Local check on 13 Nov (26 clips, cloud sandbox; Taipei and Cochabamba need
+Geofabrik, VPS only): 25 auto cities, 6 zones a day in most, Lisbon 4, Zug 2,
+Mumbai 3; Lagos has too few mapped parks and footways for zones and stays a
+street world with POI quests and coins. Build 28 s and 531 MB RSS for the
+POI file, about 25 s per auto city.

@@ -88,8 +88,10 @@ curl -fsS "http://127.0.0.1:$APP_PORT/api/health"
 # W5: the World worker builds auto CityPacks after each POI import. When a POI
 # release exists but no auto city index yet, start one worker run now (it reuses
 # the downloaded inputs) instead of waiting for Sunday's timer.
-if [[ "$TARGET" != mainnet && -f /etc/systemd/system/questlayer-poi.service && -e /var/lib/questlayer-poi/current.sqlite && ! -e /var/lib/questlayer-poi/city-packs/index.json ]]; then
- systemctl start --no-block questlayer-poi.service && echo "Started questlayer-poi to build auto cities (journalctl -u questlayer-poi)."
+# The same when the release lacks a demo city the code now lists
+# (scripts/poi/demo-cities.mjs); the check ignores cities the last run skipped.
+if [[ "$TARGET" != mainnet && -f /etc/systemd/system/questlayer-poi.service && -e /var/lib/questlayer-poi/current.sqlite ]] && { [[ ! -e /var/lib/questlayer-poi/city-packs/index.json ]] || /usr/local/bin/node "$APP_DIR/current/scripts/poi/demo-cities-stale.mjs" /var/lib/questlayer-poi; }; then
+ systemctl start --no-block questlayer-poi.service && echo "Started questlayer-poi to build auto cities and demo cities (journalctl -u questlayer-poi)."
 fi
 if [[ "$TARGET" == mainnet ]]; then
  curl -fsS "http://127.0.0.1:$APP_PORT/api/health" | python3 -c 'import json,sys; h=json.load(sys.stdin); assert h["network"]=="mainnet", h["network"]; print("network:", h["network"], "features:", h["features"])'
