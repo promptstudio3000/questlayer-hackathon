@@ -3218,5 +3218,7 @@
  "0.001–1 test NEAR · 1 NEAR = {0} QGOLD": "0,001–1 NEAR de test · 1 NEAR = {0} QGOLD",
  "Choose a price between 1M and 1,000B QGOLD.": "Choisis un prix entre 1M et 1 000B QGOLD.",
  "Practice QGOLD is play money with no value.": "Le QGOLD d’entraînement est de l’argent fictif sans valeur.",
- "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "Un relecteur vérifie ta réponse, jusqu'à 3 essais. En commençant, tu gardes cette version de la quête. Aucune récompense en XP, objet ou QGOLD n'est prévue, et personne ne vérifie le GPS ni une visite sur place."
+ "A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.": "Un relecteur vérifie ta réponse, jusqu'à 3 essais. En commençant, tu gardes cette version de la quête. Aucune récompense en XP, objet ou QGOLD n'est prévue, et personne ne vérifie le GPS ni une visite sur place.",
+ "No treasury vote is open on this layer right now.": "Aucun vote de la trésorerie n'est ouvert sur cette couche pour l'instant.",
+ "The reward must be at least {0} QGOLD per completion.": "La récompense doit être d’au moins {0} QGOLD par réalisation."
 }

@@ -1,0 +1,30 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-12T14:04:48.399Z",
+  "contractId": "badges-tl1112.questlayer-dev-20261101.testnet",
+  "codeHash": "3QjysRXNdY1mRFEx33nzxofvTFayRyRZGi7f3n56rf2q",
+  "wasmSha256": "23cc54a71915bac02d595b6880363491f9a341fc54756a77f7d5d4e1fd72797a",
+  "claimSignerPublicKey": "EO25owzdZfx5NeEoB94rn/V6AsWWcY+B1IzoG5abDJI=",
+  "minterPublicKey": "ed25519:EcYJGZiooVtujwuEqb6QoeuP8iz7FoXoA193r8J8tYnH",
+  "badgeBaseYocto": "20000000000000000000000",
+  "perClaimYocto": "4000000000000000000000",
+  "transferable": false,
+  "capabilities": [
+    "soulbound",
+    "signed-claims",
+    "creator-award",
+    "sponsored-create",
+    "nep171-views",
+    "budget-refund"
+  ],
+  "transactions": [
+    {
+      "step": "create badges-tl1112.questlayer-dev-20261101.testnet, deploy and init badges",
+      "transaction": "CXfxCmP1WRyGwKSCLYRBLEVKZGdZM98PCj36zr9CsvEH"
+    },
+    {
+      "step": "install the bounded minter key on badges-tl1112.questlayer-dev-20261101.testnet",
+      "transaction": "4T9xpbf3pkNDChCU3zhrFLXBmUJAhSgtRNhKtpgxQufV"
+    }
+  ]
+}

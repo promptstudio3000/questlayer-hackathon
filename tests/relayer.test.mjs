@@ -480,7 +480,7 @@ test("outcome verification rejects foreign tokens, foreign signers and classifie
   assert.equal(f.job(panic.id).error_code, "RELAY_CONTRACT_FAILED");
   assert.equal(
     f.relayer.status(f.player, panic.id).error,
-    "The contract rejected the action. Refresh its state before retrying.",
+    "It didn't go through. Nothing was taken; try again.",
   );
   assert.throws(() => f.relayer.status(bobPlayer, panic.id), /not found/);
 });

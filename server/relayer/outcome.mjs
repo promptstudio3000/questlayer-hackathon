@@ -30,12 +30,12 @@ export function classifyFailure(failure, call = {}) {
   if (/DelegateActionExpired|TransactionExpired|Expired/i.test(text))
     return new RelayJobError(
       "RELAY_EXPIRED",
-      "The signed action expired before it was included. Prepare it again.",
+      "That took too long to go through. Try again.",
     );
   if (/InvalidNonce|NonceTooLarge/i.test(text))
     return new RelayJobError(
       "RELAY_NONCE",
-      "The signed action nonce is no longer valid. Prepare it again.",
+      "That didn't go through. Try again.",
     );
   if (/InvalidSignature/i.test(text))
     return new RelayJobError(
@@ -59,7 +59,7 @@ export function classifyFailure(failure, call = {}) {
   )
     return new RelayJobError(
       "RELAY_CONTRACT_FAILED",
-      "The contract rejected the action. Refresh its state before retrying.",
+      "It didn't go through. Nothing was taken; try again.",
     );
   if (/AccountAlreadyExists/i.test(text))
     return new RelayJobError(
@@ -68,7 +68,7 @@ export function classifyFailure(failure, call = {}) {
     );
   if (failure instanceof Error && !/ActionError|InvalidTxError/.test(text))
     return retryLater("RELAY_NETWORK", String(failure.message).slice(0, 160));
-  return new RelayJobError("RELAY_FAILED", "The relayed transaction failed.");
+  return new RelayJobError("RELAY_FAILED", "That didn't go through. Try again.");
 }
 export function relayFailure(outcome) {
   const status = outcome?.status;

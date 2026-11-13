@@ -44,7 +44,7 @@ test("every chapter has a step and every step points somewhere", () => {
   for (const s of TOUR_STEPS) {
     assert.ok(TOUR_CHAPTERS.includes(s.chapter), s.id);
     assert.ok(s.target?.kind, s.id);
-    assert.ok(s.say.length <= 40 && s.next.length <= 60, s.id);
+    assert.ok(s.say.length <= 40 && s.next.length <= 60 && (s.hint?.length ?? 0) <= 70, s.id);
   }
 });
 
@@ -57,4 +57,16 @@ test("a chat with the companion bot counts as the message step", () => {
   tourMark(db, p, "message");
   tourMark(db, p, "message");
   assert.equal(done(), true);
+});
+
+test("a roll ticket from a Pocket Wisp ticks the ticket step, and the roll step points at the wisp roll", () => {
+  const db = openDatabase(":memory:");
+  const p = createPlayer(db, "Tess", Date.now());
+  tourAction(db, p, { action: "start" });
+  const done = () => tourState(db, p, { enabled: true }).steps.find((s) => s.id === "ticket").done;
+  assert.equal(done(), false);
+  db.exec("CREATE TABLE IF NOT EXISTS monster_rewards(player_id TEXT,source TEXT,kind TEXT,amount INTEGER,day_id TEXT,data TEXT,created_at INTEGER)");
+  db.prepare("INSERT INTO monster_rewards VALUES(?,?,?,?,?,?,?)").run(p, "lurker:pocket-wisp-1", "roll", 1, "d", "{}", 1);
+  assert.equal(done(), true);
+  assert.deepEqual(TOUR_STEPS.find((s) => s.id === "roll").target, { kind: "screen", screen: "rolls" });
 });

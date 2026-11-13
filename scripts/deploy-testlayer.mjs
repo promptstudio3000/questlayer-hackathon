@@ -13,7 +13,8 @@
 // Run where the operator key is (NEAR_OPERATOR_PATH, default .data/near-operator.json;
 // the VPS runner since 12 Nov). Needs a git checkout with node_modules and the
 // reproducible contracts/target builds. TESTLAYER_WORK moves the work tree. Steps:
-//   0. work tree .data/testlayer/work (git worktree at HEAD) with its own .data/
+//   0. work tree .data/testlayer/work (this checkout's HEAD, refreshed on every
+//      run so a tree left by an earlier checkout never runs stale code) with its own .data/
 //      holding only a copy of the operator key; every key the scripts create
 //      (award signer, minters, recorder, publisher, factory, relayer) stays
 //      there. All public/*-testnet.json records are removed in the work tree, so
@@ -38,11 +39,17 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  lstatSync,
   symlinkSync,
+  unlinkSync,
   writeFileSync,
 } from "node:fs";
 import { resolve } from "node:path";
+import { pathToFileURL } from "node:url";
+// Paced RPC with 429 backoff and fastnear/drpc failover, here and in every step.
+import "./lib/rpc-patience.mjs";
 import { Account, JsonRpcProvider, KeyPairSigner } from "near-api-js";
+import { rpcErrorText } from "../server/near-provider.mjs";
 
 const execute = process.argv.includes("--execute");
 const repo = resolve(import.meta.dirname, "..");
@@ -54,7 +61,11 @@ const operator = JSON.parse(readFileSync(operatorPath, "utf8"));
 if (operator.network !== "testnet" || !operator.accountId.endsWith(".testnet"))
   throw new Error("The Test Layer is testnet only.");
 const op = operator.accountId;
-const top = (name) => `ql-${TAG}-${name}.testnet`;
+// Top-level ids keep the questlayer-<name>-<generation> shape: the vault
+// factory contract accepts only questlayer-vaults-* and questlayer-rewards-*
+// testnet accounts (contracts/vault-factory, "Pinned testnet factory only").
+// The first runs used ql-<tag>-<name>; those accounts stay unused.
+const top = (name) => `questlayer-${name}-${TAG}.testnet`;
 const sub = (name) => `${name}-${TAG}.${op}`;
 
 // Account ids of the Test Layer set. Top-level ids are created by the testnet
@@ -77,31 +88,57 @@ export const ACCOUNTS = {
   NEAR_CREATORS_ACCOUNT: top("creators"),
 };
 const env = { ...process.env, ...ACCOUNTS, NEAR_NETWORK: "testnet", APP_ORIGIN: ORIGIN };
+// --reviewed: the same pinned builds (contracts/wasm-sha256.json) World runs,
+// reviewed when they went live; each script still checks the WASM hashes.
 const STEPS = [
-  { name: "collectibles slice (+ factory, relayer, badges, npc-games)", script: "deploy-mainnet-slice.mjs", args: ["--execute"] },
-  { name: "rewards + vault factory", script: "deploy-native-funding-testnet.mjs" },
-  { name: "QGOLD vault", script: "deploy-qgold-testnet.mjs" },
-  { name: "ledger + soulbound QGOLD", script: "deploy-ledger-testnet.mjs" },
-  { name: "market", script: "deploy-market-testnet.mjs" },
-  { name: "QGOLD escrow", script: "deploy-qgold-escrow-testnet.mjs" },
-  { name: "creators", script: "deploy-creators-testnet.mjs" },
+  { name: "collectibles slice (+ factory, relayer, badges, npc-games)", script: "deploy-mainnet-slice.mjs", args: ["--execute"], record: "output/mainnet-slice-testnet/testnet-deployment.json" },
+  { name: "rewards + vault factory", script: "deploy-native-funding-testnet.mjs", record: "public/native-rewards-testnet.json" },
+  { name: "QGOLD vault", script: "deploy-qgold-testnet.mjs", args: ["--reviewed"], record: "public/native-qgold-vault-testnet.json" },
+  { name: "ledger + soulbound QGOLD", script: "deploy-ledger-testnet.mjs", record: "public/native-ledger-testnet.json" },
+  { name: "market", script: "deploy-market-testnet.mjs", record: "public/native-market-testnet.json" },
+  { name: "QGOLD escrow", script: "deploy-qgold-escrow-testnet.mjs", args: ["--reviewed"], record: "public/native-qgold-escrow-testnet.json" },
+  { name: "creators", script: "deploy-creators-testnet.mjs", record: "public/native-creators-testnet.json" },
 ];
 const SHARED = ["native-intents"]; // records the Test Layer reuses as they are
 // Build facts, not contract ids: the slice checks the collectibles build's edition list.
 const KEEP = ["native-editions-testnet.json"];
 
+const isLink = (p) => {
+  try {
+    return lstatSync(p).isSymbolicLink();
+  } catch {
+    return false;
+  }
+};
 const log = (o) => console.log(JSON.stringify(o));
 log({ plan: execute ? "execute" : "plan only", tag: TAG, origin: ORIGIN, work, accounts: ACCOUNTS, steps: STEPS.map((s) => s.name), shared: SHARED });
 if (!execute) process.exit(0);
 
-// 0. Work tree.
-if (!existsSync(work)) {
-  mkdirSync(resolve(work, ".."), { recursive: true, mode: 0o700 });
-  execFileSync("git", ["worktree", "add", "--detach", work, "HEAD"], { cwd: repo, stdio: "inherit" });
-  for (const f of readdirSync(resolve(work, "public")))
-    if ((/-testnet\.json$/.test(f) || f === "testnet-deployment.json") && !KEEP.includes(f)) rmSync(resolve(work, "public", f));
-  log({ step: "work tree ready, real testnet records removed", work });
+// 0. Work tree. Its code is refreshed from this checkout's HEAD on every run
+// (git archive over the old tree), so a work tree left by an earlier run or an
+// earlier checkout (the release runner keeps .data/ across jobs) never runs
+// stale scripts or records. What the deploy wrote stays: work/.data (keys,
+// journals) and the Test Layer records the scripts wrote into work/public.
+const isRecord = (f) => (/-testnet\.json$/.test(f) || f === "testnet-deployment.json") && !KEEP.includes(f);
+const workPublic = resolve(work, "public");
+const written0 = {};
+if (existsSync(work)) {
+  for (const f of existsSync(workPublic) ? readdirSync(workPublic) : [])
+    if (isRecord(f)) written0[f] = readFileSync(resolve(workPublic, f));
+  // A git worktree from another checkout leaves a .git file pointing nowhere; nothing here needs git.
+  const dotGit = resolve(work, ".git");
+  if (existsSync(dotGit) || isLink(dotGit)) rmSync(dotGit, { force: true });
+} else mkdirSync(work, { recursive: true, mode: 0o700 });
+for (const link of ["contracts/target", "node_modules"]) if (isLink(resolve(work, link))) unlinkSync(resolve(work, link));
+execFileSync("bash", ["-c", 'git archive --format=tar HEAD | tar -x -C "$1"', "_", work], { cwd: repo, stdio: ["ignore", "inherit", "inherit"] });
+for (const f of readdirSync(workPublic)) if (isRecord(f)) rmSync(resolve(workPublic, f));
+for (const [f, bytes] of Object.entries(written0)) writeFileSync(resolve(workPublic, f), bytes);
+try {
+  execFileSync("git", ["worktree", "prune"], { cwd: repo, stdio: "ignore" });
+} catch {
+  /* not a git checkout with worktrees: nothing to prune */
 }
+log({ step: "work tree refreshed from HEAD, real testnet records removed", work, keptTestLayerRecords: Object.keys(written0) });
 mkdirSync(resolve(work, ".data"), { recursive: true, mode: 0o700 });
 const opCopy = resolve(work, ".data/near-operator.json");
 if (!existsSync(opCopy)) {
@@ -109,9 +146,11 @@ if (!existsSync(opCopy)) {
   chmodSync(opCopy, 0o600);
 }
 // The reproducible contract builds of this checkout (contracts/wasm-sha256.json pins them).
+// Links are recreated on every run, so they always point at this checkout.
 const target = resolve(work, "contracts/target");
-if (!existsSync(target)) symlinkSync(resolve(repo, "contracts/target"), target);
-if (!existsSync(resolve(work, "node_modules"))) symlinkSync(resolve(repo, "node_modules"), resolve(work, "node_modules"));
+if (existsSync(target) && !isLink(target)) rmSync(target, { recursive: true });
+symlinkSync(resolve(repo, "contracts/target"), target);
+symlinkSync(resolve(repo, "node_modules"), resolve(work, "node_modules"));
 
 // 1. Fund the operator from the faucet accounts (each keeps 0.1 NEAR).
 const provider = new JsonRpcProvider({ url: process.env.NEAR_RPC_URL || "https://test.rpc.fastnear.com" });
@@ -131,20 +170,80 @@ for (const id of readFileSync(fundsFile, "utf8").split("\n").map((s) => s.trim()
   log({ step: "funded operator", from: id, near: Number(amount / 10n ** 21n) / 1000, tx: swept[id] });
 }
 
-// 2-3. The deploy scripts, in order, inside the work tree.
-for (const s of STEPS) {
-  log({ step: s.name, script: s.script });
-  execFileSync(process.execPath, [resolve(work, "scripts", s.script), ...(s.args || [])], { cwd: work, env, stdio: "inherit" });
+// The reward worker key file names its contract account. One left by a run
+// with other account ids is set aside, so the funding script makes a new one.
+const workerFile = resolve(work, ".data/reward-worker.json");
+if (existsSync(workerFile)) {
+  const bound = JSON.parse(readFileSync(workerFile, "utf8")).accountId;
+  if (bound !== ACCOUNTS.NEAR_REWARDS_ACCOUNT) {
+    const aside = resolve(work, `.data/reward-worker.unused-${bound}.json`);
+    copyFileSync(workerFile, aside);
+    chmodSync(aside, 0o600);
+    rmSync(workerFile);
+    log({ step: "set aside reward worker key of another rewards account", account: bound });
+  }
 }
 
-// 4. Records into this repository under the Test Layer's names.
+// 1b. Top-level accounts come from the operator through the `testnet`
+// registrar, not from helper.testnet.near.org: the helper rate-limits the VPS
+// IP for hours. An account that exists already is left alone, so the deploy
+// scripts find it and skip their own helper call.
+const NEAR = 10n ** 24n;
+const opAccount = new Account(op, provider, signer);
+for (const [key, id] of Object.entries(ACCOUNTS)) {
+  if (!id.endsWith(".testnet") || id.endsWith(`.${op}`)) continue;
+  try {
+    await provider.viewAccount({ accountId: id });
+    continue;
+  } catch (e) {
+    if (!/does not exist|doesnotexist|unknown_account/i.test(rpcErrorText(e))) throw e;
+  }
+  const deposit = key === "NEAR_QGOLD_ESCROW_PUBLISHER" ? NEAR : 5n * NEAR;
+  const r = await opAccount.callFunctionRaw({
+    contractId: "testnet",
+    methodName: "create_account",
+    args: { new_account_id: id, new_public_key: operator.publicKey },
+    deposit,
+    gas: 100n * 10n ** 12n,
+    waitUntil: "FINAL",
+  });
+  if (r.status?.Failure) throw new Error(`create_account ${id} failed: ${JSON.stringify(r.status)}`);
+  await provider.viewAccount({ accountId: id }); // throws if the registrar did not create it
+  log({ step: "created account from the operator", account: id, near: Number(deposit / NEAR), tx: r.transaction?.hash || r.transaction_outcome?.id });
+}
+
+// 2-3. The deploy scripts, in order, inside the work tree.
+// A step whose record is in the work tree finished in an earlier run and is
+// not run again: the scripts' smoke tests are not repeatable (the escrow smoke
+// compares an absolute payout balance). TESTLAYER_RERUN=<script> runs one anyway.
+for (const s of STEPS) {
+  if (existsSync(resolve(work, s.record)) && process.env.TESTLAYER_RERUN !== s.script) {
+    log({ step: s.name, skipped: "done in an earlier run", record: s.record });
+    continue;
+  }
+  log({ step: s.name, script: s.script });
+  const patience = pathToFileURL(resolve(work, "scripts/lib/rpc-patience.mjs")).href;
+  execFileSync(process.execPath, ["--import", patience, resolve(work, "scripts", s.script), ...(s.args || [])], { cwd: work, env, stdio: "inherit" });
+}
+
+// 4. Records into this repository under the Test Layer's names: the
+// per-contract scripts write into work/public, the collectibles slice keeps its
+// testnet records in work/output/mainnet-slice-testnet (it never replaces the
+// live testnet ones). Runs on every execute, also when every step was reused.
 const written = [];
-for (const f of readdirSync(resolve(work, "public"))) {
-  const m = f.match(/^(.+)-testnet\.json$/);
-  if ((!m && f !== "testnet-deployment.json") || KEEP.includes(f)) continue;
-  const to = f === "testnet-deployment.json" ? "testlayer-deployment.json" : `${m[1]}-testlayer.json`;
-  copyFileSync(resolve(work, "public", f), resolve(repo, "public", to));
-  written.push(to);
+const sources = [
+  { dir: resolve(work, "public"), skip: KEEP },
+  { dir: resolve(work, "output/mainnet-slice-testnet"), skip: [] },
+];
+for (const { dir, skip } of sources) {
+  if (!existsSync(dir)) continue;
+  for (const f of readdirSync(dir)) {
+    const m = f.match(/^(.+)-testnet\.json$/);
+    if ((!m && f !== "testnet-deployment.json") || skip.includes(f)) continue;
+    const to = f === "testnet-deployment.json" ? "testlayer-deployment.json" : `${m[1]}-testlayer.json`;
+    copyFileSync(resolve(dir, f), resolve(repo, "public", to));
+    written.push(to);
+  }
 }
 for (const name of SHARED) {
   const from = resolve(repo, `public/${name}-testnet.json`);
@@ -153,4 +252,6 @@ for (const name of SHARED) {
     written.push(`${name}-testlayer.json (shared)`);
   }
 }
-log({ status: "done", written, keys: resolve(work, ".data"), next: "bash scripts/install-testlayer-keys-vps.sh, then commit public/*-testlayer.json" });
+// Key file names only (never contents), for the key install.
+const keyFiles = readdirSync(resolve(work, ".data")).filter((f) => /\.(json|pem)$/.test(f) && !/journal|deploy|funds/.test(f)).sort();
+log({ status: "done", written, keys: resolve(work, ".data"), keyFiles, next: "install the keys (scripts/install-testlayer-keys-vps.sh or the runner), then commit public/*-testlayer.json" });

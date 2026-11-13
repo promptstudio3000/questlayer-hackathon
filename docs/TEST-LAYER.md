@@ -10,6 +10,15 @@
 | Explorers | Temporary: a session lasts 4 hours | Permanent |
 | Network | **Testnet only.** Mainnet has no Test Layer and refuses `QL_LAYER=test` | Testnet now, mainnet later (with the other layers) |
 
+## Test Layer first until launch
+
+Until launch (Lubos, 13 Nov 2026) the main address opens the Test Layer. World's runtime.env sets
+`DEFAULT_TEST_LAYER=1` and `TEST_LAYER_ORIGIN=https://questlayer-test.promptstudio3000.com`. `/api/config`
+then reports `gameLayer.defaultTest`, and a visitor without a saved choice is sent to the Test Layer.
+In the Test Layer, the world picker (logo, top left) links to QuestLayer World with `?world=1`. That
+choice is saved on the device (`questlayer.stayWorld`), so World stays put from then on. There is no
+redirect while `TEST_LAYER_ORIGIN` is missing. Remove `DEFAULT_TEST_LAYER` at launch.
+
 ## How it is built
 
 Same code, one switch: `QL_LAYER=test` (server, `server/native/network.mjs`) and `VITE_QL_LAYER=test`
@@ -38,7 +47,7 @@ Same code, one switch: `QL_LAYER=test` (server, `server/native/network.mjs`) and
 
 The Test Layer uses no new contract code. `scripts/deploy-testlayer.mjs` runs the existing, reviewed deploy
 scripts in an isolated work tree (`.data/testlayer/work`) with the Test Layer's own account ids
-(`ql-tl1112-*.testnet` and `*-tl1112.<operator>`). This is also a rehearsal of a full fresh deployment, which
+(`questlayer-*-tl1112.testnet`, the shape the vault factory contract requires, and `*-tl1112.<operator>`). This is also a rehearsal of a full fresh deployment, which
 mainnet needs later.
 
 1. `node scripts/deploy-testlayer.mjs` prints the plan; `--execute` runs it on the Mac (operator key):
@@ -46,7 +55,7 @@ mainnet needs later.
    deploys the collectibles slice (collectibles, player factory, relayer, badges, npc-games), rewards and
    vault factory, QGOLD vault, ledger and soulbound QGOLD, market, QGOLD escrow and creators, then writes
    `public/*-testlayer.json`. The Intents verifier record is shared (it only verifies signed intents).
-2. `bash scripts/install-testlayer-keys-vps.sh` installs the keys the scripts created into the Test Layer's
+2. `bash scripts/install-testlayer-keys-vps.sh` (on the VPS runner as root: `DEPLOY_HOST=local`) installs the keys the scripts created into the Test Layer's
    state directory and writes its runtime.env.
 3. Commit the `-testlayer` records, then `bash scripts/deploy-vps.sh --testlayer` (it also installs the Test
    Layer's signing vault).

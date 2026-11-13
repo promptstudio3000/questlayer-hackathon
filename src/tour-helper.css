@@ -30,3 +30,9 @@
 @keyframes pip-swing { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } }
 @keyframes pip-hop { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
 html[data-motion="reduce"] .tour-helper, html[data-motion="reduce"] .pip, html[data-motion="reduce"] .pip-lantern { animation: none; }
+/* The map tools menu fans out up the right-hand side: while it is open, Pip
+   shrinks to his lantern on the left so both stay visible and nothing overlaps. */
+html:has(.map-actions.open) .tour-helper { left: 10px; right: auto; width: auto; padding: 6px; border-radius: 40px; animation: none; }
+html:has(.map-actions.open) .tour-helper > :not(.tour-avatar, .pip) { display: none; }
+/* Menus that drop from the top bar (map settings, world picker) win: Pip steps aside until they close. */
+html:has(.map-settings-flyout, .world-menu-layer) .tour-helper { visibility: hidden; pointer-events: none; }

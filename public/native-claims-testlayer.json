@@ -1,0 +1,19 @@
+{
+  "verifiedAt": "2026-11-12T14:04:34.238Z",
+  "network": "testnet",
+  "contractId": "nfts-tl1112.questlayer-dev-20261101.testnet",
+  "version": 3,
+  "attestationPublicKey": "EO25owzdZfx5NeEoB94rn/V6AsWWcY+B1IzoG5abDJI=",
+  "codeHash": "FYtu9BynhCLUzF2Vq2M6bnc6SPDZ7CyynVMr2L7y4Cam",
+  "wasmSha256": "d82f4dee87eccc225e83f6048faedc49c96840cfa0eed0de18e57b388884b62a",
+  "transactions": [
+    {
+      "step": "create nfts-tl1112.questlayer-dev-20261101.testnet, deploy and init collectibles",
+      "transaction": "ESxXofwhXJQpKmWGTjEVJXQogz4Z2EqMKMdfG7Yc6iH8"
+    },
+    {
+      "step": "configure the award signer public key",
+      "transaction": "HmAE5o7UrpFccFC4qMYm5bxEwwdyur9p249CUfBeVoux"
+    }
+  ]
+}

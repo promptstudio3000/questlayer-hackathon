@@ -24,7 +24,7 @@ import "./economy.css";
 import "./treasury.css";
 import "../public-polish.css";
 import { shortNear } from "./format";
-import { arc, blendedApr, niceScale, num, rateNear, simulate, tickLabel, toNear, toUnits } from "./treasury-model";
+import { arc, blendedApr, niceScale, num, qgoldCount, QGOLD_B_TOKENS, rateB, simulate, tickLabel, toNear, toUnits } from "./treasury-model";
 
 type Bucket = { bucket: "staked" | "lst" | "stable" | "near"; current: string; currentBps: number; policyBps: number };
 type Mix = {
@@ -669,19 +669,19 @@ function LineChart({
 
 function PriceLadder({ q }: { q: Qgold }) {
   const v = q.vault!;
-  const R = rateNear(v.rate);
+  const R = rateB(v.rate);
   const marks = [
-    { name: "Sell to vault", v: rateNear(v.sellPrice), tone: "tr-c3" },
-    { name: "Backing per QGOLD", v: R, tone: "tr-c2" },
-    { name: "Buy from vault", v: rateNear(v.buyPrice), tone: "tr-c3" },
-    ...(q.pool.price ? [{ name: "Rhea pool", v: rateNear(q.pool.price), tone: "tr-c1" }] : []),
-    ...(q.keeper?.ladder ?? []).map((l) => ({ name: `Keeper offer at ${l.multiple}× backing`, v: rateNear(l.price), tone: "tr-c4" })),
+    { name: "Sell to vault", v: rateB(v.sellPrice), tone: "tr-c3" },
+    { name: "Backing", v: R, tone: "tr-c2" },
+    { name: "Buy from vault", v: rateB(v.buyPrice), tone: "tr-c3" },
+    ...(q.pool.price ? [{ name: "Rhea pool", v: rateB(q.pool.price), tone: "tr-c1" }] : []),
+    ...(q.keeper?.ladder ?? []).map((l) => ({ name: `Keeper offer at ${l.multiple}× backing`, v: rateB(l.price), tone: "tr-c4" })),
   ].sort((a, b) => a.v - b.v);
   const lo = R * 0.97,
     hi = Math.max(...marks.map((m) => m.v)) * 1.01;
   const x = (n: number) => 4 + (92 * (n - lo)) / (hi - lo);
   return (
-    <div className="tr-ladder" role="list" aria-label="QGOLD prices around the backing per QGOLD">
+    <div className="tr-ladder" role="list" aria-label="Prices for 1B QGOLD around the backing">
       <div className="tr-ladder-axis" aria-hidden="true">
         {marks.map((m) => (
           <span key={m.name} className={`tr-ladder-dot ${m.tone}`} style={{ left: `${x(m.v)}%` }} />
@@ -691,7 +691,7 @@ function PriceLadder({ q }: { q: Qgold }) {
         {marks.map((m) => (
           <li key={m.name} role="listitem">
             <span className={`tr-swatch ${m.tone}`} aria-hidden="true" />
-            {m.name} <b>{m.v.toFixed(6)}</b> NEAR <small>({m.v >= R ? "+" : ""}{(((m.v - R) / R) * 100).toFixed(1)} % vs backing)</small>
+            {m.name} <b>{m.v.toFixed(4)}</b> NEAR per 1B QGOLD <small>({m.v >= R ? "+" : ""}{(((m.v - R) / R) * 100).toFixed(1)} % vs backing)</small>
           </li>
         ))}
       </ul>
@@ -811,7 +811,7 @@ function Simulator({ mix, q, stakingApr }: { mix: Mix | null; q: Qgold | null; s
   const step = Math.max(1, Math.floor(days.length / 120));
   const sample = days.filter((d, i) => i % step === 0 || i === days.length - 1);
   const yieldPoints = sample.map((d) => ({ x: d.day, xLabel: `day ${d.day}`, cumulative: d.cumulativeYield, insurance: d.insurance }));
-  const ratePoints = sample.map((d) => ({ x: d.day, xLabel: `day ${d.day}`, rate: d.rate }));
+  const ratePoints = sample.map((d) => ({ x: d.day, xLabel: `day ${d.day}`, rate: d.rate * QGOLD_B_TOKENS }));
   return (
     <div className="tr-sim">
       <div className="tr-sim-knobs">
@@ -828,7 +828,7 @@ function Simulator({ mix, q, stakingApr }: { mix: Mix | null; q: Qgold | null; s
         <Tile label="Blended yield" value={apr.toFixed(2)} unit="% a year" note={`NEAR reserve ${100 - k.lst - k.stable} % earns nothing`} />
         <Tile label="To the map per day" value={num(days[0].yieldToMap, 4)} unit="NEAR" note={`${num(last.yieldToMap, 4)} on day ${last.day}`} />
         <Tile label={`Sent to the map in ${k.days} days`} value={num(last.cumulativeYield, 3)} unit="NEAR" note="principal is never spent" />
-        <Tile label={`Backing per QGOLD after ${k.days} days`} value={last.rate.toFixed(6)} unit="NEAR" note={`${(((last.rate - days[0].rate) / (days[0].rate || 1)) * 100).toFixed(1)} % from burns`} />
+        <Tile label={`Backing per 1B QGOLD after ${k.days} days`} value={(last.rate * QGOLD_B_TOKENS).toFixed(4)} unit="NEAR" note={`${(((last.rate - days[0].rate) / (days[0].rate || 1)) * 100).toFixed(1)} % from burns`} />
       </div>
       <h3>Money to the map and to insurance, cumulative</h3>
       <LineChart
@@ -840,8 +840,8 @@ function Simulator({ mix, q, stakingApr }: { mix: Mix | null; q: Qgold | null; s
           { key: "insurance", tone: "tr-c3", name: "Insurance fund" },
         ]}
       />
-      <h3>Backing per QGOLD</h3>
-      <LineChart points={ratePoints as never} label="Modelled backing per QGOLD over time" unit="NEAR" series={[{ key: "rate", tone: "tr-c1", name: "Backing per QGOLD" }]} />
+      <h3>Backing per 1B QGOLD</h3>
+      <LineChart points={ratePoints as never} label="Modelled backing per 1B QGOLD over time" unit="NEAR" series={[{ key: "rate", tone: "tr-c1", name: "Backing per 1B QGOLD" }]} />
       <p className="eco-small eco-muted">
         A model, not a promise: yields move, and testnet stablecoin lending pays close to nothing. It follows the published rules: only yield is spent, principal stays, every QGOLD is minted
         with its NEAR, and spending burns QGOLD so the backing per QGOLD can only stay or rise. QGOLD is a game currency, not an investment.
@@ -1041,7 +1041,7 @@ export default function TreasuryPage() {
     v = q?.vault ?? null,
     d = dao.data?.exists ? dao.data : null;
   const network = m?.network ?? l?.network;
-  const rChart = (q?.chart ?? []).map((p) => ({ x: Date.parse(p.at), xLabel: p.at.slice(5, 16).replace("T", " "), rate: rateNear(p.rate), price: p.price ? rateNear(p.price) : NaN }));
+  const rChart = (q?.chart ?? []).map((p) => ({ x: Date.parse(p.at), xLabel: p.at.slice(5, 16).replace("T", " "), rate: rateB(p.rate), price: p.price ? rateB(p.price) : NaN }));
   const nearUsd = m ? Number(m.prices.nearUsdE8) / 1e8 : null;
   const explorerBase = network === "mainnet" ? "https://nearblocks.io" : "https://testnet.nearblocks.io";
   const stakingApr = STAKING_APR[network ?? "testnet"] ?? STAKING_APR.testnet;
@@ -1115,7 +1115,7 @@ export default function TreasuryPage() {
       a: (
         <>
           <p>
-            NEAR. Every QGOLD is minted together with its NEAR, which stays locked in the QGOLD vault{v ? ` (${shortNear(v.backing, 2)} NEAR now)` : ""}. The backing per QGOLD is vault NEAR ÷ QGOLD supply{v ? `, now ${rateNear(v.rate).toFixed(6)} NEAR` : ""}.
+            NEAR. Every QGOLD is minted together with its NEAR, which stays locked in the QGOLD vault{v ? ` (${shortNear(v.backing, 2)} NEAR now)` : ""}. The backing per QGOLD is vault NEAR ÷ QGOLD supply{v ? `, now ${rateB(v.rate).toFixed(4)} NEAR per 1B QGOLD` : ""}.
           </p>
           <p>
             The NEAR for new QGOLD comes from the treasury's yield, and the treasury itself is held in the mix explorers vote on: staked NEAR plus a share of stablecoins
@@ -1239,10 +1239,10 @@ export default function TreasuryPage() {
               <div className="tr-stat">
                 <Coins size={20} weight="duotone" aria-hidden="true" />
                 <span>
-                  1 QGOLD is backed by
+                  1B QGOLD is backed by
                   <InfoTip label="What is the backing per QGOLD?">{GLOSSARY.backing}</InfoTip>
                 </span>
-                <b>{v ? `${rateNear(v.rate).toFixed(6)} NEAR` : q ? "—" : pendingValue(qgold)}</b>
+                <b>{v ? `${rateB(v.rate).toFixed(4)} NEAR` : q ? "—" : pendingValue(qgold)}</b>
               </div>
             </div>
           </div>
@@ -1341,9 +1341,9 @@ export default function TreasuryPage() {
             {day.data ? (
               <Section id="tr-today" title="Today on the map" lead={`What the daily budget put on the map on ${day.data.day}.`}>
                 <div className="tr-tiles tr-tiles-small">
-                  <Tile label="Coins" value={num(day.data.coinsU / 1e6, 2)} unit="QGOLD" info="All coins on the map today together. Walking to one mints its share to the finder's own NEAR account." />
-                  <Tile label="Zone prizes" value={num(day.data.zonesU / 1e6, 2)} unit="QGOLD" info="Prizes for winning zones today, all zones together." />
-                  <Tile label="Pioneer reserve" value={num(day.data.pioneerU / 1e6, 2)} unit="QGOLD" info="5 % kept for cells nobody visited in 30 days; a pioneer who goes there gets double." />
+                  <Tile label="Coins" value={qgoldCount(day.data.coinsU)} unit="QGOLD" info="All coins on the map today together. Walking to one mints its share to the finder's own NEAR account." />
+                  <Tile label="Zone prizes" value={qgoldCount(day.data.zonesU)} unit="QGOLD" info="Prizes for winning zones today, all zones together." />
+                  <Tile label="Pioneer reserve" value={qgoldCount(day.data.pioneerU)} unit="QGOLD" info="5 % kept for cells nobody visited in 30 days; a pioneer who goes there gets double." />
                   <Tile label="Cells funded" value={num(day.data.summary.funded)} note={`of ${num(day.data.summary.cells)}`} info="The map is split into hexagonal cells. A funded cell has at least one coin or prize today." />
                 </div>
                 <button type="button" className="tr-link" onClick={() => setTab("flow", true)}>
@@ -1417,20 +1417,20 @@ export default function TreasuryPage() {
               {v ? (
                 <>
                   <div className="tr-tiles tr-tiles-small">
-                    <Tile label="Backing per QGOLD" info={GLOSSARY.backing} value={rateNear(v.rate).toFixed(6)} unit="NEAR" note={v.rPeak ? `peak ${rateNear(v.rPeak).toFixed(6)}` : null} />
-                    <Tile label="In circulation" value={num(toUnits(v.supply, 6), 0)} unit="QGOLD" />
-                    <Tile label="Burned in game" value={num(toUnits(v.burned, 6), 2)} unit="QGOLD" />
+                    <Tile label="Backing per 1B QGOLD" info={GLOSSARY.backing} value={rateB(v.rate).toFixed(4)} unit="NEAR" note={v.rPeak ? `peak ${rateB(v.rPeak).toFixed(4)}` : null} />
+                    <Tile label="In circulation" value={qgoldCount(v.supply)} unit="QGOLD" />
+                    <Tile label="Burned in game" value={qgoldCount(v.burned)} unit="QGOLD" />
                     <Tile label="Pool liquidity" value={q?.pool.near ? shortNear(q.pool.near, 3) : "—"} unit="NEAR" note={q?.pool.premiumBps != null ? `pool price ${pct(q.pool.premiumBps)} over the backing` : null} />
                   </div>
                   {rChart.length > 1 ? (
                     <>
-                      <h3>Backing per QGOLD and the Rhea pool price over time</h3>
+                      <h3>Backing per 1B QGOLD and the Rhea pool price over time</h3>
                       <LineChart
                         points={rChart as never}
-                        label="Backing per QGOLD and Rhea pool price over time"
+                        label="Backing per 1B QGOLD and Rhea pool price over time"
                         unit="NEAR"
                         series={[
-                          { key: "rate", tone: "tr-c2", name: "Backing per QGOLD" },
+                          { key: "rate", tone: "tr-c2", name: "Backing per 1B QGOLD" },
                           { key: "price", tone: "tr-c1", name: "Rhea pool price" },
                         ]}
                       />
