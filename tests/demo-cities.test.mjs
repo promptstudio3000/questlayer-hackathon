@@ -7,10 +7,12 @@ import { DatabaseSync } from "node:sqlite";
 import { latLngToCell } from "h3-js";
 import {
   DEMO_CITIES,
+  GEOFABRIK_AUTO,
   clipBox,
   parseDemoCities,
 } from "../scripts/poi/demo-cities.mjs";
 import { selectAutoCities } from "../scripts/poi/auto-cities.mjs";
+import { pickGeofabrikExtract } from "../scripts/poi/geofabrik-index.mjs";
 import { staleDemoCities } from "../scripts/poi/demo-cities-stale.mjs";
 import { parseRegions } from "../scripts/poi/regions.mjs";
 import { openPoiFileSource } from "../server/poi-quests.mjs";
@@ -27,20 +29,49 @@ test("demo cities: unique ids that fit the auto city rules, clip around the cent
     assert.match(c.cityId, /^[a-z][a-z0-9-]{1,31}$/);
     assert.match(c.id, /^city-/);
     assert.ok(inBox(c.center, c.bbox), c.cityId);
-    // 8 x 8 km: about 0.072 degrees of latitude.
-    assert.ok(Math.abs(c.bbox[3] - c.bbox[1] - 0.0724) < 0.001, c.cityId);
+    // 8 x 8 km (demo cities) or 6 x 6 km (capitals) of latitude.
+    assert.ok(Math.abs(c.bbox[3] - c.bbox[1] - (2 * c.halfKm) / 110.57) < 0.001, c.cityId);
     assert.doesNotThrow(() => new Intl.DateTimeFormat("en", { timeZone: c.timezone }));
-    assert.match(c.source, /^https:\/\/download\.(bbbike\.org|openstreetmap\.fr|geofabrik\.de)\/.+\.osm\.pbf$/);
+    if (c.source !== GEOFABRIK_AUTO)
+      assert.match(c.source, /^https:\/\/download\.(bbbike\.org|openstreetmap\.fr|geofabrik\.de)\/.+\.osm\.pbf$/);
     // Never inside Czechia: those cities come from the country import.
     assert.notEqual(c.country, "CZ");
   }
   assert.deepEqual(clipBox({ lat: 0, lng: 0 }, 1), [-0.009, -0.009, 0.009, 0.009]);
 });
 
+test("demo cities: every country capital and every US state capital is listed once", () => {
+  const capitals = DEMO_CITIES.filter((c) => c.wave === 4);
+  assert.ok(capitals.length >= 250, String(capitals.length));
+  const states = DEMO_CITIES.filter((c) => c.group === "us-state-capital").length;
+  // 50 states; Denver is already a demo city.
+  assert.equal(states + 1, 50);
+  for (const banned of ["RU", "KP", "IR", "CZ"])
+    assert.equal(DEMO_CITIES.some((c) => c.country === banned), false, banned);
+  for (const name of ["Washington", "Nairobi", "Canberra", "Brasília", "Sacramento", "Juneau"])
+    assert.ok(DEMO_CITIES.some((c) => c.name === name), name);
+});
+
+test("geofabrik:auto picks the smallest extract that holds the whole clip", () => {
+  const sq = (w, s, e, n) => ({ type: "Polygon", coordinates: [[[w, s], [e, s], [e, n], [w, n], [w, s]]] });
+  const index = {
+    features: [
+      { properties: { urls: { pbf: "https://download.geofabrik.de/africa-latest.osm.pbf" } }, geometry: sq(-20, -35, 50, 38) },
+      { properties: { urls: { pbf: "https://download.geofabrik.de/africa/kenya-latest.osm.pbf" } }, geometry: sq(33, -5, 42, 5) },
+      { properties: { urls: { pbf: "https://download.geofabrik.de/africa/edge-latest.osm.pbf" } }, geometry: sq(36.8, -1.3, 37, -1.2) },
+      { properties: { urls: { pbf: "https://evil.example/x.osm.pbf" } }, geometry: sq(36, -2, 37.5, -1) },
+    ],
+  };
+  const nairobi = clipBox({ lat: -1.2833, lng: 36.8167 }, 3);
+  assert.equal(pickGeofabrikExtract(index, nairobi), "https://download.geofabrik.de/africa/kenya-latest.osm.pbf");
+  assert.equal(pickGeofabrikExtract(index, [100, 10, 101, 11]), null);
+});
+
 test("demo cities: WORLD_CITIES picks all, none, waves or ids", () => {
   assert.equal(parseDemoCities().length, DEMO_CITIES.length);
   assert.equal(parseDemoCities("off").length, 0);
   assert.ok(parseDemoCities("wave1").every((c) => c.wave === 1));
+  assert.ok(parseDemoCities("capitals").every((c) => c.wave === 4));
   assert.deepEqual(parseDemoCities("london,zug").map((c) => c.cityId), ["london", "zug"]);
   assert.throws(() => parseDemoCities("atlantis"), /Unknown demo city/);
   // Country regions stay a separate list.
