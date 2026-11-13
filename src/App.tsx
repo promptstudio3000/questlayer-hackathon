@@ -31,7 +31,7 @@ import {
   AutoSocialProfile,
   ChainLink,
   CreatorCommunity,
-  TreasuryVote,
+  TreasuryVoteDialog,
   MapNotes,
   PlayerCard,
   Inbox,
@@ -5449,17 +5449,13 @@ export default function App() {
         </div>
       )}
       {treasuryVoteOpen && player && (
-        <Dialog label={tr("Treasury vote")} onClose={() => setTreasuryVoteOpen(false)}>
-          <div className="tour-vote-dialog">
-            <TreasuryVote
-              key={`treasury-${player.id}`}
-              account={invisible.status === "ready" ? invisible.accountId || null : null}
-              vote={voteTreasury}
-              notify={notify}
-              empty={<p className="bonus-vote-note">{tr("No treasury vote is open on this layer right now.")}</p>}
-            />
-          </div>
-        </Dialog>
+        <TreasuryVoteDialog
+          key={`treasury-${player.id}`}
+          account={invisible.status === "ready" ? invisible.accountId || null : null}
+          vote={voteTreasury}
+          notify={notify}
+          onClose={() => setTreasuryVoteOpen(false)}
+        />
       )}
       {lockedZoneDialog && player && !walletChoices && (
         <LockedZoneDialog zone={lockedZoneDialog} onClose={() => setLockedZoneDialog(null)} />

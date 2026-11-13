@@ -8,6 +8,7 @@ import { Bank, CheckCircle, Star } from "@phosphor-icons/react";
 import { api, ApiError } from "./api";
 import { tr } from "./i18n";
 import { closesLabel } from "./CommunityBonusVote";
+import { Dialog } from "./Dialog";
 
 export type DaoOption = {
   proposalId: number;
@@ -169,4 +170,15 @@ function mark(p: DaoPoll, poll: string, proposalId: number): DaoPoll {
     ...p,
     options: p.options.map((o) => (o.proposalId === proposalId ? { ...o, mine: true, approvals: o.approvals + 1 } : o)),
   };
+}
+
+/** The tour's vote step opens the treasury vote right here: no NPC to walk to. */
+export function TreasuryVoteDialog({ onClose, ...props }: Omit<Parameters<typeof TreasuryVote>[0], "empty"> & { onClose: () => void }) {
+  return (
+    <Dialog label={tr("Treasury vote")} onClose={onClose}>
+      <div className="tour-vote-dialog">
+        <TreasuryVote {...props} empty={<p className="bonus-vote-note">{tr("No treasury vote is open on this layer right now.")}</p>} />
+      </div>
+    </Dialog>
+  );
 }
