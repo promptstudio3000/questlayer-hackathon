@@ -606,7 +606,9 @@ const intentsMarket =
   nativeMarket
     ? new IntentsMarket(db, {
         verifier: new NativeContractReader(provider, intentsManifest.verifierContract),
-        nftContract: intentsManifest.nftContract || nativeMarket.nfts.contractId,
+        // The Auras of this world: the Test Layer shares the verifier record but
+        // mints its Auras in its own collectibles contract (docs/TEST-LAYER.md).
+        nftContract: nativeMarket.nfts.contractId || intentsManifest.nftContract,
         wnear: intentsManifest.wnear,
         solver: relayerService,
         // Solver gas counts against the service-wide sponsorship budget.

@@ -35,7 +35,17 @@ Same code, one switch: `QL_LAYER=test` (server, `server/native/network.mjs`) and
   `*.promptstudio3000.com` wildcard, so no DNS change is needed.
 - **Test-only switches live here.** `TEST_SEED=1` (bots and seed content, docs/TEST-SEED.md) and
   `DEMO_ZONES=plzen-compact` (docs/DEMO-ZONES.md) are set in the Test Layer unit. They are removed from the
-  World unit when the Test Layer goes live, which also purges the seed rows from World.
+  World unit when the Test Layer goes live, which also purges the seed rows from World. `MAP_PAYOUTS=1` is set
+  here too: map coins, finds and zone prizes are minted as Test QGOLD in payout rounds (every
+  `PAYOUT_ROUND_MINUTES`, default 5) from the Test Layer's rewards contract, so a new explorer can pay the
+  tour's shop, shout, topic and task steps. Its liquid backing (about 1.6 test NEAR on 13 Nov 2026) caps how
+  much Test QGOLD all explorers together can receive; top it up when it runs low.
+- **Demo first.** The Test Layer opens in the Plzeň demo for every visitor, also with location allowed far
+  from Plzeň (`src/play-here.ts`). GPS starts only after the visitor taps Use GPS there; that choice is
+  remembered on the device until they switch back to the demo.
+- **Intents market.** The Test Layer shares World's NEAR Intents verifier record, but its Auras live in its own
+  collectibles contract, so the server trades the market's collection (`nativeMarket.nfts`), not the record's
+  `nftContract`.
 - **World picker.** `/api/config` returns `gameLayer {id, test, testLayerUrl, worldUrl}`. World links to the
   Test Layer only on testnet (`TEST_LAYER_ORIGIN`); the Test Layer links back (`WORLD_ORIGIN`). Each has its
   own explorer and cookie, so balances never mix.
