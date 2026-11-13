@@ -720,12 +720,21 @@ async function runDevice(name, servers) {
           const onConsole = (m) => trail.push(`${m.type()}: ${m.text().slice(0, 160)}`);
           const onRequest = (r) => /\/config|localhost/.test(r.url()) && trail.push(`req ${r.method()} ${r.url().slice(0, 100)}`);
           page.on("console", onConsole);
+          // App-side trail: the tap, window.open and every vault message.
+          await page.evaluate(() => {
+            const t = (window.__walletTrail = []);
+            addEventListener("click", (e) => t.push(`click ${(e.target?.textContent || "").trim().slice(0, 20)}`), true);
+            const open = window.open.bind(window);
+            window.open = (...a) => { const w = open(...a); t.push(`open ${!!w}`); return w; };
+            addEventListener("message", (e) => t.push(`msg ${JSON.stringify(e.data).slice(0, 140)}`));
+          });
           context.on("request", onRequest);
           const [secure] = await Promise.all([
             context.waitForEvent("page", { timeout: 30_000 }).catch(async (error) => {
               const shown = await page.locator(".toast").allInnerTexts().catch(() => []);
               await page.screenshot({ path: join(shots, "wallet-no-window.png") }).catch(() => {});
-              throw Error(`${error.message}; toast: ${shown.join(" | ").slice(0, 200) || "none"}; trail: ${trail.slice(-12).join(" ; ")}`);
+              const app = await page.evaluate(() => window.__walletTrail || []).catch(() => []);
+              throw Error(`${error.message}; toast: ${shown.join(" | ").slice(0, 200) || "none"}; app: ${app.slice(-12).join(" ; ")}; trail: ${trail.slice(-12).join(" ; ")}`);
             }),
             go.click({ timeout: 20_000 }).catch((error) => {
               trail.push(`click failed: ${error.message.split("\n").slice(0, 6).join(" / ")}`);
