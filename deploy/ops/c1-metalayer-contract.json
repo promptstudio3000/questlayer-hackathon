@@ -1,0 +1,11 @@
+{
+  "id": "c1-metalayer-contract",
+  "script": "scripts/deploy-metalayer-testnet.mjs",
+  "ref": "claude/project-thread-vuufrf",
+  "sha": "f3ec927d2d2c153518a639d06abf31dc5ddc62e3",
+  "outputs": ["public/native-metalayer-testnet.json"],
+  "installKeys": [
+    { "service": "questlayer-hackathon", "file": "metalayer-recorder.json", "to": "metalayer-recorder.json" }
+  ],
+  "note": "MetaLayer contract: creates questlayer-metalayer-20261113.testnet (5 NEAR from the operator), deploys the pinned wasm, recorder key award/record_batch, funds treasury 0.1 NEAR, smoke award + parcel. Approved by Lubos 13 Nov 2026."
+}
