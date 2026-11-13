@@ -57,6 +57,17 @@
   background: var(--action); color: var(--on-action); box-shadow: 0 4px 16px #1a033540;
 }
 .map-actions.open .map-actions-toggle { background: var(--surface-raised); color: var(--ink); }
+/* The main toggle (not MetaLayer's Mine/Build buttons, which share the base
+   class): a caption under the icon and a white rim so it never blends in. */
+.map-actions-toggle.map-actions-main {
+  align-content: center; gap: 1px; box-shadow: 0 0 0 2px #fff, 0 4px 16px #1a033566;
+}
+.map-actions-caption {
+  max-width: calc(100% - 8px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 9px; font-weight: 700; line-height: 1.1; letter-spacing: 0.02em; text-transform: uppercase;
+}
+/* MetaLayer shrinks it to 48 px while Mine/Build sit above it. */
+.layer-screen[data-tool-ready=true] .map-actions-caption { font-size: 8px; letter-spacing: 0; }
 .map-actions-list {
   position: absolute; right: 4px; bottom: 68px; margin: 0; padding: 0; list-style: none;
   display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
@@ -80,6 +91,13 @@
 @media (prefers-reduced-motion: reduce) { .map-actions-list li { animation: none; } }
 .app-shell .map-actions .emote-picker { top: auto; bottom: 68px; right: 0; }
 .app-shell.sheet-open .map-actions, .app-shell.map-full .map-actions { visibility: hidden; pointer-events: none; }
+@media (min-width: 901px) and (min-height: 501px) {
+  .map-actions-toggle.map-actions-main { width: 72px; height: 72px; gap: 3px; }
+  .app-shell:not([data-tool-ready=true]) .map-actions-main > svg { width: 30px; height: 30px; }
+  .map-actions-caption { font-size: 11px; }
+  .app-shell:not(.layer-screen) .map-actions-list, .app-shell .map-actions .emote-picker { bottom: 84px; }
+  .layer-screen:not([data-tool-ready=true]) .map-actions-list { bottom: 84px; }
+}
 
 /* ---- Demo joystick (bottom left) ----------------------------------------- */
 .app-shell[data-screen] .demo-pad {
@@ -250,6 +268,10 @@
 @media (min-width: 601px) {
   .app-shell[data-screen] .demo-pad, .app-shell[data-screen] .demo-pad-open { left: 28px; bottom: 236px; }
   body:has(.app-shell[data-screen]) .maplibregl-ctrl-bottom-right { right: 80px !important; }
+}
+/* Desktop: the bigger Actions button (above) keeps the attribution clear. */
+@media (min-width: 901px) and (min-height: 501px) {
+  body:has(.app-shell[data-screen]) .maplibregl-ctrl-bottom-right { right: 100px !important; }
 }
 @media (min-width: 601px) and (max-width: 1100px) and (min-height: 501px) {
   .app-shell[data-screen] .demo-pad, .app-shell[data-screen] .demo-pad-open { bottom: 304px; }

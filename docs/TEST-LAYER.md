@@ -19,6 +19,21 @@ In the Test Layer, the world picker (logo, top left) links to QuestLayer World w
 choice is saved on the device (`questlayer.stayWorld`), so World stays put from then on. There is no
 redirect while `TEST_LAYER_ORIGIN` is missing. Remove `DEFAULT_TEST_LAYER` at launch.
 
+## City demo from the address
+
+Lubos, 13 Nov 2026: `/?newyork`, `/?praha` or `/?city=Buenos Aires` opens the Test Layer's demo in that city, to
+see how the game looks elsewhere. The name is matched against the reviewed cities and the auto cities (Czech
+towns, the demo cities abroad and the capitals), ignoring case, spaces, dashes and diacritics; a reviewed city
+wins, then the bigger auto city. An unknown name quietly keeps Plzeň. The address keeps the name, so a reload
+stays in that city, and the Demo switch returns there after Use GPS.
+
+- Client: `src/demo-city.ts` reads the name (a value-less key other than `tester`, or `city=`), asks
+  `GET /api/demo-city?q=` and sends `city: <id>` with the arena `POST /api/world`.
+- Server: `server/spatial/demo-city.mjs` finds the city; `ensureWorld(..., { arenaCity })` builds that city's
+  arena world (`demo:arena-city-<id>:<day>`). Only the Test Layer honours it: an arena world skips the travel
+  checks, so World always keeps its Plzeň arena and `/api/demo-city` answers `null` there.
+- World (GotchiGO) sends such an address to the Test Layer as `?city=<name>`, unless it also has `?world=1`.
+
 ## How it is built
 
 Same code, one switch: `QL_LAYER=test` (server, `server/native/network.mjs`) and `VITE_QL_LAYER=test`

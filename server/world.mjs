@@ -270,7 +270,7 @@ export async function ensureWorld(
   location = HOME,
   arena = true,
   now = Date.now(),
-  { mapData = {}, poiSource, cellAt = null, globalActivities = !!process.env.GLOBAL_ACTIVITY_DAYS_DIR, streetFallback = streetFallbackScope() } = {},
+  { mapData = {}, poiSource, cellAt = null, globalActivities = !!process.env.GLOBAL_ACTIVITY_DAYS_DIR, streetFallback = streetFallbackScope(), arenaCity = null } = {},
 ) {
   // An installed global day is read-only on player arrival. Plzen retains its
   // reviewed citywide six-slot world; the arena remains its existing simulation.
@@ -292,7 +292,7 @@ export async function ensureWorld(
         throw error;
     }
   }
-  const world = await ensureBaseWorld(db, location, arena, now, { mapData });
+  const world = await ensureBaseWorld(db, location, arena, now, { mapData, arenaCity });
   if (world.mapRewards) releaseTreasuryZonePrizes(db, world.id);
   if (!world.cityId && arena) return world;
   // A searched spot must lie in the same city; otherwise the player's own cell.
@@ -332,9 +332,10 @@ async function ensureBaseWorld(
   location = HOME,
   arena = true,
   now = Date.now(),
-  { mapData = {} } = {},
+  { mapData = {}, arenaCity = null } = {},
 ) {
-  const baseCity = arena ? DEFAULT_CITY : cityFor(location),
+  // arenaCity: the Test Layer's city demo ("/?newyork"); otherwise the arena is the default city.
+  const baseCity = arena ? arenaCity || DEFAULT_CITY : cityFor(location),
     city = baseCity ? effectiveCityPack(db, baseCity) : null,
     region = city
       ? `city-${city.id}`
@@ -366,7 +367,7 @@ async function ensureBaseWorld(
       : await publicPathSnapshot(db, region, { ...mapData, clock: () => now });
     const effectiveNow = now + Math.max(0, Date.now() - started);
     if (effectiveNow >= endsAt)
-      return ensureBaseWorld(db, location, arena, effectiveNow, { mapData });
+      return ensureBaseWorld(db, location, arena, effectiveNow, { mapData, arenaCity });
     if (city && !citySamples.has(city.paths))
       citySamples.set(city.paths, sampleCityPaths(city));
     const samples = city
