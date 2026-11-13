@@ -2,6 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { openDatabase } from "../server/database.mjs";
 import { createLayerActivity } from "../server/layer/activity.mjs";
+import { mkdtempSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+import { preflightDatabase } from "../server/schema-compatibility.mjs";
 import { createMetaLayerEconomy, METALAYER_REWARDS } from "../server/layer/economy.mjs";
 
 function fixture(t, { accounts = { "p-alice": "alice.testnet" }, statuses } = {}) {
@@ -89,4 +93,24 @@ test("a parcel read from the contract opens building rights for its owner only",
   delete owners["48:0"];
   await own.syncParcel(alice, 48, 0);
   assert.equal(own.ownsLand(alice, 48, 0), false, "a transferred parcel closes again");
+});
+
+test("a database from the first MetaLayer payout release opens and gains the parcel table", (t) => {
+  const dir = mkdtempSync(join(tmpdir(), "ml-schema-"));
+  t.after(() => rmSync(dir, { recursive: true, force: true }));
+  const path = join(dir, "game.db");
+  // The live World recorded metalayer-payouts v1 (fingerprint 4f9d8e70…) before
+  // ml_parcels existed: rebuild exactly that state.
+  let db = openDatabase(path);
+  createMetaLayerEconomy(db, { chain: null, linkedAccount: () => null });
+  const payouts = db.prepare("SELECT fingerprint FROM questlayer_schema_modules WHERE name='metalayer-payouts'").get();
+  assert.match(payouts.fingerprint, /^4f9d8e70/, "the payout module keeps the shape live databases recorded");
+  db.exec("DROP TABLE ml_parcels; DELETE FROM questlayer_schema_modules WHERE name='metalayer-parcels'");
+  db.close();
+  preflightDatabase(path);
+  db = openDatabase(path);
+  t.after(() => db.close());
+  createMetaLayerEconomy(db, { chain: null, linkedAccount: () => null });
+  assert.ok(db.prepare("SELECT 1 FROM sqlite_master WHERE name='ml_parcels'").get());
+  assert.equal(db.prepare("SELECT version FROM questlayer_schema_modules WHERE name='metalayer-parcels'").get().version, 1);
 });
