@@ -419,6 +419,7 @@ html[data-test-layer] .balance-pill::after { content: "TEST"; position: absolute
 @media (prefers-reduced-motion: no-preference) {
   .zone-presence-welcome > button { animation: nearby-in .32s ease-out, nearby-glow 1.8s ease-in-out .32s infinite; }
 }
+html[data-motion="reduce"] :is(.nearby-open, .nearby-open-art, .nearby-open > svg, .zone-presence-welcome > button) { animation: none; }
 
 /* ---- Settings drawer ------------------------------------------------------
    Settings slides in from the right on every screen (Lubos, 13 Nov 2026): a
