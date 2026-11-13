@@ -3193,5 +3193,12 @@
  "recorded": "已记录",
  "steps": "步",
  "Public at this map spot. QGOLD is not returned if the message is removed.": "在地图此处公开。消息被移除时不退还 QGOLD。",
- "Public at this pin with its time and photo. Photo metadata is removed.": "在此图钉处公开，附时间和照片。照片元数据会被移除。"
+ "Public at this pin with its time and photo. Photo metadata is removed.": "在此图钉处公开，附时间和照片。照片元数据会被移除。",
+ "+{0} XP · noted for other explorers": "+{0} XP · 已为其他探险者记下",
+ "Answer · +{0} XP": "回答 · +{0} XP",
+ "No more XP for tips today.": "今天提示已无法再获得 XP。",
+ "Noted; the NPC checks it before telling anyone.": "已记下；NPC 会先核实再告诉别人。",
+ "Your answer helps other explorers · +{0} XP for a new tip": "你的回答能帮助其他探险者 · 新提示 +{0} XP",
+ "Your answer…": "你的回答…",
+ "{0} is typing": "{0} 正在输入"
 }

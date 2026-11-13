@@ -3193,5 +3193,12 @@
  "recorded": "記録済み",
  "steps": "ステップ",
  "Public at this map spot. QGOLD is not returned if the message is removed.": "マップのこの場所で公開されます。メッセージが削除されても QGOLD は戻りません。",
- "Public at this pin with its time and photo. Photo metadata is removed.": "このピンで時刻と写真とともに公開されます。写真のメタデータは削除されます。"
+ "Public at this pin with its time and photo. Photo metadata is removed.": "このピンで時刻と写真とともに公開されます。写真のメタデータは削除されます。",
+ "+{0} XP · noted for other explorers": "+{0} XP · ほかの探検家のために記録しました",
+ "Answer · +{0} XP": "答える · +{0} XP",
+ "No more XP for tips today.": "今日はヒントでもらえるXPはもうありません。",
+ "Noted; the NPC checks it before telling anyone.": "記録しました。NPCは確認してから伝えます。",
+ "Your answer helps other explorers · +{0} XP for a new tip": "あなたの答えはほかの探検家の役に立ちます · 新しいヒントで +{0} XP",
+ "Your answer…": "あなたの答え…",
+ "{0} is typing": "{0} が入力中"
 }

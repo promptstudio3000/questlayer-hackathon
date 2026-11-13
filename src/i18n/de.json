@@ -3193,5 +3193,12 @@
  "recorded": "festgehalten",
  "steps": "Schritte",
  "Public at this map spot. QGOLD is not returned if the message is removed.": "Öffentlich an dieser Kartenstelle. QGOLD wird nicht erstattet, wenn die Nachricht entfernt wird.",
- "Public at this pin with its time and photo. Photo metadata is removed.": "Öffentlich an diesem Pin mit Zeit und Foto. Foto-Metadaten werden entfernt."
+ "Public at this pin with its time and photo. Photo metadata is removed.": "Öffentlich an diesem Pin mit Zeit und Foto. Foto-Metadaten werden entfernt.",
+ "+{0} XP · noted for other explorers": "+{0} XP · für andere Entdecker notiert",
+ "Answer · +{0} XP": "Antworten · +{0} XP",
+ "No more XP for tips today.": "Heute keine XP mehr für Tipps.",
+ "Noted; the NPC checks it before telling anyone.": "Notiert; der NPC prüft es, bevor er es weitersagt.",
+ "Your answer helps other explorers · +{0} XP for a new tip": "Deine Antwort hilft anderen Entdeckern · +{0} XP für einen neuen Tipp",
+ "Your answer…": "Deine Antwort…",
+ "{0} is typing": "{0} schreibt"
 }
