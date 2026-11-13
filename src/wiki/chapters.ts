@@ -442,7 +442,7 @@ export const CHAPTERS: Chapter[] = [
           "NEAR AI turns a useful answer into a short neutral tip for that city (or map cell in the World). Other explorers who ask the NPCs get the best tips back: \"explorers tell me…\". Nobody sees who said what.",
           "A new tip pays **30 XP**, confirming a known tip **10 XP**. At most **3 rewarded answers a day**, one per NPC, and the XP counts toward the daily location XP limit.",
           "Answers with links, contacts, personal details, insults or attempts to change the NPC's rules are refused before any AI sees them, and the tip is checked again afterwards. Without AI an answer waits unseen and pays nothing.",
-          "Every NPC has its own voice: a personality card and its own lines for greetings, small talk, jokes and \"I don't know\". When the AI is off or busy the NPC still answers in character and points to explorers' tips when asked about places.",
+          "Every NPC has its own voice: a personality card and its own lines for greetings, small talk, jokes and \"I don't know\". NPCs always answer in rich, vivid English, even when you write to them in another language. When the AI is off or busy the NPC still answers in character and points to explorers' tips when asked about places.",
           "Plzeň starts with a hand-checked set of tips with map positions. An optional Wikipedia lookup (off unless the host turns it on) adds sights near an NPC with their positions; it sends only map coordinates, never what a player wrote.",
           "A tip that names a place with a known position shows its distance in the NPC's Profile; a place without one is listed without a distance.",
         ],

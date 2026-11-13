@@ -1,8 +1,7 @@
 ---
 persona: wayfinder-lenka
 topic: food
-ask_en: Explorer, where is a good place to eat around here?
-ask_cs: Průzkumníku, kde se tu dá dobře najíst?
+ask: Explorer, where around here can one eat something truly delicious?
 ---
 ## Mission
 I drift from street to street and keep a list of honest places to eat for hungry explorers.

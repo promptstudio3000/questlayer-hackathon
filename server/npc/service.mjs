@@ -22,7 +22,6 @@ import {
 } from "./offers.mjs";
 import {
   NPC_TALK_POLICY,
-  languageOf,
   npcConfiguration,
   npcProviderFor,
   templateReply,
@@ -120,7 +119,7 @@ export function createNpcService(
   // Greeting + menu for a fresh encounter (no model call: cheap and instant).
   function greet({ player, actor, world, encounter = null }) {
     const { persona, menu, locked, rows } = context(player, actor, world, encounter?.menu);
-    const reply = templateReply(persona, menu, { lang: "en" });
+    const reply = templateReply(persona, menu);
     memory.refreshWeb({ world, actor });
     return {
       npc: { id: actor.id, name: persona.name, title: persona.title || null, archetype: persona.archetype },
@@ -146,7 +145,7 @@ export function createNpcService(
   function missionView(player, actor, persona) {
     const m = missionFor(persona);
     const s = memory.status(player, actor.id);
-    return { topic: m.topic, ask: m.ask.en, answered: s.answeredHere, xp: s.xp, left: Math.max(0, s.dailyLimit - s.rewardedToday) };
+    return { topic: m.topic, ask: m.ask, answered: s.answeredHere, xp: s.xp, left: Math.max(0, s.dailyLimit - s.rewardedToday) };
   }
 
   // The player answers the NPC's mission question.
@@ -155,7 +154,7 @@ export function createNpcService(
     assert(actor && actor.kind !== "monster", "This character does not talk.", 404, "NPC_UNKNOWN");
     const persona = personaOf(actor);
     const m = missionFor(persona);
-    const result = await memory.answer({ player, actor, persona, mission: m, world, text: answer, lang: languageOf(answer) });
+    const result = await memory.answer({ player, actor, persona, mission: m, world, text: answer });
     return { ...result, mission: missionView(player, actor, persona), policy: NPC_TALK_POLICY };
   }
 
@@ -214,7 +213,7 @@ export function createNpcService(
     }
     // Without the model, only a question about places gets a tip.
     if (!result)
-      result = templateReply(persona, menu, { message: text, lang: languageOf(text), tips: topicOfQuestion(text) ? tips : [] });
+      result = templateReply(persona, menu, { message: text, tips: topicOfQuestion(text) ? tips : [] });
     if (result.remember) store.remember(player, actor.id, result.remember);
     const receipt = outcome === "answered" && used?.source === "near-ai" ? used.receipt : null;
     const auditId = store.audit({
