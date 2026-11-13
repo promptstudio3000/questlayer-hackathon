@@ -145,6 +145,24 @@ export function isPublicPath(tags = {}) {
   );
 }
 
+// The lines a snapper considers for one path feature, or null when the way is
+// not a public path. The tiled build stages exactly these lines on disk.
+export function publicPathLines(feature) {
+  const props = feature?.properties || {};
+  if (!isPublicPath(tagsOf(props))) return null;
+  const g = feature.geometry;
+  if (!g) return null;
+  const identity = osmIdentity(props, feature);
+  const wayId = identity ? `${identity.t}${identity.n}` : null;
+  const lines =
+    g.type === "LineString"
+      ? [g.coordinates]
+      : g.type === "MultiLineString"
+        ? g.coordinates
+        : [];
+  return { wayId, lines };
+}
+
 // Keeps, per record, the nearest public path point within SNAP_RADIUS_M.
 // Memory is bounded by the number of records; paths are streamed through.
 export class PathSnapper {
@@ -155,19 +173,8 @@ export class PathSnapper {
     for (const record of records) this.grid.add(record.lat, record.lng, record);
   }
   considerFeature(feature) {
-    const props = feature?.properties || {};
-    if (!isPublicPath(tagsOf(props))) return;
-    const identity = osmIdentity(props, feature);
-    const wayId = identity ? `${identity.t}${identity.n}` : null;
-    const g = feature.geometry;
-    if (!g) return;
-    const lines =
-      g.type === "LineString"
-        ? [g.coordinates]
-        : g.type === "MultiLineString"
-          ? g.coordinates
-          : [];
-    for (const line of lines) this.considerLine(line, wayId);
+    const path = publicPathLines(feature);
+    if (path) for (const line of path.lines) this.considerLine(line, path.wayId);
   }
   considerLine(line, wayId) {
     const pad = this.radiusM / 111_000;
@@ -233,27 +240,37 @@ export function exclusionKind(tags = {}) {
   return null;
 }
 
+// One exclusion area as the index keeps it, or null when the feature is not one.
+export function exclusionZone(feature) {
+  const g = feature?.geometry;
+  if (!g || (g.type !== "Polygon" && g.type !== "MultiPolygon")) return null;
+  const props = feature.properties || {};
+  const kind = exclusionKind(tagsOf(props));
+  if (!kind) return null;
+  const identity = osmIdentity(props, feature);
+  return {
+    kind,
+    id: identity ? `osm:${identity.t}${identity.n}` : null,
+    geometry: g,
+    box: bboxOf(g),
+  };
+}
+
 export class ExclusionIndex {
   constructor() {
     this.grid = new Grid(0.01);
     this.count = 0;
   }
   addFeature(feature) {
-    const g = feature?.geometry;
-    if (!g || (g.type !== "Polygon" && g.type !== "MultiPolygon")) return false;
-    const props = feature.properties || {};
-    const kind = exclusionKind(tagsOf(props));
-    if (!kind) return false;
-    const identity = osmIdentity(props, feature);
-    const box = bboxOf(g);
-    this.grid.addBox(box.minLat, box.minLng, box.maxLat, box.maxLng, {
-      kind,
-      id: identity ? `osm:${identity.t}${identity.n}` : null,
-      geometry: g,
-      box,
-    });
-    this.count++;
+    const zone = exclusionZone(feature);
+    if (!zone) return false;
+    this.addZone(zone);
     return true;
+  }
+  addZone(zone) {
+    const { box } = zone;
+    this.grid.addBox(box.minLat, box.minLng, box.maxLat, box.maxLng, zone);
+    this.count++;
   }
   find(point) {
     if (!point) return null;
@@ -301,7 +318,9 @@ function similarNames(a, b) {
 
 // Overture rows that duplicate an OSM place are folded into it as a source;
 // the others are kept only when an OSM public path is within 40 m.
-export function mergeOverture(osmRecords, overtureRecords, snapper) {
+// onFold(osm, ovt) is told about every fold; the tiled build records folds so
+// a place in a neighbouring tile receives them too.
+export function mergeOverture(osmRecords, overtureRecords, snapper, onFold) {
   const grid = new Grid(0.001);
   for (const record of osmRecords) grid.add(record.lat, record.lng, record);
   const added = [];
@@ -321,6 +340,7 @@ export function mergeOverture(osmRecords, overtureRecords, snapper) {
       }
     }
     if (match) {
+      onFold?.(match, ovt);
       match.sources.push(...ovt.sources);
       if (!match.name) match.name = ovt.name;
       folded++;

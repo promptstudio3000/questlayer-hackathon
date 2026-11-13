@@ -312,11 +312,13 @@ function boundedPush(list, item, limit) {
 export async function binFeatures(
   cities,
   sources,
-  { reviewedBoxes = [], pathLimit = AUTO_PATH_LIMIT } = {},
+  { reviewedBoxes = [], pathLimit = AUTO_PATH_LIMIT, only = null } = {},
 ) {
+  // `only`: ids of the cities to collect for. Ownership is still decided
+  // among all cities, so a chunk bins exactly what a full run would.
   const index = cityIndex(cities),
     bins = new Map(
-      cities.map((c) => [
+      cities.filter((c) => !only || only.has(c.id)).map((c) => [
         c.id,
         {
           parks: [],
@@ -336,9 +338,8 @@ export async function binFeatures(
     const coords = way.geometry.map((g) => [g.lon, g.lat]),
       c = centroid(coords);
     if (inReviewed(c) || coords.some((p) => inReviewed(p))) continue;
-    const city = index.owner(c);
-    if (!city) continue;
-    const bin = bins.get(city.id);
+    const bin = bins.get(index.owner(c)?.id);
+    if (!bin) continue;
     bin.parks.push(way);
     bin.parkBoxes.push(bboxOf(coords));
   }
@@ -355,11 +356,11 @@ export async function binFeatures(
     const mid = g.coordinates[Math.floor(g.coordinates.length / 2)];
     if (g.coordinates.some((p) => inReviewed(p))) continue;
     const city = index.owner(mid);
-    if (!city) continue;
+    const bin = bins.get(city?.id);
+    if (!bin) continue;
     const way = featureToWay(f);
     if (!way) continue;
-    const bin = bins.get(city.id),
-      box = bboxOf(g.coordinates),
+    const box = bboxOf(g.coordinates),
       item = { way, d: distSq(mid, city.center) };
     if (bin.parkBoxes.some((b) => boxesOverlap(b, box)))
       boundedPush(bin.parkPaths, item, pathLimit);
@@ -370,7 +371,7 @@ export async function binFeatures(
     if (!ring || ring.length < 4) continue;
     const box = bboxOf(ring);
     for (const city of index.overlapping(box))
-      bins.get(city.id).exclusions.push({ ring, box });
+      bins.get(city.id)?.exclusions.push({ ring, box });
   }
   const out = new Map();
   for (const [id, bin] of bins) {
@@ -461,20 +462,30 @@ export async function buildAutoCityPacks({
   zonesFor = null,
   pinned = [],
   reservedIds = [],
+  // chunk: { from, to } builds only cities[from..to) of the selection (the
+  // report then lists the selection's skipped places only for from = 0).
+  chunk = null,
   log = () => {},
 }) {
   if (!/^[a-z0-9][a-z0-9.-]{0,80}$/.test(version || ""))
     throw Error("An auto city version is required.");
-  const { cities, skipped } = selectAutoCities(rows, {
+  const selection = selectAutoCities(rows, {
     countries,
     minPopulation,
     reviewed,
     pinned,
     reservedIds,
   });
-  log(`auto cities: ${cities.length} selected, ${skipped.length} skipped`);
-  const bins = await binFeatures(cities, sources, {
+  const cities = chunk
+      ? selection.cities.slice(chunk.from, chunk.to)
+      : selection.cities,
+    skipped = chunk && chunk.from > 0 ? [] : selection.skipped;
+  log(
+    `auto cities: ${cities.length} of ${selection.cities.length} selected, ${skipped.length} skipped`,
+  );
+  const bins = await binFeatures(selection.cities, sources, {
     reviewedBoxes: reviewed.map((r) => r.coverage),
+    only: chunk ? new Set(cities.map((c) => c.id)) : null,
   });
   const packs = [],
     perCity = [],
@@ -783,17 +794,37 @@ export async function runAutoCities({
       ),
     );
   const pinnedIds = pinned.map((c) => c.cityId);
-  if (countryIds.length)
-    parts.push(
-      await buildAutoCityPacks({
-        ...common,
-        rows,
-        sources: streamsFor(countryIds),
-        countries: countries || countryIds.map((r) => r.toUpperCase()),
-        reservedIds: pinnedIds,
-        sampleDays,
-      }),
-    );
+  // Country cities in chunks of AUTO_CITY_CHUNK (default 40), one pass over
+  // the country's OSM files each: a large country (Germany has ~700 towns of
+  // 15,000+) would otherwise hold every city's paths at once. Czechia, 85
+  // cities in one go, peaked at 1.26 GB.
+  if (countryIds.length) {
+    const countryArgs = {
+      ...common,
+      rows,
+      countries: countries || countryIds.map((r) => r.toUpperCase()),
+      reservedIds: pinnedIds,
+      sampleDays,
+    };
+    const total = selectAutoCities(rows, {
+      countries: countryArgs.countries,
+      minPopulation,
+      reviewed,
+      pinned: [],
+      reservedIds: pinnedIds,
+    }).cities.length;
+    const size = Math.max(1, Number(process.env.AUTO_CITY_CHUNK) || 40);
+    for (let from = 0; from < Math.max(total, 1); from += size)
+      parts.push(
+        slim(
+          await buildAutoCityPacks({
+            ...countryArgs,
+            sources: streamsFor(countryIds),
+            chunk: { from, to: from + size },
+          }),
+        ),
+      );
+  }
   const built = combineBuilds(parts, version);
   const { dir, index } = publishAutoCities(workDir, built, version);
   writeFileSync(

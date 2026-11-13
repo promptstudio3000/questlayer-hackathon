@@ -123,8 +123,42 @@ map" notice, and no zone prize. Auto cities are never in native publication, and
 ## Adding a region
 
 Add an entry to `scripts/poi/regions.mjs` (Geofabrik URL, ISO country, bbox) and set `WORLD_REGIONS=cz,sk` in
-`poi.env`. Europe and the planet need the same stages with more disk; the per-stage memory stays bounded by the
-number of places, not by the number of paths.
+`poi.env`. Europe and the planet need the same stages with more disk; memory stays at one tile (see below), not
+at the size of the country.
+
+## Tiled build
+
+`scripts/poi/build.mjs` builds a country in tiles (13 Nov 2026). Before, it held every place of the country in
+memory to snap it to the nearest public path: Czechia (about 580,000 OSM places and Overture candidates) reached
+2.8 GB of the worker's 3 GB cap, and Germany would need about ten times that.
+
+1. Every input is streamed once into a scratch SQLite file next to the output (`<release>.sqlite.stage`, deleted
+   at the end): places keyed by id with their tile, public path lines as raw float64 coordinates, exclusion areas,
+   Wikidata items and the street path pieces.
+2. A tile is a `POI_TILE_DEG` × `POI_TILE_DEG` degree square (default 0.25, about 28 × 18 km in Czechia). A place
+   belongs to the tile of its own coordinates. A path line or exclusion area is staged for every tile its bounding
+   box reaches plus a 60 m margin, so the 40 m snap and the exclusion test see exactly what a whole-country build
+   sees.
+3. Pass 1, tile by tile: snap places to public paths and fold Overture rows into OSM places. A tile also reads its
+   neighbours' OSM places within 150 m, because an Overture row folds into a place up to 100 m away; the folds are
+   recorded, not applied.
+4. Pass 2, tile by tile: apply the folds, add Wikidata, run the W4 safety assessment and write the rows. Partition
+   hashes are computed afterwards in one ordered scan of the written file.
+
+The rules are unchanged (same taxonomy, safety filter, 40 m snap and Overture merge). The only possible difference
+from a whole-country build is the order of two Overture rows on opposite sides of a tile edge folding into the same
+nameless OSM place.
+
+Auto cities (`scripts/poi/auto-cities.mjs`) are built in chunks of `AUTO_CITY_CHUNK` country cities (default 40),
+one pass over the country's OSM exports per chunk. Which city owns a feature is still decided among all cities, so
+a chunk bins exactly what a full run would.
+
+Local check on 13 Nov (Czechia, openstreetmap.fr extract, Overture 2026-10-21.0, 79,352 Wikidata items, cloud
+sandbox): the tiled build and the old whole-country build wrote the same 297,372 places, 400 partitions, 17,309
+path cells and 123 cities, row for row, also with 0.1 degree tiles (1,133 tiles). Peak memory of the POI build
+fell from 1.30 GB to 0.43–0.46 GB (0.39 GB with 0.1 degree tiles), 2.3 minutes either way; the scratch file peaked at
+0.9 GB next to a 0.52 GB path export. Auto cities in chunks of 20: the same 85 packs (only `importedAt` differs),
+peak 1.26 GB down to 0.87 GB, about 5.5 minutes instead of 5.
 
 ## Run status and coverage
 
