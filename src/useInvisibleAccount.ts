@@ -204,10 +204,14 @@ export function useInvisibleAccount(
     return view;
   }, []);
 
-  const signer: NativeSigner | null =
-    status === "ready" && keyRef.current && accountId
-      ? managedSigner(keyRef.current, accountId)
-      : null;
+  // One signer object per key and account: a new one on every render made
+  // every effect that depends on it run again on each render (the inbox
+  // summary was fetched many times a second).
+  const signerKey = status === "ready" ? keyRef.current : null;
+  const signer: NativeSigner | null = useMemo(
+    () => (signerKey && accountId ? managedSigner(signerKey, accountId) : null),
+    [signerKey, accountId],
+  );
   return {
     status,
     accountId,
