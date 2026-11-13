@@ -62,7 +62,8 @@ import { NativeRewards } from "./native/rewards.mjs";
 import { startRewardWorker } from "./native/reward-worker.mjs";
 import { payoutsEnabled, payoutStatus, pendingPayout } from "./payouts/worker.mjs";
 import { allocationSettings } from "./native/allocation.mjs";
-import { AUTO_CITIES, cityStatus } from "./spatial/city-pack.mjs";
+import { AUTO_CITIES, LIVE_CITIES, cityStatus, playableCityById } from "./spatial/city-pack.mjs";
+import { findDemoCity } from "./spatial/demo-city.mjs";
 import { relayerConfiguration } from "./relayer/config.mjs";
 import { loadServiceAccount } from "./relayer/key-transport.mjs";
 import { ManagedAccounts, hasPlayedFirstAdventure } from "./relayer/accounts.mjs";
@@ -1743,6 +1744,14 @@ async function api(req, res, url) {
     assert(nativeEconomy, "Native economy is not configured yet.", 503);
     return respond(res, await nativeEconomy.snapshot());
   }
+  // "/?newyork": the Test Layer's city demo looks up a typed city name.
+  if (path === "/api/demo-city" && method === "GET")
+    return respond(
+      res,
+      { city: TEST_LAYER ? findDemoCity(url.searchParams.get("q"), { live: LIVE_CITIES, auto: AUTO_CITIES.entries }) : null },
+      200,
+      { "Cache-Control": "public, max-age=300" },
+    );
   if (path === "/api/config")
     return respond(res, {
       mode: "demo",
@@ -3163,8 +3172,17 @@ async function api(req, res, url) {
     spans.wexpire = performance.now() - at;
     at = performance.now();
     // `explore`: a spot of the same city the player asked to search (map moved).
-    const world = await ensureWorld(db, location, input.arena !== false, Date.now(), {
+    // `city`: the Test Layer's demo in another city ("/?newyork"). The arena
+    // skips travel checks, so World always keeps its default city there.
+    const arenaCity =
+      TEST_LAYER && input.arena !== false && typeof input.city === "string"
+        ? playableCityById(input.city.slice(0, 64))
+        : null;
+    const [w0, s0, e0, n0] = arenaCity?.coverage || [];
+    const inArenaCity = !arenaCity || (location.lng >= w0 && location.lng <= e0 && location.lat >= s0 && location.lat <= n0);
+    const world = await ensureWorld(db, inArenaCity ? location : arenaCity.center, input.arena !== false, Date.now(), {
       cellAt: input.explore ? point(input.explore) : null,
+      arenaCity,
     });
     spans.wensure = performance.now() - at;
     viewWorld(player, world.id);
