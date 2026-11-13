@@ -3167,5 +3167,7 @@
  "Pip, your guide": "Пип, твой проводник",
  "Restore your account on this device: Settings → Account.": "Восстанови аккаунт на этом устройстве: Настройки → Аккаунт.",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Сначала сохрани passkey или свои 12 слов. Без них этот исследователь не сможет вернуться.",
- "Shows your next step on the map": "Показывает твой следующий шаг на карте"
+ "Shows your next step on the map": "Показывает твой следующий шаг на карте",
+ "Welcome to": "Добро пожаловать в",
+ "{0} quests here. Tap to see them.": "Здесь {0} квестов. Нажмите, чтобы увидеть."
 }

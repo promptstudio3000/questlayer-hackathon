@@ -3167,5 +3167,7 @@
  "Pip, your guide": "Pip, o teu guia",
  "Restore your account on this device: Settings → Account.": "Restaura a tua conta neste dispositivo: Definições → Conta.",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Guarda primeiro uma passkey ou as tuas 12 palavras. Sem elas este explorador não pode voltar.",
- "Shows your next step on the map": "Mostra o teu próximo passo no mapa"
+ "Shows your next step on the map": "Mostra o teu próximo passo no mapa",
+ "Welcome to": "Bem-vindo a",
+ "{0} quests here. Tap to see them.": "{0} missões aqui. Toca para ver."
 }

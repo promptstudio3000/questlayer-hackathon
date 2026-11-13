@@ -3167,5 +3167,7 @@
  "Pip, your guide": "案内役のピップ",
  "Restore your account on this device: Settings → Account.": "この端末でアカウントを復元：設定 → アカウント。",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "先にパスキーか12個の単語を保存してください。ないとこの探検家は戻せません。",
- "Shows your next step on the map": "次の一歩をマップに表示します"
+ "Shows your next step on the map": "次の一歩をマップに表示します",
+ "Welcome to": "ようこそ",
+ "{0} quests here. Tap to see them.": "ここにクエストが{0}件あります。タップして表示。"
 }

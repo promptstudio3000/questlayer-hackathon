@@ -4090,7 +4090,7 @@ export default function App() {
           onMoveEnd={(center, zoom) => setMapCenter(zoom >= 13 ? center : null)}
           // Only game elements sit on the map. Community quests, player tasks
           // and Secrets are reached from the Community button and Nearby.
-          creatorPlaces={MAP_DIALOG_PINS ? creatorPlaces : []}
+          creatorPlaces={creatorPlaces}
           onCreatorPlace={(questId) => {
             setTab("community");
             setCreatorView({ page: "quest", questId });

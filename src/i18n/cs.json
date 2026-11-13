@@ -3167,5 +3167,7 @@
  "Pip, your guide": "Pip, tvůj průvodce",
  "Restore your account on this device: Settings → Account.": "Obnov účet na tomto zařízení: Nastavení → Účet.",
  "Save a passkey or your 12 words first. Without them this explorer cannot come back.": "Nejdřív si ulož passkey nebo svých 12 slov. Bez nich se tento průzkumník nedá vrátit.",
- "Shows your next step on the map": "Ukazuje tvůj další krok na mapě"
+ "Shows your next step on the map": "Ukazuje tvůj další krok na mapě",
+ "Welcome to": "Vítej v zóně",
+ "{0} quests here. Tap to see them.": "Čeká tu {0} úkolů. Klepni a uvidíš je."
 }
