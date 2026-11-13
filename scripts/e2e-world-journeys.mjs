@@ -40,7 +40,7 @@ import {
   pathsAround,
 } from "../tests/fixtures/world-coverage/czechia.mjs";
 import { coverageReport, openPoiDb } from "../server/poi/coverage.mjs";
-import { openMapSettings } from "./lib/e2e-nav.mjs";
+import { closeOpenSheet, openMapSettings } from "./lib/e2e-nav.mjs";
 
 const ROOT = resolve(import.meta.dirname, "..");
 const SHOTS = resolve(
@@ -212,14 +212,14 @@ async function journey(browser, server, device, j, expected) {
       world.coins.length >= j.minCoins,
       `${world.coins.length} coins on mapped paths (want ≥ ${j.minCoins})`,
     );
-    // The GPS status sits in Map settings behind the gear.
+    // The GPS status is the first row of Settings behind the gear.
     await openMapSettings(page);
     await page.waitForFunction(
       () => /GPS ±\d+ m/.test(document.querySelector(".map-settings-status")?.textContent || ""),
       null,
       { timeout: 15_000 },
     );
-    await page.keyboard.press("Escape");
+    await closeOpenSheet(page);
     const poiZones = world.zones.filter((z) => z.source === "poi");
     const result = {
       device,

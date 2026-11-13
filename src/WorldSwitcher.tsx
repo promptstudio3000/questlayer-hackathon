@@ -12,6 +12,7 @@ export type GameLayerConfig = {
   tour?: boolean;
   testLayerUrl: string | null;
   worldUrl: string | null;
+  defaultTest?: boolean;
 };
 
 export function WorldSwitcher({
@@ -34,7 +35,7 @@ export function WorldSwitcher({
   // The other server: the Test Layer from World (testnet only), World from the Test Layer.
   const other = test
     ? gameLayer?.worldUrl
-      ? { url: gameLayer.worldUrl, name: REALMS.questlayer.name, text: tr("The real game.") }
+      ? { url: gameLayer.worldUrl + "?world=1", name: REALMS.questlayer.name, text: tr("The real game.") }
       : null
     : gameLayer?.testLayerUrl
       ? { url: gameLayer.testLayerUrl, name: tr("Test Layer"), text: tr("Test coins, not real money.") }

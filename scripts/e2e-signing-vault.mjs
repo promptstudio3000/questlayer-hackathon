@@ -20,7 +20,7 @@
 //      Node, opens in the vault and shows in the conversation; after closing,
 //      the envelope badge ("Messages: 1 new") leads to the list and back into
 //      the conversation, which is then read.
-//   6. Wallet words (Settings → Account and devices → "Open in a wallet"):
+//   6. Wallet words (Settings → Account → "Open in a wallet"):
 //      the secure window warns, shows 12 new words only while held open,
 //      checks two of them and adds their key to the account through the
 //      relayer. The words open the same key in any NEAR wallet
@@ -57,7 +57,7 @@ import assert from "node:assert/strict";
 import { chromium, devices, webkit } from "playwright";
 import { parseSeedPhrase } from "near-api-js/seed-phrase";
 import { build } from "vite";
-import { closeOpenSheet } from "./lib/e2e-nav.mjs";
+import { closeOpenSheet, openAdvancedSettings, openSettings } from "./lib/e2e-nav.mjs";
 import { serveBlankMapStyle } from "./lib/e2e-map-style.mjs";
 import { createSigningVaultServer } from "../server/signing-vault.mjs";
 import { decodeSignedDelegate, verifySignedDelegate } from "../server/relayer/delegate.mjs";
@@ -538,13 +538,7 @@ async function placePeerNearby(context, appOrigin, peer) {
   );
 }
 async function sharePosition(page) {
-  const tabs = page.getByRole("tablist", { name: "Profile", exact: true });
-  if (!(await tabs.isVisible().catch(() => false))) {
-    await closeOpenSheet(page);
-    await page.locator(".topbar .profile-pill").click();
-    await tabs.waitFor();
-  }
-  await page.getByRole("tab", { name: "Settings", exact: true }).click();
+  await openSettings(page);
   const share = page.getByRole("switch", { name: /Show me to nearby explorers/ });
   if ((await share.getAttribute("aria-checked")) !== "true") await share.click();
   await page.locator('[role="switch"][aria-checked="true"]', { hasText: "Show me to nearby explorers" }).waitFor();
@@ -558,17 +552,9 @@ async function startPlaying(page, url, name) {
   await page.locator(".topbar .profile-pill").waitFor();
 }
 async function openAccountAndDevices(page) {
-  // A reload can bring Profile back open; otherwise open it from the top bar.
-  const tabs = page.getByRole("tablist", { name: "Profile", exact: true });
-  if (!(await tabs.isVisible().catch(() => false))) {
-    await closeOpenSheet(page);
-    await page.locator(".topbar .profile-pill").click();
-    await tabs.waitFor();
-  }
-  await page.getByRole("tab", { name: "Settings", exact: true }).click();
-  const group = page.locator("details.settings-group", { hasText: "Account and devices" });
-  if (!(await group.evaluate((d) => d.open))) await group.locator(":scope > summary").click();
-  return group;
+  // Settings → Account holds the save steps (passkey, wallet words) and the
+  // "not set up" states; the device list is under Advanced, opened here too.
+  return openAdvancedSettings(page);
 }
 async function waitFor(check, what, timeout = 30_000) {
   const end = Date.now() + timeout;
@@ -669,6 +655,9 @@ async function runDevice(name, servers) {
           "the game origin stores no private key",
         );
         await capture(page, "account-ready", group.locator(".account-devices"));
+        // The save steps (recovery passkey, wallet words) sit under Account.
+        await group.locator(".account-save").getByRole("button", { name: "Open in a wallet", exact: true }).waitFor();
+        await capture(page, "account-save", group.locator(".account-save"));
         report.scenarios.push({ name: "account creation", accountId: state.account.accountId, publicKey });
         console.log(`  ${state.account.accountId} with ${publicKey}`);
 
@@ -720,7 +709,7 @@ async function runDevice(name, servers) {
           const sent = [];
           context.on("request", (r) => sent.push(`${r.url()}\n${r.postData() || ""}`));
           const devicesPanel = again.locator(".account-devices");
-          await devicesPanel.getByRole("button", { name: "Open in a wallet", exact: true }).click();
+          await again.getByRole("button", { name: "Open in a wallet", exact: true }).click();
           const intro = page.getByRole("dialog", { name: "Open in a wallet" });
           await intro.getByText("Whoever has the words has the account").waitFor();
           await capture(page, "wallet-intro", intro);

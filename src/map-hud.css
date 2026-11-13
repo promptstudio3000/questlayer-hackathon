@@ -44,40 +44,6 @@
   position: absolute; top: 6px; right: 6px; width: 10px; height: 10px; border-radius: 50%;
   background: var(--discovery, #ff1dff); box-shadow: 0 0 0 2px var(--surface-raised);
 }
-.map-settings-flyout {
-  position: absolute; top: 56px; right: 0; z-index: 40; width: min(300px, calc(100vw - 24px));
-  display: grid; gap: 2px; padding: 8px; border-radius: var(--radius-item, 16px);
-  background: var(--surface-raised); box-shadow: 0 8px 32px #1a033533; color: var(--ink);
-}
-.map-settings-mode {
-  display: flex; align-items: center; gap: 8px; min-height: 48px; padding: 4px 4px 8px 8px;
-  border-bottom: 1px solid var(--decorative-border); margin-bottom: 4px; font-size: 14px;
-}
-.map-settings-mode .status-dot { flex: none; }
-.map-settings-status { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
-.map-settings-mode > button {
-  display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 12px; flex: none;
-  border: 0; border-radius: var(--radius-control, 10px); background: var(--surface-soft); color: var(--action); font: inherit; font-weight: 600;
-}
-.map-settings-row {
-  display: flex; align-items: center; gap: 12px; width: 100%; min-height: 48px; padding: 0 8px;
-  border: 0; border-radius: var(--radius-control, 10px); background: transparent; color: var(--ink);
-  font: inherit; font-size: 16px; text-align: start;
-}
-.map-settings-row > span:not(.map-settings-switch) { flex: 1; min-width: 0; }
-.map-settings-row:hover, .map-settings-row[aria-pressed="true"] { background: var(--surface-soft); }
-.map-settings-row > svg { flex: none; color: var(--ink-secondary); }
-.map-settings-switch {
-  position: relative; flex: none; width: 40px; height: 24px; border-radius: 12px; background: var(--control-border, #c9bde0);
-  transition: background 0.15s;
-}
-.map-settings-switch::after {
-  content: ""; position: absolute; top: 3px; left: 3px; width: 18px; height: 18px; border-radius: 50%;
-  background: #fff; transition: transform 0.15s;
-}
-.map-settings-row[aria-checked="true"] .map-settings-switch { background: var(--action); }
-.map-settings-row[aria-checked="true"] .map-settings-switch::after { transform: translateX(16px); }
-[dir="rtl"] .map-settings-row[aria-checked="true"] .map-settings-switch::after { transform: translateX(-16px); }
 .map-settings button:focus-visible, .map-actions button:focus-visible, .info-tip-button:focus-visible,
 .map-guide-close:focus-visible, .demo-stick button:focus-visible { outline: 3px solid var(--focus); outline-offset: 2px; }
 

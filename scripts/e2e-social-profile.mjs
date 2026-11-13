@@ -44,7 +44,7 @@ import { chromium, devices, webkit } from "playwright";
 import { decodeFunctionData, encodeFunctionResult, stringToHex, toHex, pad, concat, size } from "viem";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { AAVEGOTCHI, AAVEGOTCHI_ABI } from "../server/aavegotchi.mjs";
-import { closeOpenSheet, openScreen } from "./lib/e2e-nav.mjs";
+import { closeOpenSheet, openAdvancedSettings, openScreen, openSettings as openSettingsSheet } from "./lib/e2e-nav.mjs";
 import { fixedDayOffset, shiftBrowserClock } from "./lib/e2e-clock.mjs";
 import { serveBlankMapStyle } from "./lib/e2e-map-style.mjs";
 
@@ -235,13 +235,7 @@ async function startPlaying(page, url, name) {
 }
 
 async function openSettings(page) {
-  const tabs = page.getByRole("tablist", { name: "Profile", exact: true });
-  if (!(await tabs.isVisible().catch(() => false))) {
-    await closeOpenSheet(page);
-    await page.locator(".topbar .profile-pill").click();
-    await tabs.waitFor();
-  }
-  await page.getByRole("tab", { name: "Settings", exact: true }).click();
+  await openSettingsSheet(page);
 }
 
 async function waitFor(check, what, timeout = 30_000) {
@@ -340,9 +334,7 @@ async function runDevice(name, server, rpc, account) {
     await scan(eth, "profile");
     await own.getByRole("button", { name: "Close" }).first().click();
     await own.waitFor({ state: "hidden" });
-    await openSettings(eth);
-    const account_ = eth.locator("details.settings-group", { hasText: "Account and devices" });
-    if (!(await account_.evaluate((d) => d.open))) await account_.locator(":scope > summary").click();
+    const account_ = await openAdvancedSettings(eth);
     const wallets = account_.locator("details.native-extras", { hasText: "Ethereum wallets" });
     await wallets.waitFor({ timeout: 15_000 });
     if (!(await wallets.evaluate((d) => d.open))) await wallets.locator(":scope > summary").click();

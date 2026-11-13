@@ -73,7 +73,7 @@ try {
     const characterTab = page.getByRole("tab", { name: "Character", exact: true });
     await characterTab.focus();
     await page.keyboard.press("End");
-    assert.equal(await page.getByRole("tab", { name: "Settings", exact: true }).getAttribute("aria-selected"), "true", "Keyboard tabs select Settings");
+    assert.equal(await page.getByRole("tab", { name: "Stake", exact: true }).getAttribute("aria-selected"), "true", "Keyboard tabs select Stake");
     await page.keyboard.press("Home");
     assert.equal(await characterTab.getAttribute("aria-selected"), "true", "Keyboard tabs return to Character");
     if (phase !== "before") {
@@ -85,7 +85,7 @@ try {
     await page.locator(".badge-medal").first().waitFor();
     await page.getByRole("button", { name: /^Badges/ }).click();
     await capture("profile-badges");
-    for (const section of ["Stake", "Settings"]) {
+    for (const section of ["Stake"]) {
       await page.getByRole("tab", { name: section, exact: true }).click();
       if (section === "Stake") await page.locator(".fuel").waitFor();
       await page.waitForTimeout(250);

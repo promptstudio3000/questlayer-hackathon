@@ -174,7 +174,7 @@ export const CHAPTERS: Chapter[] = [
     hero: "phone-hud",
     status: "live",
     updated: "2026-11-13",
-    sources: ["docs/ARCHITECTURE.md", "docs/GAME-RULES.md", "docs/SOURCES-AND-INTEGRATIONS.md", "README.md", "server/index.mjs", "src/main.tsx", "src/App.tsx", "src/DemoControls.tsx", "src/useDemoWalk.ts", "src/MapSurface.tsx", "src/nearby-action.ts", "src/Dialog.tsx", "src/QuestBrief.tsx", "src/activity-view.ts", "src/GameIntro.tsx", "src/learning-store.ts", "src/activity-help.ts", "src/FirstSession.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx", "src/zone-presence.ts", "src/ZonePresence.tsx", "src/MapSettings.tsx", "src/MapActions.tsx", "src/InfoTip.tsx", "src/PotRow.tsx", "src/useHudCard.ts", "src/screens.tsx", "src/nearby-list.ts"],
+    sources: ["docs/ARCHITECTURE.md", "docs/GAME-RULES.md", "docs/SOURCES-AND-INTEGRATIONS.md", "README.md", "server/index.mjs", "src/main.tsx", "src/App.tsx", "src/DemoControls.tsx", "src/useDemoWalk.ts", "src/MapSurface.tsx", "src/nearby-action.ts", "src/Dialog.tsx", "src/QuestBrief.tsx", "src/activity-view.ts", "src/GameIntro.tsx", "src/learning-store.ts", "src/activity-help.ts", "src/FirstSession.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx", "src/zone-presence.ts", "src/ZonePresence.tsx", "src/MapSettings.tsx", "src/SettingsScreen.tsx", "src/MapActions.tsx", "src/InfoTip.tsx", "src/PotRow.tsx", "src/useHudCard.ts", "src/screens.tsx", "src/nearby-list.ts"],
     blocks: [
       { h: "Where everything lives" },
       { viz: "screen-map" },
@@ -207,7 +207,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "A new explorer without a deep link sees one skippable, illustrated guide before the map. Restored sessions and deep links never open it.",
           "First-time tips teach one action each, independent of any AI reply. They belong to this browser and player and never mark progress or grant rewards.",
-          "Profile → Settings → Help reopens the guide, toggles first-time tips and shows the first steps again; the links to How it works, Wiki, Economy and Treasury sit at the bottom of Settings.",
+          "Settings (the gear in the top right corner) has one helper switch: **Pip, your guide** where the tour runs, **First-time tips** elsewhere. Off hides the helper and the tips; on brings them back, also after the first-steps card was closed. Settings → Help reopens How to play and answers questions; the links to How it works, Wiki, Economy and Treasury sit at the bottom of Settings.",
           "A picked-up coin flies to the QGOLD counter (a fade under reduced motion). A new wearable opens a short, closable item moment once.",
           "On desktop, Inventory, Community and Profile open as a centred card over the dimmed map; on phones they are full screen.",
           "The logo button at the top left opens the world menu: a dropdown under the button on desktop, a bottom sheet on phones. Its first row links to **How it works**, **Wiki** and **Treasury**; below are the worlds to switch between.",
@@ -259,7 +259,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "**GPS play:** no tap-to-walk anywhere. The character and the follow camera use your moving course; stationary jitter, stale or inaccurate fixes and big jumps never invent a turn. Manual panning pauses follow; My location or walking on restores it.",
           "**City demo:** a collapsible joystick (drag the knob: up walks the way you face, sideways turns, down steps back at 0.6× speed); arrows and WASD work too. A Run toggle, on by default, moves at 14 m/s; walking is 5 m/s. The demo is exempt from the GPS travel cap (about 15 km/h).",
-          "**Start where you are:** after sign-in the game asks for location and opens the world around you: POI quests and backed coins of your street cell anywhere on Earth (funded cell zones in Czechia). The Plzeň city demo is the fallback when location is refused or unavailable, or when you pick Demo in Map settings; that choice is remembered until you pick Use GPS again. A refused start-up request keeps the demo without a warning.",
+          "**Start where you are:** after sign-in the game asks for location and opens the world around you: POI quests and backed coins of your street cell anywhere on Earth (funded cell zones in Czechia). The Plzeň city demo is the fallback when location is refused or unavailable, or when you pick Demo in Settings → Map; that choice is remembered until you pick Use GPS again. A refused start-up request keeps the demo without a warning.",
           "Opening a dialog releases held movement; closing it never resumes an old key press.",
           "Quest buttons only turn the explorer toward the target; within 3 m the demo snaps onto it so thin path zones count.",
           "Multi-stop walks keep their stop numbers. Ordered walks accept only the server's next stop; any-order hunts say **Any order** and use the nearest remaining stop. Confirmation needs the 25 m range, the zone footprint and fresh GPS; the server alone advances progress.",
@@ -289,7 +289,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "**Map coins (default):** every coin and zone prize is backed QGOLD. It shows as on its way in Profile → Stake → Earnings and the next payout round mints it to your NEAR account, created automatically. This stays the ledger after any wallet sign-in.",
-          "**Test network ledger:** projects the funded Plzeň NEAR day onto the map and collects with fresh GPS, one request at a time. It runs only when you pick it in Settings → Developer or open Expeditions.",
+          "**Test network ledger:** projects the funded Plzeň NEAR day onto the map and collects with fresh GPS, one request at a time. It runs only when you pick it in Settings → Advanced → Developer or open Expeditions.",
           "Other explorers within about 1.5 km appear live on the map (name, look, position) while their game is open on screen; Settings → Show me to nearby explorers turns it off. GPS and demo players see only their own kind. Profiles never show a position; wallets, balances and inventory are never shown.",
         ],
       },
@@ -578,7 +578,7 @@ export const CHAPTERS: Chapter[] = [
           rows: [
             ["Character", "Avatar, level and XP, your totals (finds, quests, tasks, monsters, wearables, badges, QGOLD on your account), Badges, a Messages tile for the inbox, and **Your story**: what happened, newest first (`GET /api/me/journey`)"],
             ["Stake", "One screen (Earnings was merged in on 12 Nov). On top, three small numbers: **your QGOLD** (with what the next payout adds), **QGOLD on the map today** and, once you have staked, **from your stake** (the yield kept for you). The page shows at once and fills its numbers as the chain answers: the tier ladder with the **yield share to the prize pool** (25 / 50 / 100 %) right under it, then a **tier choice** (Staker 2B, Tier 2 10B, Tier 3 50B QGOLD; picking Tier 2 or 3 sets the yield share to 100 %, and a smaller share raises the amount, because tiers count stake × share) and one **Stake** button for the chosen amount. The first tap sets up your personal vault (a one-time setup fee that is not returned), the next tap stakes; each money step asks for one Yes in a small QuestLayer confirmation window; when staking is not possible yet (no explorer account, too little test NEAR), the button opens a **Why you can't stake yet** dialog instead of an error: the same one-line dialog as in the Market, with one main button (use your QGOLD, get test NEAR or connect a NEAR wallet, which then pays the stake). There is **one stake per explorer**: afterwards the only action is **Withdraw** (about 1–7 days, 4 epochs; the game moves the unlocked NEAR back and you withdraw it to your balance). Once you have staked, a collapsed **Your vault** shows the vault address, owner, validator, staked NEAR and your yield share. Payment receipts live in **Settings → Receipts**. Stake amounts, tier requirements and locked-zone prices read in the same QGOLD as rewards (2 NEAR shows as 2B QGOLD); the payment itself still leaves in NEAR and the signing window shows that."],
-            ["Settings", "Game, Help (How to play, the guide, Game economy, first-time tips; **Game economy** explains the game in four illustrated steps (walk, collect, stake, unlock) and carries the same stake form as the Stake tab, with no chain details: those are on [Treasury](/treasury) and [Economy](/economy)), Account and devices, Sign out, then the reference links; the reward ledger switch sits in a small Developer section"],
+            ["Settings", "Its own sheet behind the **gear** in the top right corner, not a Profile tab (13 Nov). Four short parts: **Map** (city demo or GPS, My location, Full map, City overview, Globe, Turn the map with me, 3D character), **Game** (the helper switch for Pip or first-time tips, Show me to nearby explorers, language, sound, vibration, reduce motion), **Help** (How to play, Ask a question, **Game economy**, which explains the game in four illustrated steps (walk, collect, stake, unlock) and carries the same stake form as the Stake tab, with no chain details: those are on [Treasury](/treasury) and [Economy](/economy)) and **Account** (save the explorer with a passkey, the NEAR wallet with its 12 words, Sign out, which asks once because an explorer without a passkey or words cannot come back). Everything technical waits under one folded **Advanced**: linked NEAR and Ethereum wallets, devices, the on-chain feed, receipts and the developer reward-ledger switch. Reference links close the sheet"],
           ],
         },
       },
@@ -651,7 +651,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "Explorers **within 1 km** of each other (both sharing a position in the same realm) can write right away, and that conversation stays open afterwards. Farther away, a conversation opens after both **waved at each other** within the last hour, or after one tapped **Ask to message** and the other accepted. A declined request stays declined.",
-          "Messages need the explorer account on this device. **Test network:** an account whose keys are on no device you still have, with no recovery passkey (accounts from before the secure signing window, 8 Nov), can **Start with a new account** under Profile → Settings → Account and devices, once a day. Explorer, XP, finds and items stay; tokens on the old NEAR account stay there and the game stops using it.",
+          "Messages need the explorer account on this device. **Test network:** an account whose keys are on no device you still have, with no recovery passkey (accounts from before the secure signing window, 8 Nov), can **Start with a new account** under Settings → Account, once a day. Explorer, XP, finds and items stay; tokens on the old NEAR account stay there and the game stops using it.",
           "**Block** stops requests, messages and delivery both ways. Demo explorers cannot write or receive.",
           "Limits: 10 new requests a day (20 unanswered at most), 30 messages an hour and 150 a day per sender, 120 received an hour, one message every 2 seconds per pair.",
           "**Report** discloses the key of that one message only; three different reporters within 7 days pause the sender until a moderator decides.",
@@ -782,7 +782,7 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "map-formula",
     status: "live",
-    updated: "2026-11-11",
+    updated: "2026-11-13",
     sources: ["docs/MAP-REWARDS.md", "docs/GLOBAL-TREASURY.md", "server/map-rewards/policy.mjs", "server/map-rewards/budget.mjs", "server/map-rewards/chain.mjs"],
     blocks: [
       { h: "How a day is planned" },
@@ -791,6 +791,7 @@ export const CHAPTERS: Chapter[] = [
           "At the first request of a local day the server builds the plan once from the **real daily budget**: the map's share of the rewards contract's per-date cap, priced in micro-QGOLD at the vault's rate R.",
           "**One coin = coin budget ÷ all shares.** At a 0.05 NEAR map budget and R = 0.001 NEAR that is 50 QGOLD tokens (50,000,000 in game units) over 6.5–13 million shares, a few QGOLD per coin on screen. The value grows with the treasury; shares a cell cannot hold stay in the treasury.",
           "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area; what a capped cell cannot take goes to the others.",
+          "**Every zone prize is paid out on chain.** Plzeň's reviewed zones share their cell's zone budget as the first-finisher prize (only the first world to open the cell that day funds it, so GPS and the demo never spend it twice); the game treasury funds no prize.",
           "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest.",
           "The city demo pays the same backed coins. Outside Czechia a street cell gets up to 400 coins of the same value, drawn from the day's unplaced coin budget until it is spent, and paid through the payout rounds (`MAP_WORLD_COINS=off` stops it). Funded cell zones and pioneer bonuses stay in Czechia.",
         ],
@@ -1193,7 +1194,7 @@ export const CHAPTERS: Chapter[] = [
           "A new explorer gets `<name>.play-…testnet`, funded with a small NEAR deposit once, when the account is created, after they earned their first XP on the map; the first steps play solo without it. New accounts per network address are capped per day.",
           "Gas is always sponsored. The small balance only covers the account's storage and the player's own payments (Aura buys, deposits), which the relayer never sponsors. Starting NEAR comes **once**, when the account is created; there is no daily refuel (`PLAYER_REFUEL=1` turns it back on for tests). Profile → Stake → Earnings offers **Convert QGOLD to NEAR** at the vault or **Add your own NEAR** from any wallet.",
           "Every in-game action (tasks, Secrets, Aura listings and equipment, staking, level rewards, badges, profile and note records) signs with this account, without a wallet pop-up. Before it exists, **Activate my account** prepares it.",
-          "The device key lives in a separate signing origin, deployed with the game. If a browser blocks its storage, no account is created, Profile → Settings → Account and devices says so, and free play continues. Keys made before that origin are not rotated yet.",
+          "The device key lives in a separate signing origin, deployed with the game. If a browser blocks its storage, no account is created, Settings → Account says so, and free play continues. Keys made before that origin are not rotated yet.",
           "Purchases, equipment, earned mini-games and getting ready to trade sign silently. Anything that can pay someone else (a sale or purchase, a task, Secret or send, a withdrawal, an asset transfer) and account recovery ask one plain Yes / No question in a small separate window, which a compromised game page cannot answer.",
         ],
       },
@@ -1239,7 +1240,7 @@ export const CHAPTERS: Chapter[] = [
           "Fee: 20,000 pips (2 %) on the buyer's wNEAR leg, collected for the treasury.",
           "NPC traders keep their stock and purse inside the verifier; a fill pairs the player's signed diff with a server-signed trader intent.",
           "The solver's gas counts against the shared daily sponsorship budget. When it is used up, fills and withdrawals wait for the next day; signed orders stay in the book.",
-          "Every settled trade and withdrawal is a History row for both explorers with the settlement transaction (Settings → Account and devices → On chain); Shop → Market → More trading tools lists your own trades.",
+          "Every settled trade and withdrawal is a History row for both explorers with the settlement transaction (Settings → Advanced → On chain); Shop → Market → More trading tools lists your own trades.",
           "Aavegotchi wearables are never traded: originals stay in the wallet, map clones are not NFTs.",
           "Signed market-v2 orders (NEP-413) remain as a fallback. The old practice QGOLD market is closed (`410 MARKET_ON_CHAIN`). Mainnet `intents.near` is planned and needs the owner's go.",
         ],
@@ -1340,8 +1341,8 @@ export const CHAPTERS: Chapter[] = [
           "Phone budget: first-load JS and CSS are capped; every big screen, this wiki included, loads lazily.",
           "English is the default language; other languages are opt-in dictionaries, checked on 390 px phones in CI.",
           "The testnet runs a removable test seed (bots, quests, community tasks, free Secrets); every seeded row has a `seed-` id. Starter kits for real explorers are off unless `TEST_SEED_KIT=1`.",
-          "A guided tour (helper Pip, top-right card) walks a new explorer through every quest type, encounter, trade and community action in Plzeň; each step ticks only from the game's own records (ledger actions, sponsored transactions, burns), and the end lists every transaction with its explorer link. Show me marks characters on the map for the explorer to walk up to, and opens screens such as the treasury vote right away.",
-          "Two worlds, one code: QuestLayer World is the real game, and the **Test Layer** (testnet only, its own service, database, signing vault and contract set, Test QGOLD shown with a TEST tag, 4-hour explorers) holds the bots, the seed content, the compact Plzeň zones and every feature under test. Mainnet refuses the Test Layer.",
+          "A guided tour (helper Pip, top-right card) walks a new explorer through every quest type, encounter, trade and community action in Plzeň; each step ticks only from the game's own records (ledger actions, sponsored transactions, burns), and the end lists every transaction with its explorer link. Show me marks characters on the map for the explorer to walk up to, and opens screens such as the treasury vote right away. **Settings → Pip, your guide** switches the helper off and back on, also before the tour began.",
+          "Two worlds, one code: QuestLayer World is the real game, and the **Test Layer** (testnet only, its own service, database, signing vault and contract set, Test QGOLD shown with a TEST tag, 4-hour explorers) holds the bots, the seed content, the compact Plzeň zones and every feature under test. Mainnet refuses the Test Layer. Until launch the main address opens the Test Layer; its world picker switches to World, and the device remembers that choice.",
           "A tester-account command line sets the owner test explorer's password, removes the old practice-QGOLD credit from explorers created before 10 November and retires duplicate test explorers (QGOLD 0, sessions revoked).",
           "A deploy reinstalls the separate signing-vault origin whenever its code or contract list changed.",
           "Releases and testnet operator jobs run on the VPS itself. A release runner follows the deploy branch every minute (build, tests, database backup, switch, automatic rollback) and runs queued operator jobs from an allowlist, one at a time, after a read-only plan; contract upgrades only with a WASM hash that matches the reviewed build. It refuses mainnet. Its public status is at `/api/release/status`.",

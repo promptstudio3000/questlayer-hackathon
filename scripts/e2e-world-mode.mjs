@@ -7,7 +7,7 @@ import {join,resolve} from "node:path";
 import {createServer} from "node:net";
 import assert from "node:assert/strict";
 import {chromium,webkit} from "playwright";
-import { openMapSettings } from "./lib/e2e-nav.mjs";
+import { closeOpenSheet, openMapSettings } from "./lib/e2e-nav.mjs";
 const root=resolve(import.meta.dirname,".."),dir=mkdtempSync(join(tmpdir(),"questlayer-mode-"));
 const shots=resolve(process.env.E2E_SHOTS||"output/qa/compact-guidance-2026-11-08/world-mode");mkdirSync(shots,{recursive:true});
 const port=await new Promise(done=>{const s=createServer();s.listen(0,"127.0.0.1",()=>{const p=s.address().port;s.close(()=>done(p));});});
@@ -54,7 +54,7 @@ try{
   await page.locator(".world-loading").waitFor({state:"hidden",timeout:10000});
   await page.evaluate(async()=>{window.__finishGps();await Promise.resolve();await Promise.resolve();});
   await page.locator(".demo-pad").waitFor();
-  await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).waitFor();
+  await (await openMapSettings(page)).getByRole("button",{name:"Use GPS, my location",exact:true}).waitFor();await closeOpenSheet(page);
   await page.getByRole("button",{name:"Explore",exact:true}).click();await page.locator(".zone-card").first().waitFor();
   const report={browser:engine.name(),fastGpsResponseAccepted:true,demoReturn:true,staleGpsResponseIgnored:true,provenance:"Actual local App/API; asynchronous synthetic GPS and immediate browser world-read response"};
   writeFileSync(join(shots,engine.name()+".json"),JSON.stringify(report,null,2));console.log(JSON.stringify(report));

@@ -50,7 +50,7 @@ export function FundsHelp({
       ? explorerStatus === "play-first"
         ? tr("Collect a coin or finish a quest first. That opens your account.")
         : explorerStatus === "needs-recovery"
-          ? tr("Restore your account on this device: Profile → Account and devices.")
+          ? tr("Restore your account on this device: Settings → Account.")
           : tr("Your account is still being prepared. Try again in a moment.")
       : tr("Needs {0} QGOLD · you have {1} · paid in NEAR", { 0: q(funds.need), 1: q(have) });
   const canSwap = !!account && reason === "qgold-covers" && !!qgold && qgold.units > 0n;

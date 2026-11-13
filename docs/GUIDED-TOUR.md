@@ -32,7 +32,7 @@ coach steps aside. While the map tools menu is open, Pip shrinks to his lantern 
 
 Nothing is ticked by the client: `GET /api/tour` computes every step from the database on each read, so the
 tour can never claim a transaction that did not happen. `POST /api/tour {action}` only starts, skips a step,
-hides or restarts. A skipped step never blocks a later one. State: table `tour_progress` (module
+hides or restarts. A skipped step never blocks a later one. Settings → "Pip, your guide" hides and shows the helper (`hide` / `show`), also before the tour began: that row has `started_at` 0 and does not count as started. State: table `tour_progress` (module
 `guided-tour`).
 
 ## Show me
