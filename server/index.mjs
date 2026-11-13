@@ -1,4 +1,5 @@
 import { createLayerStore } from "./layer/store.mjs";
+import { createMetaLayerChain, createMetaLayerEconomy } from "./layer/economy.mjs";
 import { createLayerRoutes } from "./layer/routes.mjs";
 import { LAYER_REGISTRY, publicLayer } from "./layer/layers.mjs";
 import { defaultDatabasePath } from "./state-path.mjs";
@@ -263,9 +264,23 @@ const db = openDatabase();
 // Layer (docs/LAYER.md): the shared virtual voxel world, nonfinancial and
 // testnet-only, off unless LAYER_ENABLED=1. Its tables live in the game database.
 const layerEnabled = process.env.LAYER_ENABLED === "1" && NETWORK !== "mainnet";
+// MetaLayer economy (server/layer/economy.mjs): created once the NEAR provider
+// and wallet links exist below; the store reaches it through this holder.
+let metaLayerEconomy = null;
 const layerRoutes = layerEnabled
   ? createLayerRoutes({
-      store: createLayerStore(db),
+      store: createLayerStore(db, {
+        economy: {
+          onRecord: (action) => metaLayerEconomy?.onRecord(action),
+          ownsLand: (actor, x0, z0) => metaLayerEconomy?.ownsLand(actor, x0, z0) ?? false,
+          syncParcel: (actor, x0, z0) =>
+            metaLayerEconomy ? metaLayerEconomy.syncParcel(actor, x0, z0) : { owned: false, owner: null },
+          summary: (actor, layerId) =>
+            metaLayerEconomy
+              ? metaLayerEconomy.summary(actor, layerId)
+              : { active: false, metagold: "0", metaXp: 0, badges: [], parcels: [], pending: [], treasury: null },
+        },
+      }),
       authenticate: auth,
       actorFor: (playerId) => {
         const row = db.prepare("SELECT name FROM players WHERE id=?").get(playerId);
@@ -374,6 +389,32 @@ const linkedAccount = (player, accountId) =>
 db.exec(
   `CREATE TABLE IF NOT EXISTS passkeys(id TEXT PRIMARY KEY,player_id TEXT NOT NULL REFERENCES players(id),public_key TEXT NOT NULL,counter INTEGER NOT NULL,transports TEXT NOT NULL);`,
 );
+
+// MetaLayer contract (contracts/metalayer): id from public/native-metalayer-<network>.json
+// (or NEAR_METALAYER_CONTRACT), recorder key <state dir>/metalayer-recorder.json
+// (or METALAYER_RECORDER_KEY_PATH). Testnet only, and only with LAYER_ENABLED=1.
+if (layerEnabled) {
+  const manifestPath = [
+    resolve(APP_ROOT, `public/${manifestName("native-metalayer")}`),
+    resolve(APP_ROOT, `dist/${manifestName("native-metalayer")}`),
+  ].find((p) => existsSync(p));
+  const contractId =
+    process.env.NEAR_METALAYER_CONTRACT ||
+    (manifestPath ? JSON.parse(readFileSync(manifestPath, "utf8")).contractId : null);
+  metaLayerEconomy = createMetaLayerEconomy(db, {
+    chain: contractId
+      ? createMetaLayerChain({
+          provider,
+          contractId,
+          keyPath: process.env.METALAYER_RECORDER_KEY_PATH || resolve(dirname(defaultDatabasePath()), "metalayer-recorder.json"),
+          loadAccount: loadServiceAccount,
+        })
+      : null,
+    linkedAccount: (playerId) => linkedAccount(playerId),
+  });
+  if (contractId && !backgroundWorkersDisabled)
+    setInterval(() => void metaLayerEconomy.tick().catch(() => {}), 15_000).unref();
+}
 const marketManifestPath = [
   resolve(APP_ROOT, `public/${manifestName("native-market")}`),
   resolve(APP_ROOT, `dist/${manifestName("native-market")}`),

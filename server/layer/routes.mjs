@@ -36,6 +36,17 @@ export function createLayerRoutes({ store, authenticate, actorFor }) {
       const q = (name) => url.searchParams.get(name);
       let result;
       if (route === "layers" && method === "GET") result = { layers: LAYER_REGISTRY.map(publicLayer) };
+      else if (route === "expedition/enter" && method === "POST") result = store.expedition.enter(actor, input.layer, input.plaza === true);
+      else if (route === "expedition/state" && method === "GET") result = store.expedition.snapshot(actor, q("layer"), Number(q("x")), Number(q("z")));
+      else if (route === "expedition/start" && method === "POST") result = store.expedition.startQuest(actor, input);
+      else if (route === "expedition/edit" && method === "POST") result = store.expedition.edit(actor, input);
+      else if (route === "expedition/mine-start" && method === "POST") result = store.expedition.startMining(actor, input);
+      else if (route === "expedition/mine-finish" && method === "POST") result = store.expedition.finishMining(actor, input);
+      else if (route === "expedition/interact" && method === "POST") result = store.expedition.interact(actor, input);
+      else if (route === "expedition/economy" && method === "GET") result = await store.economy(actor, q("layer"));
+      else if (route === "expedition/parcel" && method === "POST") result = await store.syncParcel(actor, input);
+      else if (route === "expedition/activity" && method === "GET") result = store.expedition.activity(actor, q("layer"));
+      else if (route === "expedition/verify" && method === "POST") result = await store.expedition.verifyAction(actor, input);
       else if (route === "home" && method === "POST") {
         const home = store.home(actor, input.layer);
         result = { ...home, progress: store.progress(actor, input.layer) };

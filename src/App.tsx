@@ -841,13 +841,18 @@ export default function App() {
   }
   const [nativeVisitBusy, setNativeVisitBusy] = useState(false);
   const mainPanel = useRef<HTMLElement>(null);
+  const returnToLayer = useRef(false);
   const contentScreen = tab !== "explore" || sheetExpanded;
+  const tabRef = useRef(tab);
+  tabRef.current = tab;
   useEffect(() => {
     if (!contentScreen || !player) return;
     const previous = document.activeElement as HTMLElement | null;
     const frame = requestAnimationFrame(() => mainPanel.current?.querySelector<HTMLElement>("h1")?.focus({ preventScroll: true }));
     const escape = (event: KeyboardEvent) => {
-      if (event.key !== "Escape" || event.defaultPrevented || document.querySelector("dialog[open]")) return;
+      // MetaLayer is a game screen, not a panel: Escape there closes its own
+      // sheets and never drops the explorer back to the GPS map.
+      if (event.key !== "Escape" || event.defaultPrevented || document.querySelector("dialog[open]") || tabRef.current === "layer") return;
       event.preventDefault();
       setTab("explore");
       setSheetExpanded(false);
@@ -2207,6 +2212,12 @@ export default function App() {
   }
   function returnToAdventure() {
     setCatalogView(null);
+    // Profile or Settings opened from MetaLayer closes back into that world.
+    if (returnToLayer.current && virtualLayer) {
+      returnToLayer.current = false;
+      setTab("layer");
+      return;
+    }
     setTab("explore");
     setSheetExpanded(false);
     requestAnimationFrame(() => {
@@ -2596,6 +2607,35 @@ export default function App() {
   useEffect(() => {
     setQgoldBurner(player ? burnQgold : null, player?.id);
   });
+  // MetaLayer land: the explorer's own account buys one 16 × 16 parcel with
+  // MetaGold (contracts/metalayer buy_parcel). The small deposit pays the
+  // parcel's storage on chain, so the device key signs a self-paid call.
+  async function buyMetaParcel(account: string, contractId: string, x0: number, z0: number) {
+    if (!onNearNetwork(contractId))
+      throw Error("This land is not on the game network.");
+    const { signer, accountId } = await resolveSigner(account);
+    if (accountId !== account)
+      throw Error("Choose the linked account shown for this land.");
+    await signer.send(
+      {
+        network: NEAR_NETWORK,
+        signerId: accountId,
+        receiverId: contractId,
+        actions: [
+          {
+            type: "FunctionCall",
+            params: {
+              methodName: "buy_parcel",
+              args: { x0, z0 },
+              gas: "100000000000000",
+              deposit: "20000000000000000000000",
+            },
+          },
+        ],
+      },
+      { playerId: player!.id },
+    );
+  }
   async function tradeNative(request: NativeTradeRequest): Promise<boolean> {
     const result = await action("native-market", async () => {
       const { signer, accountId } = await resolveSigner(request.accountId);
@@ -3927,6 +3967,9 @@ export default function App() {
       if (t.screen === "rolls")
         window.setTimeout(() => {
           const rolls = document.querySelector<HTMLElement>(".wisp-rolls");
+          // It lives in Inventory's "Secured on NEAR" fold: open that first.
+          const fold = rolls?.closest("details");
+          if (fold) fold.open = true;
           if (rolls) rolls.scrollIntoView({ behavior: "smooth", block: "center" });
           else notify(tr("No roll ticket yet. Beat a Pocket Wisp first."), true);
         }, 900);
@@ -4340,7 +4383,7 @@ export default function App() {
           tabIndex={-1}
           className={`main-panel ${settingsOpen ? "settings-panel " : ""}${tab === "explore" ? `explore-panel ${selected ? "zone-explore-panel" : ""} ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
-          {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} onExit={() => setTab("explore")} />}
+          {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} gameLayer={gameLayer} buyParcel={buyMetaParcel} onNavigate={(view) => { returnToLayer.current = view.tab === "settings"; navigation.update(view); }} />}
           {tab === "explore" && !sheetExpanded && <div className="objective-dismiss-bar">
             <button className="objective-dismiss" aria-label={tr("Hide objective")} onClick={() => { if (objective === "coach") learning.acknowledge(coachTopic); else if (zoneQuest) learning.acknowledge(questHelpTopic(zoneQuest)); setDismissedObjective(objectiveKey); }}><X size={20} aria-hidden="true" /></button>
           </div>}

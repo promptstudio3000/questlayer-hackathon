@@ -17,6 +17,7 @@ import {
   SEED_CREATOR_QUESTS,
   SEED_TASKS,
   SEED_BUYER,
+  SEED_NOTES,
   STARTER_KIT,
 } from "../server/test-seed/content.mjs";
 import { GOLD } from "../server/domain.mjs";
@@ -275,6 +276,38 @@ test("revertKits takes kits back and keeps the rest of the test world", () => {
     assert.equal(demoProgression(db, me).earnedXp, 0);
     assert.equal(db.prepare("SELECT COUNT(*) n FROM players WHERE substr(id,1,5)='seed-'").get().n, bots);
     assert.equal(seed.revertKits().removed, 0);
+  } finally {
+    db.close();
+  }
+});
+
+test("seed notes and shouts fade with time and the seed does not renew them", () => {
+  let now = 1_800_000_000_000;
+  const DAY = 86_400_000;
+  const { db, seed } = world(() => now);
+  try {
+    seed.apply();
+    const visible = () =>
+      db
+        .prepare(
+          "SELECT count(*) n FROM messages m LEFT JOIN social_note_expiry e ON e.note_id=m.id WHERE substr(m.id,1,10)='seed-note-' AND (e.expires_at IS NULL OR e.expires_at>?)",
+        )
+        .get(now).n;
+    const shouts = () =>
+      db
+        .prepare("SELECT count(*) n FROM place_threads WHERE kind='shout' AND substr(id,1,5)='seed-' AND paid_until>?")
+        .get(now).n;
+    const oneDay = SEED_NOTES.filter((n) => n.days === 1).length * 2;
+    assert.ok(oneDay > 0 && oneDay < 24);
+    assert.equal(visible(), 24);
+    assert.ok(shouts() > 0);
+    now += DAY + 1000;
+    seed.apply();
+    assert.equal(visible(), 24 - oneDay);
+    now += 7 * DAY;
+    seed.apply();
+    assert.equal(visible(), 0);
+    assert.equal(shouts(), 0);
   } finally {
     db.close();
   }

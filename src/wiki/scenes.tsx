@@ -117,7 +117,7 @@ const CARDS: FactCard[] = [
       "the theme can change; stake-to-play stays",
       "every community can build its own layer: its own world and rules on the same mechanics and QGOLD",
       "a layer's share of the yield follows what its players stake (planned)",
-      "first: the 3D Space Layer, on testnet behind a switch",
+      "first: MetaLayer, a shared 3D voxel world with its own coin MetaGold, on testnet behind a switch",
     ],
   },
 ];

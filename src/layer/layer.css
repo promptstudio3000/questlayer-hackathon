@@ -1,303 +1,110 @@
-/* Layer screen (docs/LAYER.md): full-bleed 3D world with a compact HUD. */
-.layer-screen {
-  --layer-ink: #f4f1ff;
-  --layer-glass: rgba(16, 12, 40, 0.74);
-  --layer-line: rgba(185, 168, 255, 0.35);
-  --layer-gold: #ffd36e;
-  position: fixed;
-  inset: 0;
-  z-index: 1000;
-  background: #0a0820;
-  color: var(--layer-ink);
-  overflow: hidden;
-  touch-action: none;
-  user-select: none;
-  -webkit-user-select: none;
-}
-.layer-stage,
-.layer-canvas {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  display: block;
-}
-.layer-canvas:focus-visible {
-  outline: 3px solid var(--layer-gold);
-  outline-offset: -3px;
-}
-.layer-icon {
-  display: inline-grid;
-  place-items: center;
-  min-width: 48px;
-  min-height: 48px;
-  border-radius: 14px;
-  border: 1px solid var(--layer-line);
-  background: var(--layer-glass);
-  color: var(--layer-ink);
-  backdrop-filter: blur(6px);
-  cursor: pointer;
-}
-.layer-icon[aria-pressed="true"] {
-  background: var(--layer-gold);
-  color: #1b1440;
-  border-color: var(--layer-gold);
-}
-.layer-icon:focus-visible,
-.layer-swatch:focus-visible,
-.layer-outfits button:focus-visible {
-  outline: 3px solid var(--layer-gold);
-  outline-offset: 2px;
-}
-.layer-top {
-  position: absolute;
-  top: max(10px, env(safe-area-inset-top));
-  left: 12px;
-  right: 12px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.layer-title {
-  flex: 1;
-  min-width: 0;
-  padding: 6px 12px;
-  border-radius: 14px;
-  background: var(--layer-glass);
-  border: 1px solid var(--layer-line);
-}
-.layer-title strong {
-  display: block;
-  font-size: 16px;
-}
-.layer-title small {
-  display: block;
-  font-size: 14px;
-  opacity: 0.85;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-.layer-goals {
-  position: absolute;
-  top: calc(max(10px, env(safe-area-inset-top)) + 64px);
-  left: 12px;
-  padding: 8px 12px;
-  border-radius: 14px;
-  background: var(--layer-glass);
-  border: 1px solid var(--layer-line);
-  font-size: 14px;
-  max-width: min(320px, calc(100% - 24px));
-}
-.layer-goals p {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin: 2px 0;
-}
-.layer-goals em {
-  font-style: normal;
-  color: var(--layer-gold);
-  margin-left: auto;
-}
-.layer-notice {
-  position: absolute;
-  left: 50%;
-  top: 42%;
-  transform: translateX(-50%);
-  margin: 0;
-  max-width: calc(100% - 32px);
-  text-align: center;
-  font-size: 16px;
-  pointer-events: none;
-}
-.layer-notice:not(:empty) {
-  padding: 8px 14px;
-  border-radius: 12px;
-  background: var(--layer-glass);
-}
-.layer-loading,
-.layer-error {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  place-content: center;
-  gap: 12px;
-  text-align: center;
-  font-size: 16px;
-}
-.layer-controls {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 0 12px max(14px, env(safe-area-inset-bottom));
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 10px;
-  pointer-events: none;
-}
-.layer-controls > * {
-  pointer-events: auto;
-}
-.layer-joystick {
-  position: relative;
-  flex: none;
-  width: 124px;
-  height: 124px;
-  border-radius: 50%;
-  background: rgba(16, 12, 40, 0.45);
-  border: 2px solid var(--layer-line);
-  touch-action: none;
-}
-.layer-joystick i {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 52px;
-  height: 52px;
-  margin: -26px 0 0 -26px;
-  border-radius: 50%;
-  background: rgba(244, 241, 255, 0.85);
-  box-shadow: 0 0 18px rgba(127, 243, 255, 0.5);
-}
-@media (pointer: fine) {
-  .layer-joystick {
-    display: none;
-  }
-}
-.layer-actions {
-  display: grid;
-  /* Wide enough for the 64 px jump button, so it never covers Build. */
-  grid-template-columns: repeat(2, 64px);
-  gap: 8px;
-  justify-items: center;
-  align-items: center;
-  margin-left: auto;
-}
-.layer-icon.jump {
-  min-width: 64px;
-  min-height: 64px;
-  border-radius: 50%;
-}
-.layer-palette {
-  position: absolute;
-  left: 12px;
-  right: 12px;
-  bottom: calc(max(14px, env(safe-area-inset-bottom)) + 136px);
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 6px;
-  border-radius: 16px;
-  background: var(--layer-glass);
-  border: 1px solid var(--layer-line);
-  scrollbar-width: none;
-}
-@media (pointer: fine) {
-  .layer-palette {
-    left: 50%;
-    right: auto;
-    transform: translateX(-50%);
-    bottom: max(14px, env(safe-area-inset-bottom));
-  }
-}
-.layer-swatch {
-  flex: none;
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
-  border: 2px solid transparent;
-  background: linear-gradient(160deg, color-mix(in srgb, var(--swatch) 100%, #fff 18%), var(--swatch) 55%, color-mix(in srgb, var(--swatch) 70%, #000));
-  cursor: pointer;
-}
-.layer-swatch.erase {
-  display: grid;
-  place-items: center;
-  background: rgba(244, 241, 255, 0.12);
-  color: var(--layer-ink);
-}
-.layer-swatch[aria-checked="true"] {
-  border-color: var(--layer-gold);
-  box-shadow: 0 0 0 2px #1b1440 inset;
-}
-.layer-sheet {
-  position: absolute;
-  inset: 0;
-  display: grid;
-  align-items: end;
-  background: rgba(5, 3, 18, 0.5);
-}
-.layer-sheet-card {
-  margin: 0 auto;
-  width: min(520px, 100%);
-  max-height: 80vh;
-  overflow: auto;
-  padding: 16px 16px max(18px, env(safe-area-inset-bottom));
-  border-radius: 20px 20px 0 0;
-  background: #17123a;
-  border: 1px solid var(--layer-line);
-}
-.layer-sheet-card header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-.layer-sheet-card h2 {
-  margin: 0;
-  font-size: 20px;
-}
-.layer-sheet-card li {
-  margin: 8px 0;
-  font-size: 16px;
-  line-height: 1.4;
-}
-.layer-disclosure {
-  font-size: 14px;
-  opacity: 0.85;
-  line-height: 1.4;
-}
-.layer-outfits {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-  margin-top: 12px;
-}
-.layer-outfits button {
-  display: grid;
-  justify-items: center;
-  gap: 6px;
-  min-height: 48px;
-  padding: 10px 4px;
-  border-radius: 14px;
-  border: 2px solid var(--layer-line);
-  background: rgba(244, 241, 255, 0.06);
-  color: var(--layer-ink);
-  font-size: 14px;
-  cursor: pointer;
-}
-.layer-outfits button[aria-checked="true"] {
-  border-color: var(--layer-gold);
-}
-.layer-outfits i {
-  width: 34px;
-  height: 46px;
-  border-radius: 4px;
-  background:
-    linear-gradient(var(--visor), var(--visor)) 50% 9px / 20px 7px no-repeat,
-    linear-gradient(var(--trim), var(--trim)) 50% 0 / 26px 18px no-repeat,
-    linear-gradient(var(--suit), var(--suit)) 50% 20px / 30px 26px no-repeat;
-}
-.layer-outfits .layer-disclosure {
-  grid-column: 1 / -1;
-}
-@media (min-width: 900px) {
-  .layer-sheet {
-    align-items: center;
-  }
-  .layer-sheet-card {
-    border-radius: 20px;
-  }
-}
+/* MetaLayer uses QuestLayer's actual app-shell, map HUD, native dialogs,
+   tabs, buttons and type tokens. Only voxel-world layout is defined here. */
+.app-shell.layer-screen { position: fixed; inset: 0; z-index: 40; overflow: hidden; width: 100%; height: 100dvh; background: var(--shell); color: var(--ink); font-size: var(--text-body); }
+.layer-stage, .layer-canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.layer-canvas { display: block; touch-action: none; outline-offset: -4px; }
+.layer-screen .ml-player .character-composition.compact { width: 42px; height: 44px; }
+.layer-screen .ml-player .ghost-art { width: 32px; height: 38px; }
+.layer-screen .ml-pocket .ml-resource-icon { display: inline-flex; color: var(--success); text-shadow: none; }
+.layer-screen .ml-pocket .ml-resource-icon svg { margin: 0; color: inherit; }
+.layer-screen .ml-location { display: flex; align-items: center; gap: 8px; }
+.layer-screen .ml-location > span { display: inline; font-size: var(--text-meta); }
+.layer-screen .ml-objective-panel .ml-objective { padding: 0; min-height: 48px; }
+.layer-screen .ml-objective .peek-art { display: grid; place-items: center; flex: 0 0 28px; width: 28px; }
+.layer-screen .ml-objective .peek-body { flex: 1; min-width: 0; }
+.layer-screen .ml-objective > svg { flex: none; }
+.layer-screen .ml-objective .peek-body small { font-size: var(--text-meta); }
+.layer-screen[data-tool-ready=true] .map-actions > .map-actions-toggle { width: 48px; height: 48px; background: var(--surface-raised); color: var(--action); }
+.layer-screen .ml-action-buttons { position: absolute; right: 0; bottom: 64px; }
+.layer-screen .ml-action-buttons .ml-tool-primary { touch-action: none; user-select: none; }
+.layer-screen .map-actions.open .ml-action-buttons { visibility: hidden; pointer-events: none; }
+.layer-screen[data-sheet-open=true] > :is(.topbar,.nav-rail,.demo-pad,.demo-pad-open,.map-actions,.ml-objective-panel,.ml-map-tools,.ml-location,.ml-reticle) { visibility: hidden; pointer-events: none; }
+.ml-map-tools { position: absolute; top: calc(78px + env(safe-area-inset-top)); right: 12px; width: 88px; }
+.ml-atlas-toggle { display: block; width: 100%; padding: 3px; min-height: 48px; background: var(--surface); border: 1px solid var(--control-border); border-radius: var(--radius-item); overflow: hidden; }
+.ml-minimap { display: block; width: 100%; height: auto; overflow: hidden; border-radius: 8px; }
+.ml-map-close { position: absolute; right: -8px; top: -8px; width: 48px; height: 48px; scale: .75; transform-origin: top right; }
+.ml-reticle { position: absolute; left: 50%; top: 48%; width: 15px; height: 15px; transform: translate(-50%,-50%); pointer-events: none; filter: drop-shadow(0 1px 2px #000); }
+.ml-reticle i { position: absolute; display: block; background: #fff; border-radius: 1px; }
+.ml-reticle i:first-child { width: 15px; height: 2px; top: 6px; }
+.ml-reticle i:last-child { height: 15px; width: 2px; left: 6px; }
+.ml-mining { position: absolute; top: calc(48% + 22px); left: 50%; transform: translateX(-50%); width: 100px; height: 8px; border: 1px solid var(--surface); background: var(--shell); border-radius: 3px; overflow: hidden; pointer-events: none; }
+.ml-mining span { display: block; height: 100%; background: var(--success-surface); }
+.ml-notice { position: absolute; top: 30%; left: 16px; right: 16px; max-width: 400px; margin: 0 auto; text-align: center; pointer-events: none; font-size: var(--text-meta); }
+.ml-notice:not(:empty) { padding: 10px 12px; border: 1px solid var(--control-border); background: var(--surface); border-radius: var(--radius-control); }
+.ml-loading, .ml-failure { position: absolute; left: 50%; top: 40%; transform: translate(-50%,-50%); padding: 16px; background: var(--surface); border-radius: var(--radius-item); }
+/* The dialog owns its frame and spacing. This resets only the nested map
+   panel's viewport positioning; its chrome stays the shared QuestLayer UI. */
+.layer-screen .game-dialog-map .main-panel.ml-sheet { position: static; inset: auto; width: auto; height: auto; max-width: none; max-height: none; margin: 0; padding: 0; border: 0; border-radius: 0; background: none; box-shadow: none; overflow: visible; }
+.ml-sheet { color: var(--ink); }
+.ml-sheet p { font-size: var(--text-body); line-height: 1.45; }
+.ml-sheet h2 { font-size: var(--text-title); font-weight: 500; }
+.ml-sheet h3 { font-size: 16px; font-weight: 600; }
+.ml-sheet .panel-heading { margin-bottom: 12px; }
+.ml-sheet .panel-heading > div { min-width: 0; flex: 1; }
+.ml-sheet .panel-heading h1 { font-size: 20px; line-height: 1.4; }
+.ml-sheet .panel-close { display: grid; place-items: center; min-width: 48px; min-height: 48px; padding: 0; }
+.ml-sheet-hero { display: flex; align-items: center; gap: 12px; }
+.ml-sheet-hero img { width: 40px; height: 48px; object-fit: contain; image-rendering: pixelated; }
+.ml-wide { width: 100%; }
+.ml-story-heading { margin: 0; }
+.ml-story-heading h2 { margin: 0; padding: 0; }
+.ml-sheet .ml-story-note, .ml-sheet .daily-board-lead { color: var(--ink-secondary); font-size: var(--text-meta); }
+.ml-story-actions { display: grid; gap: 8px; }
+.ml-quest-steps { padding: 0; margin: 0; list-style: none; }
+.ml-quest-steps li { display: flex; align-items: center; gap: 10px; padding: 10px 12px; }
+.ml-quest-steps li > span { flex: 1; min-width: 0; }
+.ml-runes { display: grid; gap: 6px; }
+.ml-runes .clue-option { display: flex; gap: 10px; align-items: center; width: 100%; text-align: start; }
+.ml-runes .clue-option svg { flex: none; }
+.ml-blueprint { display: grid; justify-items: center; gap: 2px; padding: 8px; color: var(--action); }
+.ml-coordinate { font-family: monospace; color: var(--ink-secondary); font-size: var(--text-meta); }
+.ml-station-list { list-style: none; padding: 0; }
+.ml-station-list li { display: flex; align-items: center; gap: 6px; padding: 8px; }
+.ml-place-list { list-style: none; padding: 0; display: grid; gap: 6px; }
+.ml-place-list button { display: flex; align-items: center; gap: 8px; width: 100%; min-height: 48px; text-align: start; }
+.ml-place-list button > svg { flex: none; }
+.ml-place-list button > span { flex: 1; min-width: 0; }
+.ml-place-list button > small { font-size: var(--text-note); color: var(--ink-secondary); }
+.ml-story-complete { display: flex; align-items: center; gap: 10px; color: var(--success); }
+.ml-story-complete > svg { flex: none; }
+.ml-inventory { display: grid; gap: 8px; margin: 12px 0; }
+.ml-inventory > div { display: flex; align-items: center; gap: 12px; padding: 10px 12px; min-height: 56px; border: 1px solid var(--decorative-border); border-radius: var(--radius-item); background: var(--surface-raised); }
+.ml-inventory > div svg { width: 24px; height: 24px; color: var(--action); }
+.ml-inventory > div strong { order: 2; margin-inline-start: auto; font-size: 18px; }
+.ml-palette { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.ml-palette button { display: flex; align-items: center; justify-content: flex-start; min-height: 48px; gap: 8px; padding: 8px; }
+.ml-palette button[aria-checked=true] { outline: 2px solid var(--action); outline-offset: -2px; }
+.ml-palette button > span:first-child { display: block; width: 24px; height: 24px; flex: none; border: 1px solid var(--control-border); border-radius: 4px; }
+.ml-palette button > span:last-child { font-size: var(--text-meta); }
+.ml-atlas-large { max-width: 320px; margin: 12px auto; }
+.ml-atlas-controls { display: flex; justify-content: center; flex-wrap: wrap; gap: 8px; margin: 8px 0; }
+.ml-preview-note { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 10px; }
+.ml-proof-heading { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.ml-proof-heading h2 { margin: 0; }
+.ml-chain-capabilities { display: flex; gap: 10px; align-items: center; padding: 10px 0; }
+.ml-chain-capabilities strong, .ml-chain-capabilities span { display: block; }
+.ml-chain-capabilities span { font-size: var(--text-meta); color: var(--ink-secondary); }
+.ml-activity-list { padding: 0; list-style: none; }
+.ml-activity-list li { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 4px 8px; padding: 10px 0; border-bottom: 1px solid var(--decorative-border); align-items: center; }
+.ml-activity-list strong,.ml-activity-list small { display: block; }
+.ml-activity-list small,.ml-local-receipt,.ml-activity-list code { font-size: var(--text-note); color: var(--ink-secondary); }
+.ml-activity-list code { grid-column: 1/-1; overflow-wrap: anywhere; }
+.ml-local-receipt { max-width: 100px; text-align: end; }
+.ml-proof-form { display: grid; gap: 12px; margin: 16px 0; }
+.ml-proof-form > div { display: grid; gap: 6px; }
+.ml-proof-form :is(input,select) { width: 100%; min-width: 0; padding: 10px; font-size: 16px; box-sizing: border-box; }
+@media (min-width: 601px) { .layer-screen .ml-objective-panel { bottom: 12px; }.layer-screen .demo-pad { left: 16px; bottom: calc(80px + var(--hud-card,0px)); }.layer-screen .map-actions { bottom: 12px; } }
+@media (max-height: 500px) and (min-width: 600px) { .layer-screen.app-shell[data-screen] .main-panel.ml-objective-panel { left: auto; right: 80px; bottom: 12px; width: min(35vw,280px); }.layer-screen .map-actions { bottom: 12px; }.layer-screen .demo-pad { left: 128px; bottom: 12px; }.layer-screen .ml-location { display: none; } }
+
+/* Preserve the shared appearance while extending small utility hit regions. */
+.layer-screen .game-dialog .ml-sheet .panel-heading .panel-close { min-width: 48px; min-height: 48px; }
+.layer-screen .demo-pad .demo-run::after { content: ""; position: absolute; inset: -2px; }
+.layer-screen .demo-pad .demo-pad-min::after { content: ""; position: absolute; inset: -8px; }
+/* MetaGold: this world's own coin keeps the QGOLD pill shape, in MetaLayer cyan. */
+.ml-metagold .gold-icon, .ml-economy .gold-icon { filter: hue-rotate(150deg) saturate(1.2); }
+.ml-economy { display: grid; gap: 8px; margin-bottom: 12px; }
+.ml-economy h3 { margin: 4px 0 0; font-size: 15px; }
+.ml-badges { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.ml-badges li { padding: 4px 10px; border-radius: 999px; background: var(--surface-2, #f1edff); font-weight: 700; font-size: 13px; }
+/* Small phones: four world tiles in one row break their words; use two rows. */
+@media (max-width: 400px) { .ml-sheet .settings-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -1,0 +1,38 @@
+{
+  "network": "testnet",
+  "verifiedAt": "2026-11-13T16:12:42.262Z",
+  "contractId": "questlayer-metalayer-20261113.testnet",
+  "codeHash": "w8hGMKvx8L5kMjj3zmyCwrHDMHYLurSyxgqnWySu5Vm",
+  "wasmSha256": "0dde10462730cdd79c06c4ea4d72e5f618b26757d2824296c6ca44e4f4f96c84",
+  "recorderPublicKey": "ed25519:3fJafo2UrsB8mdCa55WtKPkxcPj7AMadL9SNf6xLMhpn",
+  "qgoldToken": "questlayer-qgold-vault-20261104.testnet",
+  "symbol": "METAGOLD",
+  "decimals": 6,
+  "economy": {
+    "metagoldPerNear": "1000000000",
+    "metagoldPerQgold": "1",
+    "dailyCap": "100000",
+    "parcelPrice": "100"
+  },
+  "badges": [
+    {
+      "id": "quiet-beacon",
+      "title": "Quiet Beacon"
+    },
+    {
+      "id": "crystal-hollow",
+      "title": "Crystal Hollow"
+    }
+  ],
+  "capabilities": [
+    "nep141-metagold",
+    "own-treasury",
+    "one-way-qgold",
+    "award-once",
+    "daily-cap",
+    "soulbound-metaxp",
+    "soulbound-badges",
+    "nep171-parcels",
+    "action-events"
+  ]
+}
