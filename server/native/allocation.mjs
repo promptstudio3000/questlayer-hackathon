@@ -17,11 +17,18 @@
 //   - A yield-backed day may additionally spend no more than the realized yield
 //     that vaults have actually paid to the treasury (vault `game_paid`) minus
 //     what earlier yield-backed days already committed.
+//   - Yield arrives in lumps (a vault settles every few epochs), so a
+//     yield-backed day takes only one drip of what is free: free / drip days
+//     (default 7). Every day then carries some yield, however small, instead
+//     of one day taking it all and the next ones having nothing to publish.
 // Pure functions only: the caller supplies chain reads and stored manifests.
 import { assert } from "../domain.mjs";
 import { shiftDate } from "../spatial/calendar.mjs";
 
 export const DAILY_BUCKET_CAP = 6n * 10n ** 21n;
+// Days over which free realized yield is spread (NATIVE_YIELD_DRIP_DAYS).
+export const YIELD_DRIP_DAYS = 7;
+export const MAX_YIELD_DRIP_DAYS = 365;
 // City days together may commit up to this share of a bucket's funding per
 // day (half of the contract's `funded`, 50/50 policy) once that is more than
 // DAILY_BUCKET_CAP. 4 % keeps today's 0.006 NEAR at 0.2 NEAR funded and grows
@@ -185,10 +192,21 @@ export function manifestCost(manifest) {
  * How much realized yield is still free to back a new day.
  * `vaultStates` are `get_state` views of approved vaults that pay this rewards
  * contract; `yieldDays` are stored manifests already marked
- * `funding: "realized_yield"`. The treasury funds every receipt 50/50 into
+ * `funding: "realized_yield"`; a closed one may carry `awarded`, the yocto
+ * its players actually received. The treasury funds every receipt 50/50 into
  * coins and zones, so the free yield is split the same way.
  */
-export function realizedYieldBacking({ vaultStates, yieldDays, rewardsId }) {
+export function realizedYieldBacking({
+  vaultStates,
+  yieldDays,
+  rewardsId,
+  dripDays = 1,
+}) {
+  assert(
+    Number.isInteger(dripDays) && dripDays >= 1 && dripDays <= MAX_YIELD_DRIP_DAYS,
+    "Yield drip days must be 1 to 365.",
+    503,
+  );
   assert(Array.isArray(vaultStates), "Vault states are required.", 503);
   let paid = 0n;
   const vaults = [];
@@ -205,15 +223,25 @@ export function realizedYieldBacking({ vaultStates, yieldDays, rewardsId }) {
   let committed = 0n;
   for (const m of yieldDays || []) {
     assert(m.funding === "realized_yield", "Not a yield-backed day.", 503);
-    committed += manifestCost(m).total;
+    const cost = manifestCost(m).total;
+    // A closed day returned its unclaimed coins and prizes to the treasury:
+    // only what players were awarded stays committed (`awarded`, supplied by
+    // the caller from confirmed claims). Never more than the day's own cost.
+    const awarded = m.awarded == null ? cost : yocto(m.awarded, "awarded");
+    committed += min(cost, awarded);
   }
   const free = paid > committed ? paid - committed : 0n;
-  const coins = free / 2n;
+  // One day's drip. Integer division rounds down, so a day never takes more
+  // than its share and the remainder stays free for the following days.
+  const daily = free / BigInt(dripDays);
+  const coins = daily / 2n;
   return {
     paid: paid.toString(),
     committed: committed.toString(),
     free: free.toString(),
-    limit: { coins: coins.toString(), zones: (free - coins).toString() },
+    dripDays,
+    daily: daily.toString(),
+    limit: { coins: coins.toString(), zones: (daily - coins).toString() },
     covered: committed <= paid,
   };
 }
@@ -228,6 +256,9 @@ export function realizedYieldBacking({ vaultStates, yieldDays, rewardsId }) {
  *   the global budget appears; weights: the fixed NATIVE_FUNDED_CITIES weights),
  * NATIVE_DAILY_SHARE_BPS (1..10000, default 10000),
  * NATIVE_YIELD_BACKED_DAYS=1 (publish only what realized yield covers),
+ * NATIVE_YIELD_DRIP_DAYS (1..365, default 7: a yield-backed day takes
+ *   free realized yield / this many days, so yield is spread over the days
+ *   between vault settlements),
  * NATIVE_MANIFEST_V2_FROM=YYYY-MM-DD|off (first new date prepared as v2).
  */
 export function allocationSettings(
@@ -271,6 +302,15 @@ export function allocationSettings(
     settings.dailyShareBps = bps;
   }
   settings.yieldBackedDays = env.NATIVE_YIELD_BACKED_DAYS === "1";
+  if (env.NATIVE_YIELD_DRIP_DAYS) {
+    const days = Number(env.NATIVE_YIELD_DRIP_DAYS);
+    assert(
+      Number.isInteger(days) && days >= 1 && days <= MAX_YIELD_DRIP_DAYS,
+      "NATIVE_YIELD_DRIP_DAYS must be 1 to 365.",
+      503,
+    );
+    settings.yieldDripDays = days;
+  }
   if (env.NATIVE_MANIFEST_V2_FROM) {
     const from = env.NATIVE_MANIFEST_V2_FROM.trim();
     assert(
