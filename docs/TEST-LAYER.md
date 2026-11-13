@@ -46,7 +46,7 @@ mainnet needs later.
    deploys the collectibles slice (collectibles, player factory, relayer, badges, npc-games), rewards and
    vault factory, QGOLD vault, ledger and soulbound QGOLD, market, QGOLD escrow and creators, then writes
    `public/*-testlayer.json`. The Intents verifier record is shared (it only verifies signed intents).
-2. `bash scripts/install-testlayer-keys-vps.sh` installs the keys the scripts created into the Test Layer's
+2. `bash scripts/install-testlayer-keys-vps.sh` (on the VPS runner as root: `DEPLOY_HOST=local`) installs the keys the scripts created into the Test Layer's
    state directory and writes its runtime.env.
 3. Commit the `-testlayer` records, then `bash scripts/deploy-vps.sh --testlayer` (it also installs the Test
    Layer's signing vault).
