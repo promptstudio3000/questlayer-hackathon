@@ -17,6 +17,7 @@ import {
   ensureModuleVersion,
 } from "../schema-compatibility.mjs";
 import { NETWORK } from "./network.mjs";
+import { SOCIAL_STORAGE_FLOOR } from "../relayer/policy.mjs";
 import { moderationSuppression } from "../moderation.mjs";
 
 export const SOCIAL_RECORDS_SCHEMA = registerModuleSchema({
@@ -278,7 +279,7 @@ export class NativeSocialRecords {
       storage: balance
         ? { total: balance.total, available: balance.available }
         : null,
-      deposit: available >= 2n * 10n ** 22n ? "1" : STORAGE_DEPOSIT.toString(),
+      deposit: available >= SOCIAL_STORAGE_FLOOR ? "1" : STORAGE_DEPOSIT.toString(),
       publishEnabled:
         account.code_hash === this.expectedCodeHash &&
         BigInt(bounds.min) <= STORAGE_DEPOSIT,

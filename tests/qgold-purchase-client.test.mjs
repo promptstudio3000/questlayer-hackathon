@@ -140,3 +140,49 @@ for (const lost of ["prepare", "confirm", "delivery", "none", "validation"])
     );
     assert.deepEqual(JSON.parse([...storage.values.values()][0]), []);
   });
+
+test("a spend the player's QGOLD cannot cover is refused before anything is signed", async (t) => {
+  const f = purchaseFixture(),
+    storage = new Storage();
+  let burned = 0;
+  setSpendRealm("qgold");
+  const previous = Object.getOwnPropertyDescriptor(globalThis, "localStorage");
+  Object.defineProperty(globalThis, "localStorage", { configurable: true, value: storage });
+  t.after(() => {
+    f.db.close();
+    setSpendRealm("practice");
+    if (previous) Object.defineProperty(globalThis, "localStorage", previous);
+    else delete globalThis.localStorage;
+  });
+  const routes = createGoldSpendRoutes({
+    db: f.db,
+    gold: f.gold,
+    qgold: { contract: TOKEN, accountIds: () => [OWNER], balanceU: async () => 1, txStatus: async () => null },
+  });
+  t.mock.method(globalThis, "fetch", async (url, options) => {
+    try {
+      let response;
+      await routes.handle(
+        { method: options.method, headers: { "x-questlayer-purchase": options.headers["X-Questlayer-Purchase"] } },
+        {},
+        new URL(url, "http://127.0.0.1"),
+        {
+          player: f.player,
+          body: async () => JSON.parse(options.body),
+          assert: domainAssert,
+          respond: (_, value) => { response = Response.json(value); },
+        },
+      );
+      return response;
+    } catch (error) {
+      return Response.json({ error: error.message, code: error.code, details: error.details }, { status: error.status ?? 500 });
+    }
+  });
+  const client = await import("../src/qgold-burn.ts?short");
+  client.setQgoldBurner(async () => { burned++; return null; }, f.player);
+  for (let i = 0; i < 3; i++)
+    await assert.rejects(client.withQgoldBurn("/gold/buy", { sku: "emote:dragon" }), /Not enough QGOLD/);
+  assert.equal(burned, 0);
+  assert.equal(f.db.prepare("SELECT COUNT(*) n FROM qgold_purchases").get().n, 0);
+  assert.deepEqual(JSON.parse([...storage.values.values()][0]), []);
+});

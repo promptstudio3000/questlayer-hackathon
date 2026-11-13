@@ -210,6 +210,10 @@ test("a 0.05 NEAR SocialDB deposit is sponsored only while storage is short (F4)
   storage = { total: "50000000000000000000000", available: "40000000000000000000000" };
   await assert.rejects(publish(2, STORAGE_DEPOSIT), code("RELAY_SOCIAL_STORAGE"));
   assert.equal((await publish(3, 1n)).state, "queued");
+  // 0.01-0.02 NEAR free: a map note record is still quoted the deposit
+  // (server/native/social-records.mjs), so admission must accept it.
+  storage = { total: "50000000000000000000000", available: "15000000000000000000000" };
+  assert.equal((await publish(4, STORAGE_DEPOSIT)).state, "queued");
   // Arbitrary SocialDB data is not sponsored at all.
   await assert.rejects(
     f.relayer.submit(f.player, {

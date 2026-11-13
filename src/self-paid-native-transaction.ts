@@ -146,7 +146,7 @@ export async function sendSelfPaid(
     );
   if (failed)
     throw new SelfPaidError(
-      "The contract rejected the action. Refresh its state before retrying.",
+      "It didn't go through. Nothing was taken; try again.",
       "SELF_PAID_CONTRACT_FAILED",
     );
   return { transactionHash: outcome.transaction.hash };
