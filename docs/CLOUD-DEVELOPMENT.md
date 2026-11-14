@@ -1,13 +1,13 @@
 # questlayer-hackathon: cloud development and source checkpoint
 
-The canonical project and repository name is **questlayer-hackathon**. The player-facing brand is **QuestLayer**. This source checkpoint includes the complete current local implementation, roadmap, tests, artwork provenance, evidence and whole-project handoff. It does not complete the open roadmap milestones.
+The canonical project and repository name is **questlayer-hackathon**. The player-facing brand is **QuestLayer**. This source checkpoint includes the complete current local implementation, roadmap, tests, artwork provenance and evidence. It does not complete the open roadmap milestones.
 
 ## Start immediately
 
 1. Open https://codespaces.new/promptstudio3000/questlayer-hackathon and create a Codespace from `main`.
 2. Wait for the development container to install Node.js 24 and run `npm ci`.
 3. Run `npm run dev` and open the forwarded **5173** port. Keep its visibility private unless you deliberately want to share the preview.
-4. Run `npm run check` before delivering changes. Continue from [ROADMAP.md](../ROADMAP.md), [development status](DEVELOPMENT-STATUS.md), [whole-project handoff](PROJECT-REVIEW-AND-HANDOFF.md) and [AGENTS.md](../AGENTS.md).
+4. Run `npm run check` before delivering changes. Continue from [ROADMAP.md](../ROADMAP.md), [the status page](STATUS.md) and [AGENTS.md](../AGENTS.md).
 
 The browser UI and `/api` requests share the Vite preview origin. The API remains bound to loopback port 8787 and is not separately forwarded. The development launcher derives the exact HTTPS origin from GitHub's `CODESPACE_NAME` and `GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN`; it does not disable origin checks or allow arbitrary preview hosts. An explicitly supplied `APP_ORIGIN` remains authoritative. Do not copy a localhost `.env` into Codespaces without adjusting that origin. Passkeys belong to their origin and are not portable between arbitrary preview URLs.
 
@@ -27,7 +27,7 @@ An existing local `.data/auratrail.sqlite` remains authoritative if the new file
 
 ## VPS boundary and required migration
 
-This is a GitHub source publication and cloud development setup, **not a VPS deployment**. The previous [review snapshot](PROJECT-REVIEW-SNAPSHOT.json) remains dated evidence of the pre-publication working tree and public runtime, not the current GitHub head.
+This is a GitHub source publication and cloud development setup, **not a VPS deployment**.
 
 New deployment templates target `questlayer-hackathon.service`, `/opt/ps3000/apps/questlayer-hackathon`, `/var/lib/questlayer-hackathon` and `questlayer-hackathon.sqlite`. The application deploy script refuses a host containing the old application directory, state directory or service unit. Maintenance and native-worker installers must only be used after the same reviewed migration. None of these scripts was executed as part of publication.
 

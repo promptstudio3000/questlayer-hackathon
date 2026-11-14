@@ -12,14 +12,14 @@ this file says who does what, in which order, and what "done" means. Update it w
 | Staking vault and yield cycle | **proven** on generation 20261101; the public host runs 20261101b with the same worker: harvest at epoch 5401, unlock at 5405, flush into the rewards treasury on 3 Nov, all by the worker; treasury funding grew by exactly the realized yield | `public/native-yield-cycle-proof.json` |
 | Creator money | contract proven; publisher opens/finalizes UTC rounds from the API | `public/native-creators-proof.json` |
 | Public records (NEAR Social) | note record written and confirmed from an invisible account | `public/native-public-record-proof.json` |
-| Zone preparation and map backend (Codex) | durable publication, 0–6 zone shortfalls, pedestrian graph tooling, closures, viewport reads, pilot | `docs/WORLD-WORKER.md`, `docs/MAP-BACKEND-CONTINUATION-2026-11-01.md` |
+| Zone preparation and map backend (Codex) | durable publication, 0–6 zone shortfalls, pedestrian graph tooling, closures, viewport reads, pilot | `docs/WORLD-WORKER.md` |
 | Tests | 574 application tests, 111 contract tests; CI contracts job fixed (vault WASM built first) | `.github/workflows/check.yml` |
 | Public host | **live** on generation 20261101b: relayer on, distribution audit verified, reward worker and creator publisher running (checked 3 Nov) | `https://questlayer.promptstudio3000.com/api/health` |
 
 ## Who does what
 
 - **Claude (backend, contracts, chain):** treasury and yield, distribution, mainnet path, contract v2 work, proofs.
-- **Opus 5.5 subagents (product slices):** the UI slices of `docs/PLAN-FOR-OPUS.md`, one slice per agent, client
+- **Opus 5.5 subagents (product slices):** the UI slices, one slice per agent, client
   files only, with screenshots. Done 1 November: slice 2 "Today's pot", slice 7 "PWA polish"; next 3–6.
 - **Codex (map backend, operations):** Plzeň topology and entries, field checks, VPS migration and deployment,
   device matrix.

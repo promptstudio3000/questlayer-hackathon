@@ -105,7 +105,6 @@ Polygons crossing the longitude discontinuity must be normalized upstream; a dis
 
 Required next gates: matched-snapshot Czech conformance, full global city/town/rural coverage, target-volume/time/disk/RSS measurement, full path-graph/access verification, coins/NPC/stock adapters, financial and inventory reservation, payout/dust invariants, accepted-quest rollover and physical iOS/Android field tests. Six bounded real OSM extracts and local simulated-GPS journeys are recorded in `output/qa/global-world-live/`; they do not satisfy those release gates.
 
-See [external data assignment](GLOBAL-DATA-WORKER-BRIEF.md) and [owner integration handoff](GLOBAL-REWARD-INTEGRATION-HANDOFF.md).
 
 
 ## Geographic selection and live game integration
