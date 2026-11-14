@@ -15,7 +15,9 @@ export const CHAPTERS = [
   { id: "collectibles", get label() { return tr("Collectibles"); } },
   { id: "badges", get label() { return tr("Badges"); } },
   { id: "npcs", get label() { return tr("NPCs and traders"); } },
+  { id: "creators", get label() { return tr("Player quests"); } },
   { id: "staking", get label() { return tr("Staking"); } },
+  { id: "coin", get label() { return tr("Follow the coin"); } },
   { id: "fair-play", get label() { return tr("Fair play"); } },
   { id: "join", get label() { return tr("How to join"); } },
 ] as const;
