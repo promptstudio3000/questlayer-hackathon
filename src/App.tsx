@@ -564,6 +564,31 @@ export default function App() {
   const creatorsEnabled =
     creatorCapability?.playerId === player?.id &&
     creatorCapability?.enabled === true;
+  // Ask the creator status as soon as the explorer is known, so "Create a
+  // quest" sits in Actions from the start. Before, only the Community screen
+  // read it, and Actions lacked the button until Community had been opened
+  // once (Lubos, 14 Nov 2026).
+  useEffect(() => {
+    const id = player?.id;
+    if (!id) return;
+    const controller = new AbortController();
+    fetch("/api/creator-community/status", {
+      credentials: "same-origin",
+      signal: controller.signal,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((s: { enabled?: unknown } | null) => {
+        if (controller.signal.aborted || !s) return;
+        const enabled = s.enabled === true;
+        setCreatorCapability((previous) =>
+          previous?.playerId === id && previous.enabled === enabled
+            ? previous
+            : { playerId: id, enabled },
+        );
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [player?.id]);
   const creatorPlaces = useCreatorPlaces(player?.id ?? null);
   const {
     tab,
