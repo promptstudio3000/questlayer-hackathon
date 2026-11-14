@@ -158,3 +158,35 @@ export function skyLabel(sky: Sky, now = Date.now()): { short: string; long: str
       return { short: tr("Sunrise {0}", { 0: clock(nextRise) }), long: tr("Night here. Night creatures are out until sunrise at {0}.", { 0: clock(nextRise) }) };
   }
 }
+
+// Manual day/night: the chip in the header follows the real sun by default.
+// A tap shows the other look (day, or night); the next tap goes back to the
+// real sun. Only the look of the map changes: NPC and monster casts stay on
+// the real sun on the server. Kept per device in localStorage.
+export type SkyOverride = "day" | "night" | null;
+export const SKY_OVERRIDE_KEY = "questlayer.skyView";
+
+export function readSkyOverride(): SkyOverride {
+  try {
+    const v = globalThis.localStorage?.getItem(SKY_OVERRIDE_KEY);
+    return v === "day" || v === "night" ? v : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveSkyOverride(v: SkyOverride) {
+  try {
+    if (v) globalThis.localStorage?.setItem(SKY_OVERRIDE_KEY, v);
+    else globalThis.localStorage?.removeItem(SKY_OVERRIDE_KEY);
+  } catch {}
+}
+
+/** What one tap on the chip does: auto → the other look, manual → auto. */
+export function nextSkyOverride(current: SkyOverride, realPhase: SkyPhase): SkyOverride {
+  if (current) return null;
+  return realPhase === "day" ? "night" : "day";
+}
+
+/** The phase the map is painted in: the chosen look, else the real sun. */
+export const viewPhase = (real: SkyPhase, override: SkyOverride): SkyPhase => override ?? real;

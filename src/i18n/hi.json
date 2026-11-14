@@ -3341,5 +3341,9 @@
   "Minted only from real yield": "सिर्फ़ असली यील्ड से मिंट",
   "Burn": "बर्न",
   "Principal stays yours": "मूलधन तुम्हारा ही रहता है",
-  "XP for every run, 80 % of every paid unlock.": "हर रन पर XP, हर पेड अनलॉक का 80 %।"
+  "XP for every run, 80 % of every paid unlock.": "हर रन पर XP, हर पेड अनलॉक का 80 %।",
+  "Night": "रात",
+  "Day view, chosen by you. Tap to follow the real sun again.": "आपके द्वारा चुना गया दिन का दृश्य। असली सूरज के साथ चलने के लिए फिर टैप करें।",
+  "Night view, chosen by you. Tap to follow the real sun again.": "आपके द्वारा चुना गया रात का दृश्य। असली सूरज के साथ चलने के लिए फिर टैप करें।",
+  "Tap to switch day and night.": "दिन और रात बदलने के लिए टैप करें।"
 }

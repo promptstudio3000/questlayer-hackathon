@@ -3341,5 +3341,9 @@
   "Minted only from real yield": "يُسكّ من العائد الحقيقي فقط",
   "Burn": "حرق",
   "Principal stays yours": "رأس المال يبقى لك",
-  "XP for every run, 80 % of every paid unlock.": "XP عن كل جولة، و80 % من كل فتح مدفوع."
+  "XP for every run, 80 % of every paid unlock.": "XP عن كل جولة، و80 % من كل فتح مدفوع.",
+  "Night": "ليل",
+  "Day view, chosen by you. Tap to follow the real sun again.": "عرض النهار باختيارك. انقر للعودة إلى اتباع الشمس الحقيقية.",
+  "Night view, chosen by you. Tap to follow the real sun again.": "عرض الليل باختيارك. انقر للعودة إلى اتباع الشمس الحقيقية.",
+  "Tap to switch day and night.": "انقر للتبديل بين النهار والليل."
 }

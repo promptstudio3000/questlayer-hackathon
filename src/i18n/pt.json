@@ -3341,5 +3341,9 @@
   "Minted only from real yield": "Cunhado só com rendimento real",
   "Burn": "Queima",
   "Principal stays yours": "O principal continua seu",
-  "XP for every run, 80 % of every paid unlock.": "XP a cada partida, 80 % de cada desbloqueio pago."
+  "XP for every run, 80 % of every paid unlock.": "XP a cada partida, 80 % de cada desbloqueio pago.",
+  "Night": "Noite",
+  "Day view, chosen by you. Tap to follow the real sun again.": "Vista de dia escolhida por você. Toque para voltar a seguir o sol real.",
+  "Night view, chosen by you. Tap to follow the real sun again.": "Vista de noite escolhida por você. Toque para voltar a seguir o sol real.",
+  "Tap to switch day and night.": "Toque para alternar entre dia e noite."
 }

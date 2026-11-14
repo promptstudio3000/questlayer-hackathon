@@ -45,7 +45,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./art-world";
 import type { Point, World, Zone, Item } from "./types";
 import { prefersReducedMotion } from "./feedback";
-import { MAP_PALETTES, paintMapSky, skyFor, skyLabel } from "./map-sky";
+import { MAP_PALETTES, nextSkyOverride, paintMapSky, readSkyOverride, saveSkyOverride, skyFor, skyLabel, viewPhase, type SkyOverride } from "./map-sky";
 import { BUILDING_HEIGHT_CAP, LANDMARK_POI_CLASSES, geometryPolygons, landmarkFeatures } from "./map-landmarks";
 import { Coins, MoonStars, Sun, SunHorizon, X } from "@phosphor-icons/react";
 import "./map-sky.css";
@@ -300,13 +300,27 @@ export function GameMap(props: GameMapProps) {
     const id = window.setInterval(() => setSkyTick(Date.now()), 60_000);
     return () => window.clearInterval(id);
   }, []);
-  const sky = skyFor(props.position, props.now ?? skyTick);
+  const realSky = skyFor(props.position, props.now ?? skyTick);
+  // A tap on the header chip shows day or night by choice; the next tap goes
+  // back to the real sun (src/map-sky.ts nextSkyOverride).
+  const [skyOverride, setSkyOverride] = useState<SkyOverride>(readSkyOverride);
+  const sky = { ...realSky, phase: viewPhase(realSky.phase, skyOverride) };
+  const toggleSky = () => {
+    const next = nextSkyOverride(skyOverride, realSky.phase);
+    saveSkyOverride(next);
+    setSkyOverride(next);
+  };
   const skyRef = useRef(sky);
   skyRef.current = sky;
   useEffect(() => {
     if (ready && map.current) paintMapSky(map.current, sky.phase);
   }, [ready, sky.phase]);
-  const skyText = skyLabel(sky, props.now ?? skyTick);
+  const realText = skyLabel(realSky, props.now ?? skyTick);
+  const skyText = skyOverride === "day"
+    ? { short: tr("Day"), long: tr("Day view, chosen by you. Tap to follow the real sun again.") }
+    : skyOverride === "night"
+      ? { short: tr("Night"), long: tr("Night view, chosen by you. Tap to follow the real sun again.") }
+      : { short: realText.short, long: `${realText.long} ${tr("Tap to switch day and night.")}` };
   // Map rewards: the next coin wave in this world, in its local time.
   const nextWaveAt = props.world?.mapRewards?.nextWaveAt;
   const nextWaveText =
@@ -1834,11 +1848,13 @@ export function GameMap(props: GameMapProps) {
           App), not in a row of its own over the map. */}
       {!props.globe && (() => {
         const chip = (
-        <div
-          className={`map-sky-chip sky-${sky.phase}`}
-          role="status"
+        <button
+          type="button"
+          className={`map-sky-chip sky-${sky.phase}${skyOverride ? " sky-manual" : ""}`}
           aria-label={skyText.long}
+          aria-pressed={!!skyOverride}
           title={skyText.long}
+          onClick={toggleSky}
         >
           {sky.phase === "day" ? (
             <Sun size={14} weight="fill" aria-hidden />
@@ -1854,7 +1870,7 @@ export function GameMap(props: GameMapProps) {
               {nextWaveText}
             </span>
           )}
-        </div>
+        </button>
         );
         const slot = document.getElementById("hud-sky-slot");
         return slot ? createPortal(chip, slot) : chip;

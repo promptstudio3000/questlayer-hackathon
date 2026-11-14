@@ -3341,5 +3341,9 @@
   "Minted only from real yield": "只用真实收益铸造",
   "Burn": "销毁",
   "Principal stays yours": "本金始终归你",
-  "XP for every run, 80 % of every paid unlock.": "每次通关得 XP，每次付费解锁得 80 %。"
+  "XP for every run, 80 % of every paid unlock.": "每次通关得 XP，每次付费解锁得 80 %。",
+  "Night": "夜晚",
+  "Day view, chosen by you. Tap to follow the real sun again.": "你选择的白天视图。轻点以重新跟随真实的太阳。",
+  "Night view, chosen by you. Tap to follow the real sun again.": "你选择的夜晚视图。轻点以重新跟随真实的太阳。",
+  "Tap to switch day and night.": "轻点切换白天和夜晚。"
 }
