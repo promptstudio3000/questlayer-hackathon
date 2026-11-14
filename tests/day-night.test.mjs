@@ -5,7 +5,7 @@ import assert from "node:assert/strict";
 import { DatabaseSync } from "node:sqlite";
 import * as server from "../server/sun.mjs";
 import * as client from "../src/sun.ts";
-import { MAP_PALETTES, skyFor, skyLabel } from "../src/map-sky.ts";
+import { MAP_PALETTES, nextSkyOverride, skyFor, skyLabel, viewPhase } from "../src/map-sky.ts";
 import { PLZEN } from "../server/spatial/city-pack.mjs";
 import { localDateStart } from "../server/spatial/calendar.mjs";
 import { activeWindows, planDay } from "../server/actors/schedule.mjs";
@@ -120,4 +120,14 @@ test("the map palette and chip follow the player's sky", () => {
   const day = skyFor(PLZ, Date.parse("2026-11-03T11:00:00Z"));
   assert.match(skyLabel(day, Date.parse("2026-11-03T11:00:00Z")).short, /^Sunset /);
   assert.equal(skyLabel({ phase: "day", polar: "day" }).short, "Midnight sun");
+});
+
+test("the sky chip toggles day and night by hand and goes back to the real sun", () => {
+  assert.equal(nextSkyOverride(null, "night"), "day");
+  assert.equal(nextSkyOverride(null, "dusk"), "day");
+  assert.equal(nextSkyOverride(null, "day"), "night");
+  assert.equal(nextSkyOverride("day", "night"), null);
+  assert.equal(nextSkyOverride("night", "day"), null);
+  assert.equal(viewPhase("night", null), "night");
+  assert.equal(viewPhase("night", "day"), "day");
 });

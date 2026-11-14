@@ -56,12 +56,11 @@ type Publication = Point & {
   fix: Fix | null;
   days: NoteDays;
 };
-/** How long a note stays: 1 day, 7 days or until the author removes it (0). */
-type NoteDays = 1 | 7 | 0;
+/** How long a note stays: 1 day or 7 days. */
+type NoteDays = 1 | 7;
 const NOTE_DAYS: { days: NoteDays; label: () => string }[] = [
   { days: 1, label: () => tr("1 day") },
   { days: 7, label: () => tr("1 week") },
-  { days: 0, label: () => tr("Keep") },
 ];
 type Receipt = {
   found: boolean;

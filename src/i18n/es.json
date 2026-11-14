@@ -1116,6 +1116,7 @@
   "Open orders": "Órdenes abiertas",
   "Open the chest": "Abre el cofre",
   "Open the exact place": "Abrir el lugar exacto",
+  "Show me the way": "Muéstrame el camino",
   "Open to try again.": "Abre para intentarlo de nuevo.",
   "Open today's map first.": "Abre primero el mapa de hoy.",
   "Open until {0}": "Abierta hasta {0}",
@@ -2834,8 +2835,6 @@
   "It didn't finish. If it was sent, it shows here in a minute.": "No terminó. Si se envió, aparecerá aquí en un minuto.",
   "Show me to nearby explorers": "Mostrarme a exploradores cercanos",
   "While the game is open on your screen, explorers within about 1.5 km see your name, look and position on their map. Your profile never shows where you are. Players you blocked never see you, and you never see them.": "Mientras el juego está abierto en tu pantalla, los exploradores a unos 1,5 km ven tu nombre, aspecto y posición en su mapa. Tu perfil nunca muestra dónde estás. Los jugadores que bloqueaste nunca te ven, y tú tampoco a ellos.",
-  "Stop showing me to nearby explorers": "Dejar de mostrarme a exploradores cercanos",
-  "Visible nearby · {0} near": "Visible cerca · {0} cerca",
   "Link this device": "Vincular este dispositivo",
   "Messages open with your explorer account, which you get with your first find or quest.": "Los mensajes se abren con tu cuenta de explorador, que obtienes con tu primer hallazgo o misión.",
   "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "Este dispositivo aún no está vinculado a tu cuenta de explorador, así que no puede enviar ni leer mensajes. Añádelo con tu passkey de recuperación.",
@@ -3341,5 +3340,9 @@
   "Minted only from real yield": "Acuñado solo con rendimiento real",
   "Burn": "Quema",
   "Principal stays yours": "El capital sigue siendo tuyo",
-  "XP for every run, 80 % of every paid unlock.": "XP por cada partida, 80 % de cada desbloqueo de pago."
+  "XP for every run, 80 % of every paid unlock.": "XP por cada partida, 80 % de cada desbloqueo de pago.",
+  "Night": "Noche",
+  "Day view, chosen by you. Tap to follow the real sun again.": "Vista de día elegida por ti. Toca para volver a seguir el sol real.",
+  "Night view, chosen by you. Tap to follow the real sun again.": "Vista de noche elegida por ti. Toca para volver a seguir el sol real.",
+  "Tap to switch day and night.": "Toca para cambiar entre día y noche."
 }

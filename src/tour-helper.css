@@ -2,13 +2,12 @@
 .tour-helper { position: fixed; z-index: 40; top: calc(env(safe-area-inset-top, 0px) + 64px); right: 10px; width: min(304px, calc(100vw - 20px)); box-sizing: border-box; display: flex; gap: 10px; align-items: flex-start; padding: 10px 12px; border-radius: 18px; background: rgba(24, 16, 52, .92); color: #f6f1ff; box-shadow: 0 8px 28px rgba(0, 0, 0, .35); border: 1px solid rgba(255, 211, 92, .35); backdrop-filter: blur(8px); }
 /* Phones: below the zone chip on the left, still in the right-hand corner. */
 @media (max-width: 520px) {
-  .tour-helper { top: calc(env(safe-area-inset-top, 0px) + 156px); width: min(264px, calc(100vw - 20px)); padding: 8px 10px; }
+  .tour-helper { width: min(264px, calc(100vw - 20px)); padding: 8px 10px; }
   .tour-helper .tour-sub { font-size: 12px; line-height: 1.35; }
   .tour-helper .tour-line { font-size: 14px; }
   .tour-helper .tour-buttons { gap: 6px; }
   .tour-helper .tour-go, .tour-helper .tour-quiet { padding: 0 10px; font-size: 13px; }
   /* One thing at a time: the "Visible nearby" chip waits while Pip's card is open. */
-  html:has(.tour-helper:not(.is-folded):not(.tour-strip)) .presence-chip { display: none; }
 }
 .tour-helper.is-fresh { animation: tour-pop .5s ease-out; border-color: #ffd35c; }
 .tour-helper.is-folded { width: auto; padding: 6px; border-radius: 40px; }

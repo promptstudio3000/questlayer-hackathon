@@ -7,7 +7,7 @@ import { createCommunityPlaces } from "../server/community-places.mjs";
 const here = { lat: 49.7475, lng: 13.3776 };
 const DAY = 86_400_000;
 
-test("map notes can fade after a day or a week, and the author can edit the text", async () => {
+test("map notes fade after a day or a week (a week by default), and the author can edit the text", async () => {
   const db = openDatabase(":memory:");
   let now = Date.parse("2026-11-10T12:00:00Z");
   const author = createPlayer(db, "Author"),
@@ -17,21 +17,36 @@ test("map notes can fade after a day or a week, and the author can edit the text
     social.create(author, { clientId, text: "Bench by the lime tree.", ...here, arena: true, publicConsent: true, shareGps: false, ...extra });
   const day = await note("n-day", { days: 1 });
   await note("n-week", { days: 7 });
-  await note("n-keep", {});
+  const plain = await note("n-plain", {});
   await assert.rejects(note("n-bad", { days: 3 }), /how long the note stays/);
+  await assert.rejects(note("n-keep", { days: 0 }), /how long the note stays/);
   const list = () => social.list(viewer, { ...here, arena: true }).messages;
   assert.equal(list().length, 3);
   assert.equal(list().find((n) => n.id === day.id).expires_at, now + DAY);
   now += DAY + 1;
   assert.equal(list().length, 2, "the one-day note left the map");
-  now += 6 * DAY;
-  assert.deepEqual(list().map((n) => n.expires_at), [null], "only the kept note stays");
-  const kept = list()[0];
+  now += 5 * DAY;
+  assert.equal(list().length, 2);
+  const kept = list().find((n) => n.id === plain.id);
+  assert.equal(kept.expires_at, Date.parse("2026-11-10T12:00:00Z") + 7 * DAY, "no duration means one week");
   assert.throws(() => social.edit(viewer, kept.id, { text: "Mine now" }), /Only the author/);
   assert.equal(social.edit(author, kept.id, { text: "Bench by the old lime tree." }).text, "Bench by the old lime tree.");
-  assert.equal(list()[0].text, "Bench by the old lime tree.");
+  assert.equal(list().find((n) => n.id === plain.id).text, "Bench by the old lime tree.");
   // A replay with the same content and no duration keeps its receipt.
-  assert.equal((await note("n-keep", {})).replayed, true);
+  assert.equal((await note("n-plain", {})).replayed, true);
+  now += DAY;
+  assert.equal(list().length, 0, "every note has faded after a week");
+});
+
+test("an old note kept for good fades a week after it was written", async () => {
+  const db = openDatabase(":memory:");
+  let now = Date.parse("2026-11-11T20:00:00Z");
+  const author = createPlayer(db, "Author");
+  const social = new SocialContent(db, { clock: () => now });
+  const { id } = await social.create(author, { clientId: "old", text: "Waiting by the fountain.", ...here, arena: true, publicConsent: true, shareGps: false });
+  db.prepare("DELETE FROM social_note_expiry WHERE note_id=?").run(id);
+  new SocialContent(db, { clock: () => now });
+  assert.equal(db.prepare("SELECT expires_at FROM social_note_expiry WHERE note_id=?").get(id).expires_at, now + 7 * DAY);
 });
 
 test("community places list nearest first, stay free, and only the author edits or removes them", () => {

@@ -21,6 +21,7 @@ import {
   LinkSimple,
   LockKey,
   MapPin,
+  NavigationArrow,
   Package,
   PaintBrush,
   Plus,
@@ -37,6 +38,7 @@ import { ArrowLeft } from "./dir-icons";
 import { EmptyState } from "./EmptyState";
 import { Badge, CoinIcon, distanceLabel, units } from "./app-bits";
 import type { Fix, Point } from "./types";
+import { guideTo } from "./guide-to";
 import "./nearby-market.css";
 
 type Who = { id: string; name: string; rating?: { count: number; average: number } | null; look?: PublicLook };
@@ -613,6 +615,11 @@ function TaskDialog({ id, k, fix, busy, run, onClose }: { id: string; k?: string
               {task.rounds > 1 && ` · ${tr("Repeats every {0} days", { 0: task.everyDays })}`}
             </p>
             {GPS_TYPES.has(task.type) && <p className="market-meta"><MapPin size={14} /> {tr("Be within {0} m of the pinned place to complete it.", { 0: task.radiusM })}</p>}
+            {GPS_TYPES.has(task.type) && !task.mine && Number.isFinite(task.lat) && (
+              <button className="secondary-button" onClick={() => { onClose(); guideTo({ lat: task.lat, lng: task.lng, label: task.title }); }}>
+                <NavigationArrow size={16} weight="fill" /> {tr("Show me the way")}
+              </button>
+            )}
 
             {task.demo ? (
               <p className="nearby-note" role="status">
@@ -779,6 +786,8 @@ function SecretDialog({ id, k, position, fix, busy, run, notify, onClose }: { id
     return r;
   };
   const s = secret;
+  // A revealed Secret guides on the map to its place (or a route's last point).
+  const revealedGoal = s?.revealed ? s.place || (s.route?.length ? s.route[s.route.length - 1] : null) : null;
   return (
     <Dialog label={s?.title || tr("Secret")} onClose={onClose}>
       <div className="market-dialog">
@@ -799,9 +808,19 @@ function SecretDialog({ id, k, position, fix, busy, run, notify, onClose }: { id
               {tr("Hidden by {0}", { 0: s.creator.name })} · {tr("Somewhere in a {0} m fog circle.", { 0: s.fog.radiusM })}
               {s.inside && ` ${tr("You are inside it.")}`}
             </p>
+            {!s.revealed && !s.inside && !s.mine && (
+              <button className="secondary-button" onClick={() => { onClose(); guideTo({ lat: s.fog.lat, lng: s.fog.lng, label: s.title }); }}>
+                <NavigationArrow size={16} weight="fill" /> {tr("Show me the way")}
+              </button>
+            )}
             {s.revealed && s.text ? (
               <div className="secret-revealed">
                 <p>{s.text}</p>
+                {revealedGoal && !s.mine && (
+                  <button className="primary-button" onClick={() => { onClose(); guideTo({ ...revealedGoal, label: s.title }); }}>
+                    <NavigationArrow size={18} weight="fill" /> {tr("Show me the way")}
+                  </button>
+                )}
                 {s.place && (
                   <a className="secondary-button" href={`https://www.openstreetmap.org/?mlat=${s.place.lat}&mlon=${s.place.lng}#map=18/${s.place.lat}/${s.place.lng}`} target="_blank" rel="noreferrer">
                     <MapPin size={16} /> {tr("Open the exact place")}

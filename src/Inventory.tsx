@@ -591,6 +591,8 @@ export function Inventory({
           <Character
             items={characterItems}
             originTokenId={player.appearance?.originTokenId}
+            look={player.appearance?.look}
+            wearables={player.wearables}
           />
         </div>
         <div className="inv-hero-gear" aria-label={tr("Equipped Aura slots")}>

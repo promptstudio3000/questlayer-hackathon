@@ -5,6 +5,7 @@
 //   POST /api/actors/:id/keeper                                               {encounter}
 //   GET  /api/npc/traders     public books: float, 7-day P&L, premiums, sweeps
 //   GET  /api/npc/trades      the player's trader trades with their tx hashes
+//   GET  /api/npc/trades/signing  open trades the player's signing vault signs without a popup
 //   POST /api/npc/trades/tx   {tradeId, transactionHash} records a trade-up hand-over
 //   POST /api/npc/trades/fill {tradeId, signed} settles an accepted buy or sale on
 //                             NEAR Intents with the player's signed token_diff
@@ -160,6 +161,12 @@ export function createTraderRoutes({ traders, actors, db, market, vaults, keeper
         assert(traders, "NPC traders are not open here.", 503, "NPC_TRADERS_DISABLED");
         assert(player, "Sign in first.", 401);
         respond(res, { network: "testnet", trades: traders.myTrades(player) });
+        return true;
+      }
+      if (path === "/api/npc/trades/signing" && method === "GET") {
+        assert(traders, "NPC traders are not open here.", 503, "NPC_TRADERS_DISABLED");
+        assert(player, "Sign in first.", 401);
+        respond(res, traders.signingGrants(player));
         return true;
       }
       if (path === "/api/npc/trades/tx" && method === "POST") {

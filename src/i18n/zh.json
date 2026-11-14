@@ -1116,6 +1116,7 @@
   "Open orders": "未完成订单",
   "Open the chest": "打开宝箱",
   "Open the exact place": "打开确切地点",
+  "Show me the way": "给我指路",
   "Open to try again.": "打开以重试。",
   "Open today's map first.": "请先打开今天的地图。",
   "Open until {0}": "开放至 {0}",
@@ -2834,8 +2835,6 @@
   "It didn't finish. If it was sent, it shows here in a minute.": "没有完成。如果已发送，会在一分钟内显示在这里。",
   "Show me to nearby explorers": "向附近的探险者显示我",
   "While the game is open on your screen, explorers within about 1.5 km see your name, look and position on their map. Your profile never shows where you are. Players you blocked never see you, and you never see them.": "游戏在屏幕上打开时，约 1.5 公里内的探险者可以在地图上看到你的名字、外观和位置。你的个人资料从不显示你在哪里。你屏蔽的玩家永远看不到你，你也看不到他们。",
-  "Stop showing me to nearby explorers": "停止向附近的探险者显示我",
-  "Visible nearby · {0} near": "附近可见 · 附近 {0} 人",
   "Link this device": "关联此设备",
   "Messages open with your explorer account, which you get with your first find or quest.": "消息需要探索者账户，完成第一次发现或任务即可获得。",
   "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "此设备尚未关联你的探索者账户，因此无法收发消息。请用恢复通行密钥添加它。",
@@ -3341,5 +3340,9 @@
   "Minted only from real yield": "只用真实收益铸造",
   "Burn": "销毁",
   "Principal stays yours": "本金始终归你",
-  "XP for every run, 80 % of every paid unlock.": "每次通关得 XP，每次付费解锁得 80 %。"
+  "XP for every run, 80 % of every paid unlock.": "每次通关得 XP，每次付费解锁得 80 %。",
+  "Night": "夜晚",
+  "Day view, chosen by you. Tap to follow the real sun again.": "你选择的白天视图。轻点以重新跟随真实的太阳。",
+  "Night view, chosen by you. Tap to follow the real sun again.": "你选择的夜晚视图。轻点以重新跟随真实的太阳。",
+  "Tap to switch day and night.": "轻点切换白天和夜晚。"
 }

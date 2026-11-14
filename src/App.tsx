@@ -1,4 +1,5 @@
 import { currentZone, zoneInteriorMargin } from "./zone-presence";
+import { clientCoinReach } from "./coin-pickup";
 import { ZonePresence } from "./ZonePresence";
 import { MapSurface } from "./MapSurface";
 import type { CreatorCommunityView } from "./creator-community-types";
@@ -167,7 +168,7 @@ import "./compact-ui.css";
 import "./mobile-sheets.css";
 import "./arcade-ui.css";
 import { activeQuestRoute, questTarget } from "./quest-route";
-import { HudXpRing } from "./HudXpRing";
+import { HudXpCount, HudXpRing } from "./HudXpRing";
 import { RewardBursts } from "./RewardBursts";
 import { pushBurst, type RewardBurst } from "./reward-burst";
 import type { ChainRef } from "./chain-proof";
@@ -215,7 +216,6 @@ import {
   PaperPlane,
   ShieldCheck,
   Key,
-  Eye,
   Flag,
   TrendUp,
   Lightning,
@@ -296,7 +296,7 @@ import {
 } from "./feedback";
 import { QuestThumbnail } from "./QuestThumbnail";
 import { headingTo, metersBetween } from "./map-motion.ts";
-import { locationPermission, rememberMode, shouldStartWithGps } from "./play-here";
+import { TEST_LAYER, locationPermission, rememberMode, shouldStartWithGps } from "./play-here";
 import { advanceGpsFacing, initialGpsFacing } from "./gps-facing";
 import { useDemoWalk } from "./useDemoWalk";
 import { demoCityFromSearch, demoCityUrl, type DemoCity } from "./demo-city";
@@ -458,16 +458,20 @@ export default function App() {
       .then((c) => {
         setVirtualLayer(c.layer?.layers?.[0] ?? null);
         setGameLayer(c.gameLayer ?? null);
-        // Until launch World opens the Test Layer; "?world=1" (from its picker) keeps World for good.
+        // Until launch every fresh start of World opens the Test Layer; "?world=1" (from its
+        // picker) keeps World only for this tab session, so the next launch is the Test Layer again.
         const g = c.gameLayer, key = "questlayer.stayWorld";
         // A city in the address plays in the Test Layer's demo; World has no demo of its own.
         if (DEMO_CITY_ASKED && g && !g.test && g.testLayerUrl && !/[?&]world=1/.test(location.search))
           return location.replace(demoCityUrl(g.testLayerUrl, DEMO_CITY_ASKED));
         if (DEMO_CITY_ASKED && g?.test) void openDemoCity(DEMO_CITY_ASKED);
         try {
-          if (/[?&]world=1/.test(location.search)) { localStorage.setItem(key, "1"); history.replaceState(null, "", location.pathname + location.hash); }
-          else if (g?.defaultTest && g.testLayerUrl && !localStorage.getItem(key)) location.replace(g.testLayerUrl);
+          localStorage.removeItem(key);
+          if (/[?&]world=1/.test(location.search)) { sessionStorage.setItem(key, "1"); history.replaceState(null, "", location.pathname + location.hash); }
+          else if (g?.defaultTest && g.testLayerUrl && !sessionStorage.getItem(key)) location.replace(g.testLayerUrl);
         } catch {}
+        // GotchiGO has no demo: a demo pick remembered from older builds starts GPS instead.
+        if (g?.gpsOnly) rememberMode("gps");
         if (c.gameLayer?.test) document.documentElement.dataset.testLayer = "1";
       })
       .catch(() => {});
@@ -564,6 +568,31 @@ export default function App() {
   const creatorsEnabled =
     creatorCapability?.playerId === player?.id &&
     creatorCapability?.enabled === true;
+  // Ask the creator status as soon as the explorer is known, so "Create a
+  // quest" sits in Actions from the start. Before, only the Community screen
+  // read it, and Actions lacked the button until Community had been opened
+  // once (Lubos, 14 Nov 2026).
+  useEffect(() => {
+    const id = player?.id;
+    if (!id) return;
+    const controller = new AbortController();
+    fetch("/api/creator-community/status", {
+      credentials: "same-origin",
+      signal: controller.signal,
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((s: { enabled?: unknown } | null) => {
+        if (controller.signal.aborted || !s) return;
+        const enabled = s.enabled === true;
+        setCreatorCapability((previous) =>
+          previous?.playerId === id && previous.enabled === enabled
+            ? previous
+            : { playerId: id, enabled },
+        );
+      })
+      .catch(() => undefined);
+    return () => controller.abort();
+  }, [player?.id]);
   const creatorPlaces = useCreatorPlaces(player?.id ?? null);
   const {
     tab,
@@ -1065,6 +1094,21 @@ export default function App() {
     );
     return () => clearTimeout(t);
   }, [bursts]);
+  // Every XP gain flies a "+N XP" chip to the XP counter beside the avatar,
+  // which then bumps (Lubos 14 Nov). The first read of a player never does.
+  const shownXp = useRef<{ key?: string; xp?: number }>({});
+  const [xpPulse, setXpPulse] = useState(0);
+  useEffect(() => {
+    if (!player || hudXp === null) return;
+    const key = `${player.id}:${nativePlay ? "native" : "demo"}`, xp = Number(hudXp);
+    const seen = shownXp.current;
+    if (seen.key === key && seen.xp !== undefined && xp > seen.xp) {
+      const amount = Math.round(xp - seen.xp);
+      burst({ tone: "xp", amount, title: `+${amount.toLocaleString("en-US")} XP` });
+      setXpPulse((n) => n + 1);
+    }
+    shownXp.current = { key, xp };
+  }, [hudXp, player?.id, nativePlay]);
   // Level ups get their own burst; the first read of a player never does.
   const shownLevel = useRef<{ player?: string; level?: number }>({});
   useEffect(() => {
@@ -1575,6 +1619,10 @@ export default function App() {
   }, [player?.id]);
   // The game starts in the world around the player (src/play-here.ts): the
   // demo stays only when location is refused or the player chose it.
+  // The config can arrive after sign-in: GotchiGO then starts GPS right away.
+  useEffect(() => {
+    if (gameLayer?.gpsOnly && player) void resumeLocation();
+  }, [gameLayer?.gpsOnly, player?.id]);
   async function resumeLocation() {
     const owner = ownerContext();
     const permission = await locationPermission();
@@ -1715,7 +1763,9 @@ export default function App() {
       collectionRun.current = request;
       const timeout = setTimeout(() => request.abort(), 15000);
       try {
-        const radius = (state.world.coinRadius ?? 18) - 1;
+        // GPS reach grows with the fix accuracy, like the server check.
+        const radius = clientCoinReach(!!state.arena, state.world.coinRadius, state.fix, Date.now());
+        if (radius === null) return;
         const nearby = state.world.coins
           .filter(
             (c) =>
@@ -1782,7 +1832,7 @@ export default function App() {
                     }
                   : result.find
                   ? { tone: "find", title: tr("Street find!"), detail: paid, chain: result.chain }
-                  : { tone: "coin", title: paid, chain: result.chain },
+                  : { tone: "coin", title: `+${gold(result.value, 2)} QGOLD`, chain: result.chain },
               );
               pickupFeedback.confirm(
                 demoPickupScope(state.player.id, state.world.id, state.arena),
@@ -1916,8 +1966,10 @@ export default function App() {
   );
   // City demo only: the pad / arrows / WASD walk the explorer the way it
   // faces. Real play has no manual movement; the position is the GPS fix.
+  // GotchiGO is GPS only (Lubos, 14 Nov 2026): the pad belongs to the Test Layer.
+  const demoPad = TEST_LAYER || (!!gameLayer && !gameLayer.gpsOnly);
   const demoWalk = useDemoWalk({
-    enabled: !!player && arena && !nativePlay && !globe && tab === "explore" && !sheetExpanded && !actorOpen && !showNpc && !discovery && !findInspect && !walletChoices,
+    enabled: !!player && arena && demoPad && !nativePlay && !globe && tab === "explore" && !sheetExpanded && !actorOpen && !showNpc && !discovery && !findInspect && !walletChoices,
     setPosition,
     onWalk: () => {
       setOverview(false);
@@ -2144,13 +2196,17 @@ export default function App() {
   }
   // One tap on a quest, from any list, pin or dialog: straight to the map
   // with the direction guide, or to the confirm button when already there.
-  function startQuest(q: Quest) {
+  function startQuest(q: Quest, opts?: { guideAnyway?: boolean }) {
     setPointTarget(null);
     const zone = world?.zones.find(z => z.id === q.zone_id);
-    if (!world || !player || !zone) return;
+    if (!world || !player) return;
+    // Someone (an NPC) sent the player there: the way is drawn even when the
+    // quest cannot be played yet, so "Guiding you to" always has its line.
+    if (!zone) { if (opts?.guideAnyway) navigateTo({ ...questPoint(q), label: questDisplayTitle(q.title) }); return; }
     const t = Date.now();
     const playable = !q.completed && zone.tier <= player.tier && !zone.operatorPause && zone.placeStatus !== "closed" && q.placeStatus !== "closed" &&
       zone.opensAt <= t && zone.closesAt > t && q.opens_at <= t && q.closes_at > t;
+    if (!playable && opts?.guideAnyway && !q.completed && meters(latest.current.position, questPoint(q)) > 25) { navigateTo({ ...questPoint(q), label: questDisplayTitle(q.title) }); return; }
     if (!playable) { selectZone(zone, q.id); return; }
     const here = meters(latest.current.position, questPoint(q)) <= 25 && !(zone.geometry && zoneInteriorMargin(zone, latest.current.position) === null);
     setCatalogView(null);
@@ -4094,9 +4150,9 @@ export default function App() {
     setSheetExpanded(false);
   };
   const settingsMap: SettingsMap = {
-    demo: arena && !nativePlay,
+    demo: arena && demoPad && !nativePlay,
     status:
-      nativePlay && arena
+      (nativePlay || !demoPad) && arena
         ? tr("Turn on location")
         : arena
           ? tr("City demo")
@@ -4222,6 +4278,8 @@ export default function App() {
             (communityGoal?.points[0]
               ? { ...communityGoal.points[0], label: communityGoal.title }
               : null) ||
+            // Secrets, player tasks, NPC places, tour stops: the same line and chip.
+            (pointTarget && !selected ? { lat: pointTarget.lat, lng: pointTarget.lng, label: pointTarget.label } : null) ||
             (findTarget
               ? {
                   lat: findTarget.lat,
@@ -4290,7 +4348,7 @@ export default function App() {
           goldMap={goldMapData}
           selectedQuestId={selectedQuestId}
           guideLabel={selected ? (zoneQuest ? questDisplayTitle(zoneQuest.title) : selected.name) : undefined}
-          onGuideStop={selected ? closeZone : findTarget ? () => setStreetFindTarget(null) : undefined}
+          onGuideStop={selected ? closeZone : nativeTarget ? undefined : communityGoal?.points[0] ? () => { setCommunityGoal(null); setDemoTarget(null); } : pointTarget ? clearPointTarget : findTarget ? () => setStreetFindTarget(null) : undefined}
           guideRequest={guideRequest && guideRequest.worldId === world?.id && guideRequest.playerId === player?.id && selected && zoneQuest?.id === guideRequest.questId && zoneQuests.some(q => q.id === guideRequest.questId && !q.completed && q.opens_at <= now && q.closes_at > now) ? guideRequest : null}
           route={questRoute}
           onPlacePin={(id) => {
@@ -4410,6 +4468,7 @@ export default function App() {
                         items={appearanceItems}
                         // originTokenId and look (outfit tag) of the worn original.
                       {...player.appearance}
+                        wearables={player.wearables}
                         compact
                       />
                       <span className="sr-only">{tr(", explorer profile")}</span>
@@ -4420,6 +4479,7 @@ export default function App() {
                         items={appearanceItems}
                         // originTokenId and look (outfit tag) of the worn original.
                       {...player.appearance}
+                        wearables={player.wearables}
                         compact
                       />
                       <span>
@@ -4428,6 +4488,7 @@ export default function App() {
                       </span>
                     </>
                   )}
+                  {hudXp !== null && <HudXpCount xp={Number(hudXp)} pulse={xpPulse} />}
                 </button>
                 <button
                   className="balance-pill"
@@ -5077,6 +5138,7 @@ export default function App() {
                       items={appearanceItems}
                       // originTokenId and look (outfit tag) of the worn original.
                       {...player.appearance}
+                      wearables={player.wearables}
                     />
                   }
                   name={player.name}
@@ -5406,17 +5468,6 @@ export default function App() {
       </button>}
       {player && (
         <>
-          {presence && others.length > 0 && (
-            <button
-              className="presence-chip"
-              aria-label={tr("Stop showing me to nearby explorers")}
-              onClick={() => changeSharePosition(false)}
-            >
-              <Eye size={14} />{" "}
-              {tr("Visible nearby · {0} near", { 0: others.length })}{" "}
-              <X size={12} />
-            </button>
-          )}
           {searchHere && (
             <button
               className="map-search-here"
@@ -5430,7 +5481,7 @@ export default function App() {
               {tr("Search this area")}
             </button>
           )}
-          {arena && !nativePlay && !globe && mapVisible && (
+          {arena && demoPad && !nativePlay && !globe && mapVisible && (
             <DemoControls
               held={demoWalk.held}
               running={demoWalk.running}
@@ -5802,7 +5853,7 @@ export default function App() {
           }
           onQuest={(id) => {
             const quest = world.quests.find(q => q.id === id);
-            if (quest) startQuest(quest);
+            if (quest) startQuest(quest, { guideAnyway: true });
           }}
           onShow={() => {
             const id = actorOpen.id;

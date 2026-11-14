@@ -124,6 +124,26 @@
     display: inline-flex;
   }
 }
+/* XP counter beside the avatar (Lubos 14 Nov): star + compact total XP. */
+.hud-xp-count { display: inline-flex; flex: none; align-items: center; }
+.hud-xp-count-in {
+  display: inline-flex; align-items: center; gap: 3px; padding: 0 2px 0 6px;
+  font-variant-numeric: tabular-nums; white-space: nowrap; transform-origin: 50% 50%;
+}
+.hud-xp-count b { font-size: 16px; font-weight: 800; color: var(--ink, #1a0335); line-height: 1; }
+.hud-xp-star { width: 20px; height: 20px; flex: none; fill: var(--action, #672eeb); stroke: var(--ink, #1a0335); stroke-width: 1.6; stroke-linejoin: round; }
+/* Bumps when the flying "+N XP" chip lands (src/reward-burst.css xp tone). */
+.hud-xp-count-in.bump { animation: hud-xp-bump .5s 1s ease-out both; }
+@keyframes hud-xp-bump {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.22); filter: drop-shadow(0 0 6px #b98bff); }
+  100% { transform: scale(1); }
+}
+@media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
+  .topbar .profile-pill > span.hud-xp-count { display: inline-flex; }
+  /* world-switcher.css pins the phone pill to the 56 px avatar; the counter widens it. */
+  .app-shell .topbar .profile-pill:has(> .hud-xp-count) { width: auto; max-width: none; }
+}
 @media (max-width: 359px) {
   .topbar .profile-pill > .hud-xp > .hud-xp-text {
     display: none;
@@ -133,6 +153,7 @@
   .hud-xp-fill {
     transition: none;
   }
+  .hud-xp-count-in.bump { animation: none; }
 }
 
 /* ---------- Grouped map toolbar ---------- */

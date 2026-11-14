@@ -174,6 +174,10 @@ function useInstallMoment(eligible: boolean) {
   return ready;
 }
 
+// The home-screen offer is off for now (Lubos, 14 Nov 2026): it covered the
+// map right after sign-in. Flip back to true to bring it back.
+const INSTALL_OFFER_ENABLED = false;
+
 export function PwaPrompts() {
   const state = useSyncExternalStore(pwaStore.subscribe, pwaStore.getSnapshot);
   const online = useOnline();
@@ -193,7 +197,7 @@ export function PwaPrompts() {
   const updateRef = useRef<HTMLDivElement>(null);
   const offlineRef = useRef<HTMLDivElement>(null);
 
-  const offer = closedOffer
+  const offer = closedOffer || !INSTALL_OFFER_ENABLED
     ? null
     : installOfferKind({
         standalone: isStandaloneDisplay(),

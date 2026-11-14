@@ -5,6 +5,18 @@ export const COIN_VALUE = 10_000; // 0.01 GOLD; integer micro-GOLD, never floati
 // Pickup radii in meters. The arena is a trusted simulation; GPS play allows for fix accuracy.
 export const COIN_ARENA_RADIUS_M = 18;
 export const COIN_GPS_RADIUS_M = 35;
+// GPS coin pick-up forgives a poor fix: the reach grows with the reported
+// accuracy (slack + accuracy), never below the base and never above the cap.
+// A phone between buildings often reports 30-60 m, and a coin on the edge of
+// the path should still be reachable. src/coin-pickup.ts mirrors this formula.
+export const COIN_GPS_SLACK_M = 25;
+export const COIN_GPS_MAX_RADIUS_M = 60;
+export const COIN_GPS_MAX_ACCURACY_M = 65;
+export const COIN_GPS_MAX_AGE_MS = 30_000;
+export function coinPickupRadius(accuracy) {
+  if (!Number.isFinite(accuracy) || accuracy < 0) return COIN_GPS_RADIUS_M;
+  return Math.min(COIN_GPS_MAX_RADIUS_M, Math.max(COIN_GPS_RADIUS_M, COIN_GPS_SLACK_M + accuracy));
+}
 export const DAY = 86_400_000;
 export class GameError extends Error {
   constructor(message, status = 400, code = 'INVALID_ACTION') { super(message); this.status = status; this.code = code; }
@@ -36,8 +48,8 @@ export function positionTier(position, now = Date.now()) {
 }
 export function splitYield(net) { amount(net, { min:0 }); const coins = Math.floor(net / 2); return { coins, zones: net-coins }; }
 export const GPS_MAX_AGE_MS=15_000;
-export function validateFix(fix, target, now = Date.now(), radius = COIN_GPS_RADIUS_M) {
-  point(fix); assert(Number.isFinite(fix.accuracy) && fix.accuracy <= 35 && fix.accuracy >= 0, 'Your location is not precise enough yet. Step into the open and try again.', 422, 'GPS_ACCURACY');
-  assert(Number.isFinite(fix.timestamp) && fix.timestamp <= now+2000 && now-fix.timestamp <= GPS_MAX_AGE_MS, 'Your location is out of date. Wait a moment for a fresh one, then try again.', 422, 'GPS_STALE');
+export function validateFix(fix, target, now = Date.now(), radius = COIN_GPS_RADIUS_M, { maxAccuracy = 35, maxAge = GPS_MAX_AGE_MS } = {}) {
+  point(fix); assert(Number.isFinite(fix.accuracy) && fix.accuracy <= maxAccuracy && fix.accuracy >= 0, 'Your location is not precise enough yet. Step into the open and try again.', 422, 'GPS_ACCURACY');
+  assert(Number.isFinite(fix.timestamp) && fix.timestamp <= now+2000 && now-fix.timestamp <= maxAge, 'Your location is out of date. Wait a moment for a fresh one, then try again.', 422, 'GPS_STALE');
   assert(distance(fix,target) <= radius, 'Get a bit closer, then try again.', 422, 'OUT_OF_RANGE');
 }

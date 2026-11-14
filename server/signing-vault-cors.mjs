@@ -1,6 +1,7 @@
 const PATHS = [
   /^\/api\/gold\/burn\/intent$/,
   /^\/api\/market\/funding-intent$/,
+  /^\/api\/npc\/trades\/signing$/,
   /^\/api\/account\/keys$/,
   /^\/api\/relay(?:\/prepare|\/relay_[a-f0-9-]{36})?$/,
   /^\/api\/auth\/near\/(?:challenge|verify)$/,

@@ -1116,6 +1116,7 @@
   "Open orders": "未約定の注文",
   "Open the chest": "宝箱を開けよう",
   "Open the exact place": "正確な場所を開く",
+  "Show me the way": "道を案内して",
   "Open to try again.": "開いてもう一度試す。",
   "Open today's map first.": "まず今日のマップを開いてください。",
   "Open until {0}": "{0}まで募集",
@@ -2834,8 +2835,6 @@
   "It didn't finish. If it was sent, it shows here in a minute.": "完了しませんでした。送信済みなら、1分ほどでここに表示されます。",
   "Show me to nearby explorers": "近くの探検者に自分を表示",
   "While the game is open on your screen, explorers within about 1.5 km see your name, look and position on their map. Your profile never shows where you are. Players you blocked never see you, and you never see them.": "ゲームが画面に開いている間、約1.5 km以内の探検者はあなたの名前、見た目、位置を地図上で見られます。プロフィールに居場所が表示されることはありません。ブロックしたプレイヤーはあなたを見られず、あなたも相手を見られません。",
-  "Stop showing me to nearby explorers": "近くの探検者への表示をやめる",
-  "Visible nearby · {0} near": "近くに表示中 · 近く{0}人",
   "Link this device": "このデバイスを連携",
   "Messages open with your explorer account, which you get with your first find or quest.": "メッセージは探検者アカウントで使えます。最初の発見かクエストで手に入ります。",
   "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "このデバイスはまだ探検者アカウントと連携していないため、メッセージを送受信できません。復旧用パスキーで追加してください。",
@@ -3341,5 +3340,9 @@
   "Minted only from real yield": "実際の利回りからのみ発行",
   "Burn": "バーン",
   "Principal stays yours": "元本はあなたのまま",
-  "XP for every run, 80 % of every paid unlock.": "クリアごとに XP、有料アンロックごとに 80 %。"
+  "XP for every run, 80 % of every paid unlock.": "クリアごとに XP、有料アンロックごとに 80 %。",
+  "Night": "夜",
+  "Day view, chosen by you. Tap to follow the real sun again.": "あなたが選んだ昼の表示。タップすると本物の太陽に戻ります。",
+  "Night view, chosen by you. Tap to follow the real sun again.": "あなたが選んだ夜の表示。タップすると本物の太陽に戻ります。",
+  "Tap to switch day and night.": "タップで昼と夜を切り替えます。"
 }

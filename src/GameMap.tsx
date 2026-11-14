@@ -45,7 +45,7 @@ import "maplibre-gl/dist/maplibre-gl.css";
 import "./art-world";
 import type { Point, World, Zone, Item } from "./types";
 import { prefersReducedMotion } from "./feedback";
-import { MAP_PALETTES, paintMapSky, skyFor, skyLabel } from "./map-sky";
+import { MAP_PALETTES, nextSkyOverride, paintMapSky, readSkyOverride, saveSkyOverride, skyFor, skyLabel, viewPhase, type SkyOverride } from "./map-sky";
 import { BUILDING_HEIGHT_CAP, LANDMARK_POI_CLASSES, geometryPolygons, landmarkFeatures } from "./map-landmarks";
 import { Coins, MoonStars, Sun, SunHorizon, X } from "@phosphor-icons/react";
 import "./map-sky.css";
@@ -300,13 +300,27 @@ export function GameMap(props: GameMapProps) {
     const id = window.setInterval(() => setSkyTick(Date.now()), 60_000);
     return () => window.clearInterval(id);
   }, []);
-  const sky = skyFor(props.position, props.now ?? skyTick);
+  const realSky = skyFor(props.position, props.now ?? skyTick);
+  // A tap on the header chip shows day or night by choice; the next tap goes
+  // back to the real sun (src/map-sky.ts nextSkyOverride).
+  const [skyOverride, setSkyOverride] = useState<SkyOverride>(readSkyOverride);
+  const sky = { ...realSky, phase: viewPhase(realSky.phase, skyOverride) };
+  const toggleSky = () => {
+    const next = nextSkyOverride(skyOverride, realSky.phase);
+    saveSkyOverride(next);
+    setSkyOverride(next);
+  };
   const skyRef = useRef(sky);
   skyRef.current = sky;
   useEffect(() => {
     if (ready && map.current) paintMapSky(map.current, sky.phase);
   }, [ready, sky.phase]);
-  const skyText = skyLabel(sky, props.now ?? skyTick);
+  const realText = skyLabel(realSky, props.now ?? skyTick);
+  const skyText = skyOverride === "day"
+    ? { short: tr("Day"), long: tr("Day view, chosen by you. Tap to follow the real sun again.") }
+    : skyOverride === "night"
+      ? { short: tr("Night"), long: tr("Night view, chosen by you. Tap to follow the real sun again.") }
+      : { short: realText.short, long: `${realText.long} ${tr("Tap to switch day and night.")}` };
   // Map rewards: the next coin wave in this world, in its local time.
   const nextWaveAt = props.world?.mapRewards?.nextWaveAt;
   const nextWaveText =
@@ -1233,7 +1247,16 @@ export function GameMap(props: GameMapProps) {
     node.setAttribute("aria-label", t.label);
     const marker = new maplibregl.Marker({ element: node, anchor: "center" }).setLngLat([t.lng, t.lat]).addTo(m);
     latest.current.onPan();
-    m.easeTo({ center: [t.lng, t.lat], zoom: Math.max(m.getZoom(), 16), duration: prefersReducedMotion() ? 0 : 900 });
+    // Frame the explorer and the target together, so the guide line shows whole.
+    const from = props.position;
+    if (Number.isFinite(from.lat) && Number.isFinite(from.lng) && !props.globe) {
+      const box = el.current?.getBoundingClientRect();
+      const phone = window.innerWidth <= 900;
+      m.fitBounds(new maplibregl.LngLatBounds([t.lng, t.lat], [t.lng, t.lat]).extend([from.lng, from.lat]), {
+        padding: { top: Math.min(170, (box?.height || 600) * .3), bottom: phone ? 190 : 120, left: 48, right: 48 },
+        maxZoom: 17, duration: prefersReducedMotion() ? 0 : 900,
+      });
+    } else m.easeTo({ center: [t.lng, t.lat], zoom: Math.max(m.getZoom(), 16), duration: prefersReducedMotion() ? 0 : 900 });
     return () => { marker.remove(); };
   }, [props.pointTarget?.revision, ready]);
   // Player tasks and Secrets around the explorer (~55 m steps, like Nearby).
@@ -1445,15 +1468,16 @@ export function GameMap(props: GameMapProps) {
     },
     [],
   );
-  const wearing2D = !props.skinUrl && !!props.wearables?.length;
+  // Wearable clones on the starter: the official renderer draws the dressed
+  // ghost as one 3D model; until that look exists the 2D marker shows them.
+  const starterLook = props.skinUrl ? "" : (props.wearables || []).map((w) => w.id).join(",");
   useEffect(() => {
     const m = map.current,
       element = avatar.current?.getElement();
-    // Aavegotchi wearable clones are drawn on the 2D starter only.
     // The 3D look stays while a sheet covers the map (a find, an NPC, a
     // zone): it renders only on map moves, so it costs nothing in between,
     // and tearing it down made every collect fall back to the 2D sprite.
-    if (!m || !element || !ready || props.map3D === false || wearing2D) return;
+    if (!m || !element || !ready || props.map3D === false) return;
     const controller = new AbortController(),
       host = document.createElement("div");
     host.className = "map-character-model";
@@ -1540,7 +1564,7 @@ export function GameMap(props: GameMapProps) {
       show2D();
       host.remove();
     };
-  }, [props.skinUrl, props.map3D, wearing2D, ready]);
+  }, [props.skinUrl, props.map3D, starterLook, ready]);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;
@@ -1833,11 +1857,13 @@ export function GameMap(props: GameMapProps) {
           App), not in a row of its own over the map. */}
       {!props.globe && (() => {
         const chip = (
-        <div
-          className={`map-sky-chip sky-${sky.phase}`}
-          role="status"
+        <button
+          type="button"
+          className={`map-sky-chip sky-${sky.phase}${skyOverride ? " sky-manual" : ""}`}
           aria-label={skyText.long}
+          aria-pressed={!!skyOverride}
           title={skyText.long}
+          onClick={toggleSky}
         >
           {sky.phase === "day" ? (
             <Sun size={14} weight="fill" aria-hidden />
@@ -1853,7 +1879,7 @@ export function GameMap(props: GameMapProps) {
               {nextWaveText}
             </span>
           )}
-        </div>
+        </button>
         );
         const slot = document.getElementById("hud-sky-slot");
         return slot ? createPortal(chip, slot) : chip;

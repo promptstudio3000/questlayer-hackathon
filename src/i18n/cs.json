@@ -1116,6 +1116,7 @@
   "Open orders": "Otevřené příkazy",
   "Open the chest": "Otevři truhlu",
   "Open the exact place": "Otevřít přesné místo",
+  "Show me the way": "Ukaž mi cestu",
   "Open to try again.": "Otevři a zkus to znovu.",
   "Open today's map first.": "Nejdřív otevři dnešní mapu.",
   "Open until {0}": "Otevřeno do {0}",
@@ -2834,8 +2835,6 @@
   "It didn't finish. If it was sent, it shows here in a minute.": "Nedokončilo se to. Pokud se to odeslalo, ukáže se to tu do minuty.",
   "Show me to nearby explorers": "Ukázat mě hráčům v okolí",
   "While the game is open on your screen, explorers within about 1.5 km see your name, look and position on their map. Your profile never shows where you are. Players you blocked never see you, and you never see them.": "Když máš hru otevřenou na obrazovce, hráči do zhruba 1,5 km vidí na mapě tvé jméno, vzhled a polohu. Tvůj profil nikdy neukazuje, kde jsi. Hráči, které jsi zablokoval(a), tě nikdy neuvidí a ty je taky ne.",
-  "Stop showing me to nearby explorers": "Přestat mě ukazovat hráčům v okolí",
-  "Visible nearby · {0} near": "Vidí tě okolí · {0} poblíž",
   "Link this device": "Propojit toto zařízení",
   "Messages open with your explorer account, which you get with your first find or quest.": "Zprávy se otevřou s tvým účtem průzkumníka, který dostaneš s prvním nálezem nebo úkolem.",
   "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "Toto zařízení ještě není propojené s tvým účtem průzkumníka, takže nemůže posílat ani číst zprávy. Přidej ho svým záložním passkey.",
@@ -3341,5 +3340,9 @@
   "Minted only from real yield": "Raženo jen ze skutečného výnosu",
   "Burn": "Spálení",
   "Principal stays yours": "Jistina zůstává tvoje",
-  "XP for every run, 80 % of every paid unlock.": "XP za každé dohrání, 80 % z každého placeného odemčení."
+  "XP for every run, 80 % of every paid unlock.": "XP za každé dohrání, 80 % z každého placeného odemčení.",
+  "Night": "Noc",
+  "Day view, chosen by you. Tap to follow the real sun again.": "Denní vzhled podle tvé volby. Klepnutím se vrátíš ke skutečnému slunci.",
+  "Night view, chosen by you. Tap to follow the real sun again.": "Noční vzhled podle tvé volby. Klepnutím se vrátíš ke skutečnému slunci.",
+  "Tap to switch day and night.": "Klepnutím přepneš den a noc."
 }

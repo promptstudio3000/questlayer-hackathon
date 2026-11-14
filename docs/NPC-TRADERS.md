@@ -114,3 +114,17 @@ deposits, sweeps and the float. Without the account key the keeper only reports 
   `docs/ONCHAIN-TRADES.md`.
 - Buys and sales are signed with the explorer's device key. An Aura held by another linked wallet has to move to
   the explorer account before a trader can buy it in the NPC sheet.
+
+## Signing without a popup (14 Nov 2026)
+
+The player's secure account (signing vault, `src/signing-vault/policy.ts`)
+signs trader deals by itself. It reads `GET /api/npc/trades/signing` from the
+game server with the player's session and signs silently only:
+
+- `nft_transfer` of an Aura listed in an issued trade-up, to that trader,
+  with memo `questlayer trade-up <tradeId>`;
+- the exact `token_diff` of an accepted buy or sale on the Intents verifier;
+- `native_withdraw` of the player's own NEAR back to the player's own account.
+
+Anything else (other receivers, prices, open-book orders) still asks Yes / No
+in the separate window.

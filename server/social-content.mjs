@@ -3,7 +3,7 @@ import { assert, distance, hash, id, point, validateFix } from "./domain.mjs";
 
 /** Local chat distance filter (Lubos, 11 Nov 2026): how far away notes may be. */
 export const NOTE_RADIUS_KM = Object.freeze([1, 3, 10, 25, 50, 100]);
-import { initSocialNoteExpiry, NOTE_DAYS } from "./social-note-expiry.mjs";
+import { backfillNoteExpiry, initSocialNoteExpiry, NOTE_DAYS, NOTE_DEFAULT_DAYS } from "./social-note-expiry.mjs";
 
 export const REPORT_REASONS = [
   "spam",
@@ -55,6 +55,7 @@ export function initSocialContent(db) {
     CREATE INDEX IF NOT EXISTS social_audit_actor ON social_audit(actor_id,created_at);
     INSERT OR IGNORE INTO social_note_meta(note_id,arena,state,updated_at)
       SELECT id,1,'published',created_at FROM messages;`);
+  backfillNoteExpiry(db);
 }
 function line(value, label, max, optional = false) {
   assert(
@@ -256,8 +257,8 @@ export class SocialContent {
     );
     const text = line(input.text, "A note", 500),
       image = input.image || null,
-      days = input.days ?? 0;
-    assert(NOTE_DAYS.includes(days), "Choose how long the note stays: 1 day, 7 days or until you remove it.");
+      days = input.days ?? NOTE_DEFAULT_DAYS;
+    assert(NOTE_DAYS.includes(days), "Choose how long the note stays: 1 day or 7 days.");
     assert(
       image === null ||
         (typeof image === "string" &&

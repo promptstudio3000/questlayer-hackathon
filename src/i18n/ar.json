@@ -1116,6 +1116,7 @@
   "Open orders": "الطلبات المفتوحة",
   "Open the chest": "افتح الصندوق",
   "Open the exact place": "افتح المكان الدقيق",
+  "Show me the way": "أرني الطريق",
   "Open to try again.": "افتح لتحاول مجددًا.",
   "Open today's map first.": "افتح خريطة اليوم أولًا.",
   "Open until {0}": "مفتوحة حتى {0}",
@@ -2834,8 +2835,6 @@
   "It didn't finish. If it was sent, it shows here in a minute.": "لم يكتمل. إذا تم الإرسال، سيظهر هنا خلال دقيقة.",
   "Show me to nearby explorers": "أظهرني للمستكشفين القريبين",
   "While the game is open on your screen, explorers within about 1.5 km see your name, look and position on their map. Your profile never shows where you are. Players you blocked never see you, and you never see them.": "ما دامت اللعبة مفتوحة على شاشتك، يرى المستكشفون ضمن نحو 1.5 كم اسمك ومظهرك وموقعك على خريطتهم. ملفك الشخصي لا يُظهر أبدًا مكانك. اللاعبون الذين حظرتهم لا يرونك أبدًا، وأنت لا تراهم.",
-  "Stop showing me to nearby explorers": "توقف عن إظهاري للمستكشفين القريبين",
-  "Visible nearby · {0} near": "مرئي بالقرب · {0} قريب",
   "Link this device": "اربط هذا الجهاز",
   "Messages open with your explorer account, which you get with your first find or quest.": "تعمل الرسائل مع حساب المستكشف الخاص بك، وتحصل عليه مع أول اكتشاف أو مهمة.",
   "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "هذا الجهاز غير مرتبط بحساب المستكشف بعد، لذا لا يمكنه إرسال الرسائل أو قراءتها. أضفه بمفتاح المرور الاحتياطي.",
@@ -3341,5 +3340,9 @@
   "Minted only from real yield": "يُسكّ من العائد الحقيقي فقط",
   "Burn": "حرق",
   "Principal stays yours": "رأس المال يبقى لك",
-  "XP for every run, 80 % of every paid unlock.": "XP عن كل جولة، و80 % من كل فتح مدفوع."
+  "XP for every run, 80 % of every paid unlock.": "XP عن كل جولة، و80 % من كل فتح مدفوع.",
+  "Night": "ليل",
+  "Day view, chosen by you. Tap to follow the real sun again.": "عرض النهار باختيارك. انقر للعودة إلى اتباع الشمس الحقيقية.",
+  "Night view, chosen by you. Tap to follow the real sun again.": "عرض الليل باختيارك. انقر للعودة إلى اتباع الشمس الحقيقية.",
+  "Tap to switch day and night.": "انقر للتبديل بين النهار والليل."
 }

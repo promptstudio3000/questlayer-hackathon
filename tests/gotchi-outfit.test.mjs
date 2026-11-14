@@ -125,3 +125,24 @@ test("the profile shows the outfit: found clones without the gold seal, the dres
   assert.equal(seen.dress, null);
   assert.equal(seen.slots.find((s) => s.slot === "head").item.id, 4);
 });
+
+test("Try it on in the Inventory dresses a worn original too", async () => {
+  const { mirrorWearableToOutfit } = await import("../server/gotchi-outfit.mjs");
+  const { WEARABLES } = await import("../server/gotchi-wearables.mjs");
+  const hands = [...WEARABLES.values()].filter((i) => i.slot === "hand").slice(0, 2).map((i) => i.id);
+  const db = openDatabase(":memory:");
+  const a = createPlayer(db, "Alice", now);
+  find(db, a, 74);
+  for (const id of hands) find(db, a, id);
+  // The starter draws clones itself: no outfit.
+  assert.equal(mirrorWearableToOutfit(db, a, 74, true, now), null);
+  wear(db, a);
+  assert.deepEqual(mirrorWearableToOutfit(db, a, 74, true, now).outfit, { 0: 74 });
+  assert.deepEqual(mirrorWearableToOutfit(db, a, hands[0], true, now).outfit, { 0: 74, 4: hands[0] });
+  // One hand item at a time, like the Inventory: the new one replaces it.
+  assert.deepEqual(mirrorWearableToOutfit(db, a, hands[1], true, now).outfit, { 0: 74, 4: hands[1] });
+  assert.equal(mirrorWearableToOutfit(db, a, 74, true, now), null);
+  // Taking it off gives the slot back to the gotchi's own gear.
+  assert.deepEqual(mirrorWearableToOutfit(db, a, 74, false, now).outfit, { 4: hands[1] });
+  assert.equal(mirrorWearableToOutfit(db, a, 74, false, now), null);
+});

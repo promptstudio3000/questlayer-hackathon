@@ -1626,21 +1626,6 @@ input[type="range"] {
 .native-proof > a > svg {
   margin-left: auto;
 }
-.presence-chip {
-  position: absolute;
-  z-index: 22;
-  right: 80px;
-  top: 113px;
-  border: 1px solid #bfd0b7;
-  background: #eff5e9;
-  color: #79996d;
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  padding: 10px;
-  border-radius: 10px;
-  font-size: 10px;
-}
 .other-player-marker {
   width: 44px;
   height: 59px;
@@ -1669,18 +1654,6 @@ input[type="range"] {
   padding: 3px 5px;
   border-radius: 4px;
   color: #92719e;
-}
-.presence-chip > svg:last-child {
-  opacity: 0.6;
-}
-@media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
-  .presence-chip {
-    top: 123px;
-    left: 14px;
-    right: auto;
-    font-size: 8px;
-    padding: 7px;
-  }
 }
 @media (max-width: 760px), (max-height: 500px) and (max-width: 1000px) {
   .badge {
