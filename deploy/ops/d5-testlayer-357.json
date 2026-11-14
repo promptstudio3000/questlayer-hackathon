@@ -1,0 +1,6 @@
+{
+  "id": "d5-testlayer-357",
+  "deployTarget": "testlayer",
+  "installKeys": [],
+  "note": "Test Layer at the World release with #357 (creator prices in QGOLD, vault bind before ready)."
+}
