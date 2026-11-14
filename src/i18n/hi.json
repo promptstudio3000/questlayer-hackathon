@@ -3309,5 +3309,10 @@
   "Walk real streets, open chests and gather QGOLD from a shared treasury.": "असली गलियों में घूमें, संदूक खोलें और साझा खज़ाने से QGOLD इकट्ठा करें।",
   "Keepsake · {0}": "स्मृति-चिह्न · {0}",
   "Open to you": "आपके लिए खुला",
-  "Profile of {0}": "{0} की प्रोफ़ाइल"
+  "Profile of {0}": "{0} की प्रोफ़ाइल",
+  "Why stake?": "स्टेक क्यों करें?",
+  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "आपका स्टेक आपका ही रहता है। उसकी कमाई गलियों में QGOLD बिखेरती है और टियर वाली जगहें खोलती है।",
+  "Staker soon": "जल्द ही स्टेकर",
+  "Your staking tier": "आपका स्टेकिंग टियर",
+  "Staking tier: {0}. Open staking": "स्टेकिंग टियर: {0}. स्टेकिंग खोलें"
 }

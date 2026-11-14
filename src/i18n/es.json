@@ -3309,5 +3309,10 @@
   "Walk real streets, open chests and gather QGOLD from a shared treasury.": "Recorre calles reales, abre cofres y reúne QGOLD de un tesoro compartido.",
   "Keepsake · {0}": "Recuerdo · {0}",
   "Open to you": "Abierta para ti",
-  "Profile of {0}": "Perfil de {0}"
+  "Profile of {0}": "Perfil de {0}",
+  "Why stake?": "¿Por qué hacer staking?",
+  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "Tu stake sigue siendo tuyo. Su rendimiento esparce QGOLD por las calles y abre los lugares de grado.",
+  "Staker soon": "Pronto Staker",
+  "Your staking tier": "Tu grado de staking",
+  "Staking tier: {0}. Open staking": "Grado de staking: {0}. Abrir staking"
 }

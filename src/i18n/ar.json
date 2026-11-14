@@ -3309,5 +3309,10 @@
   "Walk real streets, open chests and gather QGOLD from a shared treasury.": "تجوّل في شوارع حقيقية، وافتح الصناديق، واجمع QGOLD من خزينة مشتركة.",
   "Keepsake · {0}": "تذكار · {0}",
   "Open to you": "مفتوحة لك",
-  "Profile of {0}": "ملف {0}"
+  "Profile of {0}": "ملف {0}",
+  "Why stake?": "لماذا الستيكينغ؟",
+  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "يبقى رهانك ملكك. عائده ينثر QGOLD في الشوارع ويفتح أماكن المستويات.",
+  "Staker soon": "ستصبح Staker قريبًا",
+  "Your staking tier": "مستوى الستيكينغ الخاص بك",
+  "Staking tier: {0}. Open staking": "مستوى الستيكينغ: {0}. افتح الستيكينغ"
 }
