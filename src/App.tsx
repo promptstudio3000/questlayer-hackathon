@@ -6,6 +6,7 @@ import { ActorPortrait } from "./ActorPortrait";
 import { nearbyAction, type NearbyActor } from "./nearby-action";
 import type { Coin } from "./types";
 import { WorldSwitcher, type GameLayerConfig } from "./WorldSwitcher";
+import { StakeTierChip } from "./StakeTierChip";
 import type { TourTarget } from "./TourHelper";
 import type { SettingsMap } from "./SettingsScreen";
 import { questDisplayTitle } from "./quest-copy";
@@ -4363,6 +4364,13 @@ export default function App() {
             />
           </div>
         )}
+        {player && (
+          <StakeTierChip
+            fallbackTier={player.tier}
+            refreshKey={`${player.id}:${player.tier}:${tab === "fuel"}`}
+            onOpen={() => setTab("fuel")}
+          />
+        )}
         <div className="topbar-right">
           {player && (
             <>
@@ -4447,7 +4455,7 @@ export default function App() {
           tabIndex={-1}
           className={`main-panel ${settingsOpen ? "settings-panel " : ""}${tab === "explore" ? `explore-panel ${selected ? "zone-explore-panel" : ""} ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
-          {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} gameLayer={gameLayer} buyParcel={buyMetaParcel} onNavigate={(view) => { returnToLayer.current = view.tab === "settings"; navigation.update(view); }} />}
+          {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} gameLayer={gameLayer} buyParcel={buyMetaParcel} onNavigate={(view) => { returnToLayer.current = view.tab !== "explore"; navigation.update(view); }} />}
           {tab === "explore" && !sheetExpanded && <div className="objective-dismiss-bar">
             <button className="objective-dismiss" aria-label={tr("Hide objective")} onClick={() => { if (objective === "coach") learning.acknowledge(coachTopic); else if (zoneQuest) learning.acknowledge(questHelpTopic(zoneQuest)); setDismissedObjective(objectiveKey); }}><X size={20} aria-hidden="true" /></button>
           </div>}
