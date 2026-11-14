@@ -165,7 +165,7 @@ export const CHAPTERS: Chapter[] = [
     id: "overview",
     group: "start",
     title: "What QuestLayer is",
-    tldr: "Pokémon GO, Geocaching and PoolTogether in one: **stake to play and lose nothing**. Your principal stays yours, a share of its yield goes to one global treasury, and every day that yield becomes rewards on real streets, paid as **QGOLD**, fully backed by NEAR.",
+    tldr: "Pokémon GO, Geocaching and PoolTogether in one: a **stake-to-play game platform**. Your principal stays yours, a share of its yield goes to one global treasury, and every day that yield becomes rewards on real streets, paid as **QGOLD**, fully backed by NEAR.",
     keyFacts: [
       ["100 %", "of your stake's principal stays yours"],
       ["1 coin", "QGOLD in every layer, whatever a layer names it"],
