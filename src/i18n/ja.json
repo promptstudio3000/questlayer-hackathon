@@ -3344,5 +3344,16 @@
   "Night": "夜",
   "Day view, chosen by you. Tap to follow the real sun again.": "あなたが選んだ昼の表示。タップすると本物の太陽に戻ります。",
   "Night view, chosen by you. Tap to follow the real sun again.": "あなたが選んだ夜の表示。タップすると本物の太陽に戻ります。",
-  "Tap to switch day and night.": "タップで昼と夜を切り替えます。"
+  "Tap to switch day and night.": "タップで昼と夜を切り替えます。",
+  "How to complete": "達成のしかた",
+  "Tap Take this task to claim it; it is yours for 3 hours.": "「このタスクを引き受ける」をタップ。3時間あなた専用になります。",
+  "Make your way to the pinned place.": "ピンの場所へ向かいましょう。",
+  "Make your way to the hidden chest.": "隠された宝箱へ向かいましょう。",
+  "Do as the poster asks, then tap I'm here within {0} m of the pin.": "依頼者の頼みを果たし、ピンから{0} m以内で「到着した」をタップ。",
+  "Seek the answer there, then type it in the answer box here. The game checks it at once.": "現地で答えを探し、ここの回答欄に入力。ゲームがすぐ判定します。",
+  "Do the deed, then tell of it in the proof box here. The poster checks it and pays you.": "やり遂げたら、ここの証拠欄に内容を書いて送信。依頼者が確認して支払います。",
+  "Tap Go to begin; the map then lights your way.": "「行く」をタップして開始。地図が道を照らします。",
+  "No place to visit; you may do this from anywhere.": "行く場所はありません。どこからでも挑めます。",
+  "Walk the {0} stops in order.": "{0}か所の立ち寄り先を順番に歩きましょう。",
+  "Then write your answer to the question above in the answer box here. A reviewer checks it.": "次に、上の問いへの答えをここの回答欄に書きます。レビュアーが確認します。"
 }

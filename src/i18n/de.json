@@ -3344,5 +3344,16 @@
   "Night": "Nacht",
   "Day view, chosen by you. Tap to follow the real sun again.": "Tagansicht, von dir gewählt. Tippe, um wieder der echten Sonne zu folgen.",
   "Night view, chosen by you. Tap to follow the real sun again.": "Nachtansicht, von dir gewählt. Tippe, um wieder der echten Sonne zu folgen.",
-  "Tap to switch day and night.": "Tippe, um zwischen Tag und Nacht zu wechseln."
+  "Tap to switch day and night.": "Tippe, um zwischen Tag und Nacht zu wechseln.",
+  "How to complete": "So schaffst du es",
+  "Tap Take this task to claim it; it is yours for 3 hours.": "Tippe auf Diese Aufgabe übernehmen; 3 Stunden gehört sie dir.",
+  "Make your way to the pinned place.": "Mach dich auf zum markierten Ort.",
+  "Make your way to the hidden chest.": "Mach dich auf zur versteckten Truhe.",
+  "Do as the poster asks, then tap I'm here within {0} m of the pin.": "Tu, worum der Auftraggeber bittet, dann tippe auf Ich bin da, höchstens {0} m vom Pin entfernt.",
+  "Seek the answer there, then type it in the answer box here. The game checks it at once.": "Finde dort die Antwort und tippe sie hier ins Antwortfeld. Das Spiel prüft sie sofort.",
+  "Do the deed, then tell of it in the proof box here. The poster checks it and pays you.": "Erledige es und beschreibe es hier im Nachweisfeld. Der Auftraggeber prüft und bezahlt dich.",
+  "Tap Go to begin; the map then lights your way.": "Tippe auf Los; dann leuchtet dir die Karte den Weg.",
+  "No place to visit; you may do this from anywhere.": "Kein Ort nötig; das geht von überall.",
+  "Walk the {0} stops in order.": "Geh die {0} Stationen der Reihe nach ab.",
+  "Then write your answer to the question above in the answer box here. A reviewer checks it.": "Schreib dann deine Antwort auf die Frage oben hier ins Antwortfeld. Ein Prüfer sieht sie sich an."
 }

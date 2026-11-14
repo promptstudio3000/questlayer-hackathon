@@ -31,7 +31,7 @@ import {
   X,
 } from "@phosphor-icons/react";
 import { BotTag, CommunityRow, ExplorerAvatar, FilterChips, type PublicLook } from "./CommunityCards";
-import { api, gold, GOLD } from "./api";
+import { api, gold, GOLD, meters } from "./api";
 import { tr } from "./i18n";
 import { Dialog } from "./Dialog";
 import { ArrowLeft } from "./dir-icons";
@@ -39,6 +39,7 @@ import { EmptyState } from "./EmptyState";
 import { Badge, CoinIcon, distanceLabel, units } from "./app-bits";
 import type { Fix, Point } from "./types";
 import { guideTo } from "./guide-to";
+import { HowToSteps, placeStep } from "./HowToSteps";
 import "./nearby-market.css";
 
 type Who = { id: string; name: string; rating?: { count: number; average: number } | null; look?: PublicLook };
@@ -614,12 +615,7 @@ function TaskDialog({ id, k, fix, busy, run, onClose }: { id: string; k?: string
               {" · "}{tr("{0} places left", { 0: task.remaining })}
               {task.rounds > 1 && ` · ${tr("Repeats every {0} days", { 0: task.everyDays })}`}
             </p>
-            {GPS_TYPES.has(task.type) && <p className="market-meta"><MapPin size={14} /> {tr("Be within {0} m of the pinned place to complete it.", { 0: task.radiusM })}</p>}
-            {GPS_TYPES.has(task.type) && !task.mine && Number.isFinite(task.lat) && (
-              <button className="secondary-button" onClick={() => { onClose(); guideTo({ lat: task.lat, lng: task.lng, label: task.title }); }}>
-                <NavigationArrow size={16} weight="fill" /> {tr("Show me the way")}
-              </button>
-            )}
+            <TaskHowTo task={task} fix={fix} onGuide={() => { onClose(); guideTo({ lat: task.lat, lng: task.lng, label: task.title }); }} />
 
             {task.demo ? (
               <p className="nearby-note" role="status">
@@ -691,6 +687,32 @@ function TaskDialog({ id, k, fix, busy, run, onClose }: { id: string; k?: string
         )}
       </div>
     </Dialog>
+  );
+}
+
+/** Where to go, what to do there and where to answer, for every task type. */
+function TaskHowTo({ task, fix, onGuide }: { task: MarketTask; fix: () => Fix; onGuide: () => void }) {
+  const placed = Number.isFinite(task.lat) && Number.isFinite(task.lng);
+  const away = placed ? distanceLabel(meters(fix(), { lat: task.lat, lng: task.lng })) : "";
+  const finish = GPS_TYPES.has(task.type)
+    ? tr("Do as the poster asks, then tap I'm here within {0} m of the pin.", { 0: task.radiusM })
+    : task.type === "answer"
+      ? tr("Seek the answer there, then type it in the answer box here. The game checks it at once.")
+      : tr("Do the deed, then tell of it in the proof box here. The poster checks it and pays you.");
+  return (
+    <HowToSteps
+      steps={[
+        !task.mine && tr("Tap Take this task to claim it; it is yours for 3 hours."),
+        placed && placeStep(tr("Make your way to the pinned place."), away),
+        finish,
+      ]}
+    >
+      {placed && !task.mine && (
+        <button className="secondary-button" onClick={onGuide}>
+          <NavigationArrow size={16} weight="fill" /> {tr("Show me the way")}
+        </button>
+      )}
+    </HowToSteps>
   );
 }
 
