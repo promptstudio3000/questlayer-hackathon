@@ -472,3 +472,23 @@ html[data-motion="reduce"] .app-shell .main-panel.settings-panel { animation: no
   .app-shell[data-screen] .zone-presence { max-width: calc(100% - 24px - var(--hs-side)); }
   .app-shell[data-screen]:is(:has(.map-guide-key), :has(.community-goal), :has(.zone-presence)) .tour-helper:not(.is-folded, .tour-strip) { top: calc(var(--hs-top) + var(--hs-guide) + var(--hs-chip) + var(--hs-zone)); }
 }
+/* XP counter in the avatar bubble (Lubos 14 Nov): tighter top bar on phones so
+   logo, today's board, day/night, avatar + XP + QGOLD and the gear fit in one row. */
+@media (max-width: 430px) {
+  .app-shell[data-screen] .topbar, .app-shell[data-screen] .topbar-right, .app-shell[data-screen] .hud-left { gap: 6px; }
+  .app-shell[data-screen] .topbar .daily-board-chip { padding-inline: 9px; }
+  .app-shell[data-screen] .hud-sky-slot .map-sky-chip { padding: 0 8px; }
+  .app-shell[data-screen] .topbar .hud-bubble > .balance-pill { padding: 0 8px 0 4px; gap: 4px; }
+  .app-shell[data-screen] .topbar .hud-xp-count-in { padding: 0 0 0 4px; gap: 2px; }
+  .app-shell[data-screen] .topbar .hud-xp-star { width: 18px; height: 18px; }
+}
+/* With the XP counter the top row is full on phones: day/night moves to the
+   left column under the header, just before the staking tier chip. */
+@media (max-width: 430px) {
+  .app-shell[data-screen] .topbar .hud-sky-slot { position: absolute; left: 12px; top: calc(var(--hs-top) + var(--hs-guide)); }
+  .app-shell[data-screen]:has(.hud-sky-slot .map-sky-chip) .topbar > .stake-tier-chip { left: 54px; }
+}
+@media (max-width: 374px) {
+  .app-shell[data-screen] .topbar, .app-shell[data-screen] .topbar-right, .app-shell[data-screen] .hud-left { gap: 4px; }
+  .app-shell[data-screen] .topbar .daily-board-chip { padding-inline: 7px; }
+}
