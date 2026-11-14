@@ -2,5 +2,5 @@
   "id": "e2-testlayer-hud",
   "deployTarget": "testlayer",
   "installKeys": [],
-  "note": "Test Layer at the World release with #376 (HUD chips and Pip under the header, no empty card, no home-screen prompt) and #374 (copy fix)."
+  "note": "Test Layer at the World release with #376 (HUD chips and Pip under the header, no empty card, no home-screen prompt) , #374 (copy fix) and #377 (forgiving GPS coin pickup)."
 }
