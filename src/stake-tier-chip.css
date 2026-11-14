@@ -1,0 +1,30 @@
+/* Staking tier chip (StakeTierChip.tsx): a small pill right under the world
+   switcher, on phones too (the top row is full there), so the daily goals and
+   the tier sit together top left. Tier colours follow the map: Staker green,
+   Tier 2 yellow, Tier 3 red. */
+.stake-tier-chip {
+  --tier-ink: var(--action, #672eeb);
+  display: inline-flex; align-items: center; gap: 6px;
+  min-height: 36px; padding: 0 12px 0 9px;
+  border: 1px solid var(--control-border, #d7cbe9); border-radius: 20px;
+  background: var(--surface, #fff); color: var(--ink); box-shadow: 0 2px 12px #1a033514;
+  font: inherit; white-space: nowrap; cursor: pointer; pointer-events: auto;
+}
+/* A 44 px tap target around the visible pill. */
+.stake-tier-chip::after { content: ""; position: absolute; inset: -4px; }
+.stake-tier-chip svg { color: var(--tier-ink); flex: none; }
+.stake-tier-chip b { font-size: 13px; }
+.stake-tier-chip[data-step="staker"] { --tier-ink: #1f9d57; border-color: #1f9d5766; }
+.stake-tier-chip[data-step="tier2"] { --tier-ink: #b57c00; border-color: #e0a80080; background: #fff8e1; color: #3d2a00; }
+.stake-tier-chip[data-step="tier3"] { --tier-ink: #d1323f; border-color: #d1323f66; background: #ffecee; color: #4a0d14; }
+.stake-tier-chip:focus-visible { outline: 3px solid var(--action, #672eeb); outline-offset: 2px; }
+.app-shell .topbar > .stake-tier-chip { position: absolute; left: 12px; top: calc(env(safe-area-inset-top) + 64px); }
+
+/* What used to sit right under the top bar on the left moves below the chip. */
+.app-shell[data-screen]:has(.topbar > .stake-tier-chip) .map-sky-chip.ml-location { top: calc(112px + env(safe-area-inset-top)); }
+@media (max-width: 760px) {
+  .app-shell[data-screen]:has(.topbar > .stake-tier-chip) .map-guide-key,
+  .app-shell[data-screen]:has(.topbar > .stake-tier-chip) .community-goal { top: calc(env(safe-area-inset-top) + 108px); }
+  .app-shell[data-screen]:has(.topbar > .stake-tier-chip) .zone-presence { top: calc(112px + env(safe-area-inset-top)); }
+  .app-shell[data-screen]:has(.topbar > .stake-tier-chip):has(.map-guide-key) .zone-presence { top: calc(166px + env(safe-area-inset-top)); }
+}
