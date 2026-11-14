@@ -3337,5 +3337,8 @@
   "1 task waiting": "1 tarefa à espera",
   "Player quests": "Missões de jogadores",
   "City": "Cidade",
-  "Player quest": "Missão de jogador"
+  "Player quest": "Missão de jogador",
+  "Your voice in the treasury: {0} of {1}": "A tua voz no tesouro: {0} de {1}",
+  "Forged by play, never for sale: {0} from days of adventure, {1} from experience, {2} from followers, {3} from quests others undertook.": "Forjado a jogar, nunca à venda: {0} de dias de aventura, {1} de experiência, {2} de seguidores, {3} de missões que outros jogaram.",
+  "{0} voting power": "{0} de poder de voto"
 }

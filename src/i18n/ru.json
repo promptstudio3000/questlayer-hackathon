@@ -3337,5 +3337,8 @@
   "1 task waiting": "Ждёт 1 задание",
   "Player quests": "Квесты игроков",
   "City": "Город",
-  "Player quest": "Квест игрока"
+  "Player quest": "Квест игрока",
+  "Your voice in the treasury: {0} of {1}": "Твой голос в казне: {0} из {1}",
+  "Forged by play, never for sale: {0} from days of adventure, {1} from experience, {2} from followers, {3} from quests others undertook.": "Выковано игрой, не продаётся: {0} за дни приключений, {1} за опыт, {2} за подписчиков, {3} за квесты, которые прошли другие.",
+  "{0} voting power": "{0} силы голоса"
 }

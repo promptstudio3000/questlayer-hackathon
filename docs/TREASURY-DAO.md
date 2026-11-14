@@ -34,11 +34,35 @@ mode opens). Proposal bond 0 (only the keeper and the council can file), proposa
 
 A player whose explorer (managed) account is ready, who has **level 3 or more** (QXP ≥ 400, `server/levels.mjs`) and
 who **played in the last 7 days** (a non-welcome history event or a collected coin). Demo bots (`seed-*`) never vote.
-Votes are 1 explorer = 1 vote: XP is soulbound, so a vote cannot be bought; QGOLD or stake does not weigh in.
+Who may vote is unchanged; how much a vote weighs is earned by play (next section). QGOLD or stake never weighs in.
 
 `GET /api/treasury/dao/explorers` lists the qualifying accounts. Each morning the keeper compares it with the
 Explorers role and, when it changed, files one `ChangePolicyAddOrUpdateRole` proposal with the whole list, which the
 automatic council keys approve. So a player who reaches level 3 can vote from the next morning.
+
+## Voting power (since 14 Nov 2026)
+
+Not one explorer one vote (Lubos, 14 Nov 2026): every vote counts with the explorer's **voting power**, a published
+reputation score earned by play and never for sale. Four parts, each capped so that nobody dominates, 100 at most:
+
+| Part | Counts | Points | Cap |
+| --- | --- | --- | --- |
+| Days of play | days in the last 30 on which the explorer earned XP (location XP in `fair_play_xp`, or a history event with XP) | 1 per day | 30 |
+| Experience | level from XP (`levelFor`) | 3 per level | 30 (level 10) |
+| Followers | followers who are real explorers at level 2+ (QXP ≥ 100, no demo bots) | 2 per follower | 20 |
+| Quests others played | others who took on the explorer's community quests (`creator_participations`) or tasks (`mk_claims`), last 30 days | 1 each | 20 |
+
+`power = max(1, days + experience + followers + plays)`, at most 100. A new level 3 explorer who played three days has
+about 3 + 9 = 12; a level 10 regular with 30 days, 10 followers and 20 plays of their quests has the full 100. The
+keeper's automatic vote for the recommended option counts **10**. Code: `VOTING_POWER`, `powerFromCounts`,
+`votingPowers` in `server/native/treasury-dao.mjs`.
+
+The DAO itself is unchanged (stock Sputnik DAO v2, one `VoteApprove` per explorer): the weights apply at the tally.
+`GET /api/treasury/dao/explorers` publishes `power` (account → voting power) next to the eligible `accounts`;
+`GET /api/treasury/dao?account=` returns the explorer's own power with its parts (`me.power`) and weighted tallies
+(`approvals` = voting power, `votes` = explorers). The keeper snapshots the power of every voter into the result
+proposal (`meta.power`, `meta.keeperPower`), so anyone can recount it from the chain votes; the second council key
+re-tallies with that snapshot and refuses a result whose winner differs or that leaves a voter out.
 
 ## Polls (weekly mix and extra votes)
 
@@ -54,17 +78,18 @@ count (a look-alike from anyone else is ignored).
 - **Extra votes** for the same week: `node scripts/treasury-dao-testnet.mjs poll "<question>" "<a>" "<b>"` (2 to 4
   options, the first is recommended and gets the automatic vote). The card and `/treasury` list them under the weekly
   mix vote.
-- **Tally**: the first morning run after a poll closes counts the approvals of each option; the most approvals win,
-  a tie goes to the recommended option, then to the first option. The keeper files an "Adopt treasury mix" (or
-  "Result") proposal carrying the tally and the voter count, and the council approves it. The newest approved adopt
+- **Tally**: the first morning run after a poll closes adds up the voting power behind each option; the most voting
+  power wins, a tie goes to the recommended option, then to the first option. The keeper files an "Adopt treasury mix"
+  (or "Result") proposal carrying the weighted tally, the voter count and the voting power snapshot, and the council
+  approves it. The newest approved adopt
   proposal is the **mix in force**: `scripts/treasury-mix-testnet.mjs` and `GET /api/treasury/mix` use it as the
   target (`policy.governedBy: "dao"`). At setup the council adopts Balanced, so a target exists from day one.
 
 A player votes from **Community → Quests → Treasury vote**. The explorer account signs
 `act_proposal({ id, action: "VoteApprove", proposal: "Vote" })` on the DAO; the relayer sponsors exactly that call (no
 deposit, no other action, no other kind) and the signing vault signs it without its approval window, because no money
-moves. The card allows one vote per poll; the chain itself would accept approving several options (approval voting),
-and the tally would count each.
+moves. The card allows one vote per poll and shows the player's voting power with its four parts; the chain itself
+would accept approving several options (approval voting), and the tally would count each with the voter's full power.
 
 ## The daily run (automatic approval)
 

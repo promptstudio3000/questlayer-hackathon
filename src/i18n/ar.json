@@ -3337,5 +3337,8 @@
   "1 task waiting": "مهمة واحدة بانتظارك",
   "Player quests": "مهام اللاعبين",
   "City": "مدينة",
-  "Player quest": "مهمة لاعب"
+  "Player quest": "مهمة لاعب",
+  "Your voice in the treasury: {0} of {1}": "صوتك في الخزينة: {0} من {1}",
+  "Forged by play, never for sale: {0} from days of adventure, {1} from experience, {2} from followers, {3} from quests others undertook.": "صيغت باللعب ولا تُباع أبدًا: {0} من أيام المغامرة، {1} من الخبرة، {2} من المتابعين، {3} من مهام لعبها آخرون.",
+  "{0} voting power": "{0} من قوة التصويت"
 }

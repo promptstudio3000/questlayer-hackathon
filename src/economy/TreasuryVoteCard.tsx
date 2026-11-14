@@ -3,7 +3,7 @@
 // The vote is signed by the explorer's own account (device key, sponsored), so
 // there is no wallet popup. Without a session the card links to the game.
 import { useCallback, useEffect, useState } from "react";
-import { CheckCircle, Clock, Lock, Star, UsersThree } from "@phosphor-icons/react";
+import { CheckCircle, Clock, Lightning, Lock, Star, UsersThree } from "@phosphor-icons/react";
 import { api, ApiError } from "../api";
 import { useInvisibleAccount } from "../useInvisibleAccount";
 import { explorerAccountMessage } from "../explorer-account";
@@ -11,7 +11,9 @@ import { NEAR_NETWORK, onNearNetwork } from "../near-network";
 
 type Targets = { staked?: number; lst: number; stable: number; near: number };
 const staking = (t: Targets) => (t.staked ?? 0) + t.lst;
-export type VoteOption = { proposalId: number; option: string; label: string; recommended: boolean; approvals: number; mine?: boolean; targets?: Targets };
+/** approvals = voting power behind the option; votes = explorers who chose it. */
+export type VoteOption = { proposalId: number; option: string; label: string; recommended: boolean; approvals: number; votes?: number; mine?: boolean; targets?: Targets };
+type PowerParts = { days: number; xp: number; followers: number; plays: number };
 export type VotePoll = { poll: string; kind: string; title: string; closesAt: number | null; open: boolean; winner: string; voters: number; options: VoteOption[] };
 export type VoteView = {
   dao: string;
@@ -20,7 +22,8 @@ export type VoteView = {
   weeklyMix?: VotePoll | null;
   extras?: VotePoll[];
   adopted?: { option: string; targets: Targets } | null;
-  me?: { account: string; member: boolean } | null;
+  votingPower?: { max: number; keeper: number };
+  me?: { account: string; member: boolean; power?: { power: number; parts: PowerParts } | null } | null;
 };
 
 type Viewer =
@@ -49,9 +52,9 @@ function MixStrip({ t }: { t: Targets }) {
   );
 }
 
-function mark(p: VotePoll | null | undefined, poll: string, proposalId: number) {
+function mark(p: VotePoll | null | undefined, poll: string, proposalId: number, power: number) {
   if (!p || p.poll !== poll) return p;
-  return { ...p, voters: p.voters + 1, options: p.options.map((o) => (o.proposalId === proposalId ? { ...o, mine: true, approvals: o.approvals + 1 } : o)) };
+  return { ...p, voters: p.voters + 1, options: p.options.map((o) => (o.proposalId === proposalId ? { ...o, mine: true, approvals: o.approvals + power, votes: (o.votes ?? 0) + 1 } : o)) };
 }
 
 export default function TreasuryVoteCard({ initial }: { initial: VoteView }) {
@@ -103,6 +106,7 @@ export default function TreasuryVoteCard({ initial }: { initial: VoteView }) {
 
   const polls = [view.weeklyMix, ...(view.extras ?? [])].filter((p): p is VotePoll => !!p);
   const member = !!view.me?.member;
+  const myPower = view.me?.power ?? null;
 
   async function cast(p: VotePoll, o: VoteOption) {
     if (!playerId) return;
@@ -122,7 +126,8 @@ export default function TreasuryVoteCard({ initial }: { initial: VoteView }) {
         { playerId },
       );
       // The chain view is cached for a short while; show the vote right away.
-      setView((v) => ({ ...v, weeklyMix: mark(v.weeklyMix, p.poll, o.proposalId), extras: v.extras?.map((x) => mark(x, p.poll, o.proposalId)!) }));
+      const power = myPower?.power ?? 1;
+      setView((v) => ({ ...v, weeklyMix: mark(v.weeklyMix, p.poll, o.proposalId, power), extras: v.extras?.map((x) => mark(x, p.poll, o.proposalId, power)!) }));
       setNote({ text: "Vote saved on chain. Thank you!" });
     } catch (error) {
       setNote({ text: error instanceof ApiError || error instanceof Error ? error.message : "Could not save your vote.", bad: true });
@@ -158,6 +163,15 @@ export default function TreasuryVoteCard({ initial }: { initial: VoteView }) {
   return (
     <div className="tr-vote">
       {gate}
+      {myPower ? (
+        <p className="tr-vote-gate tr-vote-power">
+          <Lightning size={18} weight="fill" aria-hidden="true" />
+          <span>
+            Your voting power is <b>{myPower.power}</b> of {view.votingPower?.max ?? 100}: {myPower.parts.days} from days of play, {myPower.parts.xp} from experience, {myPower.parts.followers} from followers and{" "}
+            {myPower.parts.plays} from quests others played. Earned by play, never for sale.
+          </span>
+        </p>
+      ) : null}
       {polls.map((p, i) => {
         const most = Math.max(1, ...p.options.map((o) => o.approvals));
         const total = p.options.reduce((s, o) => s + o.approvals, 0);
@@ -201,7 +215,7 @@ export default function TreasuryVoteCard({ initial }: { initial: VoteView }) {
                         <span style={{ width: `${(o.approvals / most) * 100}%` }} />
                       </span>
                       <span className="tr-option-count">
-                        {o.approvals} {o.approvals === 1 ? "vote" : "votes"} · {share} %
+                        {o.approvals} voting power · {o.votes ?? 0} {o.votes === 1 ? "explorer" : "explorers"} · {share} %
                       </span>
                       {member && account ? (
                         <button

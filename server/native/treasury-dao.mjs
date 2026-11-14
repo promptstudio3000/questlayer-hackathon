@@ -20,7 +20,7 @@
 // Every proposal the game acts on carries a machine line in its description:
 //   <title for people>\n\nquestlayer:{json}
 // and counts only when the keeper filed it. Pure helpers plus read-only views.
-import { assert } from "../domain.mjs";
+import { assert, dayKey, levelFor } from "../domain.mjs";
 
 export const DAO_FACTORY = { testnet: "sputnik-v2.testnet" };
 export const DAO_NAME = "questlayer-treasury";
@@ -32,6 +32,40 @@ export const PROPOSAL_PERIOD_MS = 8 * DAY_MS;
 /** Explorer votes never finalize a proposal: tallies are counted, not executed. */
 export const NEVER = "1000000000000";
 export const EXPLORER_RULE = Object.freeze({ minLevel: 3, minXp: 400, activeDays: 7 });
+
+/**
+ * Voting power (Lubos 14 Nov 2026): not one explorer one vote. Every vote an
+ * explorer casts on chain counts with their voting power at the tally, earned
+ * by play and never for sale. Four parts, each capped, 100 at most:
+ *   days      days in the last 30 on which the explorer earned XP, 1 each, up to 30
+ *   xp        3 per level (level from XP), up to 30 at level 10
+ *   followers 2 per follower who is a real explorer (level 2+), up to 20
+ *   plays     1 per time another explorer took on one of their quests, last 30 days, up to 20
+ * The keeper's automatic vote for the recommended option counts KEEPER_POWER.
+ */
+export const VOTING_POWER = Object.freeze({
+  windowDays: 30,
+  days: { per: 1, cap: 30 },
+  xp: { perLevel: 3, cap: 30 },
+  followers: { per: 2, cap: 20, minXp: 100 },
+  plays: { per: 1, cap: 20 },
+  max: 100,
+  keeper: 10,
+});
+export const KEEPER_POWER = VOTING_POWER.keeper;
+
+/** The capped parts and their sum, from raw counts. Pure. */
+export function powerFromCounts({ days = 0, xp = 0, followers = 0, plays = 0 }, rule = VOTING_POWER) {
+  const cap = (n, per, max) => Math.min(max, Math.max(0, Math.floor(n)) * per);
+  const parts = {
+    days: cap(days, rule.days.per, rule.days.cap),
+    xp: Math.min(rule.xp.cap, levelFor(Math.max(0, xp)) * rule.xp.perLevel),
+    followers: cap(followers, rule.followers.per, rule.followers.cap),
+    plays: cap(plays, rule.plays.per, rule.plays.cap),
+  };
+  const power = Math.max(1, Math.min(rule.max, parts.days + parts.xp + parts.followers + parts.plays));
+  return { power, parts, counts: { days, xp, followers, plays } };
+}
 
 /**
  * Weekly treasury mix options (staked NEAR / stablecoins / NEAR reserve).
@@ -187,8 +221,14 @@ export function normalizeProposal(p, keeper) {
   };
 }
 
-/** One poll's options with their approvals, and the winner (ties: recommended, then order). */
-export function tallyPoll(proposals, pollId) {
+/**
+ * One poll's options with their weighted approvals, and the winner (ties:
+ * recommended, then order). `power` maps account -> voting power; without it
+ * every vote counts 1. A voter missing from the map counts 1 (the keeper
+ * counts KEEPER_POWER), so a vote is never lost.
+ */
+export function tallyPoll(proposals, pollId, { power = null, keeper = null } = {}) {
+  const weightOf = (a) => (!power ? 1 : a === keeper ? KEEPER_POWER : Number.isInteger(power[a]) && power[a] > 0 ? Math.min(VOTING_POWER.max, power[a]) : 1);
   const options = proposals
     .filter((p) => p.meta?.t === "poll" && p.meta.poll === pollId)
     .sort((a, b) => a.id - b.id)
@@ -198,8 +238,9 @@ export function tallyPoll(proposals, pollId) {
       label: p.meta.label || p.title,
       targets: p.meta.targets || null,
       recommended: !!p.meta.recommended,
-      approvals: p.approvals,
-      voters: p.voters,
+      votes: p.voters.filter((v) => p.votes[v] === "Approve").length,
+      approvals: p.voters.filter((v) => p.votes[v] === "Approve").reduce((a, v) => a + weightOf(v), 0),
+      voters: p.voters.filter((v) => p.votes[v] === "Approve"),
     }));
   if (!options.length) return null;
   const first = proposals.find((p) => p.meta?.t === "poll" && p.meta.poll === pollId);
@@ -213,6 +254,7 @@ export function tallyPoll(proposals, pollId) {
     options,
     winner: ranked[0].option,
     voters: voters.size,
+    weighted: !!power,
   };
 }
 export const pollIds = (proposals, kind) =>
@@ -281,7 +323,12 @@ export function daoManifest(raw, network) {
 }
 
 /** Public view for GET /api/treasury/dao; `account` adds that explorer's votes. */
-export function createTreasuryDaoView({ provider, manifest, clock = Date.now, cacheMs = 30_000 }) {
+/**
+ * `powers()` returns votingPowers() for the host's explorers (account -> { power,
+ * parts, counts }); with it every tally is weighted and `me` carries the
+ * explorer's own voting power.
+ */
+export function createTreasuryDaoView({ provider, manifest, clock = Date.now, cacheMs = 30_000, powers = null }) {
   let hit = null;
   async function load() {
     if (hit && clock() - hit.at < cacheMs) return hit.dao;
@@ -299,15 +346,18 @@ export function createTreasuryDaoView({ provider, manifest, clock = Date.now, ca
       if (!dao.exists) return { ...base, rule: EXPLORER_RULE, observedAt: now };
       const p = dao.proposals;
       const week = weekOf(now);
+      const pw = powers ? powers() : null;
+      const weights = pw && Object.fromEntries(Object.entries(pw).map(([a, v]) => [a, v.power]));
+      const tally = (id) => tallyPoll(p, id, { power: weights, keeper: dao.keeper });
       const shape = (t) =>
         t && {
           ...t,
           open: !!t.closesAt && t.closesAt > now,
           options: t.options.map(({ voters, ...o }) => ({ ...o, mine: !!account && voters.includes(account) })),
         };
-      const current = shape(tallyPoll(p, `mix-${week.id}`));
+      const current = shape(tally(`mix-${week.id}`));
       const extras = pollIds(p, "extra")
-        .map((id) => tallyPoll(p, id))
+        .map((id) => tally(id))
         .filter((t) => t && t.closesAt && t.closesAt > week.start)
         .map(shape);
       const decisions = p
@@ -323,6 +373,7 @@ export function createTreasuryDaoView({ provider, manifest, clock = Date.now, ca
         keeper: dao.keeper,
         explorers: explorers.length,
         rule: EXPLORER_RULE,
+        votingPower: VOTING_POWER,
         week: week.id,
         weeklyMix: current,
         extras,
@@ -332,7 +383,7 @@ export function createTreasuryDaoView({ provider, manifest, clock = Date.now, ca
           return d ? { id: d.id, status: d.status, approvals: d.approvals, action: d.meta.action } : null;
         })(),
         decisions,
-        me: account ? { account, member: explorers.includes(account) } : null,
+        me: account ? { account, member: explorers.includes(account), power: pw?.[account] || null } : null,
         observedAt: now,
       };
     },
@@ -359,4 +410,53 @@ export function eligibleExplorers(db, { network, now = Date.now(), rule = EXPLOR
     )
     .all({ network, since, minXp: rule.minXp })
     .map((r) => r.account);
+}
+
+/**
+ * Voting power of explorer accounts (VOTING_POWER), keyed by account. Without
+ * `accounts` it covers every ready explorer account on `network`. Demo bots
+ * (seed-*) never count: not as voters, followers or players of a quest.
+ */
+export function votingPowers(db, { network, now = Date.now(), accounts = null, rule = VOTING_POWER } = {}) {
+  const has = (name) => !!db.prepare("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?").get(name);
+  const out = {};
+  if (!has("managed_accounts")) return out;
+  const since = now - rule.windowDays * DAY_MS;
+  const sinceDay = dayKey(since);
+  const rows = db
+    .prepare(
+      `SELECT m.account_id AS account, p.id AS player, p.xp FROM managed_accounts m JOIN players p ON p.id=m.player_id
+       WHERE m.state='ready' AND m.network=? AND p.id NOT LIKE 'seed-%' ORDER BY m.account_id`,
+    )
+    .all(network)
+    .filter((r) => !accounts || accounts.includes(r.account));
+  const q = (sql) => db.prepare(sql);
+  const xpDays = has("fair_play_xp") && q("SELECT DISTINCT day FROM fair_play_xp WHERE player_id=? AND xp>0 AND day>=?");
+  const xpHistory = q("SELECT created_at FROM history WHERE player_id=? AND created_at>=? AND COALESCE(json_extract(meta,'$.xp'),0)>0");
+  const followers =
+    has("creator_follows") &&
+    q(`SELECT COUNT(*) AS n FROM creator_follows f JOIN players p ON p.id=f.follower
+       WHERE f.creator=? AND f.follower!=f.creator AND p.id NOT LIKE 'seed-%' AND p.xp>=?`);
+  const questPlays =
+    has("creator_participations") &&
+    has("creator_quests") &&
+    q(`SELECT COUNT(*) AS n FROM creator_participations c JOIN creator_quests k ON k.id=c.quest_id
+       WHERE k.author=? AND c.participant!=k.author AND c.participant NOT LIKE 'seed-%' AND c.started_at>=?`);
+  const taskPlays =
+    has("mk_claims") &&
+    has("mk_tasks") &&
+    q(`SELECT COUNT(*) AS n FROM mk_claims c JOIN mk_tasks t ON t.id=c.task_id
+       WHERE t.poster=? AND c.worker!=t.poster AND c.worker NOT LIKE 'seed-%' AND c.created_at>=?`);
+  for (const r of rows) {
+    const days = new Set(xpDays ? xpDays.all(r.player, sinceDay).map((d) => d.day) : []);
+    for (const h of xpHistory.all(r.player, since)) days.add(dayKey(h.created_at));
+    const counts = {
+      days: [...days].filter((d) => d >= sinceDay).length,
+      xp: r.xp,
+      followers: followers ? followers.get(r.player, rule.followers.minXp).n : 0,
+      plays: (questPlays ? questPlays.get(r.player, since).n : 0) + (taskPlays ? taskPlays.get(r.player, since).n : 0),
+    };
+    out[r.account] = powerFromCounts(counts, rule);
+  }
+  return out;
 }

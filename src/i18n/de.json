@@ -3337,5 +3337,8 @@
   "1 task waiting": "1 Aufgabe wartet",
   "Player quests": "Spieler-Quests",
   "City": "Stadt",
-  "Player quest": "Spieler-Quest"
+  "Player quest": "Spieler-Quest",
+  "Your voice in the treasury: {0} of {1}": "Deine Stimme in der Schatzkammer: {0} von {1}",
+  "Forged by play, never for sale: {0} from days of adventure, {1} from experience, {2} from followers, {3} from quests others undertook.": "Durch Spielen geschmiedet, niemals käuflich: {0} aus Abenteuertagen, {1} aus Erfahrung, {2} von Followern, {3} aus Quests, die andere gespielt haben.",
+  "{0} voting power": "{0} Stimmkraft"
 }

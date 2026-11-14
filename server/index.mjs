@@ -216,7 +216,7 @@ import { createLiquidStake, liquidStakeSettings } from "./native/liquid-stake.mj
 import { createTreasuryView } from "./native/stnear-treasury.mjs";
 import { createTreasuryMixView, mixSettings } from "./native/treasury-mix.mjs";
 import { createTreasuryHistory } from "./native/treasury-history.mjs";
-import { createTreasuryDaoView, daoManifest, eligibleExplorers, EXPLORER_RULE } from "./native/treasury-dao.mjs";
+import { createTreasuryDaoView, daoManifest, eligibleExplorers, EXPLORER_RULE, VOTING_POWER, votingPowers } from "./native/treasury-dao.mjs";
 import { createRheaMarkets, rheaSettings } from "./native/rhea-markets.mjs";
 import { combineStakeReaders, createYieldVaultReader, yieldVaultSettings } from "./native/yield-vault-reader.mjs";
 import { createQgoldVaultReader, qgoldVaultSettings } from "./native/qgold-vault.mjs";
@@ -532,7 +532,16 @@ const treasuryDaoManifest = (() => {
   const path = [resolve(APP_ROOT, `public/${manifestName("native-treasury-dao")}`), resolve(APP_ROOT, `dist/${manifestName("native-treasury-dao")}`)].find((p) => existsSync(p));
   return path ? daoManifest(JSON.parse(readFileSync(path, "utf8")), NETWORK) : null;
 })();
-const treasuryDao = treasuryDaoManifest ? createTreasuryDaoView({ provider, manifest: treasuryDaoManifest }) : null;
+// Voting power is earned by play (VOTING_POWER); recomputed at most every 5 minutes.
+const explorerPowers = (() => {
+  let hit = null;
+  return () => {
+    if (hit && Date.now() - hit.at < 300_000) return hit.powers;
+    hit = { at: Date.now(), powers: votingPowers(db, { network: NETWORK }) };
+    return hit.powers;
+  };
+})();
+const treasuryDao = treasuryDaoManifest ? createTreasuryDaoView({ provider, manifest: treasuryDaoManifest, powers: explorerPowers }) : null;
 // The QGOLD token the relayer may sponsor burns on (and escrow funding).
 const qgoldTokenForRelay = (() => {
   const path = resolve(APP_ROOT, `public/${manifestName("native-qgold-vault")}`);
@@ -1732,7 +1741,11 @@ async function api(req, res, url) {
   }
   if (path === "/api/treasury/dao/explorers" && method === "GET") {
     assert(treasuryDao, "The treasury DAO is not set up on this host.", 503, "TREASURY_DAO_DISABLED");
-    return respond(res, { dao: treasuryDao.contractId, rule: EXPLORER_RULE, accounts: eligibleExplorers(db, { network: NETWORK }), generatedAt: Date.now() }, 200, { "Cache-Control": "public, max-age=300" });
+    const accounts = eligibleExplorers(db, { network: NETWORK });
+    // power: the published voting power the keeper weighs each vote with at the tally
+    // (every explorer account, so a vote cast before someone left the role still counts).
+    const power = Object.fromEntries(Object.entries(explorerPowers()).map(([a, v]) => [a, v.power]));
+    return respond(res, { dao: treasuryDao.contractId, rule: EXPLORER_RULE, votingPower: VOTING_POWER, accounts, power, generatedAt: Date.now() }, 200, { "Cache-Control": "public, max-age=300" });
   }
   if (path === "/api/treasury/mix" && method === "GET") {
     assert(treasuryMix, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
