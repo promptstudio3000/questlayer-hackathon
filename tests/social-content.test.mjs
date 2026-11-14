@@ -502,7 +502,7 @@ test("legacy notes migrate once into arena without changing the messages table a
       .prepare("PRAGMA table_info(messages)")
       .all()
       .map((x) => x.name);
-    const social = new SocialContent(db);
+    const social = new SocialContent(db, { clock: () => start });
     initSocialContent(db);
     assert.deepEqual(
       db
