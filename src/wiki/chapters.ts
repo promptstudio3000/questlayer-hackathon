@@ -1021,6 +1021,7 @@ export const CHAPTERS: Chapter[] = [
     blocks: [
       { p: "**One coin per game.** GotchiGO shows one name, QGOLD, everywhere. Another game on the platform may have its own coin: MetaLayer plans MetaGold with its own treasury, which QGOLD can later convert into one way. MetaGold is not active yet, so today QGOLD is the only coin that pays." },
       { p: "**One unit on screen (13 Nov).** Every screen counts QGOLD in its smallest unit, so **1 NEAR ≈ 1B QGOLD**: Stake, the map, [Treasury](/treasury) and [Economy](/economy) all show the same numbers. The vault's rate R is per whole token (1,000,000 units), so the pages show it per 1B QGOLD (about 1.02 NEAR today); the swap card reads \"1B QGOLD = … NEAR\" and takes amounts like 967.5M. Profile → Stake → On the map today and Treasury → Today on the map → Coins are the same number (the coins placed on today's map). Display only: the token, R and the economy are unchanged." },
+      { p: "**Swap card: who pays (14 Nov).** Selling signs with your game account, because the QGOLD lives there, and the NEAR comes back to that account; the vault takes at least 0.001 NEAR worth (about 1M QGOLD) per sale. Buying is paid by the game account only when it already holds the NEAR. Otherwise the button reads **Buy with your NEAR wallet**: Meteor, HOT or another NEAR wallet pays, and the vault mints the QGOLD straight into your game account (`deposit` with `receiver_id`), so the game and the Sell button see it at once." },
       { h: "Actions" },
       {
         table: {
