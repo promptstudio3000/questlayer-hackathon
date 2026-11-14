@@ -70,7 +70,7 @@ signed in with an ETH wallet saw the starter ghost and no wearables.
 ## Player profile (10 Nov 2026)
 
 The explorer card became a compact profile in the Aavegotchi style
-(`src/PlayerCard.tsx`, `playerCard` in `server/player-waves.mjs`). Lubos's
+(`src/PlayerCard.tsx`, `playerCard` in `server/player-waves.mjs`). The owner's
 rules (10 Nov 2026): the profile is always visible, never with a position;
 others see only what is worn; the header shows finds and stats.
 
@@ -84,7 +84,7 @@ others see only what is worn; the header shows finds and stats.
   while the explorer is offline; `/api/players/skin` serves its art without
   presence (blocks respected).
 - Own avatar on the map opens the own profile with **Change outfit**.
-- Dressing (phase 2, Lubos 10 Nov: "wear whatever you own or found as a
+- Dressing (phase 2, 10 Nov: "wear whatever you own or found as a
   clone"): on the own profile each slot opens a picker. With an original worn,
   `POST /api/aavegotchi/outfit {slot, itemId}` (`server/gotchi-outfit.mjs`)
   stores `appearance.outfit` (slot index -> item id, 0 = empty, missing = the

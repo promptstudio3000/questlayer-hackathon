@@ -1,4 +1,4 @@
-/* Map HUD (Lubos, 10 Nov 2026 phone pass): logo and today's board top left,
+/* Map HUD (10 Nov 2026 phone pass): logo and today's board top left,
    one avatar + GOLD bubble and the map settings gear top right, a demo
    joystick bottom left, the Actions button bottom right and the tab bar fixed
    to the bottom edge on phones. Imported last from GameMap.tsx, so these
@@ -435,7 +435,7 @@ html[data-test-layer] .balance-pill::after { content: "TEST"; position: absolute
 html[data-motion="reduce"] :is(.nearby-open, .nearby-open-art, .nearby-open > svg, .zone-presence-welcome > button) { animation: none; }
 
 /* ---- Settings drawer ------------------------------------------------------
-   Settings slides in from the right on every screen (Lubos, 13 Nov 2026): a
+   Settings slides in from the right on every screen (13 Nov 2026): a
    narrow panel with a strip of map left beside it; a tap on the strip closes it. */
 .app-shell .main-panel.settings-panel {
   position: fixed; inset: 0 0 0 auto; z-index: 30; width: min(400px, calc(100vw - 44px)); max-width: none;
@@ -471,7 +471,7 @@ html[data-motion="reduce"] .app-shell .main-panel.settings-panel { animation: no
   .app-shell[data-screen] .zone-presence { max-width: calc(100% - 24px - var(--hs-side)); }
   .app-shell[data-screen]:is(:has(.map-guide-key), :has(.community-goal), :has(.zone-presence)) .tour-helper:not(.is-folded, .tour-strip) { top: calc(var(--hs-top) + var(--hs-guide) + var(--hs-chip) + var(--hs-zone)); }
 }
-/* XP counter in the avatar bubble (Lubos 14 Nov): tighter top bar on phones so
+/* XP counter in the avatar bubble (14 Nov): tighter top bar on phones so
    logo, today's board, day/night, avatar + XP + QGOLD and the gear fit in one row. */
 @media (max-width: 430px) {
   .app-shell[data-screen] .topbar, .app-shell[data-screen] .topbar-right, .app-shell[data-screen] .hud-left { gap: 6px; }

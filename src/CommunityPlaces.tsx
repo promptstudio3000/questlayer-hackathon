@@ -45,7 +45,7 @@ const kindOf = (id: PlaceKind) => PLACE_KINDS.find((k) => k.id === id) || PLACE_
 type Sort = "near" | "new" | "name";
 
 /**
- * Community · Places (Lubos, 10 Nov 2026): interesting spots other explorers
+ * Community · Places (10 Nov 2026): interesting spots other explorers
  * recommend, nearest first, with a GPS line that shows each one on the map.
  * Free; no GOLD or XP moves.
  */

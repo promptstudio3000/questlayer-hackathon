@@ -2,7 +2,7 @@
 > questlayer@0.1.0 test:contracts
 > env PATH="$HOME/.cargo/bin:$PATH" cargo test --manifest-path contracts/Cargo.toml --workspace
 
-   Compiling auratrail-collectibles v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/collectibles)
+   Compiling auratrail-collectibles v0.1.0 (/Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/collectibles)
     Finished `test` profile [unoptimized + debuginfo] target(s) in 2.16s
      Running unittests src/lib.rs (contracts/target/debug/deps/auratrail_collectibles-4de6efbf1a508b20)
 

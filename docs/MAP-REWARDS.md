@@ -1,11 +1,11 @@
 # Map rewards: coins and zones across the whole map
 
-QGOLD build plan, stream 5 (approved by Lubos on 4 Nov 2026). Code: `server/map-rewards/`,
+QGOLD build plan, stream 5 (approved by the owner on 4 Nov 2026). Code: `server/map-rewards/`,
 client overlay `src/map-rewards-layer.ts`, tests `tests/map-rewards.test.mjs`.
 Policy id: `map-rewards-v1` (`server/map-rewards/policy.mjs`). Numbers are tuning values; a change bumps the
 policy id so a published day never changes meaning.
 
-Since policy `map-rewards-v2` (5 Nov 2026, Lubos) there is no practice money on the map: **every coin is
+Since policy `map-rewards-v2` (5 Nov 2026) there is no practice money on the map: **every coin is
 backed QGOLD and all coins of a day are worth the same**. Since 10 Nov 2026 the city demo (demo arena) pays the same backed coins, and cells outside the
 plan (outside Czechia) get no coins. Plzeň's native NEAR days (`server/native/`) are unchanged.
 
@@ -72,7 +72,7 @@ writes its rewards once (`map_cell_drops`):
    The demo arena has no waves (remote visitors in any time zone). `MAP_COIN_WAVES=1..12|off`.
 4. **Pioneer:** a cell nobody visited for 30 days (`map_cell_visits`) shows gold fog. Its first drop of the
    day pays two shares per coin and adds a pioneer chest (XP, Aura while edition supply lasts).
-5. The demo arena (no GPS, arrow keys) places a fixed number of coins per cell at the same backed value as the map; payout rounds pay them in QGOLD (Lubos, 10 Nov 2026: the demo behaves like reality, only movement differs). Outside Czechia a cell gets no coins until more
+5. The demo arena (no GPS, arrow keys) places a fixed number of coins per cell at the same backed value as the map; payout rounds pay them in QGOLD (10 Nov 2026: the demo behaves like reality, only movement differs). Outside Czechia a cell gets no coins until more
    countries have a plan; its POI quests still give XP.
 6. **City demo near the start** (Test Layer, 14 Nov 2026): the demo arena fills its coins outwards from the
    start (the compact demo centre, else the city centre) instead of across the whole ~5 km² cell, 60-100 m

@@ -1,7 +1,7 @@
 # Roaming NPCs and monsters: shared interfaces (N0+M0)
 
-Implements the contract in `docs/NPC-PLAN.md` §14. Other slices build on these names; propose changes in the design
-thread instead of forking them.
+Implements the contract in `docs/NPC-PLAN.md` §14. Other slices build on these names; propose changes to the design
+instead of forking them.
 
 | Piece | Where | Notes |
 | --- | --- | --- |

@@ -18,7 +18,7 @@ async function fixture(t) {
   const social = new SocialContent(db, { clock: () => NOW });
   const moderation = new Moderation(db, {
     clock: () => NOW,
-    authorizeOperator: (a) => a === "lubos",
+    authorizeOperator: (a) => a === "owner",
   });
   await ensureWorld(db, HOME, true, NOW);
   const noteId = "message_00000001-1111-1111-1111-111111111111";
@@ -38,7 +38,7 @@ async function fixture(t) {
   );
   social.report(viewer, noteId, { reason: "spam" });
   const handle = createOperatorConsole(db, {
-    operator: "lubos",
+    operator: "owner",
     token: TOKEN,
     moderation,
     clock: () => NOW,
@@ -114,7 +114,7 @@ test("the console shows health and the moderation queue and runs audited actions
     },
   });
   assert.equal(paused.status, 200);
-  assert.equal((await paused.json()).actor, "lubos");
+  assert.equal((await paused.json()).actor, "owner");
   const versions = await (
     await f.call(`/api/world/versions?cityId=${PLZEN.id}&day=2026-11-02`)
   ).json();
@@ -149,8 +149,8 @@ test("the console shows health and the moderation queue and runs audited actions
   });
   assert.equal(decided.status, 200);
   const audit = await (await f.call("/api/audit")).json();
-  assert.equal(audit.world[0].actor, "lubos");
+  assert.equal(audit.world[0].actor, "owner");
   assert.equal(audit.world[0].kind, "pause");
-  assert.equal(audit.moderation[0].operator, "lubos");
+  assert.equal(audit.moderation[0].operator, "owner");
   assert.equal(audit.moderationChain.ok, true);
 });

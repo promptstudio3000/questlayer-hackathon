@@ -1,5 +1,5 @@
-// Settings: its own sheet behind the gear in the top right corner (Lubos,
-// 13 Nov 2026). Four short parts a player understands at a glance (Map, Game,
+// Settings: its own sheet behind the gear in the top right corner
+// (13 Nov 2026). Four short parts a player understands at a glance (Map, Game,
 // Help, Account); wallets, devices, receipts and developer switches wait
 // under one folded "Advanced".
 import { useState, type ReactNode } from "react";

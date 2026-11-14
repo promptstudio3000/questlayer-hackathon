@@ -59,7 +59,7 @@ test at tests/http-social.test.mjs:9:1
 
   Node.js v24.21.0
 
-      at TestContext.<anonymous> (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/tests/http-social.test.mjs:46:3)
+      at TestContext.<anonymous> (file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/tests/http-social.test.mjs:46:3)
       at async Test.run (node:internal/test_runner/test:1409:7)
       at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {
     generatedMessage: false,

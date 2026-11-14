@@ -8,7 +8,7 @@ This is an **experimental compatibility test on our own copy of the NEAR
 Intents verifier**, deployed on testnet from the open-source code. It is not
 `intents.near` and it is not an official NEAR Intents endpoint (there is none
 on testnet). The mainnet proof through `intents.near` is planned below and
-needs Lubos's explicit go.
+needs the owner's explicit go.
 
 ## What was verified against the source
 
@@ -93,12 +93,11 @@ Routes: `GET /api/native/intents`, `GET /api/native/intents/account?account=&pub
 
 ### Player UI
 
-NEAR Intents is **the market** (Lubos, 4 Nov): once the verifier manifest
+NEAR Intents is **the market** (4 Nov): once the verifier manifest
 exists, Market → Offers shows only the **NEAR Intents (test)** panel; the
 market v2 signed offers are hidden (no players before 14 Nov, so no legacy
 data to keep). Without the manifest the old offers show as before. The
-collection's Sell button switches to an Intents sell in a follow-up from the
-"Put every trade on chain" thread (PR #161).
+collection's Sell button switches to an Intents sell in a follow-up (PR #161).
 It is P2P: both players sign their own side and the verifier settles both legs
 in one transaction; the server only pairs orders and pays gas. Turn on → list an Aura for a wNEAR price → others buy
 with one tap (the panel wraps and deposits missing wNEAR first) → withdraw
@@ -151,7 +150,7 @@ The relayer account needs a little extra gas budget for `execute_intents`
 
 ## Trade fee to the treasury (2 %)
 
-Lubos, 4 Nov 2026 (QGOLD tokenomics, `/mnt/project-files/tokenomics/QGOLD-BUILD-PLAN.md`):
+4 Nov 2026 (QGOLD tokenomics, `/mnt/project-files/tokenomics/QGOLD-BUILD-PLAN.md`):
 every P2P trade pays **2 %** into the treasury, which funds more map rewards.
 Plain sends and conditional escrow sends stay free.
 
@@ -206,7 +205,7 @@ node scripts/intents-fees-testnet.mjs sweep            # daily
 - The insurance-fund share (10 % of fees) and the buyback share (20 %) from the
   tokenomics wait for the QGOLD vault; until then the whole fee goes to the prize pool.
 
-## Mainnet proof (planned, NOT run, needs Lubos's go)
+## Mainnet proof (planned, NOT run, needs the owner's go)
 
 Checked read-only on mainnet RPC on 4 Nov 2026: `intents.near` has
 `fee` = **1 pip** (0.0001 %), `current_salt` = `252812b3`.

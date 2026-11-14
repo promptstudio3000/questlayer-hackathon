@@ -54,8 +54,8 @@ export function waveCount(env = process.env) {
 
 const cellOf = (p) => latLngToCell(p.lat, p.lng, 7);
 
-// Cell zones and pioneer chests are irregular blobs, not circles (Lubos,
-// 11 Nov 2026); the spot seeds the shape, so it is the same on every read.
+// Cell zones and pioneer chests are irregular blobs, not circles
+// (11 Nov 2026); the spot seeds the shape, so it is the same on every read.
 const circle = (p, radius, steps = 20) =>
   organicRing(p, radius, `${p.lat},${p.lng}:${radius}`, steps);
 

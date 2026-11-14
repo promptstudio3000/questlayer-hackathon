@@ -1,10 +1,10 @@
 ## What and why
 
-<!-- One task from docs/HANDOFF-WEEKEND.md (task id, e.g. U2), the player problem, the scope. -->
+<!-- The player problem and the scope of this change. -->
 
 ## Checklist
 
-- [ ] Branch `weekend/<task-id>-<slug>`, base `claude/upbeat-gauss-5czir7`, one task per PR
+- [ ] Base `claude/upbeat-gauss-5czir7`, one task per PR
 - [ ] No file under a protected path (`node .github/scripts/protected-paths.mjs --base origin/claude/upbeat-gauss-5czir7` passes)
 - [ ] `npm run check` passes locally; all CI jobs green
 - [ ] Mechanism changed → chapter in `src/wiki/chapters.ts` updated and `npm run wiki:stamp` run

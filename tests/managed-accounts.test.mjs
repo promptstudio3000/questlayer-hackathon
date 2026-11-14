@@ -310,7 +310,7 @@ test("account ids stay within NEAR's 64 characters under a long factory id", asy
   const { ManagedAccounts } = await import("../server/relayer/accounts.mjs");
   const live = Object.create(ManagedAccounts.prototype);
   live.factoryId = "play-20261101.questlayer-dev-20261101.testnet";
-  for (const name of ["test phone-390 brno", "a".repeat(24), "Lubos z Prahy na vylete"]) {
+  for (const name of ["test phone-390 brno", "a".repeat(24), "Explorer z Prahy na vylete"]) {
     const id = `${live.slugFor(name)}.${live.factoryId}`;
     assert.ok(id.length <= 64, `${id} is ${id.length} characters`);
     assert.match(id, /^[a-z0-9]+(-[a-z0-9]+)*\./);

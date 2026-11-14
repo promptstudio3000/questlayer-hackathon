@@ -32,7 +32,7 @@ operation id returns the first receipt; the same id with other terms is refused.
 Example pause of zone 2 today:
 
 ```json
-{"actor":"lubos","operationId":"pause-2026-11-02-z2","cityId":"plzen","day":"2026-11-02","zone":2,"action":"pause","reason":"Street festival","expectedVersion":0}
+{"actor":"owner","operationId":"pause-2026-11-02-z2","cityId":"plzen","day":"2026-11-02","zone":2,"action":"pause","reason":"Street festival","expectedVersion":0}
 ```
 
 ## What each control does and does not do
@@ -68,7 +68,7 @@ or reopen a place, preview or apply a day adjustment) and Audit (world
 operations plus the hash-chained moderation log and its verification).
 
 ```sh
-node scripts/operator-console.mjs --database $DB --operator lubos [--chain] [--port 8790]
+node scripts/operator-console.mjs --database $DB --operator owner [--chain] [--port 8790]
 # on the VPS, from your machine:
 ssh -L 8790:127.0.0.1:8790 user@host   # then open the printed link
 ```

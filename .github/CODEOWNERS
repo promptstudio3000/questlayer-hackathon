@@ -17,8 +17,6 @@
 /server/identity/      @promptstudio3000
 /server/map-rewards/   @promptstudio3000
 /AGENTS.md             @promptstudio3000
-/GEMINI.md             @promptstudio3000
-/docs/HANDOFF-WEEKEND.md @promptstudio3000
 /server/index.mjs      @promptstudio3000
 /server/signing-vault.mjs @promptstudio3000
 /server/signing-vault-cors.mjs @promptstudio3000

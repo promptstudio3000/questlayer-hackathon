@@ -83,7 +83,7 @@ through `intents.near`. It has no testnet. Plan for the mainnet launch:
 3. The game polls `GET /v0/status?depositAddress=…` and shows the NEAR that arrived;
    with QGOLD live, the next step is "deposit into the QGOLD vault" at R + 1 %.
 
-Needs Lubos's explicit go, a mainnet deployment and a small proof (about 5 USDC).
+Needs the owner's explicit go, a mainnet deployment and a small proof (about 5 USDC).
 
 ## Browser journey
 

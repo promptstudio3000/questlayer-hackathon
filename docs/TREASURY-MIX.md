@@ -1,6 +1,6 @@
 # Treasury mix: 50 % liquid staking, 40 % stablecoins, 10 % NEAR
 
-Status 4 Nov 2026: testnet only. QGOLD build plan stream 8, approved by Lubos on 4 Nov 2026.
+Status 4 Nov 2026: testnet only. QGOLD build plan stream 8, approved by the owner on 4 Nov 2026.
 Code: `server/native/treasury-mix.mjs` (planning and read-only views), `scripts/treasury-mix-testnet.mjs`
 (Mac, operator key), card "Treasury mix" on `/economy`, API `GET /api/treasury/mix`.
 
@@ -64,7 +64,7 @@ A stand-in sale burns the test stablecoin and returns NEAR only out of that bala
 `route: "testnet-mint"` in the public record and on `/economy`.
 
 Mainnet needs a real route (Ref Finance with an oracle guard on the price, or NEAR Intents 1Click), a mainnet
-allowlist (native USDC, USDt), a higher yield-vault account cap, a review and Lubos's explicit go.
+allowlist (native USDC, USDt), a higher yield-vault account cap, a review and the owner's explicit go.
 
 ## Running it (Mac, operator key in `.data/near-operator.json`)
 
@@ -86,11 +86,11 @@ shows a run without a redeploy. State: `.data/treasury-mix.json`.
 ## Later (stream 7)
 
 QGOLD conviction voting will steer the mix within these limits (LST providers from an approved list, at most 50 %
-per LST provider in the voting design, never above the 40 % per-protocol ceiling here unless Lubos changes it).
+per LST provider in the voting design, never above the 40 % per-protocol ceiling here unless the owner changes it).
 
 ## 90 % staked, 5 % USDC, 5 % USDT (11 Nov 2026)
 
-Lubos, 11 Nov 2026: on testnet only native validator staking earns (about
+11 Nov 2026: on testnet only native validator staking earns (about
 9.8 % APR; stNEAR's price is frozen and Rhea testnet supply APR is about 0),
 so the treasury is held **90 % staked NEAR, 5 % USDC and 5 % USDT** on Rhea
 Lend. The stables earn nothing on testnet; they keep the shape for mainnet.

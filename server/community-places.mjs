@@ -1,4 +1,4 @@
-// Community places (Lubos, 10 Nov 2026): explorers recommend interesting
+// Community places (10 Nov 2026): explorers recommend interesting
 // spots to each other (a view, a quiet courtyard, a mural, good coffee). A
 // place is free, public at its map pin, and lists by distance in Community ·
 // Places. No money and no XP move here. The author edits or removes it; three

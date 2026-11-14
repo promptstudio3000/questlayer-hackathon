@@ -1,5 +1,5 @@
 // Treasury fee on the game's NEAR Intents verifier (testnet), Mac side.
-// Lubos 4 Nov 2026: every P2P trade pays 2 % into the treasury, which funds
+// 4 Nov 2026: every P2P trade pays 2 % into the treasury, which funds
 // more map rewards (docs/ONCHAIN-TRADES.md, "Trade fee to the treasury").
 //
 // The verifier (near/intents defuse v0.4.5) takes its fee from the buyer's

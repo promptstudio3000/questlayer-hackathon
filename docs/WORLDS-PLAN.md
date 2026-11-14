@@ -2,7 +2,7 @@
 
 Written 1 November 2026 at the owner's request. Planning only: no code, contract, env or deployment change is part
 of this document. It builds on `docs/WORLD-GENERATION.md` (spatial rules), `docs/SECOND-CITY-PLAYBOOK.md`
-(CityPack pipeline), `docs/CONTINUATION-PLAN.md` ("zones everywhere, money only where it is verified"),
+(CityPack pipeline), `docs/GLOBAL-TREASURY.md` ("zones everywhere, money only where it is verified"),
 `docs/QUEST-TEMPLATES.md`, `docs/AI-QUEST-DRAFTS.md`, `docs/NPC-PLAN.md` and `docs/ASSET-CATALOG.md`.
 
 Three parts:
@@ -134,7 +134,7 @@ layer is `aavegotchi` and is the implicit layer of every existing world.
     "cities": ["*"],                   // or an allowlist of city/region ids
     "densityCapPerCell": 6, "killSwitch": "WORLD_PUNKS_CITY=0"
   },
-  "provenance": { "authoredBy": ["human:lubos", "codex", "ollama:deepseek-v4.1-flash"], "promptHashes": ["…"] }
+  "provenance": { "authoredBy": ["human:owner", "codex", "ollama:deepseek-v4.1-flash"], "promptHashes": ["…"] }
 }
 ```
 
@@ -239,7 +239,7 @@ is a `kind: "community"` WorldPack with tighter limits:
 
 Precedence for one location: reviewed city > auto city > cell (deterministic, as `WORLD-GENERATION.md` requires),
 so one place never gets two economic allocations. The "practice worlds anywhere" principle from
-`CONTINUATION-PLAN.md` stays: global content is free practice; money only in reviewed, funded cities.
+principle stays: global content is free practice; money only in reviewed, funded cities.
 
 ### C.2 POI databases, sources and licences
 

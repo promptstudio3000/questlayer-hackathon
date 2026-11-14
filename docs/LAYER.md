@@ -178,7 +178,7 @@ it checks network/finality, recorder and receiver, successful complete receipt g
 an exact `questlayer_metalayer` event, layer/actor/action/evidence binding, inclusion
 blocks and historical/current code fingerprints. It saves the confirmed proof but
 never credits tokens, XP, badges or NFT ownership. The default preview has no such
-configuration and sends no transaction. See [integration contract and owner handoff](METALAYER-INTEGRATION.md).
+configuration and sends no transaction. See [integration contract](METALAYER-INTEGRATION.md).
 
 ## Accepted next integration
 

@@ -4,14 +4,12 @@ The canonical repository/project name is `questlayer-hackathon`; the game brand 
 Read `docs/CLOUD-DEVELOPMENT.md` for cloud setup and legacy identifier boundaries.
 Use `npm ci` with Node.js 24+, then `npm run check`. Do not access production state or signing keys to develop the demo.
 
-## Agents other than the owner's Claude threads
+## Contributions
 
-Cursor, Codex, Gemini, Copilot and any other coding agent: read `docs/HANDOFF-WEEKEND.md` before any change.
-Its hard rules are not negotiable: no changes to `contracts/` or WASM hashes, deploy/signing/chain scripts,
-money and reward server code, economy numbers, deployment records, CI or dependencies; never touch keys,
-`runtime.env`, secrets or mainnet; no VPS deploys. One task per `weekend/<task-id>-<slug>` branch, PR into
-`claude/upbeat-gauss-5czir7`, all CI green including the Protected paths job. That job lists protected
-paths for review and fails only on committed secrets; no `owner-approved` label is needed (owner, 9 Nov 2026).
+Without the owner's review, contributions do not change `contracts/` or WASM hashes, deploy/signing/chain
+scripts, money and reward server code, economy numbers, deployment records, CI or dependencies, and never touch
+keys, `runtime.env`, secrets or mainnet. One task per branch, PR into `claude/upbeat-gauss-5czir7`, all CI green
+including the Protected paths job (it lists protected paths for review and fails only on committed secrets).
 
 ## Product and design context
 

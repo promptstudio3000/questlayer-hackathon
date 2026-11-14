@@ -29,7 +29,7 @@ No live NEAR app that does exactly this on Rhea was found; Rhea's own risk (bad 
 | `usdt.fakes.testnet` | stable | token (6 dp) | none | rhea |
 
 Both price methods return yoctoNEAR per 10^24 token units. Mainnet tokens (rNEAR, NearX, real USDC/USDT) need a
-new allowlist, a review and Lubos's go.
+new allowlist, a review and the owner's go.
 
 ## Player flow
 

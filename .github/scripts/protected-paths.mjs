@@ -20,7 +20,7 @@ import { execFileSync } from "node:child_process";
 const RULES = [
   [(p) => p.startsWith("contracts/") || p === "rust-toolchain.toml", "smart contracts, WASM hashes and the Rust toolchain"],
   [(p) => p.startsWith(".github/"), "CI workflows, this guard and CODEOWNERS"],
-  [(p) => ["AGENTS.md", "GEMINI.md", "CLAUDE.md", "docs/HANDOFF-WEEKEND.md"].includes(p), "agent rules and the hand-off"],
+  [(p) => ["AGENTS.md", "CLAUDE.md"].includes(p), "contributor rules"],
   [(p) => p.startsWith("deploy/"), "VPS service units and backups"],
   [(p) => p === "package.json" || p === "package-lock.json", "dependencies and npm scripts"],
   [

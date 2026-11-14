@@ -413,7 +413,7 @@ export function createTestSeed(db, { creators = null, clock = Date.now, log = ()
     applyPlaceThreads(now);
     ensureListings(now);
     ensureTasks(now);
-    // The practice-GOLD tasks of earlier seed versions are gone (Lubos, 11 Nov 2026).
+    // The practice-GOLD tasks of earlier seed versions are gone (11 Nov 2026).
     if (tableExists(db, "bounty_submissions"))
       db.prepare("DELETE FROM bounty_submissions WHERE substr(bounty_id,1,7)='seed-b-'").run();
     db.prepare("DELETE FROM bounties WHERE substr(id,1,7)='seed-b-'").run();

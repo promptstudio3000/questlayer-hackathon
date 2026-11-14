@@ -17,7 +17,7 @@ Tests: `tests/player-inbox.test.mjs`, `tests/relayer-policy.test.mjs`.
 
 1. Explorers **within 1 km** of each other (both sharing a fresh position in the same realm, `INBOX_LIMITS.nearMeters`)
    can write at once; the server records an open contact, so the conversation stays open after they part
-   (Lubos, 11 November 2026). Otherwise a conversation opens after **both explorers waved at each other within the last hour**, or after one asked
+   (11 November 2026). Otherwise a conversation opens after **both explorers waved at each other within the last hour**, or after one asked
    (**Ask to message**) and the other **accepted**. A declined request stays declined for the one who asked;
    the other explorer can still ask back.
 2. **Block** (the existing two-way block) stops requests, sending, the conversation list and delivery.

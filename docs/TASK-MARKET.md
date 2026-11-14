@@ -222,7 +222,7 @@ flow's escrow calls; `contracts/qgold-escrow/src/tests.rs` checks the money.
 - Creating route Secrets from the UI.
 - Photo upload for task proof; proof is text with a link for now.
 
-## QGOLD hand-off (from the vault stream, PR #174)
+## QGOLD integration (PR #174)
 
 - QGOLD is a standard NEP-141 token with 6 decimals, and the vault contract issues it. The planned
   testnet account is `questlayer-qgold-vault-20261104.testnet`.

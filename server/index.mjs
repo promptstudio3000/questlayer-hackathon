@@ -344,10 +344,10 @@ const gameLayerConfig = Object.freeze({
   // The other world, for the picker: World links to the Test Layer only on testnet.
   testLayerUrl: TEST_LAYER || NETWORK !== "testnet" ? null : linkOrigin(process.env.TEST_LAYER_ORIGIN),
   worldUrl: TEST_LAYER ? linkOrigin(process.env.WORLD_ORIGIN) : null,
-  // Until launch (Lubos, 13 Nov 2026) World sends a new visitor to the Test Layer; the picker
+  // Until launch (13 Nov 2026) World sends a new visitor to the Test Layer; the picker
   // switches back to World and remembers it. DEFAULT_TEST_LAYER=1 on World, removed at launch.
   defaultTest: !TEST_LAYER && NETWORK === "testnet" && process.env.DEFAULT_TEST_LAYER === "1" && !!linkOrigin(process.env.TEST_LAYER_ORIGIN),
-  // GotchiGO is real GPS play only (Lubos, 14 Nov 2026): the demo pad lives in the Test Layer.
+  // GotchiGO is real GPS play only (14 Nov 2026): the demo pad lives in the Test Layer.
   // A World server that links a Test Layer (or runs on mainnet) hides the pad; local/e2e servers keep it.
   gpsOnly: !TEST_LAYER && (NETWORK === "mainnet" || !!linkOrigin(process.env.TEST_LAYER_ORIGIN)),
 });

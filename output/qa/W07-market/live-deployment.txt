@@ -1,23 +1,23 @@
 AccountDoesNotExistError: Account questlayer-market-20261031.testnet does not exist at block height 275547621
-    at parseHandlerError (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:906:14)
-    at parseRpcError (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:881:14)
-    at JsonRpcProvider.sendJsonRpc (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:3538:13)
+    at parseHandlerError (file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:906:14)
+    at parseRpcError (file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:881:14)
+    at JsonRpcProvider.sendJsonRpc (file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:3538:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async JsonRpcProvider.viewAccount (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:3179:18)
-    at async FailoverRpcProvider.withBackoff (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:2013:16)
-    at async file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/scripts/deploy-market-testnet.mjs:17:17 {
+    at async JsonRpcProvider.viewAccount (file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:3179:18)
+    at async FailoverRpcProvider.withBackoff (file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:2013:16)
+    at async file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/scripts/deploy-market-testnet.mjs:17:17 {
   accountId: 'questlayer-market-20261031.testnet',
   blockHash: '8RqSaofqwMLaK7PaPTgVRWRYzMhxKtjhmuZEmnLK9fVp',
   blockHeight: 275547621
 }
 AccountDoesNotExistError: Account questlayer-market-20261031.testnet does not exist at block height 275547624
-    at parseHandlerError (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:906:14)
-    at parseRpcError (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:881:14)
-    at JsonRpcProvider.sendJsonRpc (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:3538:13)
+    at parseHandlerError (file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:906:14)
+    at parseRpcError (file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:881:14)
+    at JsonRpcProvider.sendJsonRpc (file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:3538:13)
     at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
-    at async JsonRpcProvider.viewAccount (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:3179:18)
-    at async FailoverRpcProvider.withBackoff (file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:2013:16)
-    at async file:///Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/scripts/deploy-market-testnet.mjs:17:17 {
+    at async JsonRpcProvider.viewAccount (file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:3179:18)
+    at async FailoverRpcProvider.withBackoff (file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/node_modules/near-api-js/lib/index.js:2013:16)
+    at async file:///Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/scripts/deploy-market-testnet.mjs:17:17 {
   accountId: 'questlayer-market-20261031.testnet',
   blockHash: 'DibmxNVvrCAZJpZAND23DDbeWj53e4dWJ6VAzKCBk25g',
   blockHeight: 275547624
