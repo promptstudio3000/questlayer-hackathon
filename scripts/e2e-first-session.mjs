@@ -649,10 +649,9 @@ async function runDevice(name, server) {
     await capture(page, "creator-section");
     await assertNoChainWords(page, "creator feed");
 
-    console.log("11. Home-screen card placement");
-    // A fresh explorer on a fake clock, so the 45 s play time before the
-    // offer passes at once. Only iPhone (Share → Add to Home Screen) shows the
-    // card without a real install prompt; elsewhere this step is skipped.
+    console.log("11. No home-screen card");
+    // The home-screen offer is off for now (src/pwa-prompts.tsx,
+    // INSTALL_OFFER_ENABLED): after 50 s of play no card covers the map.
     const cardContext = await newExplorerContext(browser, profile);
     const cardPage = await cardContext.newPage();
     await cardPage.clock.install({ time: Date.now() + CLOCK_OFFSET_MS });
@@ -662,27 +661,8 @@ async function runDevice(name, server) {
     await cardPage.getByRole("button", { name: "Let's explore", exact: true }).click();
     await cardPage.getByRole("button", { name: "Hide objective", exact: true }).click();
     await cardPage.clock.runFor(50_000);
-    const card = cardPage.locator(".pwa-install");
-    if (await card.isVisible()) {
-      const check = async (where) => {
-        const r = await cardOverlaps(cardPage, where);
-        layout.problems.push(...r.hits);
-        layout.checks += 1;
-        console.log(`  ${where}: ${r.cards ? (r.hits.length ? "OVERLAP" : "clear") : "card hidden"}`);
-      };
-      await check("map");
-      await capture(cardPage, "home-screen-card-map");
-      await cardPage.locator(".topbar .profile-pill").click();
-      await cardPage.getByRole("tab", { name: "Character" }).click();
-      await cardPage.locator(".badge-chapter-toggle").waitFor();
-      await check("Profile screen");
-      await capture(cardPage, "home-screen-card-profile-screen");
-      // The offer waits while a sheet owns the bottom; it returns on close.
-      await closeOpenSheet(cardPage);
-      await card.waitFor({ state: "visible" });
-      await card.getByRole("button", { name: /Got it|Not now/ }).click();
-      await card.waitFor({ state: "detached" });
-    } else console.log("  no home-screen card on this device");
+    if (await cardPage.locator(".pwa-install").isVisible()) layout.problems.push("the home-screen card showed although it is off");
+    layout.checks += 1;
     await cardContext.close();
   } finally {
     await browser.close();
@@ -693,10 +673,6 @@ async function runDevice(name, server) {
     problems.push(`a11y ${v.screen}: ${v.id} (${v.impact}) ${v.help} → ${v.nodes.join(" | ")}`);
   for (const o of report.performance?.over || []) problems.push(`perf: ${o}`);
   for (const o of layout.problems) problems.push(`layout: ${o}`);
-  // On iPhone the Add to Home Screen card always shows after 45 s of play,
-  // so the overlap check must have run there.
-  if (name === "iphone" && layout.checks === 0)
-    problems.push("layout: the iPhone home-screen card never showed, so its placement went unchecked");
 
   return problems;
 }
