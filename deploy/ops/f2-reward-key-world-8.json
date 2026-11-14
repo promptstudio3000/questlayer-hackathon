@@ -1,0 +1,6 @@
+{
+  "id": "f2-reward-key-world-8",
+  "script": "scripts/refresh-reward-worker-key.mjs",
+  "args": ["--account", "questlayer-rewards-20261101b.testnet", "--key-file", ".data/near-operator.json", "--allowance-near", "8", "--min-near", "2"],
+  "note": "World reward worker key drains ~0.65 NEAR/day: re-add the same key with 8 NEAR so it runs through judging (16-18 Nov) and the week after. Do not roll back to a release older than this one: the old worker refuses a key above 1 NEAR."
+}
