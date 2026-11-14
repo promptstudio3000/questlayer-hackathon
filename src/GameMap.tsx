@@ -32,6 +32,7 @@ import type { NearbyExplorer, WornWearable } from "./types";
 import type { ActorView } from "./actor-types";
 import type { ActorsLayer } from "./actors-layer";
 import type { MapRewardsLayer } from "./map-rewards-layer";
+import type { GlobeClustersLayer } from "./globe-clusters-layer";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "./api";
@@ -96,6 +97,8 @@ export type GameMapProps = {
   onPlayer?: (playerId: string) => void;
   /** Tapping your own explorer opens your profile overview. */
   onSelf?: () => void;
+  /** The player zoomed the flat map out to its floor: show the 3D globe. */
+  onZoomOutToGlobe?: () => void;
   /** Aavegotchi wearable clones the player wears (drawn on the starter). */
   wearables?: WornWearable[];
   /** Tap a wearable find: head there. */
@@ -182,6 +185,10 @@ function paintQuestPin(node: HTMLElement, kind: string, fallback: GameObjectOpti
 }
 /** How much closer the follow camera sits while the explorer walks. */
 const WALK_ZOOM = 0.9;
+// Below this zoom the flat map would show the whole world as a thin strip of
+// tiles (and its edge at the horizon when tilted); zooming out to it opens the globe.
+const FLAT_MIN_ZOOM = 4;
+const GLOBE_FROM_ZOOM = 4.3;
 const COIN_TIER_SCALE = ["match", ["get", "tier"], "rare", 1.45, "medium", 1.2, 1];
 function phoneLayout() {
   return (
@@ -399,6 +406,9 @@ export function GameMap(props: GameMapProps) {
       pitch: 43,
       bearing: -14,
       maxPitch: 60,
+      // The flat (mercator) map stops before the world shrinks to a strip;
+      // the globe view lowers this floor.
+      minZoom: FLAT_MIN_ZOOM,
       attributionControl: false,
     });
     map.current = m;
@@ -456,6 +466,12 @@ export function GameMap(props: GameMapProps) {
     let settle: ReturnType<typeof setTimeout> | undefined;
     const ended = (e: { originalEvent?: unknown }) => {
       if (!e.originalEvent) return;
+      // Zooming the flat map out to its floor turns it into the 3D globe
+      // instead of leaving a thin strip of flat tiles.
+      if (!latest.current.globe && m.getZoom() <= GLOBE_FROM_ZOOM && latest.current.onZoomOutToGlobe) {
+        latest.current.onZoomOutToGlobe();
+        return;
+      }
       // The player's own zoom is the level the walking camera returns to.
       walkCam.current.base = m.getZoom() - (Date.now() < walkCam.current.until ? WALK_ZOOM : 0);
       clearTimeout(settle);
@@ -1100,6 +1116,36 @@ export function GameMap(props: GameMapProps) {
   useEffect(() => {
     rewardsLayer.current?.setVisible(!props.overview && !props.globe);
   }, [ready, props.overview, props.globe]);
+  // Globe clusters: player quests and playable cities worldwide. Own chunk,
+  // loaded the first time the globe opens (src/globe-clusters-layer.ts).
+  const globeClusters = useRef<GlobeClustersLayer | null>(null);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    if (globeClusters.current) {
+      globeClusters.current.setVisible(props.globe);
+      return;
+    }
+    if (!props.globe) return;
+    let gone = false;
+    import("./globe-clusters-layer")
+      .then(({ attachGlobeClustersLayer }) => {
+        if (gone || globeClusters.current || !m.getStyle()) return;
+        globeClusters.current = attachGlobeClustersLayer(m);
+        globeClusters.current.setVisible(latest.current.globe);
+      })
+      .catch(() => {});
+    return () => {
+      gone = true;
+    };
+  }, [ready, props.globe]);
+  useEffect(
+    () => () => {
+      globeClusters.current?.destroy();
+      globeClusters.current = null;
+    },
+    [ready],
+  );
   useEffect(() => {
     if (props.active === false) map.current?.stop();
   }, [props.active, ready]);
@@ -1502,6 +1548,9 @@ export function GameMap(props: GameMapProps) {
     try {
       m.setProjection({ type: props.globe ? "globe" : "mercator" });
     } catch {}
+    m.setMinZoom(props.globe ? 0 : FLAT_MIN_ZOOM);
+    // Back from the globe, walking follows the normal street zoom again.
+    if (!props.globe) walkCam.current.base = 16.9;
     const globeBand = Math.min(
       el.current?.clientWidth || 320,
       el.current?.clientHeight || 320,
