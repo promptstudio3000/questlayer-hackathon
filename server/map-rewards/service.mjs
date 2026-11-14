@@ -29,6 +29,8 @@ import {
 import { placeCellCoins, unit, waveTimes } from "./placement.mjs";
 import {
   ARENA_COINS,
+  ARENA_COIN_SPACING_M,
+  ARENA_REFILL_MS,
   CELL_COINS,
   COIN_TIER,
   MAP_REWARDS_POLICY,
@@ -312,6 +314,8 @@ export async function materializeCellRewards(
       times = waveTimes(current.day, current.timezone || MAP_TIMEZONE, seed, {
         count: waves,
       });
+    // The city demo fills its coins outwards from the start (arenaStart),
+    // 60-100 m apart, so a new explorer finds them round the square.
     const { coins, spentU } = placeCellCoins({
       samples: inCell,
       zones,
@@ -320,6 +324,9 @@ export async function materializeCellRewards(
       valueU,
       tier: pioneer ? PIONEER_COIN_TIER : COIN_TIER,
       waves,
+      ...(current.arena
+        ? { spacing: ARENA_COIN_SPACING_M, origin: arenaStart(current) }
+        : {}),
     });
     const pioneerU = pioneer ? spentU - spentU / PIONEER_MULT : 0;
     const base = db
@@ -375,6 +382,81 @@ export async function materializeCellRewards(
       current.id,
     );
     return current;
+  });
+}
+
+/** Where a city demo explorer starts: the compact demo centre, else the city centre. */
+export function arenaStart(world) {
+  const start = world?.demoZones?.center || world?.center;
+  return Number.isFinite(start?.lat) && Number.isFinite(start?.lng) ? start : null;
+}
+
+const round7 = (x) => Number(x.toFixed(7));
+const spotKey = (p) => `${p.lat},${p.lng}`;
+const refillCheckedAt = new WeakMap();
+
+/**
+ * City demo refill (docs/MAP-REWARDS.md "City demo"): ARENA_REFILL_MS after a
+ * coin is picked up, a fresh coin of the same value appears at its spot while
+ * the day's coin budget has room (coinRoom). The new coin is a new row with a
+ * new id, nudged 1e-7 degrees north so it is a spot of its own for
+ * coin-spots.mjs; the claimed row keeps its claimant, because payouts use the
+ * coin id. Its value is added to the cell's drop, so the day budget holds.
+ * Checks a world at most once a minute. Returns the number of new coins.
+ */
+export function refillArenaCoins(db, world, now = Date.now()) {
+  if (!world?.arena || !world.mapRewards || !mapRewardsEnabled()) return 0;
+  if (!(now < world.endsAt)) return 0;
+  let seen = refillCheckedAt.get(db);
+  if (!seen) refillCheckedAt.set(db, (seen = new Map()));
+  if (Math.abs(now - (seen.get(world.id) ?? -Infinity)) < 60_000) return 0;
+  seen.set(world.id, now);
+  ensureMapRewardsSchema(db);
+  return atomic(db, () => {
+    const due = db
+      .prepare(
+        `SELECT c.id,c.lat,c.lng,c.value_u,m.cell,m.tier,d.day FROM coins c
+         JOIN map_coin_meta m ON m.coin_id=c.id
+         JOIN map_cell_drops d ON d.world_id=m.world_id AND d.cell=m.cell
+         WHERE c.world_id=? AND c.claimant IS NOT NULL AND c.claimed_at<=? AND c.value_u>0
+         ORDER BY c.claimed_at,c.id`,
+      )
+      .all(world.id, now - ARENA_REFILL_MS);
+    if (!due.length) return 0;
+    const spots = new Set(
+      db
+        .prepare("SELECT lat,lng FROM coins WHERE world_id=?")
+        .all(world.id)
+        .map(spotKey),
+    );
+    const plans = new Map(),
+      planOf = (day) => {
+        if (!plans.has(day)) plans.set(day, readDay(db, day));
+        return plans.get(day);
+      };
+    let next = db
+      .prepare("SELECT COUNT(*) n FROM coins WHERE world_id=?")
+      .get(world.id).n;
+    const insertCoin = db.prepare(
+        "INSERT INTO coins(id,world_id,lat,lng,value_u) VALUES(?,?,?,?,?)",
+      ),
+      insertMeta = db.prepare("INSERT INTO map_coin_meta VALUES(?,?,?,?,?,?)"),
+      addToDrop = db.prepare(
+        "UPDATE map_cell_drops SET coins=coins+1,coins_u=coins_u+? WHERE world_id=? AND cell=?",
+      );
+    let added = 0;
+    for (const c of due) {
+      const spot = { lat: round7(c.lat + 1e-7), lng: c.lng };
+      if (spots.has(spotKey(spot))) continue; // already refilled
+      if (coinRoom(db, planOf(c.day), c.value_u) < 1) continue;
+      const id = `${world.id}:coin:${next++}`;
+      insertCoin.run(id, world.id, spot.lat, spot.lng, c.value_u);
+      insertMeta.run(id, world.id, c.cell, c.tier, 0, now);
+      addToDrop.run(c.value_u, world.id, c.cell);
+      spots.add(spotKey(spot));
+      added++;
+    }
+    return added;
   });
 }
 

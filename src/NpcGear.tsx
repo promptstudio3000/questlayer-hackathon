@@ -46,12 +46,14 @@ export function NpcGear({ actorId, encounter }: { actorId: string; encounter: st
           <span className="npc-action-icon">
             <Sparkle weight="duotone" />
           </span>
+          <span className="npc-gear-text">
           <span className="npc-action-label">{g.name}</span>
           <small>
             {tr("{0} QGOLD", { 0: g.price })}
             {g.left !== null ? ` · ${tr("{0} left", { 0: g.left })}` : ""}
             {!done && g.left !== 0 && buyBlock(shop, Math.round(g.price * GOLD)) ? ` · ${buyBlock(shop, Math.round(g.price * GOLD))!.label}` : ""}
           </small>
+          </span>
         </button>
       ))}
       {message && (

@@ -46,6 +46,7 @@ export type VizId =
   | "fees"
   | "gold-prices"
   | "staker-ladder"
+  | "tier-scheme"
   | "patron-rank"
   | "chain-states"
   | "chain-split"
@@ -164,7 +165,7 @@ export const CHAPTERS: Chapter[] = [
     id: "overview",
     group: "start",
     title: "What QuestLayer is",
-    tldr: "Pokémon GO, Geocaching and PoolTogether in one: **stake to play and lose nothing**. Your principal stays yours, a share of its yield goes to one global treasury, and every day that yield becomes rewards on real streets, paid as **QGOLD**, fully backed by NEAR.",
+    tldr: "Pokémon GO, Geocaching and PoolTogether in one: a **stake-to-play game platform**. Your principal stays yours, a share of its yield goes to one global treasury, and every day that yield becomes rewards on real streets, paid as **QGOLD**, fully backed by NEAR.",
     keyFacts: [
       ["100 %", "of your stake's principal stays yours"],
       ["1 coin", "QGOLD in every layer, whatever a layer names it"],
@@ -173,7 +174,7 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "phone-hud",
     status: "live",
-    updated: "2026-11-13",
+    updated: "2026-11-14",
     sources: ["docs/ARCHITECTURE.md", "docs/GAME-RULES.md", "docs/SOURCES-AND-INTEGRATIONS.md", "README.md", "server/index.mjs", "src/main.tsx", "src/App.tsx", "src/DemoControls.tsx", "src/useDemoWalk.ts", "src/MapSurface.tsx", "src/nearby-action.ts", "src/Dialog.tsx", "src/QuestBrief.tsx", "src/activity-view.ts", "src/GameIntro.tsx", "src/learning-store.ts", "src/activity-help.ts", "src/FirstSession.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx", "src/zone-presence.ts", "src/ZonePresence.tsx", "src/MapSettings.tsx", "src/SettingsScreen.tsx", "src/MapActions.tsx", "src/InfoTip.tsx", "src/PotRow.tsx", "src/useHudCard.ts", "src/screens.tsx", "src/nearby-list.ts"],
     blocks: [
       { h: "Where everything lives" },
@@ -212,7 +213,7 @@ export const CHAPTERS: Chapter[] = [
           "Settings (the gear in the top right corner) has one helper switch: **Pip, your guide** where the tour runs, **First-time tips** elsewhere. Off hides the helper and the tips; on brings them back, also after the first-steps card was closed. Settings → Help reopens How to play and answers questions; the links to How it works, Wiki, Economy and Treasury sit at the bottom of Settings.",
           "A picked-up coin flies to the QGOLD counter (a fade under reduced motion). A new wearable opens a short, closable item moment once.",
           "On desktop, Inventory, Community and Profile open as a centred card over the dimmed map; on phones they are full screen.",
-          "The logo button at the top left opens the world menu: a dropdown under the button on desktop, a bottom sheet on phones. Its first row links to **How it works**, **Wiki** and **Treasury**; below are the worlds to switch between.",
+          "The logo button at the top left opens the world menu: a dropdown under the button on desktop, a bottom sheet on phones. Its first row links to **How it works**, **Wiki** and **Treasury**; below are the worlds to switch between. Right under it sits the **staking tier chip** (Free, Staker, Tier 2 or Tier 3, in the map's tier colours); a tap opens Profile → Stake. It is there on the Test Layer, GotchiGO and MetaLayer alike.",
         ],
       },
       { h: "Three kinds of value" },
@@ -518,6 +519,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "Chest, roll and level Auras are secured automatically: the device key signs `redeem_aura` and the relayer pays gas. A worn Aura is secured too and put straight back on (`equip_aura`), and the explorer record it needs (`mint_avatar`) is created silently as soon as the explorer owns an Aura, so nothing has to be tapped.",
+          "An Aura secured by hand (Wardrobe → Advanced → Secure this Aura) checks its claim by itself: opening the card again asks NEAR whether it minted and shows it as secured, and Finish securing on a claim NEAR already used confirms it instead of failing. Settings → On chain hides a failed attempt once the same Aura claim or explorer mint succeeded.",
           "Selling lists the Aura on NEAR Intents (see the Intents chapter). The secure account window asks to approve the sale first, right after the Sell tap; only then does the Aura move to the verifier, so a declined sale leaves it in the collection. A 2 % NEP-199 royalty goes to the treasury on outside marketplaces such as Mintbase.",
           "Planned: trading real Aavegotchi wearables through the Aavegotchi marketplace and its engine. Today wearables on the map are free clones and originals stay in the wallet.",
         ],
@@ -537,7 +539,7 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "wearable-rarity",
     status: "live",
-    updated: "2026-11-11",
+    updated: "2026-11-14",
     sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "server/demo-bot-chat.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx", "server/player-journey.mjs", "src/CharacterJourney.tsx", "src/StakeEarn.tsx", "src/FuelTheCity.tsx", "server/gotchi-models.mjs"],
     blocks: [
       { h: "Wearable finds" },
@@ -572,7 +574,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "Tap any explorer for their profile: name, level, the original Aavegotchi they wear with its BRS, play stats and equipment slots. A gold seal marks an original their wallet holds. A profile never shows a position, a wallet or the rest of a collection.",
           "Waves are six ready phrases. Limits: one per pair per minute, 20 sent and 30 received per hour; deleted after an hour.",
-          "**Write a message** opens the encrypted inbox. Block hides presence, notes, waves, messages and the card both ways.",
+          "**Message** opens the encrypted inbox. Block hides presence, notes, waves, messages and the card both ways.",
           "Demo bots in the test world carry a **demo-bot** tag on their card and a small **bot** tag next to their name on the map; they take no waves and cannot be blocked. **Message** on a demo bot opens a short demo chat: the bot answers with ready in-character lines, nothing is stored and nothing goes on chain (bots have no inbox key). At most 12 lines a minute.",
           "Without a usable explorer account on this device **Message** stays off and the card says why: still being set up, earned with the first find, or the device is not linked yet (then **Link this device** opens Account and devices for the recovery passkey or, on testnet, a new account).",
         ],
@@ -583,7 +585,7 @@ export const CHAPTERS: Chapter[] = [
           head: ["Tab", "What it holds"],
           rows: [
             ["Character", "Avatar, level and XP, your totals (finds, quests, tasks, monsters, wearables, badges, QGOLD on your account), Badges, a Messages tile for the inbox, and **Your story**: what happened, newest first (`GET /api/me/journey`). On a wide screen the avatar fills the left column with level and totals beside it; phones keep one column"],
-            ["Stake", "One screen (Earnings was merged in on 12 Nov). On top, three small numbers: **your QGOLD** (with what the next payout adds), **QGOLD on the map today** and, once you have staked, **from your stake** (the yield kept for you). The page shows at once and fills its numbers as the chain answers: the tier ladder with the **yield share to the prize pool** (25 / 50 / 100 %) right under it, then a **tier choice** (Staker 2B, Tier 2 10B, Tier 3 50B QGOLD; picking Tier 2 or 3 sets the yield share to 100 %, and a smaller share raises the amount, because tiers count stake × share) and one **Stake** button for the chosen amount. The first tap sets up your personal vault (a one-time setup fee that is not returned), the next tap stakes; each money step asks for one Yes in a small QuestLayer confirmation window; when staking is not possible yet (no explorer account, too little test NEAR), the button opens a **Why you can't stake yet** dialog instead of an error: the same one-line dialog as in the Market, with one main button (use your QGOLD, get test NEAR or connect a NEAR wallet, which then pays the stake). There is **one stake per explorer**: afterwards the only action is **Withdraw** (about 1–7 days, 4 epochs; the game moves the unlocked NEAR back and you withdraw it to your balance). Once you have staked, a collapsed **Your vault** shows the vault address, owner, validator, staked NEAR and your yield share. Payment receipts live in **Settings → Receipts**. Stake amounts, tier requirements and locked-zone prices read in the same QGOLD as rewards (2 NEAR shows as 2B QGOLD); the payment itself still leaves in NEAR and the signing window shows that."],
+            ["Stake", "One screen (Earnings was merged in on 12 Nov). The **tier chip** under the world switcher on the map opens it straight away. First a one-line **Why stake?** banner that links to [Why stake, and how it works](/wiki#why-stake). Below it, three small numbers: **your QGOLD** (with what the next payout adds), **QGOLD on the map today** and, once you have staked, **from your stake** (the yield kept for you). The page shows at once and fills its numbers as the chain answers: the tier ladder with the **yield share to the prize pool** (25 / 50 / 100 %) right under it, then a **tier choice** whose buttons show the current price in brackets (Staker (2B QGOLD), Tier 2 (10B QGOLD), Tier 3 (50B QGOLD); picking Tier 2 or 3 sets the yield share to 100 %, and a smaller share raises the amount, because tiers count stake × share) and one **Stake** button for the chosen amount. The first tap sets up your personal vault (a one-time setup fee that is not returned), the next tap stakes; each money step asks for one Yes in a small QuestLayer confirmation window; when staking is not possible yet (no explorer account, too little test NEAR), the button opens a **Why you can't stake yet** dialog instead of an error: the same one-line dialog as in the Market, with one main button (use your QGOLD, get test NEAR or connect a NEAR wallet, which then pays the stake). There is **one stake per explorer**: afterwards the only action is **Withdraw** (about 1–7 days, 4 epochs; the game moves the unlocked NEAR back and you withdraw it to your balance). Once you have staked, a collapsed **Your vault** shows the vault address, owner, validator, staked NEAR and your yield share. Payment receipts live in **Settings → Receipts**. Stake amounts, tier requirements and locked-zone prices read in the same QGOLD as rewards (2 NEAR shows as 2B QGOLD); the payment itself still leaves in NEAR and the signing window shows that."],
             ["Settings", "A drawer that slides in from the right behind the **gear** in the top right corner, not a Profile tab (13 Nov); a strip of the map stays visible beside it and a tap there closes it. Four short parts: **Map** (city demo or GPS, My location, Full map, City overview, Globe, Turn the map with me, 3D character), **Game** (the helper switch for Pip or first-time tips, Show me to nearby explorers, language, sound, vibration, reduce motion), **Help** (How to play, Ask a question, **Game economy**, which explains the game in four illustrated steps (walk, collect, stake, unlock) and carries the same stake form as the Stake tab, with no chain details: those are on [Treasury](/treasury) and [Economy](/economy)) and **Account** (save the explorer with a passkey, the NEAR wallet with its 12 words, Sign out, which asks once because an explorer without a passkey or words cannot come back). Everything technical waits under one folded **Advanced**: linked NEAR and Ethereum wallets, devices, the on-chain feed, receipts and the developer reward-ledger switch. Reference links close the sheet"],
           ],
         },
@@ -652,7 +654,7 @@ export const CHAPTERS: Chapter[] = [
     sources: ["docs/PLAYER-INBOX.md", "server/inbox/crypto.mjs", "src/signing-vault/inbox.ts", "server/inbox/service.mjs", "server/inbox/routes.mjs", "src/inbox/Inbox.tsx", "server/relayer/accounts.mjs", "src/DeviceKeys.tsx"],
     blocks: [
       { h: "Where to find it" },
-      { p: "The inbox opens from the map's inbox pill, from the Messages tile in Profile → Character and from **Write a message** on an explorer's profile." },
+      { p: "The inbox opens from the map's inbox pill, from the Messages tile in Profile → Character and from **Message** on an explorer's profile." },
       { h: "Who may write" },
       {
         list: [
@@ -830,17 +832,18 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "map-formula",
     status: "live",
-    updated: "2026-11-13",
+    updated: "2026-11-14",
     sources: ["docs/MAP-REWARDS.md", "docs/GLOBAL-TREASURY.md", "server/map-rewards/policy.mjs", "server/map-rewards/budget.mjs", "server/map-rewards/chain.mjs"],
     blocks: [
       { h: "How a day is planned" },
       {
         list: [
           "At the first request of a local day the server builds the plan once from the **real daily budget**: the map's share of the rewards contract's per-date cap, priced in micro-QGOLD at the vault's rate R.",
-          "**Few coins, each worth something.** One coin = the day's coin budget ÷ 200 (`MAP_COIN_TARGET`). An opened street cell places 10 coins, the Plzeň city demo 50, and placement stops once the whole day budget is on the map, so every coin is covered. With yield-only days (`NATIVE_YIELD_BACKED_DAYS=1`) the budget is the day's drip of realized staking yield, shared with city days: 0.0005 NEAR for coins at 1 QGOLD = 1 microNEAR is 500 QGOLD, 2.5 QGOLD a coin.",
+          "**Coins everywhere, each worth at least 1 QGOLD.** One coin = the day's coin budget ÷ 100,000 (`MAP_COIN_TARGET`), never less than 1 QGOLD. An opened street cell places 10 coins, the Plzeň city demo 50, and placement stops once the whole day budget is on the map, so every coin is covered. With yield-only days (`NATIVE_YIELD_BACKED_DAYS=1`) the budget is the day's drip of realized staking yield, shared with city days: a coin budget of 806,710 QGOLD gives 8-QGOLD coins for about 10,000 opened cells; a smaller budget gives 1-QGOLD coins until it is placed.",
           "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area; what a capped cell cannot take goes to the others.",
           "**Every zone prize is paid out on chain.** Plzeň's reviewed zones share their cell's zone budget as the first-finisher prize (only the first world to open the cell that day funds it, so GPS and the demo never spend it twice); the game treasury funds no prize.",
           "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest.",
+          "**City demo coins stay near the start.** On the Test Layer the demo's coins fill outwards from the starting square, 60–100 m apart, instead of across the whole cell. About 25 minutes after a demo coin is picked up, a fresh one of the same value appears at the same spot while the day's coin budget has room, so every visitor finds coins close by. GPS play is unchanged.",
           "The city demo pays the same backed coins. Outside Czechia a street cell gets up to 10 coins of the same value, drawn from the same day budget until it is placed, and paid through the payout rounds (`MAP_WORLD_COINS=off` stops it). Funded cell zones and pioneer bonuses stay in Czechia.",
         ],
       },
@@ -959,16 +962,16 @@ export const CHAPTERS: Chapter[] = [
     id: "treasury-dao",
     group: "economy",
     title: "Who decides: the treasury DAO",
-    tldr: "Explorers vote every week on how the treasury is held, one explorer one vote. A **Sputnik DAO** council approves every daily run, and only after checking it against the adopted mix and the safety limits.",
+    tldr: "Explorers vote every week on how the treasury is held, each vote weighted by voting power earned by play. A **Sputnik DAO** council approves every daily run, and only after checking it against the adopted mix and the safety limits.",
     keyFacts: [
       ["2 of 3", "council approvals pass a proposal"],
       ["L3+", "and played in the last 7 days to vote"],
       ["3", "mix options each week"],
-      ["1 : 1", "one explorer, one vote; XP cannot be bought"],
+      ["1–100", "voting power earned by play, capped, never for sale"],
     ],
     hero: "dao-flow",
     status: "live",
-    updated: "2026-11-11",
+    updated: "2026-11-14",
     sources: ["docs/TREASURY-DAO.md", "docs/TREASURY-WORKERS-VPS.md", "server/native/treasury-dao.mjs", "scripts/treasury-dao-testnet.mjs", "scripts/treasury-worker-vps.sh", "src/economy/TreasuryVoteCard.tsx"],
     blocks: [
       { p: "The treasury follows a stock **Sputnik DAO v2**, `questlayer-treasury.sputnik-v2.testnet`, with the role names Trezu uses: a keeper that only files proposals (Requestor), a council of three that approves with **2 of 3** (Admin, Approver), and **Explorers**, the players who may vote." },
@@ -978,7 +981,7 @@ export const CHAPTERS: Chapter[] = [
           rows: [
             ["Weekly mix vote opens (Monday)", "keeper", "one `Vote` proposal per option; the recommended option gets one automatic vote"],
             ["Explorers vote", "players at level 3+ who played in the last 7 days", "`act_proposal(VoteApprove)` from the explorer account, sponsored, no pop-up"],
-            ["Tally (next Monday)", "keeper files the result, council approves", "an approved Adopt treasury mix proposal with the counts"],
+            ["Tally (next Monday)", "keeper files the result, council approves", "an approved Adopt treasury mix proposal with the weighted counts and each voter's voting power"],
             ["Every morning", "keeper files the day's run, two council keys approve", "the run happens only once it is approved"],
           ],
         },
@@ -988,6 +991,7 @@ export const CHAPTERS: Chapter[] = [
           "**Options** (staked NEAR / stablecoins / NEAR reserve): Staking first 90 / 10 / 0 (recommended, the stables split 5 % USDC + 5 % USDT), More stables 70 / 20 / 10, Bigger reserve 60 / 20 / 20. Every option stays inside the treasury limits. Polls filed before 11 Nov 2026 (50 / 40 / 10 and friends) still tally to their own targets.",
           "**Owner decision:** `treasury-dao-testnet.mjs adopt <preset> --execute` has the council adopt a preset at once (prepared on 11 Nov 2026 for 90 / 5 / 5); it closes this week's open mix poll and re-files today's run with the new target.",
           "**Checked automatic approval:** the council keys approve a daily run only when its target is the adopted mix and it moves at most 25 % of the treasury.",
+          "**Voting power**, not one explorer one vote: days with XP in the last 30 (1 each, up to 30) + 3 per level (up to 30) + 2 per follower at level 2+ (up to 20) + 1 per time another explorer took on one of your quests or tasks in the last 30 days (up to 20). At least 1, at most 100. The keeper's automatic vote counts 10. The tally adds up voting power; the result proposal carries a snapshot of every voter's power, so anyone can recount it.",
           "Extra votes of the week appear under the mix vote and are counted the same way. New voters join the DAO once a day.",
           "Custody stays with the treasury-ops account on testnet for now; the DAO decides the target and approves every run. The QGOLD vault council moves to the DAO next.",
           "**Where it runs:** the keeper and the automatic council keys run on the game server every morning, each a function-call key that can only file or vote on DAO proposals. If only council-a runs there, the second approval comes from the owner (`approve-pending` re-checks every open proposal first) and the day's rebalance waits for it.",
@@ -1104,6 +1108,58 @@ export const CHAPTERS: Chapter[] = [
           "The daily creator-bonus vote is no longer shown in the app (11 Nov 2026). Without votes the server gates nothing, so every community quest counts the same.",
         ],
       },
+    ],
+  },
+  {
+    id: "why-stake",
+    group: "economy",
+    title: "Why stake, and how it works",
+    tldr: "Staking is how the map gets its treasure. You lock NEAR in your own vault, **the principal stays yours** and comes back when you withdraw; a share of its yield becomes QGOLD on the streets for every explorer, and higher tiers open the yellow and red zones.",
+    keyFacts: [
+      ["2B QGOLD", "to become a Staker (2 NEAR)"],
+      ["10B / 50B", "QGOLD for Tier 2 / Tier 3"],
+      ["100 %", "of your principal stays yours"],
+      ["1–7 days", "to get it back after Withdraw"],
+    ],
+    hero: "tier-scheme",
+    status: "live",
+    updated: "2026-11-14",
+    sources: ["src/FuelTheCity.tsx", "src/StakeTierChip.tsx", "src/qgold-display.ts", "server/data/staker-gates.json"],
+    blocks: [
+      { h: "Where to stake" },
+      {
+        list: [
+          "Open **Profile → Stake**, or tap the **tier chip** under the world switcher (top left, on every layer). The chip shows your step today: Free, Staker, Tier 2 or Tier 3.",
+          "Pick a tier. Each button shows its price in brackets, for example **Staker (2B QGOLD)**; 1 NEAR reads as 1B QGOLD.",
+        ],
+      },
+      { h: "What each tier brings" },
+      {
+        list: [
+          "**Free:** the whole map is yours to walk. Green Tier 1 zones, coins, NPCs, quests and player quests need no stake at all.",
+          "**Staker:** your vault starts putting QGOLD on the map for everyone. As your level grows, NPCs offer you extra story quests, and the Keeper NPC shows your stake and what it has earned.",
+          "**Tier 2:** the yellow zones open for you. Harder quests, the boss arena and bigger zone prizes wait there.",
+          "**Tier 3:** the red zones open for you. You can already see them on the map with a lock; they hold the rarest monsters and the hardest quests.",
+        ],
+      },
+      { p: "Tiers open places and stories, never better odds or bigger payouts for the same deed. Each tier keeps everything below it." },
+      { h: "Why it is worth it" },
+      {
+        list: [
+          "**You lose nothing.** The stake sits in a personal vault in your name. Only the yield is shared; the principal never pays for anything.",
+          "**You fill the map.** The yield share you choose (25, 50 or 100 %) goes to the one global treasury, and every day it is laid out as coins and zone prizes for every explorer.",
+          "**You keep earning.** The part of the yield you keep comes back to you as QGOLD.",
+        ],
+      },
+      { h: "How it works" },
+      {
+        list: [
+          "Tier 2 and Tier 3 count stake × yield share, so picking them sets the share to 100 %; a smaller share needs a bigger stake.",
+          "One tap sets up your vault (a one-time setup fee), the next stakes. The stake counts after about two epochs (1–2 days).",
+          "There is one stake per explorer. Afterwards the only action is **Withdraw**; the stake comes back in about 1–7 days (4 epochs).",
+        ],
+      },
+      { note: "This runs on NEAR testnet: test NEAR has no monetary value.", tone: "info" },
     ],
   },
   {

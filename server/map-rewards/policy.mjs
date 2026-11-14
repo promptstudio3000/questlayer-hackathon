@@ -10,15 +10,25 @@ export const ZONE_PULL_M = 300;
 export const COIN_SPACING_NEAR_ZONE_M = 60;
 export const MAX_COINS_PER_CELL = 400;
 
-// Coin values (map-rewards-v2, 13 Nov 2026): every coin on the map is backed
+// Coin values (map-rewards-v2, 14 Nov 2026): every coin on the map is backed
 // and worth the same. A day's coin budget is priced for COIN_TARGET coins
-// (MAP_COIN_TARGET), so one coin = budget / target. An opened street cell gets
+// (MAP_COIN_TARGET), so one coin = budget / target, but never under
+// MIN_COIN_U (1 QGOLD): the owner wants coins everywhere, each worth at least
+// something, rather than a few valuable ones. An opened street cell gets
 // CELL_COINS coins (the owner's "about 10 per city"), the Plzeň city demo
 // ARENA_COINS, and placement stops once the day's budget is placed: a coin
 // on the map is always covered. Unplaced budget stays in the treasury.
 export const CELL_COINS = 10;
 export const ARENA_COINS = 50;
-export const COIN_TARGET = 200;
+// The city demo (Test Layer) gathers its coins round the start: they fill
+// outwards from the demo centre, 60-100 m apart, and a picked-up coin comes
+// back at its spot after ARENA_REFILL_MS while the day's coin budget has room
+// (docs/MAP-REWARDS.md "City demo"). Arena coins never go on chain, so the day
+// plan and its leaves do not change.
+export const ARENA_COIN_SPACING_M = Object.freeze({ min: 60, max: 100 });
+export const ARENA_REFILL_MS = 25 * 60_000;
+export const COIN_TARGET = 100_000;
+export const MIN_COIN_U = 1;
 // Coin tiers are only drawing sizes now: "small" is a normal coin, "medium" a
 // pioneer coin worth two shares.
 export const COIN_TIER = "small";

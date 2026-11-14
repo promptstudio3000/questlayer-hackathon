@@ -9,6 +9,7 @@
 //
 //   node scripts/topup-rewards-storage.mjs            # dry run
 //   node scripts/topup-rewards-storage.mjs --send     # sends from the operator
+//   ... --testlayer                                   # the Test Layer's rewards contract
 import { readFileSync, statSync } from "node:fs";
 import assert from "node:assert/strict";
 import { Account, KeyPairSigner, actions } from "near-api-js";
@@ -22,7 +23,8 @@ const EXTRA_DAYS = BigInt(process.env.TOPUP_EXTRA_DAYS || 2); // new days beyond
 const MARGIN = NEAR / 4n;
 const MAX_TOPUP = 8n * NEAR;
 
-const config = JSON.parse(readFileSync("public/native-rewards-testnet.json"));
+const record = process.argv.includes("--testlayer") ? "public/native-rewards-testlayer.json" : "public/native-rewards-testnet.json";
+const config = JSON.parse(readFileSync(record));
 const provider = createNearProvider();
 assert.equal((await provider.viewNodeStatus()).chain_id, "testnet");
 const contractId = config.contractId;
