@@ -128,11 +128,14 @@ export async function rewardTransport(
       });
     } catch (error) {
       account = new Account(contractId, provider, signer);
+      error.message = `${method}: ${error.message}`;
       throw error;
     }
+    // Name the method and transaction: a contract panic alone (e.g. a wasm
+    // trap) does not say which call failed.
     assert(
       !result.status?.Failure,
-      "The native worker transaction failed.",
+      `The native worker transaction failed: ${method} ${result.transaction?.hash || result.transaction_outcome?.id || ""} ${JSON.stringify(result.status?.Failure).slice(0, 160)}`,
       503,
     );
     return result.transaction?.hash || result.transaction_outcome?.id;
