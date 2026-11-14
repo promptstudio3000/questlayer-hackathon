@@ -187,3 +187,48 @@
   .qe-form { grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); column-gap: 24px; align-items: start; }
   .qe-form > :not(.qe-col) { grid-column: 1 / -1; }
 }
+
+/* New-quest wizard (Lubos 14 Nov 2026): kind → place → words → check.
+   Every block names its step; only the current one shows. On a wide panel
+   the live preview stays on the right through all steps. */
+.qe-wizard .qe-col { display: contents; }
+.qe-form.qe-wizard > *, .qe-wizard .qe-col > * { grid-column: 1; }
+.qe-wizard[data-step="0"] [data-qe-step]:not([data-qe-step="0"]),
+.qe-wizard[data-step="1"] [data-qe-step]:not([data-qe-step="1"]),
+.qe-wizard[data-step="2"] [data-qe-step]:not([data-qe-step="2"]),
+.qe-wizard[data-step="3"] [data-qe-step]:not([data-qe-step="3"]) { display: none; }
+.qe-steps { display: grid; gap: 10px; }
+.qe-steps ol { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; margin: 0; padding: 0; list-style: none; }
+.qe-steps button { white-space: nowrap; display: flex; width: 100%; min-height: 40px; align-items: center; justify-content: center; gap: 6px; padding: 4px 6px; border: 0; border-bottom: 3px solid var(--creator-line, #d7cbe9); border-radius: 0; background: transparent; color: var(--ink-secondary, #665577); font: inherit; font-size: 14px; letter-spacing: normal; text-transform: none; cursor: pointer; }
+.qe-steps button:disabled { cursor: default; opacity: 0.7; }
+.qe-steps button > span { display: inline-grid; width: 22px; height: 22px; place-items: center; border-radius: 50%; background: var(--creator-line, #d7cbe9); color: var(--ink, #1a0335); font-size: 12px; font-weight: 700; }
+.qe-steps .is-done button { border-color: var(--action, #672eeb); color: var(--ink, #1a0335); }
+.qe-steps .is-done button > span { background: var(--action, #672eeb); color: #fff; }
+.qe-steps .is-now button { border-color: var(--action, #672eeb); color: var(--action, #672eeb); font-weight: 700; }
+.qe-steps .is-now button > span { background: var(--action, #672eeb); color: #fff; }
+.qe-steps h4 { margin: 4px 0 0; font-size: 20px; color: var(--ink, #1a0335); }
+.qe-wizard .qe-kinds .creator-template { min-height: 112px; justify-content: center; }
+.qe-wizard .qe-art { width: 64px; height: 64px; }
+.qe-nav { display: flex; gap: 8px; }
+.qe-nav button { flex: 1; justify-content: center; }
+.qe-step-error { margin: 0; }
+.qe-preview { display: grid; overflow: hidden; border: 1px solid var(--creator-line, #d7cbe9); border-radius: 16px; background: var(--surface-raised, #fff); }
+.qe-preview-hero { position: relative; display: grid; height: 120px; place-items: center; background: linear-gradient(160deg, color-mix(in srgb, var(--action, #672eeb) 22%, transparent), color-mix(in srgb, var(--action, #672eeb) 6%, transparent)); }
+.qe-preview-hero.has-photo img { width: 100%; height: 100%; object-fit: cover; }
+.qe-preview-art { image-rendering: pixelated; }
+.qe-preview-hero .qd-kind { position: absolute; left: 10px; bottom: 10px; }
+.qe-preview-body { display: grid; gap: 6px; padding: 12px 14px 14px; }
+.qe-preview-body strong { font-size: 18px; color: var(--ink, #1a0335); overflow-wrap: anywhere; }
+.qe-preview-body p { margin: 0; font-size: 14px; color: var(--ink-secondary, #665577); overflow-wrap: anywhere; }
+.qe-preview-body .is-empty { opacity: 0.55; font-style: italic; }
+.qe-preview-facts { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 0; padding: 0; list-style: none; }
+.qe-preview-facts li { padding: 2px 10px; border-radius: 999px; background: color-mix(in srgb, var(--action, #672eeb) 10%, transparent); color: var(--ink, #1a0335); font-size: 13px; }
+@container (min-width: 620px) {
+  .qe-wizard { grid-template-columns: minmax(0, 1fr) minmax(0, 0.8fr); }
+  .qe-form.qe-wizard > .qe-steps { grid-column: 1 / -1; }
+  .qe-wizard[data-step] .qe-preview[data-qe-step] { display: grid; grid-column: 2; grid-row: 2 / span 12; align-self: start; position: sticky; top: 8px; }
+}
+@container (max-width: 420px) {
+  .qe-steps button { gap: 4px; padding: 4px 2px; font-size: 13px; }
+  .qe-steps button > span { width: 18px; height: 18px; font-size: 11px; }
+}
