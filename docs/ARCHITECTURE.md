@@ -1,7 +1,6 @@
 # Architecture and trust boundaries
 
-For the current implementation/deployment distinction and ownership inventory,
-read [the whole-project handoff](PROJECT-REVIEW-AND-HANDOFF.md). Deployment paths
+Deployment paths
 below describe checked-in configuration and historical operations; this review did
 not inspect the active VPS over SSH. Native pilots do not close full V1 gates.
 
