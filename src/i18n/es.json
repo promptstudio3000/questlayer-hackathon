@@ -3341,5 +3341,9 @@
   "Your NEAR, in your own vault.": "Tu NEAR, en tu propia bóveda.",
   "Shows stakers their stake and its yield.": "Muestra a los stakers su stake y su rendimiento.",
   "Extra NPC story quests, and the Keeper shows your stake.": "Misiones de historia extra de los NPC, y el Guardián te muestra tu stake.",
-  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "Tu stake sigue siendo tuyo. Su rendimiento pone QGOLD en el mapa para todos, y los niveles superiores abren las zonas amarillas y rojas."
+  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "Tu stake sigue siendo tuyo. Su rendimiento pone QGOLD en el mapa para todos, y los niveles superiores abren las zonas amarillas y rojas.",
+  "Day view, chosen by you. Tap to follow the real sun again.": "Vista de día elegida por ti. Toca para volver a seguir el sol real.",
+  "Tap to switch day and night.": "Toca para cambiar entre día y noche.",
+  "Night": "Noche",
+  "Night view, chosen by you. Tap to follow the real sun again.": "Vista de noche elegida por ti. Toca para volver a seguir el sol real."
 }

@@ -42,7 +42,10 @@
   background: #fbf9f2f2;
   border: 1px solid var(--decorative-border, #d7cbe9);
   box-shadow: 0 3px 12px #3425470f;
+  font-family: inherit;
+  cursor: pointer;
 }
+.map-sky-chip.sky-manual { outline: 2px dashed currentColor; outline-offset: -4px; }
 .map-sky-chip.sky-day > svg {
   color: #e0a800;
 }

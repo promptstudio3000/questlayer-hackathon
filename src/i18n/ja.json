@@ -3341,5 +3341,9 @@
   "Your NEAR, in your own vault.": "あなたの NEAR は、あなた自身の金庫に。",
   "Shows stakers their stake and its yield.": "ステーカーにステークと利回りを見せます。",
   "Extra NPC story quests, and the Keeper shows your stake.": "NPCの追加ストーリークエスト。キーパーがあなたのステークを見せます。",
-  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "ステークはあなたのもの。その利回りが全員のためにマップへQGOLDを置き、上位ティアで黄と赤のゾーンが開きます。"
+  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "ステークはあなたのもの。その利回りが全員のためにマップへQGOLDを置き、上位ティアで黄と赤のゾーンが開きます。",
+  "Day view, chosen by you. Tap to follow the real sun again.": "あなたが選んだ昼の表示。タップすると本物の太陽に戻ります。",
+  "Tap to switch day and night.": "タップで昼と夜を切り替えます。",
+  "Night": "夜",
+  "Night view, chosen by you. Tap to follow the real sun again.": "あなたが選んだ夜の表示。タップすると本物の太陽に戻ります。"
 }
