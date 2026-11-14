@@ -17,7 +17,8 @@ Until launch (Lubos, 13 Nov 2026) the main address opens the Test Layer. World's
 `DEFAULT_TEST_LAYER=1` and `TEST_LAYER_ORIGIN=https://questlayer-test.promptstudio3000.com`. `/api/config`
 then reports `gameLayer.defaultTest`, and a visitor without a saved choice is sent to the Test Layer.
 In the Test Layer, the world picker (logo, top left) links to QuestLayer World with `?world=1`. That
-choice is saved on the device (`questlayer.stayWorld`), so World stays put from then on. There is no
+choice lasts only for the tab session (`sessionStorage` `questlayer.stayWorld`; the old `localStorage` key is
+cleared, Lubos 14 Nov 2026), so every fresh start of the main address opens the Test Layer again. There is no
 redirect while `TEST_LAYER_ORIGIN` is missing. Remove `DEFAULT_TEST_LAYER` at launch.
 
 ## City demo from the address
@@ -63,8 +64,10 @@ Same code, one switch: `QL_LAYER=test` (server, `server/native/network.mjs`) and
 - **Demo first.** The Test Layer opens in the Plzeň demo for every visitor, also with location allowed far
   from Plzeň (`src/play-here.ts`). GPS starts only after the visitor taps Use GPS there; that choice is
   remembered on the device until they switch back to the demo. GotchiGO (World) is the real GPS game: its Demo
-  switch opens the Test Layer instead of a local demo. A device that picked the demo on World before keeps it
-  until Use GPS in Map settings.
+  switch opens the Test Layer instead of a local demo. Since 14 Nov 2026 World has no demo pad at all
+  (`gameLayer.gpsOnly`, set when World links a Test Layer or runs on mainnet): no joystick, no arrow keys,
+  and a demo pick remembered from older builds is reset to GPS. Without location the map waits on
+  "Turn on location".
 - **Intents market.** The Test Layer shares World's NEAR Intents verifier record, but its Auras live in its own
   collectibles contract, so the server trades the market's collection (`nativeMarket.nfts`), not the record's
   `nftContract`.
