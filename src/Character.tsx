@@ -2,12 +2,14 @@ import { useEffect, useState } from "react";
 import { Ghost } from "./Ghost";
 import { AuraSprite, auraEdition } from "./aura-art";
 import { activeAuraSet } from "./aura-catalog.ts";
-import type { Item } from "./types";
+import { wearableStarterMarkup } from "./character-art";
+import type { Item, WornWearable } from "./types";
 import { tr } from "./i18n";
 export function Character({
   items,
   originTokenId,
   look,
+  wearables,
   compact = false,
   preview = false,
 }: {
@@ -15,6 +17,8 @@ export function Character({
   originTokenId?: string;
   /** Outfit tag of the worn gotchi (Player.appearance.look). */
   look?: string;
+  /** Wearable clones on the starter, drawn like the map marker does. */
+  wearables?: WornWearable[];
   compact?: boolean;
   preview?: boolean;
 }) {
@@ -60,6 +64,12 @@ export function Character({
           src={`/api/aavegotchi/skin?tokenId=${encodeURIComponent(originTokenId)}${look ? `&v=${encodeURIComponent(look)}` : ""}`}
           alt={tr("Verified original Aavegotchi")}
           onError={() => setFailed(true)}
+        />
+      ) : wearables?.length ? (
+        <span
+          className="ghost-art ghost-wearables"
+          aria-hidden="true"
+          dangerouslySetInnerHTML={{ __html: wearableStarterMarkup(wearables) }}
         />
       ) : (
         <Ghost color={avatar?.color} />

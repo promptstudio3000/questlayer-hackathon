@@ -4438,6 +4438,7 @@ export default function App() {
                         items={appearanceItems}
                         // originTokenId and look (outfit tag) of the worn original.
                       {...player.appearance}
+                        wearables={player.wearables}
                         compact
                       />
                       <span className="sr-only">{tr(", explorer profile")}</span>
@@ -4448,6 +4449,7 @@ export default function App() {
                         items={appearanceItems}
                         // originTokenId and look (outfit tag) of the worn original.
                       {...player.appearance}
+                        wearables={player.wearables}
                         compact
                       />
                       <span>
@@ -5105,6 +5107,7 @@ export default function App() {
                       items={appearanceItems}
                       // originTokenId and look (outfit tag) of the worn original.
                       {...player.appearance}
+                      wearables={player.wearables}
                     />
                   }
                   name={player.name}
