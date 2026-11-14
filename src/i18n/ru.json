@@ -3309,5 +3309,10 @@
   "Keepsake · {0}": "Память · {0}",
   "Open to you": "Открыто для тебя",
   "Profile of {0}": "Профиль {0}",
-  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "Гуляй по настоящим улицам, открывай сундуки и собирай QGOLD из общей казны."
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "Гуляй по настоящим улицам, открывай сундуки и собирай QGOLD из общей казны.",
+  "Staker soon": "Скоро стейкер",
+  "Staking tier: {0}. Open staking": "Уровень стейкинга: {0}. Открыть стейкинг",
+  "Your staking tier": "Ваш уровень стейкинга",
+  "Why stake?": "Зачем стейкать?",
+  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "Ваш стейк остаётся вашим. Его доход рассыпает QGOLD по улицам и открывает места уровней."
 }

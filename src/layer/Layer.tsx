@@ -28,6 +28,7 @@ import { Dialog } from "../Dialog";
 import { DemoControls } from "../DemoControls";
 import { Character } from "../Character";
 import { WorldSwitcher, type GameLayerConfig } from "../WorldSwitcher";
+import { StakeTierChip } from "../StakeTierChip";
 import { MapActions, type MapAction } from "../MapActions";
 import { ScreenTabs, Details } from "../ScreenTabs";
 import { InfoTip } from "../InfoTip";
@@ -97,7 +98,7 @@ export function Layer({
   player: Player;
   items: Item[];
   layer: PublicLayer;
-  onNavigate: (view: { tab: "explore" } | { tab: "settings"; profileView: "character" | "settings" }) => void;
+  onNavigate: (view: { tab: "explore" } | { tab: "fuel" } | { tab: "settings"; profileView: "character" | "settings" }) => void;
   gameLayer?: GameLayerConfig | null;
   buyParcel?: BuyParcel;
 }) {
@@ -545,6 +546,7 @@ export function Layer({
         <div className="hud-left">
           <button className="daily-board-chip" onClick={() => { setCommunityView("quests"); setSheet("community"); }} aria-label={tr("Expedition board")}><Compass size={18} /><b>{Math.min(storyOrder[progress?.story.stage || "expedition"], 5)}/5</b></button>
         </div>
+        <StakeTierChip fallbackTier={player.tier} refreshKey={player.id} onOpen={() => onNavigate({ tab: "fuel" })} />
         <div className="topbar-right">
           <div className="hud-bubble">
             <button className="profile-pill ml-player" onClick={onProfile} aria-label={tr("Profile")}>

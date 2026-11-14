@@ -3309,5 +3309,10 @@
   "Keepsake · {0}": "纪念品 · {0}",
   "Open to you": "已向你开放",
   "Profile of {0}": "{0} 的资料",
-  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "走过真实的街道，打开宝箱，从共享金库收集 QGOLD。"
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "走过真实的街道，打开宝箱，从共享金库收集 QGOLD。",
+  "Staker soon": "即将成为质押者",
+  "Staking tier: {0}. Open staking": "质押层级：{0}。打开质押",
+  "Your staking tier": "你的质押层级",
+  "Why stake?": "为什么要质押？",
+  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "你的质押始终归你所有。它的收益把 QGOLD 撒满街道，并开启各层级的地点。"
 }

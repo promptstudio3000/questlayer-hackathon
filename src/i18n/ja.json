@@ -3309,5 +3309,10 @@
   "Keepsake · {0}": "記念品 · {0}",
   "Open to you": "あなたに開放中",
   "Profile of {0}": "{0} のプロフィール",
-  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "本物の街を歩き、宝箱を開けて、共有の宝庫から QGOLD を集めよう。"
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "本物の街を歩き、宝箱を開けて、共有の宝庫から QGOLD を集めよう。",
+  "Staker soon": "まもなくステーカー",
+  "Staking tier: {0}. Open staking": "ステーキングのティア: {0}。ステーキングを開く",
+  "Your staking tier": "あなたのステーキングのティア",
+  "Why stake?": "なぜステークするの？",
+  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "ステークはあなたのもののまま。その利回りが街にQGOLDをまき、ティアの場所を開きます。"
 }
