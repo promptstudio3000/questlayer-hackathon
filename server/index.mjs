@@ -347,6 +347,9 @@ const gameLayerConfig = Object.freeze({
   // Until launch (Lubos, 13 Nov 2026) World sends a new visitor to the Test Layer; the picker
   // switches back to World and remembers it. DEFAULT_TEST_LAYER=1 on World, removed at launch.
   defaultTest: !TEST_LAYER && NETWORK === "testnet" && process.env.DEFAULT_TEST_LAYER === "1" && !!linkOrigin(process.env.TEST_LAYER_ORIGIN),
+  // GotchiGO is real GPS play only (Lubos, 14 Nov 2026): the demo pad lives in the Test Layer.
+  // A World server that links a Test Layer (or runs on mainnet) hides the pad; local/e2e servers keep it.
+  gpsOnly: !TEST_LAYER && (NETWORK === "mainnet" || !!linkOrigin(process.env.TEST_LAYER_ORIGIN)),
 });
 const deploymentManifestPath = existsSync(
   resolve(APP_ROOT, `public/${MANIFEST_SET}-deployment.json`),
