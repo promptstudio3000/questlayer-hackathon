@@ -5,6 +5,7 @@
 import type { ReactNode } from "react";
 import "./hud.css";
 import { tr } from "./i18n";
+import { compactXp } from "./reward-burst";
 
 export type HudXpRingProps = {
   level: number;
@@ -62,4 +63,19 @@ export function HudXpRing({ level, xp, levelStartXp, nextLevelXp, ring = null, n
 export function levelSummary({ level, xp, nextLevelXp }: Pick<HudXpRingProps, "level" | "xp" | "nextLevelXp">) {
   // Starts with the visible readout so the accessible name contains the visible text (WCAG 2.5.3).
   return tr("Lv {0} {1}/{2} XP, level {3} next", { 0: level, 1: xp.toLocaleString("en-US"), 2: nextLevelXp.toLocaleString("en-US"), 3: level + 1 });
+}
+
+/** XP counter beside the avatar. `pulse` changes on every XP gain and replays the bump. */
+export function HudXpCount({ xp, pulse = 0 }: { xp: number; pulse?: number }) {
+  return (
+    <span id="hud-xp-count" className="hud-xp-count">
+      <span key={pulse} className={`hud-xp-count-in${pulse ? " bump" : ""}`}>
+        <svg className="hud-xp-star" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+          <path d="M12 2.5l2.9 6 6.6.9-4.8 4.6 1.2 6.5L12 17.4l-5.9 3.1 1.2-6.5L2.5 9.4l6.6-.9z" />
+        </svg>
+        <b>{compactXp(xp)}</b>
+        <span className="sr-only"> XP</span>
+      </span>
+    </span>
+  );
 }
