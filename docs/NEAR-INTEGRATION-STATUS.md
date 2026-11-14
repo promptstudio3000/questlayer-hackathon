@@ -1,5 +1,7 @@
 # Native integration status and next release gates
 
+> **Superseded (14 Nov 2026).** This is a dated record kept as history. Units and numbers here are out of date (the game uses QGOLD, 1 NEAR = 1B QGOLD). The current description is the [README](../README.md) and the in-game wiki at `/wiki`.
+
 Reviewed 31 October 2026. This document records implementation and read-only evidence for W05/W06, with dependencies on W03, W04 and W07. It does not close a roadmap milestone or authorize a mainnet release. Product amounts below are **test NEAR**, with no monetary value. One NEAR displays as 1,000 GOLD; GOLD is not a separate token.
 
 ## What this change implements

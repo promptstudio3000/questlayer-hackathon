@@ -29,6 +29,8 @@ import { arc, blendedApr, niceScale, num, qgoldCount, QGOLD_B_TOKENS, rateB, sim
 type Bucket = { bucket: "staked" | "lst" | "stable" | "near"; current: string; currentBps: number; policyBps: number };
 type Mix = {
   network: string;
+  /** Set when this host shows GotchiGO's treasury (the Test Layer has none of its own). */
+  mirroredFrom?: string;
   account: string;
   vault: string | null;
   policy: { maxProtocolBps: number; maxUtilBps: number; maxMoveBps: number; driftBps?: number; target?: Targets };
@@ -873,6 +875,7 @@ const SAFETY = [
 
 type Dao = VoteView & {
   network: string;
+  mirroredFrom?: string;
   trezu: string | null;
   council?: string[];
   approvals?: number | null;
@@ -1212,6 +1215,12 @@ export default function TreasuryPage() {
           {network ? <span className="tr-chip">{network === "mainnet" ? "NEAR mainnet" : "NEAR testnet"}</span> : null}
         </div>
         <p className="tr-hero-sub">The game's shared money, all of it on chain. The treasury is never spent: only its yield pays for the coins on the map.</p>
+        {m?.mirroredFrom ? (
+          <p className="tr-hero-sub tr-mirror-note">
+            You are on the Test Layer, the practice copy of the game. There is one treasury, and it belongs to{" "}
+            <a href={`${m.mirroredFrom}/treasury`}>GotchiGO</a>: the treasury, its yield and the vote shown here are GotchiGO's own, live. The prize pool and QGOLD below are the Test Layer's practice pool, filled by a sponsor so every visitor can try the whole game.
+          </p>
+        ) : null}
         <div className="tr-hero-grid">
           <div className="tr-hero-main">
             <div className="tr-hero-card">
@@ -1232,7 +1241,7 @@ export default function TreasuryPage() {
                 <Plant size={20} weight="duotone" aria-hidden="true" />
                 <span>
                   Yield per day
-                  <InfoTip label="What is the daily yield?">The NEAR the treasury earns in a day at that rate. This is what goes to the map as coins and zone prizes; the treasury itself stays.</InfoTip>
+                  <InfoTip label="What is the daily yield?">The NEAR the treasury earns in a day at that rate. It reaches the map once the validators pay it out: every day takes a seventh of the yield that has arrived and is not yet spent, so the map is paid every day, even when the amounts are tiny. The treasury itself stays.</InfoTip>
                 </span>
                 <b>{perDay != null ? `${num(perDay, 3)} NEAR` : pendingValue(mix)}</b>
               </div>
@@ -1362,7 +1371,14 @@ export default function TreasuryPage() {
             {d ? (
               <>
                 <Section id="tr-dao" title="Weekly treasury vote" lead="Explorers choose how the shared treasury is held. The council carries out the result.">
-                  <TreasuryVoteCard initial={d} />
+                  {d.mirroredFrom ? (
+                    <p className="eco-muted">
+                      This is GotchiGO's live tally. Explorers cast their votes in{" "}
+                      <a href={`${d.mirroredFrom}/treasury#vote`}>GotchiGO</a>, where the treasury lives.
+                    </p>
+                  ) : (
+                    <TreasuryVoteCard initial={d} />
+                  )}
                 </Section>
                 <Section id="tr-who" title="Who decides">
                   <DaoFacts d={d} />

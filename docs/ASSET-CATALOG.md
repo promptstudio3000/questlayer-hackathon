@@ -123,7 +123,7 @@ Sprites are original project motifs (silver footprints, altar flames, compass ro
 | Edition | Source | Rarity | Slot | How | Claim prefix |
 | --- | --- | --- | --- | --- | --- |
 | Patron's Lantern (`patron`) | npc | epic | above | Finish the Patron's Path (three patron lines, Tier 2 stakers; `server/npc/patron-path.mjs`) | `earned:npc:` |
-| Hackathon Pennant (`season`) | season | epic | above | Reach the hackathon season goal before 14 Nov 2026 23:59:59 UTC (`server/season/`, `docs/SEASON.md`) | `earned:season:` |
+| Hackathon Pennant (`season`) | season | epic | above | No longer awarded: the season was removed on 14 Nov 2026; the edition stays in the collectibles contract | `earned:season:` |
 
 Both are awarded once per player through `earned_editions` and never drop from chests. Sprites are original project motifs (three gate lanterns with a patron seal; a ring of pennant flags with a season star) in `src/aura-art-data.ts`; covers come from `scripts/generate-explorer-assets.mjs`. Rendered sheet: `output/qa/patron-season-editions/patron-season-sprites.png`. Both sit in the Wayfarers set (cosmetic bonus only).
 

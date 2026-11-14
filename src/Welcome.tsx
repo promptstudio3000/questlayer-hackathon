@@ -94,7 +94,7 @@ export function Welcome({
             <h1 tabIndex={-1} autoFocus>
               {tr("Your city.")} <em>{tr("Your haunt to explore.")}</em>
             </h1>
-            <p className="signin-sub">{tr("Walk real streets and open chests.")}</p>
+            <p className="signin-sub">{tr("Walk real streets, open chests and gather QGOLD from a shared treasury.")}</p>
             {error && (
               <p className="inline-error" role="alert">
                 {error}

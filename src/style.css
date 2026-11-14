@@ -2616,6 +2616,7 @@ select {
   font-size: 12px;
   max-width: 150px;
 }
+.other-player-marker > span small { margin-left: 4px; padding: 0 4px; border-radius: 4px; background: #efe6fb; color: #5b2fb3; font-size: 10px; font-weight: 700; }
 
 /* The dressing room loads its renderer and a bounded model only on request. */
 .character-room > header { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }

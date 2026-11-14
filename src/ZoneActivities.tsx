@@ -25,7 +25,7 @@ const at = (ms: number, timeZone?: string) => {
 };
 
 /** Today in this zone as one row of icon facts: open window, progress, what is left, reset. */
-export function ZoneSchedule({ zone, quests, now, timezone }: { zone: Zone; quests: Quest[]; now: number; timezone?: string }) {
+export function ZoneSchedule({ zone, quests, now, timezone, playerTier }: { zone: Zone; quests: Quest[]; now: number; timezone?: string; playerTier?: number }) {
   const s = zoneSchedule(zone, quests, now, timezone);
   const allDay = s.closesAt >= s.resetAt - 60000;
   const window =
@@ -48,14 +48,15 @@ export function ZoneSchedule({ zone, quests, now, timezone }: { zone: Zone; ques
   return (
     <ul className="zone-facts" aria-label={tr("Today in this zone")}>
       <li className="zone-facts-tier">
-        <Badge tone={zone.tier === 1 ? "green" : "purple"}>
-          {zone.tier === 1 ? tr("Free") : tr("Tier {0}", { 0: zone.tier })}
+        {/* A higher-tier zone the explorer may already enter reads as open, not as a lock. */}
+        <Badge tone={zone.tier === 1 || (playerTier ?? 0) >= zone.tier ? "green" : "purple"}>
+          {zone.tier === 1 ? tr("Free") : (playerTier ?? 0) >= zone.tier ? tr("Open to you") : tr("Tier {0}", { 0: zone.tier })}
         </Badge>
       </li>
       {fact(window, <Clock size={16} aria-hidden="true" />, windowShort, s.phase === "open" ? "open" : "closed")}
       {fact(tr("Done today: {0} of {1} activities", { 0: s.done, 1: s.total }), <Flag size={16} aria-hidden="true" />, `${s.done}/${s.total}`)}
       {s.xp > 0 && fact(tr("Still to win today:") + " " + tr("{0} XP", { 0: s.xp }), <Sparkle size={16} aria-hidden="true" />, tr("{0} XP", { 0: s.xp }))}
-      {s.gold_u > 0 && fact(tr("Still to win today:") + " " + tr("{0} QGOLD", { 0: gold(s.gold_u) }), <CoinIcon />, gold(s.gold_u))}
+      {s.gold_u > 0 && fact(tr("Still to win today:") + " " + tr("{0} QGOLD", { 0: gold(s.gold_u) }), <CoinIcon />, tr("{0} QGOLD", { 0: gold(s.gold_u) }))}
       {s.loot.length > 0 && (
         <li className="zone-facts-auras" title={tr("Still to win today:") + " " + tr("chest Auras: {0}", { 0: s.loot.map((l) => l.name).join(", ") })}>
           {s.loot.map((l) => l.src && <img key={l.id} src={l.src} alt="" className={`rarity-${l.rarity || "common"}`} loading="lazy" />)}
@@ -114,7 +115,7 @@ export function ZoneActivities({
       className="zone-activity-panel"
       aria-label={tr("Choose another activity")}
     >
-      <ZoneSchedule zone={zone} quests={quests} now={now} timezone={timezone} />
+      <ZoneSchedule zone={zone} quests={quests} now={now} timezone={timezone} playerTier={playerTier} />
       {zone.tier > playerTier ? (
         lockedContent
       ) : (

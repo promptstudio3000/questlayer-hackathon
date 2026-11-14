@@ -144,11 +144,11 @@ test("first guardian win pays Wardbreaker, first Pocket Wisp win pays the Wisp H
   assert.deepEqual(names, ["Wardbreaker Horns", "Will-o'-Wisp Halo"]);
 });
 
-test("awardEditionOnce: only NPC/monster/season editions, never twice, never after a sale, not when already held", () => {
+test("awardEditionOnce: only NPC/monster editions, never twice, never after a sale, not when already held", () => {
   const db = openDatabase(":memory:");
   const p = createPlayer(db, "Collector"),
     q = createPlayer(db, "Buyer");
-  assert.deepEqual([...EARNED_EDITION_IDS].sort(), ["bossbane", "chronicle", "ledger", "patron", "pilgrim", "season", "wardbreaker", "wisp"]);
+  assert.deepEqual([...EARNED_EDITION_IDS].sort(), ["bossbane", "chronicle", "ledger", "patron", "pilgrim", "wardbreaker", "wisp"]);
   assert.equal(awardEditionOnce(db, p, "gold", "x", NOW), null, "chest editions are not awarded here");
   const item = awardEditionOnce(db, p, "bossbane", "monster:boss:w1", NOW);
   assert.equal(item.name, "Bossbane Fangring");

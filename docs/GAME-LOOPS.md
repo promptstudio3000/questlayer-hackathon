@@ -130,7 +130,7 @@ monster power is level + skill, no wagering.
 | 3. New staker (deposit confirmed) | A pending patron badge on the avatar, a countdown to E+2, NPCs greet "future patron" | E+2 ceremony: the badge lights up, locked chips at NPCs turn on, one welcome quest line opens. |
 | 3b. Staker (2 NEAR matured, patron rank 0) | Inner vault, stake today card, patron chapter 1 at L2; the rest of the patron line, patron Aura and trader rates at L4 | Tier 2 lines and the boss seat preview (Tier 2 + L6). |
 | 4. Patron (Tier 2) | Patron quest lines, patron trader rates, patron-only cosmetics, "your stake today" card | Patron rank grows with matured stake days; Tier 3 preview is visible the same way. |
-| 5. High patron (Tier 3) | Tier 3 zone, the rare wanderer's patron option, season leaderboard flair | Season pot and cosmetic ranks keep them in. |
+| 5. High patron (Tier 3) | Tier 3 zone, the rare wanderer's patron option | Cosmetic ranks keep them in. |
 
 ### Stakers-only lures (respecting the rules)
 
