@@ -93,3 +93,21 @@ mainnet needs later.
    Layer's signing vault).
 4. Cut-over: in `deploy/questlayer-hackathon.service` set `TEST_LAYER_ORIGIN=https://questlayer-test.promptstudio3000.com`
    and delete `TEST_SEED=1` and `DEMO_ZONES=plzen-compact`, then deploy World.
+
+## Reward worker key allowance
+
+The reward worker (World and Test Layer alike) signs its contract calls with a function-call key on the
+rewards account, bounded to at most 1 NEAR of allowance. Every transaction must find its whole prepaid gas,
+priced at NEAR's pessimistic gas price, still in the allowance; unused gas comes back. When the allowance
+runs below that, the worker stalls with `AccessKeyNotEnoughAllowance` and coins stay pending (Test Layer,
+13 Nov 2026 22:59 UTC: 0.28 NEAR left, each call reserved 0.28 NEAR for 280 TGas).
+
+- Each call attaches only the gas its method needs (`workerGas` in `server/native/reward-worker.mjs`):
+  `claim_payout` 20 + 31 TGas per leaf + 10, closes 150, `maintain_vault` 280, everything else 100.
+- `/api/health` → `nativeRewards.worker.allowance` shows what is left (`near`, `low` below 0.35 NEAR,
+  checked every 10 minutes); a low key also logs a warning to the journal.
+- Refresh: a release-runner job running `scripts/refresh-reward-worker-key.mjs --account <rewards account>
+  --key-file .data/near-operator.json` (the operator key is the account's full-access key). It deletes the
+  same key and adds it back with the same methods and 1 NEAR, in one transaction; a rerun with 0.9 NEAR or
+  more left does nothing. The worker rebuilds its signer after a failed send, so it picks up the new nonce
+  without a restart.

@@ -1,0 +1,6 @@
+{
+  "id": "c1-reward-key-testlayer",
+  "script": "scripts/refresh-reward-worker-key.mjs",
+  "args": ["--account", "questlayer-rewards-tl1112.testnet", "--key-file", ".data/near-operator.json"],
+  "note": "Test Layer reward worker key ran out of allowance (0.28 NEAR) 13 Nov 22:59 UTC: re-add the same key with 1 NEAR."
+}

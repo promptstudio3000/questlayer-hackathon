@@ -64,6 +64,11 @@ const FORBIDDEN_FILES = [
   /(^|\/)held-keys\//,
   /\.(pem|key)$/,
   /\.sqlite(-.*)?$/,
+  // Browser sign-in state: Playwright storageState files hold live session cookies.
+  // `undefined/` is where a script lands when its output-dir variable is unset.
+  /^undefined\//,
+  /(^|\/)playwright\/\.auth\//,
+  /(storage-?state|auth-?state)[^/]*\.json$/i,
 ];
 
 // Added lines that look like secrets. NEAR private keys are `ed25519:` + ~88
@@ -73,6 +78,8 @@ const SECRET_PATTERNS = [
   [/"(private_key|secret_key)"\s*:\s*"[^"]{20,}"/, "private key field"],
   [/-----BEGIN [A-Z ]*PRIVATE KEY-----/, "PEM private key"],
   [/\bsk-[A-Za-z0-9_-]{32,}/, "API key (sk-...)"],
+  [/"httpOnly"\s*:\s*(true|false)/, "browser cookie dump (Playwright storageState)"],
+  [/\b(questlayer-hackathon|questlayer-management|auratrail)=[A-Za-z0-9_-]{32,}/, "session cookie"],
   [/\b(OLLAMA_API_KEY|NEAR_AI_API_KEY|ANTHROPIC_API_KEY|OPENAI_API_KEY)\s*=\s*['"]?[A-Za-z0-9._-]{16,}/, "API key assignment"],
 ];
 
@@ -99,7 +106,9 @@ const paths = [...new Set([...changed, ...renamedFrom])];
 
 const problems = [];
 
-for (const p of paths) {
+// Deleting a leaked file is the fix, so only paths that exist at head count.
+const present = git("diff", "--name-only", "--no-renames", "--diff-filter=d", range).split("\n").filter(Boolean);
+for (const p of present) {
   if (FORBIDDEN_FILES.some((re) => re.test(p))) problems.push(`${p}: secret or state file, never commit it`);
 }
 
@@ -108,7 +117,7 @@ const added = git("diff", "--unified=0", "--no-color", range)
   .filter((l) => l.startsWith("+") && !l.startsWith("+++"));
 for (const line of added) {
   for (const [re, what] of SECRET_PATTERNS) {
-    if (re.test(line)) problems.push(`added line looks like a ${what}: ${line.slice(0, 60)}…`);
+    if (re.test(line)) problems.push(`an added line looks like a ${what} (content not printed)`);
   }
 }
 
