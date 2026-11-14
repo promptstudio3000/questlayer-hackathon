@@ -5,7 +5,7 @@ games on the real map. Players start with a name only. Behind the scenes each pl
 and items settle on chain, and the gas is sponsored, so there are no wallet popups, seed phrases or gas prompts.
 The chain lives in Settings and on the public treasury page, not in the game.
 
-The economy is **stake-to-play without loss**: NEAR goes into staking and yield vaults, the principal can always
+The economy is **stake-to-play with the principal kept**: NEAR goes into staking and yield vaults, the principal can always
 be withdrawn, and only the *realized yield* flows into the treasury and is paid out as daily rewards in **QGOLD**,
 the game's name for a share of that treasury. More players never print more money. QGOLD is a scarce in-game
 currency backed by real yield, not an income: at today's testnet yield a coin is worth a fraction of a cent, and it
