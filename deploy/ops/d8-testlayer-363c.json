@@ -1,0 +1,6 @@
+{
+  "id": "d8-testlayer-363c",
+  "deployTarget": "testlayer",
+  "installKeys": [],
+  "note": "Test Layer at the World release with #363 head 8552bb01: season removed (retired schema kept registered), review leftovers, profile pill a11y."
+}
