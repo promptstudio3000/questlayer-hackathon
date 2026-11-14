@@ -47,6 +47,11 @@ export function allowedWorkerMethods(names) {
 // key stalled with 0.28 NEAR still unspent). Unused gas is refunded, so this is
 // headroom, not cost: attach only what each method needs.
 const TGAS = 10n ** 12n;
+// Largest allowance the worker accepts on its function-call key (testnet only,
+// checked at start). 10 NEAR: the key can only call the reward methods on its own
+// contract, so the allowance is a gas budget; at ~0.3-0.7 NEAR/day this keeps the
+// worker running for well over a week between refreshes.
+export const WORKER_ALLOWANCE_MAX = 10n * 10n ** 24n;
 export const PAYOUT_CLAIM_TGAS = { base: 20n, perLeaf: 15n + 10n + 6n, headroom: 10n };
 export function workerGas(method, args) {
   if (method === "claim_payout") {
@@ -106,7 +111,7 @@ export async function rewardTransport(
     p &&
       p.receiver_id === contractId &&
       p.allowance !== null &&
-      BigInt(p.allowance) <= 10n ** 24n &&
+      BigInt(p.allowance) <= WORKER_ALLOWANCE_MAX &&
       allowed,
     "Worker key must have only bounded reward methods.",
     503,

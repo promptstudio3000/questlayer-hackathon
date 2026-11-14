@@ -7,7 +7,8 @@
 // worker stalls ("AccessKeyNotEnoughAllowance") and coins stay pending. A key's
 // allowance can't be raised in place, so this deletes the same key and adds it
 // back in one transaction: same public key, same receiver, same methods, a
-// fresh allowance (at most 1 NEAR, the bound the worker accepts). The worker's
+// fresh allowance (--allowance-near, default 8 NEAR; at most WORKER_ALLOWANCE_MAX,
+// the bound the worker accepts). The worker's
 // key file stays valid; the worker rebuilds its signer after the failed send
 // and picks up the new nonce (a restart does the same).
 //
@@ -17,16 +18,15 @@
 //
 // --key-file is a full-access key of --account (for accounts the deploy made,
 // the operator key). --public-key picks the worker key when the account has more
-// than one function-call key. --min-near (default 0.9) skips a key that already
+// than one function-call key. --min-near (default 2) skips a key that already
 // has at least that much left, so a rerun does nothing.
 import { readFileSync, statSync } from "node:fs";
 import assert from "node:assert/strict";
 import { Account, KeyPairSigner, PublicKey, actions } from "near-api-js";
 import { createNearProvider } from "../server/near-provider.mjs";
-import { allowedWorkerMethods } from "../server/native/reward-worker.mjs";
+import { allowedWorkerMethods, WORKER_ALLOWANCE_MAX } from "../server/native/reward-worker.mjs";
 
 const NEAR = 10n ** 24n;
-const ALLOWANCE = NEAR; // the worker refuses a key with more (server/native/reward-worker.mjs)
 const arg = (name) => {
   const i = process.argv.indexOf(name);
   return i > 0 ? process.argv[i + 1] : undefined;
@@ -35,12 +35,16 @@ const execute = process.argv.includes("--execute");
 const accountId = arg("--account");
 const keyFile = arg("--key-file") || ".data/near-operator.json";
 const only = arg("--public-key");
-const minNear = Number(arg("--min-near") ?? 0.9);
+const minNear = Number(arg("--min-near") ?? 2);
+const allowanceNear = Number(arg("--allowance-near") ?? 8);
 const near = (y) => (y === null ? null : Number(BigInt(y) / 10n ** 18n) / 1e6);
 const log = (o) => console.log(JSON.stringify(o));
 
 assert.match(accountId || "", /^[a-z0-9._-]+\.testnet$/, "--account must be a testnet account.");
-assert.ok(Number.isFinite(minNear) && minNear >= 0 && minNear <= 1, "--min-near is 0 to 1.");
+assert.ok(Number.isInteger(allowanceNear) && allowanceNear >= 1, "--allowance-near is a whole number of NEAR.");
+const ALLOWANCE = BigInt(allowanceNear) * NEAR;
+assert.ok(ALLOWANCE <= WORKER_ALLOWANCE_MAX, "The worker refuses a key with more than WORKER_ALLOWANCE_MAX.");
+assert.ok(Number.isFinite(minNear) && minNear >= 0 && minNear < allowanceNear, "--min-near is 0 to below --allowance-near.");
 const key = JSON.parse(readFileSync(keyFile, "utf8"));
 assert.equal(key.network, "testnet", "Testnet key only.");
 assert.equal(statSync(keyFile).mode & 0o077, 0, "The key file must be private (chmod 600).");
