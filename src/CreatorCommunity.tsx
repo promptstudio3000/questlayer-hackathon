@@ -35,8 +35,7 @@ import {
   type CreatorMoneyBridge,
 } from "./CreatorMoney";
 import { api, ApiError, meters } from "./api";
-import { parseAccessPrice, nearText } from "./creator-money-quote";
-import { formatNativeNear } from "./native-amounts";
+import { parseQgoldAmount, qgoldOfYocto } from "./qgold-display";
 import { Dialog } from "./Dialog";
 import { InfoTip } from "./InfoTip";
 import { mapKitUrl } from "./map-kit";
@@ -1066,7 +1065,7 @@ function QuestCards({
               }
               reward={
                 quest.price ? (
-                  <span>{nearText(quest.price)} NEAR</span>
+                  <span>{qgoldOfYocto(quest.price)} QGOLD</span>
                 ) : (
                   <span className="cl-free">{tr("Free")}</span>
                 )
@@ -1420,7 +1419,7 @@ function QuestDetail({
         <h3>{title}</h3>
         <InfoTip label={title}>
           {quest?.price
-            ? tr("Paid unlock {0} NEAR, supports the creator", { 0: nearText(quest.price) })
+            ? tr("Paid unlock {0} QGOLD, supports the creator", { 0: qgoldOfYocto(quest.price) })
             : tr("Free quest")}
           {" · "}{tr("Revision")}{" "}{revision}
           {". "}{tr("A reviewer checks your answer, up to 3 tries. Starting keeps this version of the quest for you. No XP, item or QGOLD reward is set, and nobody checks GPS or a physical visit.")}
@@ -1449,7 +1448,7 @@ function QuestDetail({
         )}
         {!place && <li><Globe size={16} weight="bold" aria-hidden="true" />{tr("Anywhere")}</li>}
         <li className={quest?.price ? "" : "qd-free"}>
-          {quest?.price ? `${nearText(quest.price)} NEAR` : tr("Free")}
+          {quest?.price ? `${qgoldOfYocto(quest.price)} QGOLD` : tr("Free")}
         </li>
       </ul>
       {requirement && (
@@ -2096,12 +2095,13 @@ function QuestEditor({
     quest?.draft.price && quest.draft.price !== "0" ? quest.draft.price : "";
   const [paid, setPaid] = useState(!!savedPrice);
   const [priceText, setPriceText] = useState(
-    savedPrice ? formatNativeNear(savedPrice) : "",
+    savedPrice ? qgoldOfYocto(savedPrice) : "",
   );
   let priceValue = "0",
     priceProblem = "";
   try {
-    priceValue = paid ? parseAccessPrice(priceText) : "0";
+    // Typed in QGOLD: 10M to 10B (0.01 to 10 NEAR, the contract's bounds).
+    priceValue = paid ? parseQgoldAmount(priceText, 10_000_000, 10_000_000_000, true) : "0";
     if (paid && priceValue === "0")
       priceProblem = tr("Enter a price, or keep it free.");
   } catch (error) {
@@ -2469,10 +2469,10 @@ function QuestEditor({
           </label>
           {paid && (
             <label htmlFor="creator-quest-price">
-              {tr("Price in NEAR (0.01 to 10)")}<input
+              {tr("Price in QGOLD (10M to 10B)")}<input
                 id="creator-quest-price"
-                inputMode="decimal"
-                placeholder="0.5"
+                inputMode="text"
+                placeholder="500M"
                 value={priceText}
                 onChange={(e) => setPriceText(e.target.value)}
                 aria-invalid={!!priceProblem}
@@ -2484,7 +2484,7 @@ function QuestEditor({
           )}
           {paid && !priceProblem && (
             <p className="creator-hint">
-              {nearText(priceValue)} {" "}{tr("NEAR. The price goes live after review; people who already unlocked keep access.")}</p>
+              {qgoldOfYocto(priceValue)} {" "}{tr("QGOLD. The price goes live after review; people who already unlocked keep access.")}</p>
           )}
         </fieldset>
         <label htmlFor="creator-quest-title">
@@ -2586,7 +2586,7 @@ function QuestEditor({
               setPoints(savedPlace?.points ?? []);
               setPlaceError("");
               setPaid(!!savedPrice);
-              setPriceText(savedPrice ? formatNativeNear(savedPrice) : "");
+              setPriceText(savedPrice ? qgoldOfYocto(savedPrice) : "");
               setQuote(null);
               setAccepted(false);
             }}
