@@ -216,7 +216,6 @@ import {
   PaperPlane,
   ShieldCheck,
   Key,
-  Eye,
   Flag,
   TrendUp,
   Lightning,
@@ -5469,17 +5468,6 @@ export default function App() {
       </button>}
       {player && (
         <>
-          {presence && others.length > 0 && (
-            <button
-              className="presence-chip"
-              aria-label={tr("Stop showing me to nearby explorers")}
-              onClick={() => changeSharePosition(false)}
-            >
-              <Eye size={14} />{" "}
-              {tr("Visible nearby · {0} near", { 0: others.length })}{" "}
-              <X size={12} />
-            </button>
-          )}
           {searchHere && (
             <button
               className="map-search-here"
