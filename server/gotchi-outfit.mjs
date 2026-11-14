@@ -83,6 +83,37 @@ export function setOutfitSlot(db, player, slot, itemId, now = Date.now()) {
   return next;
 }
 
+/**
+ * Inventory "Try it on" / "Take it off" for an explorer who wears one of their
+ * own Aavegotchis: the original draws its own gear, so the wearable goes into
+ * the outfit too (Lubos, 14 Nov 2026: a picked-up wearable never showed on
+ * his avatar). Taking it off gives the slot back to the gotchi's real gear.
+ * Does nothing while the explorer wears the starter.
+ */
+export function mirrorWearableToOutfit(db, player, itemId, equipped, now = Date.now()) {
+  const row = db.prepare("SELECT appearance FROM players WHERE id=?").get(player);
+  const appearance = parse(row?.appearance);
+  const item = WEARABLES.get(Number(itemId));
+  if (!appearance.originTokenId || !item) return null;
+  const outfit = appearance.outfit || {};
+  const slots = Object.keys(OUTFIT_SLOTS).filter((slot) => CATALOG_SLOT[slot] === item.slot);
+  if (!equipped) {
+    const worn = slots.find((slot) => Number(outfit[OUTFIT_SLOTS[slot]]) === item.id);
+    return worn ? setOutfitSlot(db, player, worn, null, now) : null;
+  }
+  if (slots.some((slot) => Number(outfit[OUTFIT_SLOTS[slot]]) === item.id)) return null;
+  // The Inventory wears one item per kind, so a hand item replaces a hand
+  // the Inventory put on before, else takes a free hand, else the left one.
+  const clones = new Set(
+    db.prepare("SELECT item_id FROM wearable_clones WHERE player_id=?").all(player).map((r) => r.item_id),
+  );
+  const slot =
+    slots.find((s) => clones.has(Number(outfit[OUTFIT_SLOTS[s]]))) ||
+    slots.find((s) => !Number(outfit[OUTFIT_SLOTS[s]])) ||
+    slots[0];
+  return slot ? setOutfitSlot(db, player, slot, item.id, now) : null;
+}
+
 /** Drops outfit items the explorer no longer owns (sold, or the wallet link expired). */
 export function ownedOutfit(db, player, outfit, now = Date.now()) {
   if (!outfit || !Object.keys(outfit).length) return {};

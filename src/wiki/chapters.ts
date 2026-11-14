@@ -540,14 +540,15 @@ export const CHAPTERS: Chapter[] = [
     hero: "wearable-rarity",
     status: "live",
     updated: "2026-11-14",
-    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/player-waves.mjs", "server/demo-bot-chat.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx", "server/player-journey.mjs", "src/CharacterJourney.tsx", "src/StakeEarn.tsx", "src/FuelTheCity.tsx", "server/gotchi-models.mjs"],
+    sources: ["docs/PLAYER-CARDS.md", "server/gotchi-wearables.mjs", "server/gotchi-outfit.mjs", "src/Character.tsx", "server/player-waves.mjs", "server/demo-bot-chat.mjs", "src/PlayerCard.tsx", "server/origin-sync.mjs", "server/aavegotchi.mjs", "src/WearableMoment.tsx", "src/Inventory.tsx", "src/OwnedGotchis.tsx", "server/player-journey.mjs", "src/CharacterJourney.tsx", "src/StakeEarn.tsx", "src/FuelTheCity.tsx", "server/gotchi-models.mjs"],
     blocks: [
       { h: "Wearable finds" },
       {
         list: [
           "The catalogue is read from the Aavegotchi contract on Base and the artwork is served from the contract, never copied. A find shows that pixel art inside the rarity ring of its map marker; unreadable art falls back to a sparkle.",
           "Picking one up is a normal street claim (GPS check, travel guard, XP caps). The clone is a database row, never an NFT: not tradable, no QGOLD value. It lands in Inventory → Wardrobe.",
-          "One item per slot (head, face, eyes, body, hand, pet), drawn at its official canvas place.",
+          "One item per slot (head, face, eyes, body, hand, pet), drawn at its official canvas place. **Try it on** shows it at once on the map character, the profile button, the Wardrobe and the profile; on the starter ghost the map shows the flat 2D look while something is worn.",
+          "Wearing one of your own Aavegotchis, Try it on puts the item into that gotchi's in-game outfit (a hand item takes a free hand); Take it off gives the slot back to the gotchi's real gear.",
           "**Verified originals:** link a Base wallet with a signed message and every clone whose original is in that wallet gets a gold check for 24 hours after the last read. Others see only verified, never the address.",
         ],
       },
