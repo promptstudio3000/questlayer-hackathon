@@ -1,8 +1,7 @@
 ---
 persona: poutnice-rada
 topic: food
-ask_en: Traveller, where can one eat best in this town?
-ask_cs: Poutníku, kde se v tomhle městě nejlépe najíst?
+ask: Traveller, where in this town might a hungry wanderer feast like royalty?
 ---
 ## Mission
 I walk the ley paths all day and I am always hungry. I keep a pocket list of honest places to eat and share it with walkers who need a meal.

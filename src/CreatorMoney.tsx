@@ -11,13 +11,14 @@ import {
 } from "@phosphor-icons/react";
 import { api, ApiError } from "./api";
 import {
-  nearText,
-  parseDonation,
   type CreatorMoneySnapshot,
   type CreatorPaymentRequest,
   type CreatorQuestMoney,
 } from "./creator-money-quote";
 import { tr } from "./i18n";
+import { parseQgoldAmount, qgoldOfNear, qgoldOfYocto } from "./qgold-display";
+// Gifts typed in QGOLD: 10M to 100B (0.01 to 100 NEAR, the contract's bounds).
+const parseGift = (text: string) => parseQgoldAmount(text, 10_000_000, 100_000_000_000);
 
 /** What the app hands the creator screens so they can pay without owning a signer. */
 export type CreatorMoneyBridge = {
@@ -193,7 +194,7 @@ export function CreatorSupport({
       ) : (
         <>
           <p className="creator-money-facts">
-            {nearText(chain.donations)} {" "}{tr("NEAR in gifts")}{chain.access_sold ? ` · ${chain.access_sold} unlocked` : ""}
+            {qgoldOfYocto(chain.donations)} {" "}{tr("QGOLD in gifts")}{chain.access_sold ? ` · ${chain.access_sold} unlocked` : ""}
           </p>
           {ownQuest ? (
             <p className="creator-hint">
@@ -210,12 +211,12 @@ export function CreatorSupport({
                   onClick={() =>
                     void pay(
                       { kind: "buy", questId },
-                      tr("Unlocking for {0} NEAR", { 0: nearText(chain.price) }),
+                      tr("Unlocking for {0} QGOLD", { 0: qgoldOfYocto(chain.price) }),
                     )
                   }
                 >
-                  <LockKeyOpen size={20} /> {" "}{tr("Unlock for")}{" "}{nearText(chain.price)}{" "}
-                  NEAR
+                  <LockKeyOpen size={20} /> {" "}{tr("Unlock for")}{" "}{qgoldOfYocto(chain.price)}{" "}
+                  QGOLD
                 </button>
               )}
               {price > 0n && !quest?.access && (
@@ -241,13 +242,13 @@ export function CreatorSupport({
                         {
                           kind: "donate",
                           questId,
-                          amount: parseDonation(amount),
+                          amount: parseGift(qgoldOfNear(amount)),
                         },
-                        tr("Sending {0} NEAR", { 0: amount }),
+                        tr("Sending {0} QGOLD", { 0: qgoldOfNear(amount) }),
                       )
                     }
                   >
-                    {tr("Give")}{" "}{amount} NEAR
+                    {tr("Give")}{" "}{qgoldOfNear(amount)} QGOLD
                   </button>
                 ))}
               </div>
@@ -256,10 +257,10 @@ export function CreatorSupport({
                 onSubmit={(event) => {
                   event.preventDefault();
                   try {
-                    const amount = parseDonation(custom);
+                    const amount = parseGift(custom);
                     void pay(
                       { kind: "donate", questId, amount },
-                      tr("Sending {0} NEAR", { 0: custom }),
+                      tr("Sending {0} QGOLD", { 0: qgoldOfYocto(amount) }),
                     );
                   } catch (error) {
                     setOutcome({
@@ -272,8 +273,8 @@ export function CreatorSupport({
                 <label htmlFor={`creator-gift-${questId}`}>{tr("Other amount")}</label>
                 <input
                   id={`creator-gift-${questId}`}
-                  inputMode="decimal"
-                  placeholder="0.2"
+                  inputMode="text"
+                  placeholder="200M"
                   value={custom}
                   onChange={(e) => setCustom(e.target.value)}
                 />
@@ -345,7 +346,7 @@ export function CreatorEarningsPanel({ money }: { money: CreatorMoneyBridge }) {
     );
     setOutcome(
       ok
-        ? { kind: "done", text: tr("{0} NEAR is on its way.", { 0: nearText(c?.credit) }) }
+        ? { kind: "done", text: tr("{0} QGOLD is on its way.", { 0: qgoldOfYocto(c?.credit) }) }
         : { kind: "failed", text: tr("Nothing moved. You can try again.") },
     );
     if (ok) setRefresh((n) => n + 1);
@@ -374,35 +375,35 @@ export function CreatorEarningsPanel({ money }: { money: CreatorMoneyBridge }) {
       ) : (
         <>
           <p className="creator-earnings-total">
-            <strong>{nearText(c?.credit)} NEAR</strong> {" "}{tr("ready to withdraw")}</p>
+            <strong>{qgoldOfYocto(c?.credit)} QGOLD</strong> {" "}{tr("ready to withdraw")}</p>
           <dl className="creator-earnings-grid">
             <div>
               <dt>{tr("Gifts")}</dt>
-              <dd>{nearText(c?.earned_donations)} NEAR</dd>
+              <dd>{qgoldOfYocto(c?.earned_donations)} QGOLD</dd>
             </div>
             <div>
               <dt>{tr("Unlocks")}</dt>
-              <dd>{nearText(c?.earned_access)} NEAR</dd>
+              <dd>{qgoldOfYocto(c?.earned_access)} QGOLD</dd>
             </div>
             <div>
               <dt>{tr("Daily rounds")}</dt>
-              <dd>{nearText(c?.earned_rounds)} NEAR</dd>
+              <dd>{qgoldOfYocto(c?.earned_rounds)} QGOLD</dd>
             </div>
             <div>
               <dt>{tr("Withdrawn")}</dt>
-              <dd>{nearText(c?.withdrawn)} NEAR</dd>
+              <dd>{qgoldOfYocto(c?.withdrawn)} QGOLD</dd>
             </div>
           </dl>
           {pending > 0n && (
             <p className="creator-hint">
-              {nearText(c?.pending)} {" "}{tr("NEAR from today's round settles after the round closes at midnight UTC. Withdraw opens then.")}</p>
+              {qgoldOfYocto(c?.pending)} {" "}{tr("QGOLD from today's round settles after the round closes at midnight UTC. Withdraw opens then.")}</p>
           )}
           <button
             className="primary-button"
             disabled={busy || credit === 0n || pending > 0n}
             onClick={() => void withdraw()}
           >
-            {tr("Withdraw")}{" "}{credit > 0n ? `${nearText(c?.credit)} NEAR` : ""}
+            {tr("Withdraw")}{" "}{credit > 0n ? `${qgoldOfYocto(c?.credit)} QGOLD` : ""}
           </button>
           <p className="creator-hint">
             {credit === 0n

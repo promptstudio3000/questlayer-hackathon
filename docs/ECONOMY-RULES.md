@@ -1,5 +1,7 @@
 # Economy rules (readable summary of the implemented numbers)
 
+> **Superseded (14 Nov 2026).** This is a dated record kept as history. Units and numbers here are out of date (the game uses QGOLD, 1 NEAR = 1B QGOLD). The current description is the [README](../README.md) and the in-game wiki at `/wiki`.
+
 Updated 1 November 2026. One page that states every number the game economy uses today, where it lives in
 code, and which numbers are versioned proposals rather than live behavior. Hackathon judges can read this
 instead of the source; developers change the value here and in the pointed file together.

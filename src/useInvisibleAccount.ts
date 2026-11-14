@@ -117,7 +117,10 @@ export function useInvisibleAccount(
         if (!account)
           throw Error("The explorer account could not be prepared.");
         setAccountId(account.accountId);
-        setStatus(account.state === "ready" ? "ready" : "creating");
+        // "ready" only once the device key is bound below: earlier, the account
+        // screens showed ready while deviceKey was still null, and wallet words
+        // or a device action answered "still being prepared".
+        if (account.state !== "ready") setStatus("creating");
         for (
           let attempt = 0;
           account.state === "creating" && attempt < 60;

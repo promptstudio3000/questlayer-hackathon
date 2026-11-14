@@ -10,13 +10,13 @@ conversations. Plan: https://claude.ai/artifact/UDffrVXsT3NKpjBNLjUstG
 | File | What |
 | --- | --- |
 | `server/npc/agents.mjs` | Topic catalog (`pub`, `food`, `sights`, `secret`, `view`), agent card loader, `missionFor` |
-| `server/data/npc-agents/*.md` | One card per persona; front matter `persona`, `topic`, `ask_en`, `ask_cs`; body goes into the system prompt |
+| `server/data/npc-agents/*.md` | One card per persona; front matter `persona`, `topic`, `ask` (English); body goes into the system prompt |
 | `server/npc/lore.mjs` | Schema module `npc-lore` v1 (`npc_lore`, `npc_lore_answers`), guard, NEAR AI judge, XP, tip facts |
 | `server/data/npc-lore/*.json` | Reviewed starter tips per place (`city:plzen`) |
 | `server/npc/lore-web.mjs` | Wikipedia GeoSearch (off unless `NPC_WEB_SEARCH=wikipedia`) |
 | `server/cli/npc-lore.mjs` | `npm run npc:lore -- list --database /abs/db --place city:plzen`, `set --id … --state hidden` |
 | `src/NpcChat.tsx` | Chat mode (lazy chunk) |
-| `server/data/npc-lines.json` | Each character's own small talk (hello, who, mood, help, thanks, bye, fun, unknown; cs + en). Template replies use it when the AI is off or busy; the AI gets a few lines as voice examples |
+| `server/data/npc-lines.json` | Each character's own small talk (hello, who, mood, help, thanks, bye, fun, unknown; English only). Template replies use it when the AI is off or busy; the AI gets a few lines as voice examples |
 
 ## API
 
@@ -65,3 +65,7 @@ One rewarded answer per NPC and day, and the XP also goes through the fair-play 
 week per place, the server asks `<lang>.wikipedia.org` GeoSearch for pages within 2.5 km of the
 NPC, keeps the first sentence of up to five intros as `web` sights for seven days. Only the
 coordinates are sent. Needs outbound HTTPS to `*.wikipedia.org` on the VPS.
+
+## Language
+
+NPCs always speak rich, vivid English, whatever language the player writes in. Players may write in Czech or any other language: the NPC understands it (small-talk intents also match Czech words) but answers in English. Persona cards, agent cards, small-talk lines and memory replies hold English text only.

@@ -112,6 +112,9 @@ export function paintMapSky(m: maplibregl.Map, phase: SkyPhase) {
       else if (source === "park" || layer.id.includes("wood")) set(layer.id, "fill-color", p.park);
       else if (source === "building") set(layer.id, "fill-color", p.building);
       else if (source === "landcover") set(layer.id, "fill-color", p.landcover);
+      // Built-up areas: the base style paints them near white, which glowed
+      // as white patches on the night globe. Tint them like buildings.
+      else if (source === "landuse") set(layer.id, "fill-color", p.building);
     }
     if (layer.type === "line" && source === "transportation")
       set(layer.id, "line-color", layer.id.includes("casing") ? p.casing : layer.id.includes("path") ? p.path : p.road);

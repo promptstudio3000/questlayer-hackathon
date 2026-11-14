@@ -1,6 +1,12 @@
 # How to try QuestLayer
 
-Updated 1 November 2026 (synced with the current UI labels). This is the living "try it from zero" guide; every delivery updates it.
+Updated 1 November 2026. This is the "try it from zero" guide for local setup, the QA server and the testnet scripts.
+
+> **Note, 14 November 2026.** The in-game labels in sections 1a and 6 were written for the build of 1 November and
+> several have changed since (the demo pad, the stake screen and the GPS switch were renamed or moved). For a click
+> path that matches the live game, follow [JUDGE-WALKTHROUGH.md](JUDGE-WALKTHROUGH.md), which was walked again on
+> 14 November.
+
 Each step says what to do and what you should see. Nothing here needs real money: the game runs on
 NEAR **testnet** and a separate demo ledger.
 
@@ -132,7 +138,7 @@ forwarding or a tunnel), because geolocation and passkeys require a secure origi
 
 Real iOS/Android field play, the relayer on a public host, a complete staking yield cycle and the App Store
 track remain open. Mainnet is not live; the gate and the minimal slice are in `docs/MAINNET-PLAN.md`.
-See `docs/STATUS.md`.
+See the [README](../README.md) and the in-game wiki (`/wiki`).
 
 ## 8. Cities
 

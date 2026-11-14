@@ -1,7 +1,8 @@
-// Schema module "season" v1 (docs/SEASON.md): one row per explorer and season
-// once they reach the season goal and claim the season mark. Standings are
-// derived from rows other slices already write (monster wins, boss hits, zone
-// checkpoints, NPC lines), so nothing here can drift or be bought.
+// Retired schema module "season" v1. The season was removed on 14 Nov 2026
+// (Lubos: no time-limited events for now); nothing reads or writes this table.
+// It stays registered only because live databases already hold it and the
+// schema check refuses unknown tables. The planned testnet DB wipe drops it,
+// together with this module.
 import { registerModuleSchema } from "../schema-compatibility.mjs";
 
 export const SEASON_SCHEMA = registerModuleSchema({

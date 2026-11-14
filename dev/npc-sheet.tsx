@@ -48,7 +48,7 @@ window.fetch = async (input, init) => {
   let body: unknown = reply;
   if (url.endsWith("/talk")) body = { ...reply, say: "Good question! Try the fountain.", emote: "think" };
   if (url.endsWith("/mission"))
-    body = { outcome: "new", say: "Díky! Na Spilce si zapíšu a povím to dalším.", xp: 30, mission: { ...reply.mission, answered: true, left: 2 } };
+    body = { outcome: "new", say: "Splendid, explorer! Na Spilce goes into my memory, and the next curious soul shall hear of it.", xp: 30, mission: { ...reply.mission, answered: true, left: 2 } };
   if (url.endsWith("/keeper")) body = { lines: ["Vault: 2.000 NEAR", "Pending yield: 0.004 NEAR"], stake: null };
   return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
 };

@@ -237,21 +237,22 @@ test("wikipedia search: off by default, coordinates only, plain text results", a
   assert.throws(() => createWikipediaSearch({ lang: "evil.example/" }), /not allowed/);
 });
 
-test("every NPC has its own small-talk lines in both languages", async () => {
+test("every NPC has its own small-talk lines, in English only", async () => {
   const { linesOf } = await import("../server/npc/talk.mjs");
   const { screenText } = await import("../server/ai/text-policy.mjs");
   for (const p of loadPersonas().values()) {
     const own = linesOf(p);
     assert.ok(own, `lines for ${p.id}`);
     for (const k of ["hello", "who", "mood", "help", "thanks", "bye", "fun", "unknown"])
-      for (const lang of ["cs", "en"]) {
-        const list = own[k]?.[lang];
-        assert.ok(Array.isArray(list) && list.length >= 1 && list.length <= 3, `${p.id}.${k}.${lang}`);
-        for (const line of list) {
-          assert.ok(line.length <= 200 && !/\d/.test(line), line);
-          assert.equal(screenText(line, ["reward-claim", "currency", "link-or-contact", "markup", "promise", "credential-request"]), null, line);
-        }
+    {
+      const list = own[k];
+      assert.ok(Array.isArray(list) && list.length >= 1 && list.length <= 3, `${p.id}.${k}`);
+      for (const line of list) {
+        assert.ok(line.length <= 200 && !/\d/.test(line), line);
+        assert.ok(!/[áčďěňřšťůž]/i.test(line.replace(/Ráda|Běla|Vojtěch|Tobiáš/g, "")), `English only: ${line}`);
+        assert.equal(screenText(line, ["reward-claim", "currency", "link-or-contact", "markup", "promise", "credential-request"]), null, line);
       }
+    }
   }
 });
 
@@ -263,11 +264,12 @@ test("template replies stay in character: small talk, then tips for place questi
   assert.equal(intentOf("ahoj vojto"), "hello");
   assert.equal(intentOf("díky moc"), "thanks");
   assert.equal(intentOf("řekni vtip"), "fun");
-  assert.match(templateReply(vojtech, [], { message: "Who are you?" }).say, /merchant of many pockets/);
-  assert.match(templateReply(vojtech, [], { message: "jak se máš?" }).say, /Výborně|Obchod/);
+  assert.match(templateReply(vojtech, [], { message: "Who are you?" }).say, /merchant of a thousand pockets/);
+  assert.match(templateReply(vojtech, [], { message: "jak se máš?" }).say, /Magnificent|Trade is brisk/);
   const tips = [{ id: "tip-0", text: "Explorers say (pubs and taprooms): Na Spilce serves fresh beer." }];
   const r = templateReply(vojtech, [], { message: "kde je dobrá hospoda?", tips });
-  assert.equal(r.say, "Průzkumníci mi říkali: Na Spilce serves fresh beer.");
+  // A Czech question still gets an English answer.
+  assert.match(r.say, /^(Explorers|Word|A fellow).*: Na Spilce serves fresh beer\.$/);
   assert.deepEqual(r.factIds, ["tip-0"]);
   // Different characters answer the same question differently.
   const bela = personaFor(BELA);

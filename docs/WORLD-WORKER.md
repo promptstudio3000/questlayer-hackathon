@@ -1,6 +1,6 @@
 # Daily city preparation
 
-Latest continuation: [five map/backend tasks](MAP-BACKEND-CONTINUATION-2026-11-01.md) adds street-data recovery, configured pedestrian graph validation, audited closures, optional viewport reads and a repeatable pilot. Its [566-test report](../output/qa/2026-11-map-backend/README.md) supersedes the suite count in the earlier delivery evidence below; it does not close field or release gates.
+Latest continuation: the five map/backend tasks add street-data recovery, configured pedestrian graph validation, audited closures, optional viewport reads and a repeatable pilot. Its [566-test report](../output/qa/2026-11-map-backend/README.md) supersedes the suite count in the earlier delivery evidence below; it does not close field or release gates.
 
 QuestLayer prepares today's and tomorrow's Plzeň geography in Europe/Prague time. Preparation is separate from financial world activation. It creates no coins, quests, staking positions, payouts or treasury reservations.
 

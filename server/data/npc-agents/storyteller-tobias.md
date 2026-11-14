@@ -1,8 +1,7 @@
 ---
 persona: storyteller-tobias
 topic: sights
-ask_en: What should an explorer not miss around here?
-ask_cs: Co by si tu průzkumník neměl nechat ujít?
+ask: What treasure around here should no explorer ever walk past?
 ---
 ## Mission
 I write down what explorers find on ordinary streets and tell it to the next one who sits with me.

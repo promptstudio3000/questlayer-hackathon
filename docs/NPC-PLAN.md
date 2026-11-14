@@ -52,7 +52,7 @@ archetype is code. The persona is reviewed data in `server/data/npcs/<city>.json
 ### 2.1 Storyteller
 - A chapter is 3–5 beats. Each beat is "go to landmark X (a reviewed city-pack place), answer or observe Y, come
   back". The beats are authored, versioned content, like `server/quest-templates.mjs`. The model only retells them
-  in the player's language and adds flavour from the persona card.
+  in rich, vivid English (NPCs never answer in another language) and adds flavour from the persona card.
 - Finishing a chapter grants XP once per account. The last chapter of a set grants a **story Aura** claim.
 - AI value: the chronicler remembers what you already heard, answers lore questions only from the chapter facts,
   and says "I don't know" otherwise.

@@ -22,6 +22,10 @@ import {
   mixPreset,
   mixShort,
   NEVER,
+  VOTING_POWER,
+  KEEPER_POWER,
+  powerFromCounts,
+  votingPowers,
 } from "../server/native/treasury-dao.mjs";
 import { HARD_LIMITS, mixSettings } from "../server/native/treasury-mix.mjs";
 import { decodeSignedDelegate } from "../server/relayer/delegate.mjs";
@@ -31,6 +35,7 @@ import { openDatabase, createPlayer, history } from "../server/database.mjs";
 import { initializeManagedAccounts } from "../server/relayer/schema.mjs";
 
 const DAO = "questlayer-treasury.sputnik-v2.testnet";
+const DAY = 86_400_000;
 const KEEPER = "keeper.op.testnet";
 const COUNCIL = ["op.testnet", "council-a.op.testnet", "council-b.op.testnet"];
 
@@ -223,4 +228,94 @@ test("the signing vault signs a poll vote without the approval window, anything 
 
 test("explorersRole rebuilds the role with the same never-finalizing vote policy", () => {
   assert.deepEqual(explorersRole(["b.testnet", "a.testnet", "a.testnet"]).kind.Group, ["a.testnet", "b.testnet"]);
+});
+
+test("voting power mixes days of play, XP, followers and quests others played, each capped, 100 at most", () => {
+  // Level 3 (400 XP) after three days of play: 3 + 9.
+  assert.deepEqual(powerFromCounts({ days: 3, xp: 400 }).parts, { days: 3, xp: 9, followers: 0, plays: 0 });
+  assert.equal(powerFromCounts({ days: 3, xp: 400 }).power, 12);
+  // Every part has its own cap, so no single habit dominates.
+  const huge = powerFromCounts({ days: 999, xp: 10_000_000, followers: 999, plays: 999 });
+  assert.deepEqual(huge.parts, { days: 30, xp: 30, followers: 20, plays: 20 });
+  assert.equal(huge.power, VOTING_POWER.max);
+  assert.equal(powerFromCounts({ followers: 4, plays: 5, days: 0, xp: 0 }).power, 3 + 8 + 5);
+  assert.equal(powerFromCounts({}).power, 3, "level 1 alone");
+  assert.equal(KEEPER_POWER, 10);
+});
+
+test("tallies add up voting power; without a power list every vote counts one", () => {
+  const closes = Date.UTC(2026, 10, 16);
+  const poll = (id, option, recommended, votes) =>
+    normalizeProposal(raw(id, describe(`Mix: ${option}`, { t: "poll", kind: "mix", poll: "mix-2026-W47", option, label: option, recommended, closes }), { votes }), KEEPER);
+  const p = [
+    poll(1, "staking-first", true, { [KEEPER]: "Approve", "a.testnet": "Approve" }),
+    poll(2, "more-stables", false, { "b.testnet": "Approve", "c.testnet": "Approve" }),
+  ];
+  // Head count: 2 : 2, the tie goes to the recommended option.
+  assert.equal(tallyPoll(p, "mix-2026-W47").winner, "staking-first");
+  // Weighted: keeper 10 + a 12 = 22 against b 40 + c 5 = 45.
+  const t = tallyPoll(p, "mix-2026-W47", { power: { "a.testnet": 12, "b.testnet": 40, "c.testnet": 5 }, keeper: KEEPER });
+  assert.equal(t.winner, "more-stables");
+  assert.deepEqual(t.options.map((o) => [o.approvals, o.votes]), [[22, 2], [45, 2]]);
+  assert.equal(t.voters, 4);
+  // A voter missing from the list still counts one; a value above the cap is clipped.
+  const u = tallyPoll(p, "mix-2026-W47", { power: { "b.testnet": 500 }, keeper: KEEPER });
+  assert.deepEqual(u.options.map((o) => o.approvals), [KEEPER_POWER + 1, VOTING_POWER.max + 1]);
+});
+
+test("voting power reads real play from the database and ignores demo bots", () => {
+  const db = openDatabase(":memory:");
+  initializeManagedAccounts(db);
+  const now = Date.UTC(2026, 10, 14, 12);
+  const player = (name, xp, id = null) => {
+    const pid = id || createPlayer(db, name, now);
+    if (id) db.prepare("INSERT INTO players(id,name,gold_u,created_at) VALUES (?,?,0,?)").run(id, name, now);
+    db.prepare("UPDATE players SET xp=? WHERE id=?").run(xp, pid);
+    db.prepare("INSERT INTO managed_accounts(account_id,player_id,slug,factory_id,network,state,created_at,updated_at) VALUES(?,?,?,?,?,'ready',?,?)").run(`${name}.players.testnet`, pid, name.replace(/[^a-z]/g, ""), "players.testnet", "testnet", now, now);
+    return pid;
+  };
+  const ada = player("ada", 900); // level 4
+  const fan = player("fan", 150);
+  const newbie = player("new", 50);
+  const bot = player("bot", 900, "seed-bot-1");
+  // XP on three different days, one of them twice, one outside the 30-day window.
+  const event = (at, meta) => db.prepare("INSERT INTO history(id,player_id,kind,title,gold_u,meta,created_at) VALUES(?,?,?,?,0,?,?)").run(`h${at}${meta}`, ada, "monster", "Won", meta, at);
+  for (const at of [now, now - 2 * DAY, now - 2 * DAY + 60_000, now - 5 * DAY, now - 40 * DAY]) event(at, JSON.stringify({ xp: 10 }));
+  event(now - 9 * DAY, "{}"); // no XP: not a day of play
+  db.exec(`CREATE TABLE IF NOT EXISTS creator_follows(follower TEXT NOT NULL, creator TEXT NOT NULL, created_at INTEGER NOT NULL, PRIMARY KEY(follower,creator))`);
+  for (const f of [fan, newbie, bot]) db.prepare("INSERT INTO creator_follows VALUES(?,?,?)").run(f, ada, now);
+  db.exec(`CREATE TABLE IF NOT EXISTS creator_quests(id TEXT PRIMARY KEY, author TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS creator_participations(quest_id TEXT NOT NULL, participant TEXT NOT NULL, started_at INTEGER NOT NULL, PRIMARY KEY(quest_id,participant))`);
+  db.prepare("INSERT INTO creator_quests VALUES('q1',?)").run(ada);
+  for (const [who, at] of [[fan, now], [newbie, now - DAY], [bot, now], [ada, now], [fan + "-old", now - 40 * DAY]])
+    db.prepare("INSERT INTO creator_participations VALUES('q1',?,?)").run(who, at);
+  const powers = votingPowers(db, { network: "testnet", now });
+  assert.deepEqual(powers["ada.players.testnet"].counts, { days: 3, xp: 900, followers: 1, plays: 2 });
+  assert.equal(powers["ada.players.testnet"].power, 3 + 12 + 2 + 2);
+  assert.equal(powers["bot.players.testnet"], undefined, "demo bots have no voting power");
+  assert.deepEqual(Object.keys(votingPowers(db, { network: "testnet", now, accounts: ["fan.players.testnet"] })), ["fan.players.testnet"]);
+});
+
+test("the view weighs the tally and shows the explorer's own voting power", async () => {
+  const week = weekOf(Date.now());
+  const pollMeta = (option, recommended) => ({ t: "poll", kind: "mix", poll: `mix-${week.id}`, title: "Mix", option, label: option, recommended, closes: week.end });
+  const proposals = [
+    raw(0, describe("Staking first", pollMeta("staking-first", true)), { votes: { [KEEPER]: "Approve" } }),
+    raw(1, describe("More stables", pollMeta("more-stables", false)), { votes: { "ada.players.testnet": "Approve" } }),
+  ];
+  const policy = buildPolicy({ council: COUNCIL, keeper: KEEPER, explorers: ["ada.players.testnet"] });
+  const provider = {
+    async query({ method_name, args_base64 }) {
+      const args = JSON.parse(Buffer.from(args_base64, "base64").toString());
+      const out = method_name === "get_policy" ? policy : method_name === "get_last_proposal_id" ? proposals.length : proposals.slice(args.from_index, args.from_index + args.limit);
+      return { result: [...Buffer.from(JSON.stringify(out))] };
+    },
+  };
+  const ada = powerFromCounts({ days: 6, xp: 900, followers: 1, plays: 0 });
+  const view = createTreasuryDaoView({ provider, manifest: daoManifest({ network: "testnet", contractId: DAO }, "testnet"), powers: () => ({ "ada.players.testnet": ada }) });
+  const v = await view.read({ account: "ada.players.testnet" });
+  assert.equal(v.me.power.power, 6 + 12 + 2);
+  assert.deepEqual(v.weeklyMix.options.map((o) => o.approvals), [KEEPER_POWER, 20]);
+  assert.equal(v.weeklyMix.winner, "more-stables");
+  assert.equal(v.votingPower.max, 100);
 });

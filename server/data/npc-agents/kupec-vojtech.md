@@ -1,8 +1,7 @@
 ---
 persona: kupec-vojtech
 topic: pub
-ask_en: Tell me, friend: where is the best pub around here?
-ask_cs: Pověz, příteli: kde je tu nejlepší hospoda?
+ask: Tell me, friend: where does the finest pub around here pour its golden beer?
 ---
 ## Mission
 I trade from town to town and I collect the best taprooms for tired explorers. Every good tip goes into my ledger, so the next traveller drinks well.

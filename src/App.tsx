@@ -6,6 +6,7 @@ import { ActorPortrait } from "./ActorPortrait";
 import { nearbyAction, type NearbyActor } from "./nearby-action";
 import type { Coin } from "./types";
 import { WorldSwitcher, type GameLayerConfig } from "./WorldSwitcher";
+import { StakeTierChip } from "./StakeTierChip";
 import type { TourTarget } from "./TourHelper";
 import type { SettingsMap } from "./SettingsScreen";
 import { questDisplayTitle } from "./quest-copy";
@@ -17,7 +18,6 @@ import {
   ZoneActivities,
   Layer,
   DailyBoard,
-  SeasonCard,
   QuestBrief,
   GameIntro,
   WearableMoment,
@@ -3342,6 +3342,10 @@ export default function App() {
     signer: NativeSigner,
     accountId: string,
   ): Promise<boolean> {
+    // A claim already in flight may have minted while the card was closed:
+    // check first so "Finish securing" never re-sends a used voucher.
+    if (item.native_claim_state === "issued" && (await syncAuraClaim(item)))
+      return true;
     const claim = await api<NativeAuraClaim>("/native/claims", {
       itemId: item.id,
       accountId,
@@ -3349,42 +3353,54 @@ export default function App() {
     if (claim.state !== "minted") {
       if (!onNearNetwork(claim.contractId))
         throw Error("Securing Auras is not available on this network.");
-      await signer.send(
-        {
-          network: NEAR_NETWORK,
-          signerId: accountId,
-          receiverId: claim.contractId,
-          actions: [
-            {
-              type: "FunctionCall",
-              params: {
-                methodName: "redeem_aura",
-                args: {
-                  claim_id: claim.claim_id,
-                  edition: claim.edition,
-                  receiver_id: claim.receiver_id,
-                  expires_at_ms: claim.expires_at,
-                  signature: claim.signature,
+      try {
+        await signer.send(
+          {
+            network: NEAR_NETWORK,
+            signerId: accountId,
+            receiverId: claim.contractId,
+            actions: [
+              {
+                type: "FunctionCall",
+                params: {
+                  methodName: "redeem_aura",
+                  args: {
+                    claim_id: claim.claim_id,
+                    edition: claim.edition,
+                    receiver_id: claim.receiver_id,
+                    expires_at_ms: claim.expires_at,
+                    signature: claim.signature,
+                  },
+                  gas: "100000000000000",
+                  deposit: (5n * 10n ** 22n).toString(),
                 },
-                gas: "100000000000000",
-                deposit: (5n * 10n ** 22n).toString(),
               },
-            },
-          ],
-        },
-        { playerId: player!.id },
-      );
+            ],
+          },
+          { playerId: player!.id },
+        );
+      } catch (e) {
+        // Already secured (or being secured) on NEAR: confirm it below
+        // instead of showing the relay's refusal.
+        const code = (e as { code?: string }).code;
+        if (code !== "RELAY_CLAIM_USED" && code !== "RELAY_CLAIM_PENDING")
+          throw e;
+      }
     }
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const result = await api<{ claim: NativeAuraClaim; player: Player }>(
-        "/native/claims/confirm",
-        { itemId: item.id },
-      );
-      updateOwnedPlayer(result.player);
-      if (result.claim.state === "minted") return true;
-      await new Promise((resolve) => setTimeout(resolve, 800));
+    for (let attempt = 0; attempt < 8; attempt++) {
+      if (await syncAuraClaim(item)) return true;
+      await new Promise((resolve) => setTimeout(resolve, 1500));
     }
     return false;
+  }
+  /** Asks the server whether an Aura claim minted; true once it has. */
+  async function syncAuraClaim(item: Item): Promise<boolean> {
+    const result = await api<{ claim: NativeAuraClaim; player: Player }>(
+      "/native/claims/confirm",
+      { itemId: item.id },
+    );
+    updateOwnedPlayer(result.player);
+    return result.claim.state === "minted";
   }
   /**
    * Lists a secured Aura for sale. NEAR Intents is the default market: the
@@ -4231,6 +4247,12 @@ export default function App() {
             setCardPlayer(id)
           }
           onSelf={() => player && setCardPlayer(player.id)}
+          onZoomOutToGlobe={() => {
+            setSelected(null);
+            setOverview(false);
+            setFollow(true);
+            setGlobe(true);
+          }}
           wearables={nativePlay ? undefined : player?.wearables}
           onWearableFind={(id) => {
             const coin = world?.coins.find((c) => c.id === id);
@@ -4358,6 +4380,13 @@ export default function App() {
             />
           </div>
         )}
+        {player && (
+          <StakeTierChip
+            fallbackTier={player.tier}
+            refreshKey={`${player.id}:${player.tier}:${tab === "fuel"}`}
+            onOpen={() => setTab("fuel")}
+          />
+        )}
         <div className="topbar-right">
           {player && (
             <>
@@ -4367,7 +4396,7 @@ export default function App() {
                   className="profile-pill"
                   onClick={() => chooseProfileTab("character")}
                 >
-                  <span className="sr-only">{tr("Profile")}</span>
+                  <span className="sr-only">{tr("Profile of {0}", { 0: player.name })}</span>
                   {hudProgress ? (
                     <HudXpRing
                       name={player.name}
@@ -4442,7 +4471,7 @@ export default function App() {
           tabIndex={-1}
           className={`main-panel ${settingsOpen ? "settings-panel " : ""}${tab === "explore" ? `explore-panel ${selected ? "zone-explore-panel" : ""} ${sheetExpanded ? "sheet-expanded" : "sheet-compact"}` : ""}`}
         >
-          {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} gameLayer={gameLayer} buyParcel={buyMetaParcel} onNavigate={(view) => { returnToLayer.current = view.tab === "settings"; navigation.update(view); }} />}
+          {tab === "layer" && virtualLayer && <Layer key={player.id} player={player} items={equipped} layer={virtualLayer} gameLayer={gameLayer} buyParcel={buyMetaParcel} onNavigate={(view) => { returnToLayer.current = view.tab !== "explore"; navigation.update(view); }} />}
           {tab === "explore" && !sheetExpanded && <div className="objective-dismiss-bar">
             <button className="objective-dismiss" aria-label={tr("Hide objective")} onClick={() => { if (objective === "coach") learning.acknowledge(coachTopic); else if (zoneQuest) learning.acknowledge(questHelpTopic(zoneQuest)); setDismissedObjective(objectiveKey); }}><X size={20} aria-hidden="true" /></button>
           </div>}
@@ -4899,6 +4928,12 @@ export default function App() {
                       onConnect={activateExplorer}
                       onMint={mintEarnedAura}
                       onConfirm={checkAuraClaim}
+                      onSync={(item) =>
+                        syncAuraClaim(item).then(
+                          () => undefined,
+                          () => undefined,
+                        )
+                      }
                       onRestore={restoreDemoAura}
                     />
                     <NativeProfilePanel
@@ -4993,9 +5028,6 @@ export default function App() {
               )}
               {tab === "explore" && nativePlay && (
                 <TodaysPot practice={false} onOpen={() => setTab("funding")} />
-              )}
-              {tab === "explore" && nativePlay && (
-                <SeasonCard signedIn={!!player} refreshKey={player?.xp} onClaimed={() => void me()} />
               )}
               <NativeExpeditions
                 onBusyChange={setNativeVisitBusy}

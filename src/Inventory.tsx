@@ -768,7 +768,7 @@ export function Inventory({
                     disabled={locked}
                     onClick={(event) => { event.currentTarget.focus({ preventScroll: true }); openItem(entry.key); }}
                     title={entry.name}
-                    aria-label={`${entry.name}, ${entryRarity(entry)}, ${entryKind(entry)}${entry.type === "aura" && entry.count > 1 ? tr(", {0} held", { 0: entry.count }) : ""}${entry.worn ? tr(", equipped") : ""}${issued ? tr(", being secured") : ""}`}
+                    aria-label={`${entry.name}, ${entryRarity(entry)}, ${entryKind(entry)}${entry.type === "aura" && entry.count > 1 ? tr(", {0} held", { 0: entry.count }) : ""}${entry.type === "wearable" && !entry.item.verified ? `, ${tr("Clone")}` : ""}${entry.worn ? tr(", equipped") : ""}${issued ? tr(", being secured") : ""}`}
                   >
                     {entryArt(entry)}
                     {entry.worn && (

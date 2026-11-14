@@ -25,12 +25,14 @@ At the first request of a local day (Europe/Prague) the server builds the day pl
   `source: "realized_yield"`, zero when there is none). City days and map days share that yield:
   `mapYieldCommitted` (payout items since the first yield-backed map day plus today's whole budget) is
   subtracted before a city day takes its drip.
-- **Coins: few and worth something** (owner, 13 Nov 2026: about 10 coins per city, more in Plzeň). One coin =
-  coin budget ÷ `MAP_COIN_TARGET` (default 200), rounded down to whole micro-QGOLD, the same for every coin of
-  the day (`summary.coinValueU`). An opened street cell places 10 coins (`CELL_COINS`), the Plzeň city demo
-  50 (`ARENA_COINS`), and placement stops once the day's whole coin budget is placed (`coinRoom`, inside the
-  placement transaction, pioneer doubles included), so every coin on the map is covered. Example: 0.0005 NEAR
-  of yield at R = 1 microNEAR is 500 QGOLD, 2.5 QGOLD a coin.
+- **Coins everywhere, each worth at least 1 QGOLD** (owner, 14 Nov 2026: coins must be on the map everywhere;
+  the value matters less than every coin being worth something). One coin = coin budget ÷ `MAP_COIN_TARGET`
+  (default 100,000), rounded down to whole micro-QGOLD (game QGOLD), but never under 1 QGOLD (`MIN_COIN_U`),
+  the same for every coin of the day (`summary.coinValueU`). An opened street cell places 10 coins
+  (`CELL_COINS`), the Plzeň city demo 50 (`ARENA_COINS`), and placement stops once the day's whole coin budget
+  is placed (`coinRoom`, inside the placement transaction, pioneer doubles included), so every coin on the map
+  is covered. Example: a coin budget of 806,710 QGOLD (14 Nov) gives 8 QGOLD coins for about 10,000 opened
+  cells; a budget under 100,000 QGOLD gives 1-QGOLD coins until the budget is placed.
 - **Zones: formula.** The zone budget is split per cell:
 
 | Part | Share | Score |
@@ -72,6 +74,13 @@ writes its rewards once (`map_cell_drops`):
    day pays two shares per coin and adds a pioneer chest (XP, Aura while edition supply lasts).
 5. The demo arena (no GPS, arrow keys) places a fixed number of coins per cell at the same backed value as the map; payout rounds pay them in QGOLD (Lubos, 10 Nov 2026: the demo behaves like reality, only movement differs). Outside Czechia a cell gets no coins until more
    countries have a plan; its POI quests still give XP.
+6. **City demo near the start** (Test Layer, 14 Nov 2026): the demo arena fills its coins outwards from the
+   start (the compact demo centre, else the city centre) instead of across the whole ~5 km² cell, 60-100 m
+   apart (`ARENA_COIN_SPACING_M`), so a new explorer finds coins round the square. `ARENA_REFILL_MS` (25 min)
+   after a demo coin is picked up, `refillArenaCoins` puts a fresh coin of the same value at the same spot
+   (a new row with a new id, nudged 1e-7° so it is its own spot for coin-spots), while `coinRoom` still has
+   room. Its value is added to the cell's `map_cell_drops` row, so the day budget holds; the picked-up row
+   keeps its claimant, because payouts use the coin id. GPS worlds are unchanged.
 
 ## 3. On the map
 

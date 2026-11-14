@@ -3,7 +3,7 @@
 // where that is, with an arrow and the distance. The server decides which step
 // is done from the game's own records; this card only reads /api/tour.
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ArrowSquareOut, ArrowUp, CaretDown, CheckCircle, CircleNotch, X } from "@phosphor-icons/react";
+import { ArrowSquareOut, ArrowUp, CheckCircle, CircleNotch, X } from "@phosphor-icons/react";
 import { api, meters } from "./api";
 import { headingTo } from "./map-motion";
 import { EXPLORER_BASE } from "./near-network";
@@ -122,7 +122,7 @@ export default function TourHelper({
   resolve: (target: TourTarget) => (Point & { label?: string }) | null;
   /** Open the target: navigation on the map, a screen or a create dialog. */
   onGo: (target: TourTarget, stepId: string) => void;
-  /** Started, not finished, not hidden: the first-steps coach steps aside. */
+  /** Started and not finished or hidden, or the offer is open: the first-steps coach steps aside. */
   onRunning?: (running: boolean) => void;
   /** False while Inventory, Shop or Community covers the map: Pip stays as one line. */
   onMap?: boolean;
@@ -193,7 +193,9 @@ export default function TourHelper({
     }
   }
   const running = !!state?.enabled && !!state.started && !state.finished && !state.hidden;
-  useEffect(() => onRunning?.(running), [running, onRunning]);
+  // While Pip's open offer is the one question on screen, the first-steps coach waits too.
+  const offering = !!state?.enabled && !state.started && !state.hidden && !folded && onMap;
+  useEffect(() => onRunning?.(running || offering), [running, offering, onRunning]);
   const stepId = running ? state?.current?.id ?? null : null;
   const onStepRef = useRef(onStep);
   onStepRef.current = onStep;
@@ -208,17 +210,28 @@ export default function TourHelper({
   }, [stepId]);
   if (!state?.enabled || state.hidden === true) return null;
 
+  // Not started yet: "Not now" folds Pip to a small head in the corner; a tap opens the offer again.
   if (!state.started)
     return onMap ? (
-      <aside className="tour-helper" aria-label={tr("Tour")}>
-        <Pip />
-        <div className="tour-body">
-          <p className="tour-line">{tr("Hi, I'm Pip. Want the tour?")}</p>
-          <p className="tour-sub">{tr("Every quest, encounter and trade, step by step.")}</p>
-          <div className="tour-buttons">
-            <button type="button" className="tour-go" disabled={busy} onClick={() => void act("start")}>{tr("Start the tour")}</button>
+      <aside className={`tour-helper${folded ? " is-folded" : ""}`} aria-label={tr("Tour")}>
+        <button type="button" className="tour-avatar" onClick={() => setFolded(!folded)} aria-label={folded ? tr("Open the tour") : tr("Fold the tour")}>
+          <Pip />
+        </button>
+        {!folded && (
+          <div className="tour-body">
+            <p className="tour-line">{tr("Hi, I'm Pip. Want the tour?")}</p>
+            <p className="tour-sub">{tr("Every quest, encounter and trade, step by step.")}</p>
+            <div className="tour-buttons">
+              <button type="button" className="tour-go" disabled={busy} onClick={() => void act("start")}>{tr("Start the tour")}</button>
+              <button type="button" className="tour-quiet" onClick={() => setFolded(true)}>{tr("Not now")}</button>
+            </div>
           </div>
-        </div>
+        )}
+        {!folded && (
+          <button type="button" className="tour-fold" onClick={() => setFolded(true)} aria-label={tr("Close")}>
+            <X size={16} aria-hidden="true" />
+          </button>
+        )}
       </aside>
     ) : null;
 
@@ -333,12 +346,12 @@ export default function TourHelper({
         </div>
       )}
       {!folded && (
-        <button type="button" className="tour-fold" onClick={() => setFolded(true)} aria-label={tr("Fold the tour")}>
-          <CaretDown size={16} aria-hidden="true" />
+        <button type="button" className="tour-fold" onClick={() => setFolded(true)} aria-label={tr("Close")}>
+          <X size={16} aria-hidden="true" />
         </button>
       )}
       {folded && (
-        <button type="button" className="tour-close" onClick={() => void act("hide")} aria-label={tr("Close")}>
+        <button type="button" className="tour-close" onClick={() => void act("hide")} aria-label={tr("End the tour")}>
           <X size={12} aria-hidden="true" />
         </button>
       )}

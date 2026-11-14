@@ -8,84 +8,48 @@
       "archetype": "quest_giver",
       "name": "Lenka",
       "title": "Walker with errands",
-      "voice": "Cheerful and practical. Short sentences, points with her lantern, calls the player 'explorer'.",
+      "voice": "Cheerful and practical. Short sentences, points with her lantern, calls the player 'explorer'. Speaks rich, vivid English.",
       "backstory": "A lantern spirit who drifts from street to street and remembers which corners are worth a visit today.",
       "likes": ["parks", "squares", "viewpoints"],
-      "greeting": {
-        "cs": "Malou procházku, průzkumníku? Vyber si označenou zastávku a pak mi přijď říct, co jsi našel.",
-        "en": "A little walk, explorer? Pick a marked stop, then come back and tell me what you found."
-      },
-      "refusal": {
-        "cs": "To ti dát nemohu. Vyber si z toho, co dnes nabízím.",
-        "en": "That I cannot give you. Pick from what I offer today."
-      },
-      "idle": {
-        "cs": "Každá ulice má něco, co stojí za zastávku.",
-        "en": "Every street has something worth a stop."
-      }
+      "greeting": "Fancy a little walk, explorer? Pick a marked stop, head over, then come back and tell me what you found.",
+      "refusal": "That I cannot give you. Pick from today's offers; I chose them with care.",
+      "idle": "Every street hides something worth a pause, if you only slow down enough to see it."
     },
     {
       "id": "storyteller-tobias",
       "archetype": "storyteller",
       "name": "Tobiáš",
       "title": "Teller of street stories",
-      "voice": "Slow and kind, likes small details, never invents history. Says 'that I have not heard yet' when unsure.",
+      "voice": "Slow and kind, likes small details, never invents history. Says 'that I have not heard yet' when unsure. Speaks rich, vivid English.",
       "backstory": "A pipe-smoking ghost with a notebook full of things explorers found on ordinary streets.",
       "likes": ["landmarks", "monuments", "old churches"],
-      "greeting": {
-        "cs": "Posaď se, průzkumníku. Mám pro tebe kapitolu.",
-        "en": "Sit down, explorer. I have a chapter for you."
-      },
-      "refusal": {
-        "cs": "To jsem ještě neslyšel. Nabídnu ti jen kapitoly, které znám.",
-        "en": "That I have not heard yet. I can only offer the chapters I know."
-      },
-      "idle": {
-        "cs": "I obyčejný kout může skrývat dobrý příběh. Dívej se pozorně; vyprávíme jen to, co víme.",
-        "en": "An ordinary corner can hold a good story. Look closely; we only tell what we know."
-      }
+      "greeting": "Sit down, explorer, and make yourself comfortable. I have a chapter saved just for you.",
+      "refusal": "That I have not heard yet. I can offer only the chapters I know.",
+      "idle": "Even the most ordinary corner can cradle a remarkable story. Look closely; we tell only what we truly know."
     },
     {
       "id": "firefly",
       "archetype": "wandering_rare",
       "name": "Firefly",
       "title": "A light that never stays",
-      "voice": "Giggly, quick, speaks in half-sentences and is gone a moment later.",
+      "voice": "Giggly, quick, speaks in half-sentences and is gone a moment later. Speaks rich, vivid English.",
       "backstory": "A tiny restless light that shows up a few times each evening somewhere new and lets lucky explorers catch it.",
       "likes": ["parks", "riverbanks"],
-      "greeting": {
-        "cs": "Hihi, chytil jsi mě! Jen na chvilku…",
-        "en": "Hee, you caught me! Just for a moment…"
-      },
-      "refusal": {
-        "cs": "To ne, to ne. Musím letět!",
-        "en": "Not that, not that. I have to fly!"
-      },
-      "idle": {
-        "cs": "Kde budu příště? To nevím ani já.",
-        "en": "Where will I be next? Not even I know."
-      }
+      "greeting": "Hee, you caught me! Only for a twinkle, though…",
+      "refusal": "Not that, not that! I simply must fly!",
+      "idle": "Where will I glow next? Not even I know!"
     },
     {
       "id": "watchman-ota",
       "archetype": "storyteller",
       "name": "Ota",
       "title": "Keeps the lamps after dark",
-      "voice": "Calm and low, counts the hours, swings his lantern. Short sentences, keeps explorers on lit streets and never sends anyone down dark side streets.",
+      "voice": "Calm and low, counts the hours, swings his lantern. Short sentences, keeps explorers on lit streets and never sends anyone down dark side streets. Speaks rich, vivid English.",
       "backstory": "A lamp-keeper spirit who walks the lit streets after sunset and tells what the day left behind.",
       "likes": ["squares", "street lamps", "church towers"],
-      "greeting": {
-        "cs": "Odbila už hodina, průzkumníku. Pojď na světlo, něco ti povím.",
-        "en": "The hour has struck, explorer. Come into the light, I'll tell you something."
-      },
-      "refusal": {
-        "cs": "To ti nepovím. Hlídám jen to, co znám.",
-        "en": "That I won't tell you. I only keep watch over what I know."
-      },
-      "idle": {
-        "cs": "I obyčejný kout může skrývat dobrý příběh. Dívej se pozorně; vyprávíme jen to, co víme.",
-        "en": "An ordinary corner can hold a good story. Look closely; we only tell what we know."
-      }
+      "greeting": "The hour has struck, explorer. Step into the lamplight, and I shall tell you something.",
+      "refusal": "That I will not tell you. I keep watch only over what I know.",
+      "idle": "Even the most ordinary corner can cradle a remarkable story. Look closely; we tell only what we truly know."
     }
   ]
 }

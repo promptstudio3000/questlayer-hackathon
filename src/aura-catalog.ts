@@ -82,7 +82,7 @@ export function auraEntitled(
 export function editionSourceLabel(edition: AuraCatalogEdition) {
   if (edition.source === "npc") return tr("NPC only · {0}", { 0: edition.how || "Earned from a roaming NPC" });
   if (edition.source === "season")
-    return tr("Season reward · {0}", { 0: edition.how || "Earned by reaching the season goal" });
+    return tr("Keepsake · {0}", { 0: edition.how || "No longer awarded" });
   if (edition.source === "level")
     return tr("Level reward · {0}", { 0: edition.how || "Earned by reaching a level" });
   if (edition.source === "monster")

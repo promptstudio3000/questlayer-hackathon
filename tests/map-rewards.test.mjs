@@ -144,10 +144,16 @@ test("the day plan backs every coin equally and spreads zone prizes with caps", 
   // One coin = the coin budget over the day's coin target; every opened cell
   // may place CELL_COINS of them and the whole budget is the commitment
   // (placement stops when it is placed: service.mjs coinRoom).
-  const value = Math.floor(coinsU / COIN_TARGET);
+  const value = Math.max(1, Math.floor(coinsU / COIN_TARGET));
   assert.equal(plan.summary.coinValueU, value);
   assert.equal(coinValue(coinsU), value);
-  assert.equal(coinValue(coinsU, 50), Math.floor(coinsU / 50));
+  assert.equal(coinValue(coinsU, 50), Math.max(1, Math.floor(coinsU / 50)));
+  // Coins everywhere, each worth at least 1 QGOLD: a budget below the target
+  // still prices coins at 1 QGOLD, only an empty budget prices none.
+  assert.equal(coinValue(COIN_TARGET - 1), 1);
+  assert.equal(coinValue(1), 1);
+  assert.equal(coinValue(0), 0);
+  assert.equal(coinValue(5 * COIN_TARGET + 3), 5);
   assert.ok(value > 0);
   assert.equal(plan.rows.length, cells.length, "every cell has backed coins");
   assert.ok(plan.rows.every((r) => r.coinsU === CELL_COINS * value && r.coins === CELL_COINS));
@@ -172,9 +178,12 @@ test("the day plan backs every coin equally and spreads zone prizes with caps", 
     .sort((a, b) => b.zonesU - a.zonesU)
     .findIndex((r) => r.cell === plzen);
   assert.ok(rank < 50, `rank ${rank}`);
-  // Same inputs, same root; a budget too small for one unit per share gives no coins.
+  // Same inputs, same root; a small budget still gives 1-QGOLD coins, an empty one none.
   assert.equal(buildDayPlan(args).root, plan.root);
-  const poor = buildDayPlan({ ...args, coinsU: COIN_TARGET - 1 });
+  const small = buildDayPlan({ ...args, coinsU: COIN_TARGET - 1 });
+  assert.equal(small.summary.coinValueU, 1);
+  assert.ok(small.rows.every((r) => r.coins === CELL_COINS));
+  const poor = buildDayPlan({ ...args, coinsU: 0 });
   assert.equal(poor.summary.coinValueU, 0);
   assert.ok(poor.rows.every((r) => r.coinsU === 0 && r.coins === 0));
   assert.equal(zonesForPotential(0), 1);

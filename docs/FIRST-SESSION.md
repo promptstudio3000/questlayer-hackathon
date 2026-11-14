@@ -34,7 +34,7 @@ Settings → Game: Sound, Vibration and Reduce motion (`src/feedback.ts`, stored
 
 ## Copy pass
 
-Following `docs/COPY-AUDIT-2026-11.md`: pickup announcement says practice GOLD; route progress counts stops;
+Copy rules: pickup announcement says practice GOLD; route progress counts stops;
 the guide credit no longer names NEAR AI; server errors in the core loop (GPS fix, stops, equip, reward dialog
 item state) are one sentence with a next step and no chain words. Empty states were added for "nothing open
 right here yet" and "everything open for you today is done".

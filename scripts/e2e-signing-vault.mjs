@@ -590,6 +590,8 @@ async function runDevice(name, servers) {
     // where Playwright cannot route service-worker traffic; block it so the
     // stubs below see every request on every engine.
     const context = await browser.newContext({ ...profile, reducedMotion: "reduce", locale: "en-GB", serviceWorkers: "block" });await context.addInitScript(()=>{try{localStorage.setItem("questlayer.playMode","demo")}catch{}});
+    // Inside the vault frame: name each request it receives (method and id only), for a failure report.
+    await context.addInitScript(() => { if (window !== parent) addEventListener("message", (e) => { const d = e.data || {}; if (d.method) console.debug(`vault-in ${d.method} ${String(d.id).slice(0, 8)}`); }); });
     // Unrelated hosts (map tiles, fonts) stay offline; the journey is loopback only.
     await context.route((url) => !["127.0.0.1", "localhost", "[::1]"].includes(url.hostname), (r) => r.abort());
     // ...except the map style, served blank so the map (and explorers on it) loads offline.
@@ -716,13 +718,33 @@ async function runDevice(name, servers) {
           // Continue must be usable now; a failure says why the window did not open.
           const go = intro.getByRole("button", { name: "Continue", exact: true });
           await waitFor(() => go.isEnabled(), "Continue enabled in the wallet intro");
+          const trail = [];
+          const onConsole = (m) => trail.push(`${m.type()}: ${m.text().slice(0, 160)}`);
+          const onRequest = (r) => /\/config|localhost/.test(r.url()) && trail.push(`req ${r.method()} ${r.url().slice(0, 100)}`);
+          page.on("console", onConsole);
+          // App-side trail: the tap, window.open and every vault message.
+          await page.evaluate(() => {
+            const t = (window.__walletTrail = []);
+            addEventListener("click", (e) => t.push(`click ${(e.target?.textContent || "").trim().slice(0, 20)}`), true);
+            const open = window.open.bind(window);
+            window.open = (...a) => { const w = open(...a); t.push(`open ${!!w}`); return w; };
+            addEventListener("message", (e) => t.push(`msg ${JSON.stringify(e.data).slice(0, 140)}`));
+            new MutationObserver(() => { const x = document.querySelector(".toast")?.textContent?.trim(); if (x && t.at(-1) !== `toast ${x}`) t.push(`toast ${x.slice(0, 120)}`); }).observe(document.body, { subtree: true, childList: true, characterData: true });
+          });
+          context.on("request", onRequest);
           const [secure] = await Promise.all([
             context.waitForEvent("page", { timeout: 30_000 }).catch(async (error) => {
-              const shown = await page.locator(".toast, [role=alert], [role=status]").allInnerTexts().catch(() => []);
-              throw Error(`${error.message}; on screen: ${shown.join(" | ").slice(0, 300) || "nothing"}`);
+              const shown = await page.locator(".toast").allInnerTexts().catch(() => []);
+              await page.screenshot({ path: join(shots, "wallet-no-window.png") }).catch(() => {});
+              const app = await page.evaluate(() => window.__walletTrail || []).catch(() => []);
+              throw Error(`${error.message}; toast: ${shown.join(" | ").slice(0, 200) || "none"}; app: ${app.slice(-12).join(" ; ")}; trail: ${trail.slice(-12).join(" ; ")}`);
             }),
-            go.click(),
+            go.click({ timeout: 20_000 }).catch((error) => {
+              trail.push(`click failed: ${error.message.split("\n").slice(0, 6).join(" / ")}`);
+            }),
           ]);
+          page.off("console", onConsole);
+          context.off("request", onRequest);
           await secure.getByRole("heading", { name: "Get 12 words for a wallet?" }).waitFor();
           await secure.getByText(state.account.accountId).waitFor();
           await secure.screenshot({ path: join(shots, "wallet-1-warning.png") });

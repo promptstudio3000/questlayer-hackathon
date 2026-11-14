@@ -14,7 +14,6 @@ export const NPC_ARCHETYPES = Object.freeze([
 ]);
 const DIR = join(dirname(fileURLToPath(import.meta.url)), "..", "data", "personas");
 const text = (v, max) => typeof v === "string" && v.trim().length > 0 && v.length <= max;
-const pair = (v, max) => v && typeof v === "object" && text(v.cs, max) && text(v.en, max);
 
 export function validatePersona(p) {
   const errors = [];
@@ -27,7 +26,7 @@ export function validatePersona(p) {
   if (!text(p.backstory, 300)) errors.push("backstory");
   if (!Array.isArray(p.likes) || p.likes.length > 6 || !p.likes.every((l) => text(l, 40)))
     errors.push("likes");
-  for (const key of ["greeting", "refusal", "idle"]) if (!pair(p[key], 200)) errors.push(key);
+  for (const key of ["greeting", "refusal", "idle"]) if (!text(p[key], 200)) errors.push(key);
   return errors.map((e) => `${p.id || "?"}: invalid ${e}`);
 }
 
@@ -63,8 +62,8 @@ export function personaFor(actor, map = personas()) {
     voice: "Friendly and brief.",
     backstory: "A local character of the QuestLayer city.",
     likes: [],
-    greeting: { cs: `Ahoj, já jsem ${name}.`, en: `Hello, I am ${name}.` },
-    refusal: { cs: "To ti dát nemohu.", en: "That I cannot give you." },
-    idle: { cs: "Hezký den na objevování.", en: "A fine day for exploring." },
+    greeting: `Well met, explorer! I am ${name}, and these streets are my home.`,
+    refusal: "That I cannot give you, I am afraid.",
+    idle: "A glorious day for exploring, is it not?",
   };
 }

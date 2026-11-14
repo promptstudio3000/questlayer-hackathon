@@ -25,8 +25,8 @@ more, stake a little NEAR: your stake stays yours and its yield grows one global
 2. **Motion explains a mechanic** (AGENTS.md rule 11). Each animation shows cause and effect: walking produces coins,
    XP fills a ring, a deposit matures and unlocks chips. No decoration loops that do not teach anything.
 3. **Honest numbers only.** Every number comes from the live rules: level curve 100·(n−1)² XP and
-   `server/data/level-table.json`, staker gates from `server/data/staker-gates.json`, season points from
-   `docs/SEASON.md`, badge rules from `docs/BADGES.md`. Nothing that implies guaranteed income.
+   `server/data/level-table.json`, staker gates from `server/data/staker-gates.json`,
+   badge rules from `docs/BADGES.md`. Nothing that implies guaranteed income.
 4. **Play first.** The first call to action is "Start exploring" (free, no wallet). Staking is shown as an optional
    later step, introduced gradually, exactly as the game introduces it.
 5. **Accessible and calm.** All text is real text, the page works without JavaScript animation, keyboard navigation
@@ -122,6 +122,6 @@ utility glyphs. No emoji.
 
 ## 8. Later ideas (not in this slice)
 
-- A live strip with today's numbers (open zones, pot, season standings) from `/api/world` and `/api/season`.
+- A live strip with today's numbers (open zones, pot) from `/api/world`.
 - Localised copy (Czech) when the game gets a language switch.
 - A 30-second autoplay mode that steps chapters on a timer for a kiosk screen.

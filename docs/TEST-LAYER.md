@@ -7,6 +7,7 @@
 | What | Plzeň demo: compact zones, bots and seed content, the guided tour (helper Pip). The place where every new feature is tried first | The real game: GPS everywhere, zones on their timetable, no bots, no seed |
 | Coin | **Test QGOLD**: its own testnet token, no backing, no treasury; shown as QGOLD with a TEST tag | QGOLD backed by treasury yield |
 | Chain | Real testnet transactions on the Test Layer's **own contract set** (`public/*-testlayer.json`) | The network's contract set (`public/*-testnet.json`, later `-mainnet`) |
+| Treasury page | No treasury of its own: `/treasury` and `/api/treasury/{mix,history,dao}` show GotchiGO's live public views, read-only and marked `mirroredFrom` (`server/native/world-treasury-mirror.mjs`, from `WORLD_ORIGIN`); votes are cast on GotchiGO | Its own treasury, DAO and staking vaults |
 | Explorers | Temporary: a session lasts 4 hours | Permanent |
 | Network | **Testnet only.** Mainnet has no Test Layer and refuses `QL_LAYER=test` | Testnet now, mainnet later (with the other layers) |
 
@@ -92,3 +93,21 @@ mainnet needs later.
    Layer's signing vault).
 4. Cut-over: in `deploy/questlayer-hackathon.service` set `TEST_LAYER_ORIGIN=https://questlayer-test.promptstudio3000.com`
    and delete `TEST_SEED=1` and `DEMO_ZONES=plzen-compact`, then deploy World.
+
+## Reward worker key allowance
+
+The reward worker (World and Test Layer alike) signs its contract calls with a function-call key on the
+rewards account, bounded to at most 1 NEAR of allowance. Every transaction must find its whole prepaid gas,
+priced at NEAR's pessimistic gas price, still in the allowance; unused gas comes back. When the allowance
+runs below that, the worker stalls with `AccessKeyNotEnoughAllowance` and coins stay pending (Test Layer,
+13 Nov 2026 22:59 UTC: 0.28 NEAR left, each call reserved 0.28 NEAR for 280 TGas).
+
+- Each call attaches only the gas its method needs (`workerGas` in `server/native/reward-worker.mjs`):
+  `claim_payout` 20 + 31 TGas per leaf + 10, closes 150, `maintain_vault` 280, everything else 100.
+- `/api/health` → `nativeRewards.worker.allowance` shows what is left (`near`, `low` below 0.35 NEAR,
+  checked every 10 minutes); a low key also logs a warning to the journal.
+- Refresh: a release-runner job running `scripts/refresh-reward-worker-key.mjs --account <rewards account>
+  --key-file .data/near-operator.json` (the operator key is the account's full-access key). It deletes the
+  same key and adds it back with the same methods and 1 NEAR, in one transaction; a rerun with 0.9 NEAR or
+  more left does nothing. The worker rebuilds its signer after a failed send, so it picks up the new nonce
+  without a restart.

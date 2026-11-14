@@ -1,5 +1,6 @@
 import { point, assert } from "./domain.mjs";
 import { initSocialBlocks } from "./social-content.mjs";
+import { isDemoBot } from "./player-waves.mjs";
 export function updatePresence(db, player, input, now = Date.now()) {
   const lease = input.leaseId;
   assert(typeof lease === "string" && /^[a-zA-Z0-9_-]{1,80}$/.test(lease), "Invalid sharing session.");
@@ -115,6 +116,8 @@ export async function readNearbyPresence(
           lng: person.lng,
           color: appearance.color,
           appearance,
+          // Seeded test-world explorers say so on the map, as on their card.
+          ...(isDemoBot(person.id) ? { demoBot: true } : {}),
         },
       ];
     }),

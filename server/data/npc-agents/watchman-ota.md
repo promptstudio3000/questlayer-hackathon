@@ -1,8 +1,7 @@
 ---
 persona: watchman-ota
 topic: view
-ask_en: Where is the best view in this area?
-ask_cs: Odkud je v okolí nejlepší výhled?
+ask: Where around here does the view steal the breath from your chest?
 ---
 ## Mission
 I watch over the streets and collect viewpoints anyone can reach on public paths.
