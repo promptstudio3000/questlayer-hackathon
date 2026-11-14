@@ -228,7 +228,6 @@
 
 /* ---- Map chips under the top bar ---------------------------------------- */
 .app-shell[data-screen] .map-sky-chip { top: calc(70px + env(safe-area-inset-top)); left: 12px; }
-.app-shell[data-screen] .zone-presence { top: calc(112px + env(safe-area-inset-top)); }
 
 /* ---- Phones: tab bar on the bottom edge ---------------------------------- */
 @media (max-width: 600px) {
@@ -262,7 +261,6 @@
   body:has(.app-shell[data-screen] .sheet-expanded) .maplibregl-ctrl-bottom-right {
     bottom: calc(var(--hud-tabbar) + var(--hud-gap) + var(--hud-card, 0px) + 64px + env(safe-area-inset-bottom)) !important; right: 18px !important;
   }
-  .app-shell[data-screen] .map-guide-key { top: calc(env(safe-area-inset-top) + 112px); left: 60px; right: auto; max-width: calc(100% - 72px); }
 }
 /* Tablets and desktop: the menu floats bottom left, joystick beside it. */
 @media (min-width: 601px) {
@@ -360,10 +358,6 @@
 /* Direction guide at the very top: centred between the header buttons on
    wide screens, right under them on a phone. */
 .app-shell[data-screen] .map-guide-key { top: calc(env(safe-area-inset-top) + 10px); bottom: auto; left: 50%; right: auto; transform: translateX(-50%); z-index: 19; }
-@media (max-width: 760px) {
-  .app-shell[data-screen] .map-guide-key { top: calc(env(safe-area-inset-top) + 66px); left: 12px; transform: none; max-width: calc(100% - 24px); }
-  .app-shell[data-screen] .zone-presence { top: calc(70px + env(safe-area-inset-top)); }
-}
 
 /* "Go" on a Community quest: a chip under the header leads back to the quest. */
 .community-goal { position: absolute; top: calc(env(safe-area-inset-top) + 66px); left: 50%; transform: translateX(-50%); z-index: 19; display: flex; align-items: center; gap: 4px; max-width: min(420px, calc(100% - 24px)); padding: 4px; border-radius: 28px; background: var(--surface); box-shadow: 0 4px 16px #1a033533; }
@@ -391,7 +385,6 @@ html[data-test-layer] .balance-pill::after { content: "TEST"; position: absolute
 .map-guide-key > span { display: grid; min-width: 0; }
 .map-guide-key small { font-size: 12px; opacity: .8; }
 .map-guide-key strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.app-shell[data-screen]:has(.map-guide-key) .zone-presence { top: calc(124px + env(safe-area-inset-top)); }
 
 /* ---- Zone label: no card, just words over the map ------------------------ */
 .app-shell[data-screen] .zone-presence > button {
@@ -400,10 +393,6 @@ html[data-test-layer] .balance-pill::after { content: "TEST"; position: absolute
 }
 .app-shell[data-screen] .zone-presence > button > svg { filter: drop-shadow(0 0 2px #1a0335) drop-shadow(0 1px 3px #1a0335); }
 .app-shell[data-screen] .zone-presence strong, .app-shell[data-screen] .zone-presence small { color: #fff; }
-@media (max-width: 760px) {
-  .app-shell[data-screen]:has(.zone-presence) .presence-chip { top: calc(140px + env(safe-area-inset-top)); }
-  .app-shell[data-screen]:has(.zone-presence):has(.map-guide-key) .presence-chip { top: calc(194px + env(safe-area-inset-top)); }
-}
 
 /* ---- "Open ..." when something is in reach: gold rim and a little life --- */
 .app-shell .nearby-open { border-color: #ffd25a; box-shadow: 0 0 0 3px #ffd25a59, 0 6px 22px #ffd25a80; }
@@ -460,3 +449,26 @@ html[data-motion="reduce"] :is(.nearby-open, .nearby-open-art, .nearby-open > sv
 @keyframes settings-drawer-in-rtl { from { transform: translateX(-100%); } to { transform: none; } }
 html[data-motion="reduce"] .app-shell .main-panel.settings-panel { animation: none; }
 @media (prefers-reduced-motion: reduce) { .app-shell .main-panel.settings-panel { animation: none; } }
+
+/* ---- Left column under the header (all layers) ---------------------------
+   On a phone the guide (or creator-quest) chip comes first, then the staking
+   chip, the zone label and "Visible nearby", each 8 px under the one above:
+   when the guide appears the rest moves down, when it goes they move back up.
+   Pip sits right under the header on the right; the left chips keep clear of
+   it when folded, an open Pip card goes under them. */
+.app-shell[data-screen] { --hs-top: calc(env(safe-area-inset-top) + 66px); --hs-chip: 0px; --hs-guide: 0px; --hs-zone: 0px; --hs-side: 0px; }
+.app-shell[data-screen]:has(.topbar > .stake-tier-chip) { --hs-chip: 44px; }
+.app-shell[data-screen]:has(.zone-presence) { --hs-zone: 56px; }
+.app-shell[data-screen] .topbar > .stake-tier-chip { top: calc(var(--hs-top) + var(--hs-guide)); }
+.app-shell[data-screen] .zone-presence { top: calc(var(--hs-top) + var(--hs-guide) + var(--hs-chip)); }
+.app-shell[data-screen] .presence-chip { top: calc(var(--hs-top) + var(--hs-guide) + var(--hs-chip) + var(--hs-zone)); left: 12px; right: auto; }
+.app-shell[data-screen] .tour-helper:not(.tour-strip) { top: var(--hs-top); }
+@media (max-width: 760px) {
+  .app-shell[data-screen]:has(.map-guide-key) { --hs-guide: 54px; }
+  .app-shell[data-screen]:has(.community-goal) { --hs-guide: 64px; }
+  .app-shell[data-screen]:has(.tour-helper.is-folded:not(.tour-strip)) { --hs-side: 154px; }
+  .app-shell[data-screen] .map-guide-key { top: var(--hs-top); left: 12px; right: auto; transform: none; max-width: calc(100% - 24px - var(--hs-side)); }
+  .app-shell[data-screen] .community-goal { top: var(--hs-top); right: calc(12px + var(--hs-side)); }
+  .app-shell[data-screen] .zone-presence { max-width: calc(100% - 24px - var(--hs-side)); }
+  .app-shell[data-screen]:is(:has(.map-guide-key), :has(.community-goal), :has(.zone-presence)) .tour-helper:not(.is-folded, .tour-strip) { top: calc(var(--hs-top) + var(--hs-guide) + var(--hs-chip) + var(--hs-zone)); }
+}

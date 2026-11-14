@@ -4,8 +4,7 @@
 `673e9fc77c56133955e01ae32b962ec2edfff3b6`. This document describes the running
 local slice and the remaining owner integration. It does not activate a contract,
 financial obligation, XP credit or NFT ownership. Use this branch as the review
-source, not the older local transfer patches. Start with the short
-[Claude brief](CLAUDE-METALAYER-BRIEF.md), then this detail.
+source, not the older local transfer patches. 
 
 ## Player loop and design choice
 
