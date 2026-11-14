@@ -198,7 +198,7 @@ export function CreatorSupport({
           </p>
           {ownQuest ? (
             <p className="creator-hint">
-              {tr("This is your quest. Earnings show in My creations.")}</p>
+              {tr("This is your quest. Earnings show in My quests.")}</p>
           ) : noAccount ? (
             <p className="creator-hint">
               {tr("Your explorer account is still being prepared. Gifts open when it is ready.")}</p>
@@ -306,7 +306,7 @@ export function CreatorSupport({
   );
 }
 
-/** My creations: what the creator earned and a relayed withdraw. */
+/** My quests: what the creator earned and a relayed withdraw. */
 export function CreatorEarningsPanel({ money }: { money: CreatorMoneyBridge }) {
   const [snap, setSnap] = useState<CreatorMoneySnapshot | null>(null),
     [state, setState] = useState<"loading" | "ready" | "off" | "error">(
