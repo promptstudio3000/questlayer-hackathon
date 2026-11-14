@@ -4370,10 +4370,9 @@ export default function App() {
               <div className="hud-bubble">
                 <button
                   className="profile-pill"
-                  aria-label={tr("Profile of {0}", { 0: player.name })}
                   onClick={() => chooseProfileTab("character")}
                 >
-                  <span className="sr-only">{tr("Profile")}</span>
+                  <span className="sr-only">{tr("Profile of {0}", { 0: player.name })}</span>
                   {hudProgress ? (
                     <HudXpRing
                       name={player.name}
