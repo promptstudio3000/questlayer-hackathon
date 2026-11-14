@@ -755,6 +755,36 @@ function GoldPrices() {
   return <Bars title="QGOLD prices from server/data/gold-spend.json; every price is burned, never paid to anyone." bars={items} format={(v) => `${v} QGOLD`} />;
 }
 
+function TierScheme() {
+  const rows = [
+    { key: "free", tone: "t1", name: "Free explorer", price: "no stake", lines: ["The whole map, green Tier 1 zones, coins, NPCs and quests", "QGOLD you collect is yours"] },
+    { key: "staker", tone: "st", name: "Staker", price: `${STAKER_MIN_NEAR}B QGOLD · ${STAKER_MIN_NEAR} NEAR`, lines: ["Your yield puts QGOLD on the map for all", "Extra NPC story quests as your level grows"] },
+    { key: "tier2", tone: "t2", name: "Tier 2", price: "10B QGOLD · 10 NEAR", lines: ["Opens the yellow Tier 2 zones", "Harder quest lines and the boss arena"] },
+    { key: "tier3", tone: "t3", name: "Tier 3", price: "50B QGOLD · 50 NEAR", lines: ["Opens the red Tier 3 zones", "The rarest monsters and the hardest quests"] },
+  ];
+  return (
+    <figure className="wk-fig">
+      <div className="wk-tiers" role="list" aria-label="What each staking tier brings">
+        {rows.map((r) => (
+          <div key={r.key} className={`wk-tier wk-tier-${r.tone}`} role="listitem">
+            <b>{r.name}</b>
+            <small>{r.price}</small>
+            <ul>
+              {r.lines.map((l) => (
+                <li key={l}>{l}</li>
+              ))}
+            </ul>
+          </div>
+        ))}
+      </div>
+      <p className="wk-tier-base">
+        <b>Every step:</b> your principal stays yours and comes back on Withdraw; its yield becomes QGOLD on the map for every explorer.
+      </p>
+      <figcaption>Each step adds to the one before it. Where to stake: Profile → Stake, or tap the tier chip under the world switcher.</figcaption>
+    </figure>
+  );
+}
+
 function StakerLadder() {
   const steps = ["staker", "tier2", "tier3"] as const;
   const label = { staker: `Staker · ${STAKER_MIN_NEAR} NEAR`, tier2: "Tier 2", tier3: "Tier 3" };
@@ -776,7 +806,7 @@ function StakerLadder() {
           </div>
         ))}
       </div>
-      <figcaption>Perks open by step and level, read live from server/data/staker-gates.json.</figcaption>
+      <figcaption>Each step opens more as your level grows, so a new explorer is never blocked.</figcaption>
     </figure>
   );
 }
@@ -1037,6 +1067,7 @@ const VIZ: Record<VizId, () => React.ReactElement> = {
   fees: Fees,
   "gold-prices": GoldPrices,
   "staker-ladder": StakerLadder,
+  "tier-scheme": TierScheme,
   "patron-rank": PatronRank,
   "chain-states": ChainStates,
   "chain-split": ChainSplit,

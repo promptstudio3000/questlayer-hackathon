@@ -1130,7 +1130,7 @@
   "Opens in {0}": "يُفتح خلال {0}",
   "Opens later": "يُفتح لاحقًا",
   "Opens later today": "تُفتح لاحقًا اليوم",
-  "Opens the inner vault and patron lines.": "يفتح الخزنة الداخلية وحوارات الرعاة.",
+  "Extra NPC story quests, and the Keeper shows your stake.": "مهام قصصية إضافية من الشخصيات، ويعرض لك الحارس حصتك.",
   "Operational policy creator-observation-v1: private text up to 1,000 characters, up to 3 attempts, one pending review. A third independent rejection resolves as NOT completed. No automatic expiry, GPS verification or reward. Only new starts on an independently approved structured revision use this requirement; existing plain starts stay legacy.": "السياسة التشغيلية creator-observation-v1: نص خاص حتى 1,000 حرف، حتى 3 محاولات، ومراجعة معلّقة واحدة. الرفض المستقل الثالث يُحسم على أنه «لم يكتمل». لا انتهاء تلقائي ولا تحقق GPS ولا مكافأة. تستخدم هذا الشرط فقط البدايات الجديدة على مراجعة منظَّمة معتمدة بشكل مستقل؛ وتبقى البدايات العادية الحالية بالنظام القديم.",
   "Operators paused today's world for a moment. Your progress is safe.": "أوقف المشغّلون عالم اليوم للحظة. تقدّمك في أمان.",
   "Optimized for a lighter mobile preview.": "محسَّن لمعاينة أخف على الجوال.",
@@ -1807,7 +1807,7 @@
   "The guide can't hear you right now. Keep exploring; your coins and visits still count.": "المرشد لا يسمعك الآن. واصل الاستكشاف؛ عملاتك وزياراتك ما زالت تُحتسب.",
   "The highest rank. It stays yours.": "أعلى رتبة. وتبقى لك.",
   "The inner vault": "الخزنة الداخلية",
-  "The inner vault opens for stakers.": "القبو الداخلي يُفتح للمخزّنين.",
+  "Shows stakers their stake and its yield.": "يعرض للمُخزّنين حصتهم وعائدها.",
   "The like did not save.": "لم يُحفظ الإعجاب.",
   "The map could not open.": "تعذّر فتح الخريطة.",
   "The market action could not finish. Try again.": "تعذّر إكمال إجراء السوق. حاول مجددًا.",
@@ -3309,5 +3309,10 @@
   "Keepsake · {0}": "تذكار · {0}",
   "Open to you": "مفتوحة لك",
   "Profile of {0}": "ملف {0}",
-  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "تجوّل في شوارع حقيقية، وافتح الصناديق، واجمع QGOLD من خزينة مشتركة."
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "تجوّل في شوارع حقيقية، وافتح الصناديق، واجمع QGOLD من خزينة مشتركة.",
+  "Staker soon": "ستصبح Staker قريبًا",
+  "Staking tier: {0}. Open staking": "مستوى الستيكينغ: {0}. افتح الستيكينغ",
+  "Your staking tier": "مستوى الستيكينغ الخاص بك",
+  "Why stake?": "لماذا الستيكينغ؟",
+  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "حصتك تبقى لك. عائدها يضع QGOLD على الخريطة للجميع، والمستويات الأعلى تفتح المناطق الصفراء والحمراء."
 }

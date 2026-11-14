@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowsClockwise,
+  BookOpen,
   CheckCircle,
   Clock,
   Flame,
@@ -9,6 +10,7 @@ import {
   WarningCircle,
 } from "@phosphor-icons/react";
 import { api } from "./api";
+import { CaretRight } from "./dir-icons";
 import {
   CONTRIBUTION_CHOICES,
   contributionBps,
@@ -406,6 +408,17 @@ export function FuelTheCity({
   return (
     <section className="fuel" aria-labelledby="fuel-title">
       <h2 id="fuel-title" className="sr-only">{tr("Stake")}</h2>
+      {!guide && (
+        // Why stake, in one line, with the full story one tap away (owner, 14 Nov 2026).
+        <a className="stake-why" href="/wiki#why-stake" target="_blank" rel="noopener">
+          <BookOpen size={22} weight="duotone" aria-hidden="true" />
+          <span>
+            <b>{tr("Why stake?")}</b>
+            <small>{tr("Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.")}</small>
+          </span>
+          <CaretRight size={18} aria-hidden="true" />
+        </a>
+      )}
       <StakeWallet refreshKey={`${player.id}:${player.gold_u}:${player.xp}`} staked={!canStake && !loading} />
 
       <TierLadder
@@ -454,7 +467,7 @@ export function FuelTheCity({
               {STAKE_TARGETS.map((t) => (
                 <button key={t} type="button" role="radio" aria-checked={target === t} disabled={busy} onClick={() => choose(t, t === "staker" ? contribution : 100)}>
                   <b>{t === "staker" ? tr("Staker") : tr("Tier {0}", { 0: t.slice(4) })}</b>
-                  <span>{qgoldOfNear(targetNear(t, target === t ? contribution : 100))}</span>
+                  <span>{`(${qgoldOfNear(targetNear(t, target === t ? contribution : 100))} QGOLD)`}</span>
                 </button>
               ))}
             </div>

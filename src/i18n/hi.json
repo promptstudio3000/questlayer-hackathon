@@ -1130,7 +1130,7 @@
   "Opens in {0}": "{0} में खुलेगा",
   "Opens later": "बाद में खुलेगा",
   "Opens later today": "आज बाद में खुलेगा",
-  "Opens the inner vault and patron lines.": "अंदरूनी वॉल्ट और पैट्रन लाइनें खोलता है।",
+  "Extra NPC story quests, and the Keeper shows your stake.": "NPC की अतिरिक्त कहानी क्वेस्ट, और कीपर आपका स्टेक दिखाता है।",
   "Operational policy creator-observation-v1: private text up to 1,000 characters, up to 3 attempts, one pending review. A third independent rejection resolves as NOT completed. No automatic expiry, GPS verification or reward. Only new starts on an independently approved structured revision use this requirement; existing plain starts stay legacy.": "ऑपरेशनल पॉलिसी creator-observation-v1: 1,000 अक्षरों तक निजी टेक्स्ट, अधिकतम 3 कोशिशें, एक पेंडिंग रिव्यू। तीसरी स्वतंत्र अस्वीकृति का नतीजा 'पूरा नहीं हुआ' होता है। कोई ऑटोमैटिक समय-सीमा, GPS सत्यापन या इनाम नहीं। सिर्फ़ स्वतंत्र रूप से मंज़ूर किए गए स्ट्रक्चर्ड संशोधन पर नई शुरुआतें यह शर्त इस्तेमाल करती हैं; मौजूदा सादी शुरुआतें पुरानी ही रहती हैं।",
   "Operators paused today's world for a moment. Your progress is safe.": "ऑपरेटरों ने आज की दुनिया थोड़ी देर के लिए रोकी है। तुम्हारी प्रगति सुरक्षित है।",
   "Optimized for a lighter mobile preview.": "हल्के मोबाइल प्रीव्यू के लिए ऑप्टिमाइज़ किया गया।",
@@ -1807,7 +1807,7 @@
   "The guide can't hear you right now. Keep exploring; your coins and visits still count.": "गाइड अभी तुम्हें सुन नहीं पा रहा। खोजते रहो; तुम्हारे सिक्के और विज़िट फिर भी गिने जाते हैं।",
   "The highest rank. It stays yours.": "सबसे ऊँची रैंक। यह तुम्हारी ही रहती है।",
   "The inner vault": "अंदर की तिजोरी",
-  "The inner vault opens for stakers.": "अंदर की तिजोरी स्टेकरों के लिए खुलती है।",
+  "Shows stakers their stake and its yield.": "स्टेकर्स को उनका स्टेक और यील्ड दिखाता है।",
   "The like did not save.": "लाइक सेव नहीं हुआ।",
   "The map could not open.": "मैप खुल नहीं सका।",
   "The market action could not finish. Try again.": "मार्केट ऐक्शन पूरा नहीं हो सका। फिर से कोशिश करो।",
@@ -3309,5 +3309,10 @@
   "Keepsake · {0}": "स्मृति-चिह्न · {0}",
   "Open to you": "आपके लिए खुला",
   "Profile of {0}": "{0} की प्रोफ़ाइल",
-  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "असली गलियों में घूमें, संदूक खोलें और साझा खज़ाने से QGOLD इकट्ठा करें।"
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "असली गलियों में घूमें, संदूक खोलें और साझा खज़ाने से QGOLD इकट्ठा करें।",
+  "Staker soon": "जल्द ही स्टेकर",
+  "Staking tier: {0}. Open staking": "स्टेकिंग टियर: {0}. स्टेकिंग खोलें",
+  "Your staking tier": "आपका स्टेकिंग टियर",
+  "Why stake?": "स्टेक क्यों करें?",
+  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "आपका स्टेक आपका ही रहता है। इसकी यील्ड सबके लिए मैप पर QGOLD रखती है, और ऊँचे टियर पीले और लाल ज़ोन खोलते हैं।"
 }

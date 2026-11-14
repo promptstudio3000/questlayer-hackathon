@@ -1130,7 +1130,7 @@
   "Opens in {0}": "{0} 后开放",
   "Opens later": "稍后开放",
   "Opens later today": "今天晚些时候开放",
-  "Opens the inner vault and patron lines.": "开启内部金库和赞助人任务线。",
+  "Extra NPC story quests, and the Keeper shows your stake.": "额外的 NPC 剧情任务，守护者会展示你的质押。",
   "Operational policy creator-observation-v1: private text up to 1,000 characters, up to 3 attempts, one pending review. A third independent rejection resolves as NOT completed. No automatic expiry, GPS verification or reward. Only new starts on an independently approved structured revision use this requirement; existing plain starts stay legacy.": "运营政策 creator-observation-v1：私密文本最多 1,000 字符，最多 3 次尝试，同时只能有一个待审核。第三次独立驳回将判定为“未完成”。无自动过期、GPS 验证或奖励。只有在经独立批准的结构化修订版上新开始的任务才适用此要求；现有的普通开始仍按旧版处理。",
   "Operators paused today's world for a moment. Your progress is safe.": "运营方暂时暂停了今天的世界。你的进度是安全的。",
   "Optimized for a lighter mobile preview.": "已针对更轻量的移动端预览进行优化。",
@@ -1807,7 +1807,7 @@
   "The guide can't hear you right now. Keep exploring; your coins and visits still count.": "向导现在听不到你。继续探索吧；你的金币和到访照样计数。",
   "The highest rank. It stays yours.": "最高等级。永久归你。",
   "The inner vault": "内部金库",
-  "The inner vault opens for stakers.": "内部金库向质押者开放。",
+  "Shows stakers their stake and its yield.": "向质押者展示他们的质押和收益。",
   "The like did not save.": "点赞未保存。",
   "The map could not open.": "地图无法打开。",
   "The market action could not finish. Try again.": "市场操作未能完成。请重试。",
@@ -3309,5 +3309,10 @@
   "Keepsake · {0}": "纪念品 · {0}",
   "Open to you": "已向你开放",
   "Profile of {0}": "{0} 的资料",
-  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "走过真实的街道，打开宝箱，从共享金库收集 QGOLD。"
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "走过真实的街道，打开宝箱，从共享金库收集 QGOLD。",
+  "Staker soon": "即将成为质押者",
+  "Staking tier: {0}. Open staking": "质押层级：{0}。打开质押",
+  "Your staking tier": "你的质押层级",
+  "Why stake?": "为什么要质押？",
+  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "你的质押始终属于你。它的收益为所有人在地图上放置 QGOLD，更高等级会开放黄色和红色区域。"
 }
