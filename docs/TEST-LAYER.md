@@ -111,6 +111,7 @@ runs below that, the worker stalls with `AccessKeyNotEnoughAllowance` and coins 
   checked every 10 minutes); a low key also logs a warning to the journal.
 - Refresh: a release-runner job running `scripts/refresh-reward-worker-key.mjs --account <rewards account>
   --key-file .data/near-operator.json` (the operator key is the account's full-access key). It deletes the
-  same key and adds it back with the same methods and 1 NEAR, in one transaction; a rerun with 0.9 NEAR or
-  more left does nothing. The worker rebuilds its signer after a failed send, so it picks up the new nonce
+  same key and adds it back with the same methods and 8 NEAR (`--allowance-near`, the worker accepts up to
+  10 NEAR, `WORKER_ALLOWANCE_MAX`), in one transaction; a rerun with 2 NEAR or more left (`--min-near`) does
+  nothing. 8 NEAR lasts well over a week at the 14 Nov rate (World ~0.65 NEAR/day, Test Layer ~0.3). The worker rebuilds its signer after a failed send, so it picks up the new nonce
   without a restart.
