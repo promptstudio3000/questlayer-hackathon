@@ -2,5 +2,5 @@
   "id": "e7-testlayer-final",
   "deployTarget": "testlayer",
   "installKeys": [],
-  "note": "Test Layer at the World release with #390 (How to complete steps for community tasks) and quest creation PR1 (My quests rename, Creators button, compact editor, trail draft chip) , #392 (Explore opens the quest) and #393 (QGOLD swap fix)."
+  "note": "Test Layer at the World release with #390 (How to complete steps for community tasks) and quest creation PR1 (My quests rename, Creators button, compact editor, trail draft chip) , #392 (Explore opens the quest) , #393 (QGOLD swap fix) and #394 (shared header on public pages)."
 }
