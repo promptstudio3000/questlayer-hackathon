@@ -2047,7 +2047,6 @@
   "Walk closer to a street coin": "Подойди ближе к уличной монете",
   "Walk complete": "Прогулка завершена",
   "Walk forward": "Идти вперёд",
-  "Walk real streets and open chests.": "Гуляй по настоящим улицам и открывай сундуки.",
   "Walk real streets, collect coins, open chests and dress your ghost in Auras that are truly yours. Stake a little NEAR when you want more, and its yield grows one prize pool shared by every city.": "Гуляй по настоящим улицам, собирай монеты, открывай сундуки и одевай своего призрака в Ауры, которые действительно твои. Поставь немного NEAR в стейк, когда захочешь большего, и его доход пополнит единый призовой фонд для всех городов.",
   "Walk recorded. Check Wallet for the reward's confirmation state.": "Прогулка записана. Статус подтверждения награды смотри в Кошельке.",
   "Walk to a coin": "Дойди до монеты",
@@ -3304,5 +3303,8 @@
   "No places yet. Tell me about one in Talk.": "Пока мест нет. Расскажи мне об одном в разговоре.",
   "1 task waiting": "Ждёт 1 задание",
   "End the tour": "Завершить тур",
-  "Keepsake · {0}": "Память · {0}"
+  "Keepsake · {0}": "Память · {0}",
+  "Open to you": "Открыто для тебя",
+  "Profile of {0}": "Профиль {0}",
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "Гуляй по настоящим улицам, открывай сундуки и собирай QGOLD из общей казны."
 }

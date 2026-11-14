@@ -2047,7 +2047,6 @@
   "Walk closer to a street coin": "गली के किसी सिक्के के पास जाओ",
   "Walk complete": "वॉक पूरी",
   "Walk forward": "आगे चलो",
-  "Walk real streets and open chests.": "असली गलियों में चलो और संदूक खोलो।",
   "Walk real streets, collect coins, open chests and dress your ghost in Auras that are truly yours. Stake a little NEAR when you want more, and its yield grows one prize pool shared by every city.": "असली गलियों में चलो, सिक्के इकट्ठा करो, संदूक खोलो और अपने भूत को ऐसे ऑरा पहनाओ जो सच में तुम्हारे हैं। जब और चाहिए हो तो थोड़ा NEAR स्टेक करो, और उसकी यील्ड हर शहर के साझा एक प्राइज़ पूल को बढ़ाती है।",
   "Walk recorded. Check Wallet for the reward's confirmation state.": "सैर दर्ज हुई। इनाम की पुष्टि की स्थिति वॉलेट में देखो।",
   "Walk to a coin": "किसी सिक्के तक चलो",
@@ -3304,5 +3303,8 @@
   "No places yet. Tell me about one in Talk.": "अभी कोई जगह नहीं। बातचीत में मुझे किसी के बारे में बताओ।",
   "1 task waiting": "1 काम इंतज़ार में",
   "End the tour": "टूर समाप्त करें",
-  "Keepsake · {0}": "स्मृति-चिह्न · {0}"
+  "Keepsake · {0}": "स्मृति-चिह्न · {0}",
+  "Open to you": "आपके लिए खुला",
+  "Profile of {0}": "{0} की प्रोफ़ाइल",
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "असली गलियों में घूमें, संदूक खोलें और साझा खज़ाने से QGOLD इकट्ठा करें।"
 }

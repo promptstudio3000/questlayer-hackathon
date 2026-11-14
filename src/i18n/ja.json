@@ -2047,7 +2047,6 @@
   "Walk closer to a street coin": "ストリートコインに近づいてね",
   "Walk complete": "ウォーク完了",
   "Walk forward": "前に進む",
-  "Walk real streets and open chests.": "本物の街を歩いて宝箱を開けよう。",
   "Walk real streets, collect coins, open chests and dress your ghost in Auras that are truly yours. Stake a little NEAR when you want more, and its yield grows one prize pool shared by every city.": "本物の街を歩き、コインを集め、宝箱を開け、本当にあなたのものになるAuraでゴーストを着飾ろう。もっと欲しくなったら少しNEARをステーク。その利回りが、すべての街で共有される1つの賞金プールを育てます。",
   "Walk recorded. Check Wallet for the reward's confirmation state.": "ウォークを記録しました。報酬の確認状況はウォレットで見られます。",
   "Walk to a coin": "コインまで歩こう",
@@ -3304,5 +3303,8 @@
   "No places yet. Tell me about one in Talk.": "まだ場所はありません。会話でひとつ教えてね。",
   "1 task waiting": "タスクが1件あります",
   "End the tour": "ツアーを終了",
-  "Keepsake · {0}": "記念品 · {0}"
+  "Keepsake · {0}": "記念品 · {0}",
+  "Open to you": "あなたに開放中",
+  "Profile of {0}": "{0} のプロフィール",
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "本物の街を歩き、宝箱を開けて、共有の宝庫から QGOLD を集めよう。"
 }

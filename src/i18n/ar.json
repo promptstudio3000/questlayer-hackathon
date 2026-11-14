@@ -2047,7 +2047,6 @@
   "Walk closer to a street coin": "اقترب من عملة شارع",
   "Walk complete": "اكتملت الجولة",
   "Walk forward": "امشِ للأمام",
-  "Walk real streets and open chests.": "امشِ في شوارع حقيقية وافتح الصناديق.",
   "Walk real streets, collect coins, open chests and dress your ghost in Auras that are truly yours. Stake a little NEAR when you want more, and its yield grows one prize pool shared by every city.": "امشِ في شوارع حقيقية، واجمع العملات، وافتح الصناديق، وألبس شبحك هالات هي ملكك حقًا. خزِّن قليلًا من NEAR متى أردت المزيد، وعائده يُنمّي مجمع جوائز واحدًا تتشاركه كل المدن.",
   "Walk recorded. Check Wallet for the reward's confirmation state.": "سُجلت النزهة. تحقق من حالة تأكيد المكافأة في المحفظة.",
   "Walk to a coin": "امشِ إلى عملة",
@@ -3304,5 +3303,8 @@
   "No places yet. Tell me about one in Talk.": "لا أماكن بعد. أخبرني عن واحد في المحادثة.",
   "1 task waiting": "مهمة واحدة بانتظارك",
   "End the tour": "إنهاء الجولة",
-  "Keepsake · {0}": "تذكار · {0}"
+  "Keepsake · {0}": "تذكار · {0}",
+  "Open to you": "مفتوحة لك",
+  "Profile of {0}": "ملف {0}",
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "تجوّل في شوارع حقيقية، وافتح الصناديق، واجمع QGOLD من خزينة مشتركة."
 }

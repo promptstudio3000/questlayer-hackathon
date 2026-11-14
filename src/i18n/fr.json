@@ -2047,7 +2047,6 @@
   "Walk closer to a street coin": "Approche-toi d'une pièce de rue",
   "Walk complete": "Balade terminée",
   "Walk forward": "Avancer",
-  "Walk real streets and open chests.": "Parcours de vraies rues et ouvre des coffres.",
   "Walk real streets, collect coins, open chests and dress your ghost in Auras that are truly yours. Stake a little NEAR when you want more, and its yield grows one prize pool shared by every city.": "Parcours de vraies rues, ramasse des pièces, ouvre des coffres et habille ton fantôme d'Auras qui t'appartiennent vraiment. Stake un peu de NEAR quand tu en veux plus, et son rendement fait grandir une cagnotte partagée par toutes les villes.",
   "Walk recorded. Check Wallet for the reward's confirmation state.": "Balade enregistrée. Consulte le Wallet pour l'état de confirmation de la récompense.",
   "Walk to a coin": "Marche jusqu'à une pièce",
@@ -3304,5 +3303,8 @@
   "No places yet. Tell me about one in Talk.": "Pas encore de lieux. Parle-m’en d’un dans la discussion.",
   "1 task waiting": "1 tâche en attente",
   "End the tour": "Terminer la visite",
-  "Keepsake · {0}": "Souvenir · {0}"
+  "Keepsake · {0}": "Souvenir · {0}",
+  "Open to you": "Ouverte pour toi",
+  "Profile of {0}": "Profil de {0}",
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "Parcours de vraies rues, ouvre des coffres et récolte des QGOLD d'un trésor commun."
 }
