@@ -3309,5 +3309,10 @@
   "Keepsake · {0}": "Památka · {0}",
   "Open to you": "Otevřeno pro tebe",
   "Profile of {0}": "Profil hráče {0}",
-  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "Choď skutečnými ulicemi, otevírej truhly a sbírej QGOLD ze společné pokladny."
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "Choď skutečnými ulicemi, otevírej truhly a sbírej QGOLD ze společné pokladny.",
+  "Staker soon": "Brzy Staker",
+  "Staking tier: {0}. Open staking": "Staking tier: {0}. Otevřít staking",
+  "Your staking tier": "Tvůj staking tier",
+  "Why stake?": "Proč stakovat?",
+  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "Vklad zůstává tvůj. Jeho výnos rozsype QGOLD po ulicích a odemkne místa vyšších stupňů."
 }
