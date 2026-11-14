@@ -1130,7 +1130,7 @@
   "Opens in {0}": "Откроется через {0}",
   "Opens later": "Откроется позже",
   "Opens later today": "Откроется позже сегодня",
-  "Opens the inner vault and patron lines.": "Открывает внутреннее хранилище и линии покровителей.",
+  "Extra NPC story quests, and the Keeper shows your stake.": "Дополнительные сюжетные задания от NPC, а Хранитель показывает ваш стейк.",
   "Operational policy creator-observation-v1: private text up to 1,000 characters, up to 3 attempts, one pending review. A third independent rejection resolves as NOT completed. No automatic expiry, GPS verification or reward. Only new starts on an independently approved structured revision use this requirement; existing plain starts stay legacy.": "Операционная политика creator-observation-v1: личный текст до 1 000 символов, до 3 попыток, одна ожидающая проверка. Третий независимый отказ означает, что задание НЕ выполнено. Без автоматического истечения срока, проверки GPS и награды. Это требование действует только для новых стартов по независимо одобренной структурированной редакции; уже начатые простые старты остаются по старым правилам.",
   "Operators paused today's world for a moment. Your progress is safe.": "Операторы ненадолго приостановили сегодняшний мир. Твой прогресс в безопасности.",
   "Optimized for a lighter mobile preview.": "Оптимизировано для облегчённого мобильного превью.",
@@ -1807,7 +1807,7 @@
   "The guide can't hear you right now. Keep exploring; your coins and visits still count.": "Гид сейчас тебя не слышит. Продолжай исследовать; монеты и посещения всё равно засчитываются.",
   "The highest rank. It stays yours.": "Высший ранг. Он остаётся твоим.",
   "The inner vault": "Внутреннее хранилище",
-  "The inner vault opens for stakers.": "Внутреннее хранилище открывается для стейкеров.",
+  "Shows stakers their stake and its yield.": "Показывает стейкерам их стейк и доходность.",
   "The like did not save.": "Лайк не сохранился.",
   "The map could not open.": "Не удалось открыть карту.",
   "The market action could not finish. Try again.": "Не удалось завершить действие на рынке. Попробуй ещё раз.",
@@ -3314,5 +3314,5 @@
   "Staking tier: {0}. Open staking": "Уровень стейкинга: {0}. Открыть стейкинг",
   "Your staking tier": "Ваш уровень стейкинга",
   "Why stake?": "Зачем стейкать?",
-  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "Ваш стейк остаётся вашим. Его доход рассыпает QGOLD по улицам и открывает места уровней."
+  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "Ваш стейк остаётся вашим. Его доходность приносит QGOLD на карту для всех, а высшие уровни открывают жёлтые и красные зоны."
 }

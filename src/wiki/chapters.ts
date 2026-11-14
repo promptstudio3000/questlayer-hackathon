@@ -46,6 +46,7 @@ export type VizId =
   | "fees"
   | "gold-prices"
   | "staker-ladder"
+  | "tier-scheme"
   | "patron-rank"
   | "chain-states"
   | "chain-split"
@@ -1110,32 +1111,46 @@ export const CHAPTERS: Chapter[] = [
     id: "why-stake",
     group: "economy",
     title: "Why stake, and how it works",
-    tldr: "Staking is how the map gets its treasure. You lock NEAR in your own vault, **the principal stays yours** and comes back when you withdraw; a share of its yield becomes QGOLD on the streets for every explorer, and your tier opens sealed places.",
+    tldr: "Staking is how the map gets its treasure. You lock NEAR in your own vault, **the principal stays yours** and comes back when you withdraw; a share of its yield becomes QGOLD on the streets for every explorer, and higher tiers open the yellow and red zones.",
     keyFacts: [
       ["2B QGOLD", "to become a Staker (2 NEAR)"],
       ["10B / 50B", "QGOLD for Tier 2 / Tier 3"],
       ["100 %", "of your principal stays yours"],
       ["1–7 days", "to get it back after Withdraw"],
     ],
-    hero: "staker-ladder",
+    hero: "tier-scheme",
     status: "live",
     updated: "2026-11-14",
     sources: ["src/FuelTheCity.tsx", "src/StakeTierChip.tsx", "src/qgold-display.ts", "server/data/staker-gates.json"],
     blocks: [
-      { h: "Why stake" },
+      { h: "Where to stake" },
+      {
+        list: [
+          "Open **Profile → Stake**, or tap the **tier chip** under the world switcher (top left, on every layer). The chip shows your step today: Free, Staker, Tier 2 or Tier 3.",
+          "Pick a tier. Each button shows its price in brackets, for example **Staker (2B QGOLD)**; 1 NEAR reads as 1B QGOLD.",
+        ],
+      },
+      { h: "What each tier brings" },
+      {
+        list: [
+          "**Free:** the whole map is yours to walk. Green Tier 1 zones, coins, NPCs, quests and player quests need no stake at all.",
+          "**Staker:** your vault starts putting QGOLD on the map for everyone. As your level grows, NPCs offer you extra story quests, and the Keeper NPC shows your stake and what it has earned.",
+          "**Tier 2:** the yellow zones open for you. Harder quests, the boss arena and bigger zone prizes wait there.",
+          "**Tier 3:** the red zones open for you. You can already see them on the map with a lock; they hold the rarest monsters and the hardest quests.",
+        ],
+      },
+      { p: "Tiers open places and stories, never better odds or bigger payouts for the same deed. Each tier keeps everything below it." },
+      { h: "Why it is worth it" },
       {
         list: [
           "**You lose nothing.** The stake sits in a personal vault in your name. Only the yield is shared; the principal never pays for anything.",
-          "**You fill the map.** The yield share you choose (25, 50 or 100 %) goes to the one global treasury, and every day that yield is laid out as coins and zone prizes for all explorers.",
-          "**You open more of the world.** Staker opens patron lines and the inner vault; Tier 3 opens the sealed places that are always on the map but locked.",
-          "**You keep earning.** The part of the yield you keep is paid to you as QGOLD.",
+          "**You fill the map.** The yield share you choose (25, 50 or 100 %) goes to the one global treasury, and every day it is laid out as coins and zone prizes for every explorer.",
+          "**You keep earning.** The part of the yield you keep comes back to you as QGOLD.",
         ],
       },
       { h: "How it works" },
       {
         list: [
-          "The **tier chip** under the world switcher (top left, on every layer) shows your step: Free, Staker, Tier 2 or Tier 3. Tapping it opens Profile → Stake.",
-          "On Profile → Stake, pick a tier. Each button shows its current price in brackets, for example **Staker (2B QGOLD)**: 1 NEAR reads as 1B QGOLD, and the payment itself leaves in NEAR.",
           "Tier 2 and Tier 3 count stake × yield share, so picking them sets the share to 100 %; a smaller share needs a bigger stake.",
           "One tap sets up your vault (a one-time setup fee), the next stakes. The stake counts after about two epochs (1–2 days).",
           "There is one stake per explorer. Afterwards the only action is **Withdraw**; the stake comes back in about 1–7 days (4 epochs).",

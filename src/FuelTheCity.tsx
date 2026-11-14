@@ -414,7 +414,7 @@ export function FuelTheCity({
           <BookOpen size={22} weight="duotone" aria-hidden="true" />
           <span>
             <b>{tr("Why stake?")}</b>
-            <small>{tr("Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.")}</small>
+            <small>{tr("Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.")}</small>
           </span>
           <CaretRight size={18} aria-hidden="true" />
         </a>

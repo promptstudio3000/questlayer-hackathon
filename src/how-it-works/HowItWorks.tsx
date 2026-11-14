@@ -511,7 +511,7 @@ const NPCS = [
   { id: "story", get name() { return tr("Storyteller"); }, get line() { return tr("Want to hear chapter one?"); }, icon: BookOpen, aura: "comet" },
   { id: "quest", get name() { return tr("Quest giver"); }, get line() { return tr("Three stops, one chest."); }, icon: Scroll, aura: "polar" },
   { id: "trader", get name() { return tr("Trader"); }, get line() { return tr("Buying or selling Auras?"); }, icon: Storefront, aura: "gold" },
-  { id: "keeper", get name() { return tr("Keeper"); }, get line() { return tr("The inner vault opens for stakers."); }, icon: Vault, aura: "moon" },
+  { id: "keeper", get name() { return tr("Keeper"); }, get line() { return tr("Shows stakers their stake and its yield."); }, icon: Vault, aura: "moon" },
 ] as const;
 function NpcScene() {
   return (
@@ -635,7 +635,7 @@ const JOIN_STEPS = [
   { icon: Footprints, get title() { return tr("Walk to your first coin"); }, get text() { return tr("The coach shows the nearest find on the map."); } },
   { icon: Sparkle, get title() { return tr("Open a chest, wear your Aura"); }, get text() { return tr("Your ghost changes on the map right away."); } },
   { icon: ShieldCheck, get title() { return tr("Get your NEAR account"); }, get text() { return tr("Created for you after your first XP. Gas is on us."); } },
-  { icon: Crown, get title() { return tr("Stake {0} NEAR, become a Staker", { 0: STAKER_MIN_NEAR }); }, get text() { return tr("Opens the inner vault and patron lines."); }, optional: true },
+  { icon: Crown, get title() { return tr("Stake {0} NEAR, become a Staker", { 0: STAKER_MIN_NEAR }); }, get text() { return tr("Extra NPC story quests, and the Keeper shows your stake."); }, optional: true },
 ] as const;
 
 export default function HowItWorks() {

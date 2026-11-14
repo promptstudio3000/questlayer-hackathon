@@ -1130,7 +1130,7 @@
   "Opens in {0}": "Öffnet in {0}",
   "Opens later": "Öffnet später",
   "Opens later today": "Öffnet später heute",
-  "Opens the inner vault and patron lines.": "Öffnet das innere Vault und Gönner-Reihen.",
+  "Extra NPC story quests, and the Keeper shows your stake.": "Zusätzliche NPC-Story-Quests, und der Hüter zeigt dir deinen Einsatz.",
   "Operational policy creator-observation-v1: private text up to 1,000 characters, up to 3 attempts, one pending review. A third independent rejection resolves as NOT completed. No automatic expiry, GPS verification or reward. Only new starts on an independently approved structured revision use this requirement; existing plain starts stay legacy.": "Betriebsrichtlinie creator-observation-v1: privater Text bis 1.000 Zeichen, bis zu 3 Versuche, eine ausstehende Prüfung. Eine dritte unabhängige Ablehnung gilt als NICHT abgeschlossen. Kein automatischer Ablauf, keine GPS-Prüfung, keine Belohnung. Nur neue Starts auf einer unabhängig genehmigten strukturierten Version nutzen diese Vorgabe; bestehende einfache Starts bleiben im Altformat.",
   "Operators paused today's world for a moment. Your progress is safe.": "Die Betreiber haben die heutige Welt kurz pausiert. Dein Fortschritt ist sicher.",
   "Optimized for a lighter mobile preview.": "Optimiert für eine leichtere mobile Vorschau.",
@@ -1807,7 +1807,7 @@
   "The guide can't hear you right now. Keep exploring; your coins and visits still count.": "Der Guide hört dich gerade nicht. Erkunde weiter; deine Münzen und Besuche zählen trotzdem.",
   "The highest rank. It stays yours.": "Der höchste Rang. Er bleibt deiner.",
   "The inner vault": "Der innere Tresor",
-  "The inner vault opens for stakers.": "Das innere Gewölbe öffnet sich für Staker.",
+  "Shows stakers their stake and its yield.": "Zeigt Stakern ihren Einsatz und seinen Ertrag.",
   "The like did not save.": "Das Like wurde nicht gespeichert.",
   "The map could not open.": "Die Karte konnte nicht geöffnet werden.",
   "The market action could not finish. Try again.": "Die Marktaktion konnte nicht abgeschlossen werden. Versuch es erneut.",
@@ -3314,5 +3314,5 @@
   "Staking tier: {0}. Open staking": "Staking-Stufe: {0}. Staking öffnen",
   "Your staking tier": "Deine Staking-Stufe",
   "Why stake?": "Warum staken?",
-  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "Dein Einsatz bleibt deiner. Sein Ertrag verstreut QGOLD in den Straßen und öffnet die Stufen-Orte."
+  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "Dein Einsatz bleibt deiner. Sein Ertrag bringt QGOLD für alle auf die Karte, und höhere Stufen öffnen die gelben und roten Zonen."
 }

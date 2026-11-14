@@ -1130,7 +1130,7 @@
   "Opens in {0}": "Otevře se za {0}",
   "Opens later": "Otevře se později",
   "Opens later today": "Otevře se později dnes",
-  "Opens the inner vault and patron lines.": "Otevře vnitřní trezor a linie patronů.",
+  "Extra NPC story quests, and the Keeper shows your stake.": "Další příběhové úkoly od NPC a Strážce ti ukáže tvůj vklad.",
   "Operational policy creator-observation-v1: private text up to 1,000 characters, up to 3 attempts, one pending review. A third independent rejection resolves as NOT completed. No automatic expiry, GPS verification or reward. Only new starts on an independently approved structured revision use this requirement; existing plain starts stay legacy.": "Provozní pravidla creator-observation-v1: soukromý text do 1 000 znaků, až 3 pokusy, jedno čekající posouzení. Třetí nezávislé zamítnutí znamená NESPLNĚNO. Žádné automatické vypršení, ověření GPS ani odměna. Požadavek platí jen pro nové začátky na nezávisle schválené strukturované verzi; stávající běžné začátky zůstávají ve starém režimu.",
   "Operators paused today's world for a moment. Your progress is safe.": "Provozovatelé na chvíli pozastavili dnešní svět. Tvůj postup je v bezpečí.",
   "Optimized for a lighter mobile preview.": "Optimalizováno pro lehčí náhled na mobilu.",
@@ -1807,7 +1807,7 @@
   "The guide can't hear you right now. Keep exploring; your coins and visits still count.": "Průvodce tě teď neslyší. Prozkoumávej dál; mince i návštěvy se počítají.",
   "The highest rank. It stays yours.": "Nejvyšší hodnost. Zůstane ti.",
   "The inner vault": "Vnitřní trezor",
-  "The inner vault opens for stakers.": "Vnitřní trezor se otevírá stakerům.",
+  "Shows stakers their stake and its yield.": "Stakerům ukazuje jejich vklad a jeho výnos.",
   "The like did not save.": "Like se neuložil.",
   "The map could not open.": "Mapu se nepodařilo otevřít.",
   "The market action could not finish. Try again.": "Akci na trhu se nepodařilo dokončit. Zkus to znovu.",
@@ -3314,5 +3314,5 @@
   "Staking tier: {0}. Open staking": "Staking tier: {0}. Otevřít staking",
   "Your staking tier": "Tvůj staking tier",
   "Why stake?": "Proč stakovat?",
-  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "Vklad zůstává tvůj. Jeho výnos rozsype QGOLD po ulicích a odemkne místa vyšších stupňů."
+  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "Vklad zůstává tvůj. Jeho výnos dává QGOLD na mapu všem a vyšší stupně otevírají žluté a červené zóny."
 }

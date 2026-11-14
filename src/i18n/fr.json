@@ -1130,7 +1130,7 @@
   "Opens in {0}": "S'ouvre dans {0}",
   "Opens later": "S'ouvre plus tard",
   "Opens later today": "Ouvre plus tard aujourd'hui",
-  "Opens the inner vault and patron lines.": "Ouvre le coffre intérieur et les lignes de mécène.",
+  "Extra NPC story quests, and the Keeper shows your stake.": "Des quêtes d'histoire PNJ en plus, et le Gardien te montre ton stake.",
   "Operational policy creator-observation-v1: private text up to 1,000 characters, up to 3 attempts, one pending review. A third independent rejection resolves as NOT completed. No automatic expiry, GPS verification or reward. Only new starts on an independently approved structured revision use this requirement; existing plain starts stay legacy.": "Règle opérationnelle creator-observation-v1 : texte privé jusqu'à 1 000 caractères, jusqu'à 3 tentatives, une validation en attente. Un troisième rejet indépendant conclut à NON terminé. Pas d'expiration automatique, de vérification GPS ni de récompense. Seuls les nouveaux départs sur une révision structurée approuvée de façon indépendante utilisent cette condition ; les départs simples existants restent en mode historique.",
   "Operators paused today's world for a moment. Your progress is safe.": "Les opérateurs ont mis le monde du jour en pause un instant. Ta progression est en sécurité.",
   "Optimized for a lighter mobile preview.": "Optimisé pour un aperçu mobile plus léger.",
@@ -1807,7 +1807,7 @@
   "The guide can't hear you right now. Keep exploring; your coins and visits still count.": "Le guide ne t'entend pas pour l'instant. Continue d'explorer ; tes pièces et visites comptent toujours.",
   "The highest rank. It stays yours.": "Le rang le plus élevé. Il reste à toi.",
   "The inner vault": "Le coffre intérieur",
-  "The inner vault opens for stakers.": "Le caveau intérieur s'ouvre aux stakers.",
+  "Shows stakers their stake and its yield.": "Montre aux stakers leur stake et son rendement.",
   "The like did not save.": "Le j'aime n'a pas été enregistré.",
   "The map could not open.": "La carte n'a pas pu s'ouvrir.",
   "The market action could not finish. Try again.": "L'action de marché n'a pas pu aboutir. Réessaie.",
@@ -3314,5 +3314,5 @@
   "Staking tier: {0}. Open staking": "Palier de staking : {0}. Ouvrir le staking",
   "Your staking tier": "Ton palier de staking",
   "Why stake?": "Pourquoi staker ?",
-  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "Ta mise reste à toi. Son rendement sème du QGOLD dans les rues et ouvre les lieux à palier."
+  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "Ton stake reste à toi. Son rendement place du QGOLD sur la carte pour tous, et les paliers supérieurs ouvrent les zones jaunes et rouges."
 }
