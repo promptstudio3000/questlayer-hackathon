@@ -1069,6 +1069,7 @@ export function GameMap(props: GameMapProps) {
       node.setAttribute(
         "aria-label",
         p.name +
+          (p.demoBot ? " · demo-bot" : "") +
           (look?.source === "unavailable"
             ? " · appearance temporarily unavailable"
             : " · nearby explorer") +
@@ -1077,6 +1078,11 @@ export function GameMap(props: GameMapProps) {
       );
       const label = document.createElement("span");
       label.textContent = p.name;
+      if (p.demoBot) {
+        const bot = document.createElement("small");
+        bot.textContent = "bot";
+        label.append(bot);
+      }
       node.append(label);
       skinFallback(node, look?.color || p.color);
       applyGoldLook(node, look?.gold && (look.gold.emoteUntil ?? 0) > Date.now() ? look.gold : { frame: look?.gold?.frame });

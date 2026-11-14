@@ -7,6 +7,7 @@
 | What | Plzeň demo: compact zones, bots and seed content, the guided tour (helper Pip). The place where every new feature is tried first | The real game: GPS everywhere, zones on their timetable, no bots, no seed |
 | Coin | **Test QGOLD**: its own testnet token, no backing, no treasury; shown as QGOLD with a TEST tag | QGOLD backed by treasury yield |
 | Chain | Real testnet transactions on the Test Layer's **own contract set** (`public/*-testlayer.json`) | The network's contract set (`public/*-testnet.json`, later `-mainnet`) |
+| Treasury page | No treasury of its own: `/treasury` and `/api/treasury/{mix,history,dao}` show GotchiGO's live public views, read-only and marked `mirroredFrom` (`server/native/world-treasury-mirror.mjs`, from `WORLD_ORIGIN`); votes are cast on GotchiGO | Its own treasury, DAO and staking vaults |
 | Explorers | Temporary: a session lasts 4 hours | Permanent |
 | Network | **Testnet only.** Mainnet has no Test Layer and refuses `QL_LAYER=test` | Testnet now, mainnet later (with the other layers) |
 

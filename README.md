@@ -7,7 +7,9 @@ The chain lives in Settings and on the public treasury page, not in the game.
 
 The economy is **stake-to-play without loss**: NEAR goes into staking and yield vaults, the principal can always
 be withdrawn, and only the *realized yield* flows into the treasury and is paid out as daily rewards in **QGOLD**,
-the game's name for a share of that treasury. More players never print more money.
+the game's name for a share of that treasury. More players never print more money. QGOLD is a scarce in-game
+currency backed by real yield, not an income: at today's testnet yield a coin is worth a fraction of a cent, and it
+is paid out anyway, in rounds every few minutes, with nothing too small to pay.
 
 Built for the [NEAR Hackathon](https://nearhackathon.com/) (1–14 November 2026), tracks **Games With Real
 Economies**, **Social Money** and **Open Innovation**. Everything runs on NEAR **testnet**; nothing here has
@@ -34,14 +36,18 @@ monetary value yet.
    **secure** it. Securing mints the NFT to your own NEAR account in the background.
 5. Talk to an **NPC** (Talk, Tasks, Profile). NPC conversations run on **NEAR AI Cloud** with signed, attested replies.
 6. Open a **creator quest** (the big pins with a photo): Go, then rate and discuss it.
-7. **Stake** from the profile, then see the money on **/treasury**. Settings → Account and devices shows the NEAR
+7. Open **Profile → Stake** to see the tiers and what a stake costs, then open **/treasury**. The Test Layer has no
+   treasury of its own: its /treasury page shows GotchiGO's live treasury (one treasury for the whole game), and says
+   so. A temporary Test Layer explorer holds only the 0.02 test NEAR for its account, so it cannot place a stake;
+   staking is shown with a funded testnet account on GotchiGO. Settings → Account and devices shows the NEAR
    account, the on-chain feed and the 12-word export.
 
 A longer judge guide with "do X, see Y" steps and terminal checks is [docs/JUDGE-WALKTHROUGH.md](docs/JUDGE-WALKTHROUGH.md).
 
 ## The layers
 
-QuestLayer is the platform; each layer is a game on it with the same code, the same account and its own contracts.
+QuestLayer is the platform; each layer is a game on it with the same code, the same kind of invisible account and
+its own contracts. Each layer keeps its own database, so an explorer made on the Test Layer is not on GotchiGO.
 
 | Layer | What it is | Where |
 | --- | --- | --- |
@@ -59,11 +65,15 @@ military or private ground). Live numbers: `/api/health` → `poiWorld` and `aut
   and refuses to move money. [docs/RELAYER.md](docs/RELAYER.md)
 - **Yield-funded QGOLD.** QGOLD is a NEP-141 token that is also its own vault: every QGOLD is a share of the NEAR
   that backs it, minted only with that NEAR in the same call. Map coins and zone days are paid only from yield
-  that was actually realized: half to coins, half to zones. [docs/QGOLD-VAULT.md](docs/QGOLD-VAULT.md),
-  [docs/ECONOMY-RULES.md](docs/ECONOMY-RULES.md), [docs/YIELD-VAULT.md](docs/YIELD-VAULT.md)
-- **Stake to play, never lose.** Tier 2 and Tier 3 places open with a one-time stake that can only be withdrawn,
-  never spent. About 153 testnet NEAR are staked with validators through keyless vaults today
-  (`/api/treasury/mix`).
+  that was actually realized: half to coins, half to zones. The Test Layer's practice pool is filled by a sponsor,
+  so its demo days are subsidised and say so. [docs/QGOLD-VAULT.md](docs/QGOLD-VAULT.md),
+  [docs/YIELD-VAULT.md](docs/YIELD-VAULT.md), and the in-game wiki (`/wiki`), which reads its numbers from the code.
+- **Stake to play, keep the principal.** Tier 2 and Tier 3 places open with a one-time stake that can only be
+  withdrawn, never spent. About 153 testnet NEAR are staked with validators through keyless vaults today
+  (`/api/treasury/mix`). Two honest limits of this testnet pilot: each staker gets their own vault contract, and its
+  storage costs a one-time **3.52 NEAR that is not returned** when the stake is withdrawn; and the vault factory
+  holds at most **32 stakers per layer**. Both are to be redesigned before
+  mainnet.
 - **Social money.** The treasury is governed by a stock **Sputnik DAO v2** (`questlayer-treasury.sputnik-v2.testnet`)
   with Trezu's role names: explorers at level 3+ vote weekly on the treasury mix, one explorer one vote, and the
   council approves every run. [docs/TREASURY-DAO.md](docs/TREASURY-DAO.md)
@@ -99,7 +109,7 @@ in `public/*-testlayer.json` (suffix `tl1112`).
 | Public notes and ratings | [`v1.social08.testnet`](https://testnet.nearblocks.io/address/v1.social08.testnet) | NEAR Social (not ours) |
 
 Transaction proofs with hashes (never keys) are in `public/*-proof.json` and the manifests. Details:
-[docs/NEAR-INTEGRATION-STATUS.md](docs/NEAR-INTEGRATION-STATUS.md), [docs/CHAIN-PROOF.md](docs/CHAIN-PROOF.md).
+[docs/CHAIN-PROOF.md](docs/CHAIN-PROOF.md).
 
 ### Reproducible contracts
 
@@ -187,6 +197,9 @@ deploy/     systemd units and the VPS release runner
 - Browser GPS can be spoofed; contracts still enforce backing and exactly-once claims.
 - Places away from the reviewed cities come from map data nobody has walked and carry an "Unverified map" notice.
 - MetaLayer is a first playable slice; its economy is not switched on yet.
+- Staking: the 3.52 NEAR vault setup is not refundable and there is a cap of 32 stakers per layer (see above).
+- Older dated documents in `docs/` (for example `ECONOMY-RULES.md`, `STATUS.md`) are kept as history and carry a
+  note on top; the README and the in-game wiki are current.
 
 **Timeline.** Every commit in this repository was made inside the hackathon window (first commit 31 October 2026,
 after the 19 October announcement). Commit dates are real and were not rewritten. Development runs on

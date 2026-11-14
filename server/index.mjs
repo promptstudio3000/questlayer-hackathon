@@ -60,6 +60,7 @@ import { NativeEconomy } from "./native/economy.mjs";
 import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
 import { startRewardWorker } from "./native/reward-worker.mjs";
+import { createWorldTreasuryMirror } from "./native/world-treasury-mirror.mjs";
 import { payoutsEnabled, payoutStatus, pendingPayout } from "./payouts/worker.mjs";
 import { allocationSettings } from "./native/allocation.mjs";
 import { AUTO_CITIES, LIVE_CITIES, cityStatus, playableCityById } from "./spatial/city-pack.mjs";
@@ -242,9 +243,6 @@ import { defaultPoiSource } from "./poi-quests.mjs";
 import { chainLedgerSettings, createChainLedger } from "./chain-ledger/service.mjs";
 import { createLedgerChain, startLedgerWorker } from "./chain-ledger/chain.mjs";
 import { createChainLedgerRoutes } from "./chain-ledger/routes.mjs";
-import { seasonSettings } from "./season/config.mjs";
-import { createSeason } from "./season/service.mjs";
-import { createSeasonRoutes } from "./season/routes.mjs";
 import { ensureFairPlaySchema, guardTravel } from "./fair-play.mjs";
 import { DEFAULT_LAYER, WORLD_REGISTRY, layerSummary } from "./worlds/registry.mjs";
 import { poiWorldStatus } from "./poi/coverage.mjs";
@@ -849,6 +847,15 @@ const treasuryMix = treasuryMixConfig.enabled
         : null,
     })
   : null;
+// The Test Layer has no treasury of its own: its /treasury page reads GotchiGO's
+// public treasury views (server/native/world-treasury-mirror.mjs), read-only,
+// ahead of any local view (the Test Layer holds no treasury account or vaults).
+const worldTreasury = TEST_LAYER && NETWORK === "testnet" ? createWorldTreasuryMirror({ origin: linkOrigin(process.env.WORLD_ORIGIN) }) : null;
+const mirrored = async (res, path, cache) => {
+  const body = await worldTreasury.read(path);
+  assert(body, "GotchiGO's treasury did not answer. Try again in a minute.", 503, "TREASURY_MIRROR_DOWN");
+  return respond(res, body, 200, { "Cache-Control": cache });
+};
 // Treasury history (docs/TREASURY-PAGE.md): one point per UTC day for /treasury.
 const treasuryHistory = treasuryMix
   ? createTreasuryHistory(db, {
@@ -1130,12 +1137,6 @@ const chainLedgerRoutes = createChainLedgerRoutes(chainLedger, {
   chain: () => ledgerChain,
   linkedAccount: (player) => linkedAccount(player),
 });
-// Hackathon season (docs/SEASON.md): cosmetic leaderboard of hunts, visits and
-// NPC lines, season mark + Aura at the goal, pot meter. Off by default on
-// mainnet; SEASON_* settings change the window, goal and points.
-const seasonConfig = seasonSettings(process.env, NETWORK);
-const season = seasonConfig.enabled ? createSeason(db, seasonConfig) : null;
-const seasonRoutes = createSeasonRoutes(season);
 const testSeed = createTestSeed(db, {
   creators: creatorRuntime.services
     ? {
@@ -1666,7 +1667,6 @@ async function api(req, res, url) {
           }
         : { status: "not-configured" },
       dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
-      season: season ? season.status() : { status: "off" },
       badges: badgeService ? badgeService.status() : { status: "off" },
       qgoldVault: qgoldVault ? qgoldVault.status() : { status: "not-configured" },
       marketEscrow: escrowHealth(db),
@@ -1726,6 +1726,8 @@ async function api(req, res, url) {
       "Cache-Control": "public, max-age=30",
     });
   if (path === "/api/treasury/dao" && method === "GET") {
+    // Votes are cast on GotchiGO, so only the public tally is mirrored.
+    if (worldTreasury && !url.searchParams.get("account")) return mirrored(res, path, "public, max-age=30");
     assert(treasuryDao, "The treasury DAO is not set up on this host.", 503, "TREASURY_DAO_DISABLED");
     const account = String(url.searchParams.get("account") || "");
     return respond(res, await treasuryDao.read({ account: /^[a-z0-9._-]{2,64}$/.test(account) ? account : null }), 200, { "Cache-Control": account ? "no-store" : "public, max-age=30" });
@@ -1735,10 +1737,12 @@ async function api(req, res, url) {
     return respond(res, { dao: treasuryDao.contractId, rule: EXPLORER_RULE, accounts: eligibleExplorers(db, { network: NETWORK }), generatedAt: Date.now() }, 200, { "Cache-Control": "public, max-age=300" });
   }
   if (path === "/api/treasury/mix" && method === "GET") {
+    if (worldTreasury) return mirrored(res, path, "public, max-age=60");
     assert(treasuryMix, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
     return respond(res, await readTreasuryMix(), 200, { "Cache-Control": "public, max-age=60" });
   }
   if (path === "/api/treasury/history" && method === "GET") {
+    if (worldTreasury) return mirrored(res, path, "public, max-age=300");
     assert(treasuryHistory, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
     await readTreasuryMix().catch(() => null); // today's point, when the chain answers
     return respond(res, treasuryHistory.read({ days: Number(url.searchParams.get("days")) || 90 }), 200, { "Cache-Control": "public, max-age=300" });
@@ -2397,8 +2401,6 @@ async function api(req, res, url) {
   if (await goldSpendRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await chainLedgerRoutes.handle(req, res, url, { player, body, respond, assert }))
-    return;
-  if (await seasonRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (
     await npcRollRoutes.handle(req, res, url, { player, body, respond, assert })
