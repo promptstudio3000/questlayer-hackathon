@@ -297,7 +297,7 @@ import {
 } from "./feedback";
 import { QuestThumbnail } from "./QuestThumbnail";
 import { headingTo, metersBetween } from "./map-motion.ts";
-import { locationPermission, rememberMode, shouldStartWithGps } from "./play-here";
+import { TEST_LAYER, locationPermission, rememberMode, shouldStartWithGps } from "./play-here";
 import { advanceGpsFacing, initialGpsFacing } from "./gps-facing";
 import { useDemoWalk } from "./useDemoWalk";
 import { demoCityFromSearch, demoCityUrl, type DemoCity } from "./demo-city";
@@ -459,16 +459,20 @@ export default function App() {
       .then((c) => {
         setVirtualLayer(c.layer?.layers?.[0] ?? null);
         setGameLayer(c.gameLayer ?? null);
-        // Until launch World opens the Test Layer; "?world=1" (from its picker) keeps World for good.
+        // Until launch every fresh start of World opens the Test Layer; "?world=1" (from its
+        // picker) keeps World only for this tab session, so the next launch is the Test Layer again.
         const g = c.gameLayer, key = "questlayer.stayWorld";
         // A city in the address plays in the Test Layer's demo; World has no demo of its own.
         if (DEMO_CITY_ASKED && g && !g.test && g.testLayerUrl && !/[?&]world=1/.test(location.search))
           return location.replace(demoCityUrl(g.testLayerUrl, DEMO_CITY_ASKED));
         if (DEMO_CITY_ASKED && g?.test) void openDemoCity(DEMO_CITY_ASKED);
         try {
-          if (/[?&]world=1/.test(location.search)) { localStorage.setItem(key, "1"); history.replaceState(null, "", location.pathname + location.hash); }
-          else if (g?.defaultTest && g.testLayerUrl && !localStorage.getItem(key)) location.replace(g.testLayerUrl);
+          localStorage.removeItem(key);
+          if (/[?&]world=1/.test(location.search)) { sessionStorage.setItem(key, "1"); history.replaceState(null, "", location.pathname + location.hash); }
+          else if (g?.defaultTest && g.testLayerUrl && !sessionStorage.getItem(key)) location.replace(g.testLayerUrl);
         } catch {}
+        // GotchiGO has no demo: a demo pick remembered from older builds starts GPS instead.
+        if (g?.gpsOnly) rememberMode("gps");
         if (c.gameLayer?.test) document.documentElement.dataset.testLayer = "1";
       })
       .catch(() => {});
@@ -1601,6 +1605,10 @@ export default function App() {
   }, [player?.id]);
   // The game starts in the world around the player (src/play-here.ts): the
   // demo stays only when location is refused or the player chose it.
+  // The config can arrive after sign-in: GotchiGO then starts GPS right away.
+  useEffect(() => {
+    if (gameLayer?.gpsOnly && player) void resumeLocation();
+  }, [gameLayer?.gpsOnly, player?.id]);
   async function resumeLocation() {
     const owner = ownerContext();
     const permission = await locationPermission();
@@ -1944,8 +1952,10 @@ export default function App() {
   );
   // City demo only: the pad / arrows / WASD walk the explorer the way it
   // faces. Real play has no manual movement; the position is the GPS fix.
+  // GotchiGO is GPS only (Lubos, 14 Nov 2026): the pad belongs to the Test Layer.
+  const demoPad = TEST_LAYER || (!!gameLayer && !gameLayer.gpsOnly);
   const demoWalk = useDemoWalk({
-    enabled: !!player && arena && !nativePlay && !globe && tab === "explore" && !sheetExpanded && !actorOpen && !showNpc && !discovery && !findInspect && !walletChoices,
+    enabled: !!player && arena && demoPad && !nativePlay && !globe && tab === "explore" && !sheetExpanded && !actorOpen && !showNpc && !discovery && !findInspect && !walletChoices,
     setPosition,
     onWalk: () => {
       setOverview(false);
@@ -4122,9 +4132,9 @@ export default function App() {
     setSheetExpanded(false);
   };
   const settingsMap: SettingsMap = {
-    demo: arena && !nativePlay,
+    demo: arena && demoPad && !nativePlay,
     status:
-      nativePlay && arena
+      (nativePlay || !demoPad) && arena
         ? tr("Turn on location")
         : arena
           ? tr("City demo")
@@ -5461,7 +5471,7 @@ export default function App() {
               {tr("Search this area")}
             </button>
           )}
-          {arena && !nativePlay && !globe && mapVisible && (
+          {arena && demoPad && !nativePlay && !globe && mapVisible && (
             <DemoControls
               held={demoWalk.held}
               running={demoWalk.running}

@@ -13,6 +13,8 @@ export type GameLayerConfig = {
   testLayerUrl: string | null;
   worldUrl: string | null;
   defaultTest?: boolean;
+  /** GotchiGO moves only by GPS: no demo pad (the pad is the Test Layer's). */
+  gpsOnly?: boolean;
 };
 
 export function WorldSwitcher({
