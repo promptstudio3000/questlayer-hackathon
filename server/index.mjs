@@ -112,7 +112,7 @@ import { startFlavourWorker } from "./ai/flavour-batch.mjs";
 import { flavourStatus } from "./ai/flavour.mjs";
 import { readGotchis } from "./aavegotchi.mjs";
 import { createOriginSync, dressDefault } from "./origin-sync.mjs";
-import { GotchiOutfitArt, ownedOutfit, setOutfitSlot, outfitVersion } from "./gotchi-outfit.mjs";
+import { GotchiOutfitArt, ownedOutfit, setOutfitSlot, outfitVersion, mirrorWearableToOutfit } from "./gotchi-outfit.mjs";
 import {
   WEARABLES,
   equipWearable,
@@ -3627,6 +3627,7 @@ async function api(req, res, url) {
     const i = await body(req);
     assert(auth(req) === player, "Please sign in again.", 401);
     const result = equipWearable(db, player, i.itemId, !!i.equipped);
+    mirrorWearableToOutfit(db, player, i.itemId, !!i.equipped);
     return respond(res, { ...result, player: profile(player) });
   }
   if (path === "/api/me/journey" && method === "GET") {
@@ -3801,7 +3802,8 @@ async function api(req, res, url) {
         }),
       );
     }
-    return respond(res, await gotchiModels.describe());
+    // Worn clones on the starter are part of its official 3D look.
+    return respond(res, await gotchiModels.describe({ starterWearables: wornWearables(db, player) }));
   }
   if (path.startsWith("/api/character/assets/") && method === "GET") {
     const digest = path.match(

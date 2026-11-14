@@ -283,3 +283,13 @@ test("an in-game outfit swaps slots 0-6 in the renderer look and a missing look 
   await assert.rejects(ask(), /not been rendered/);
   assert.equal(kicks.length, 2);
 });
+
+test("the starter's 3D look carries its worn clones in renderer slots 0-6", async () => {
+  const { starterModel } = await import("../server/gotchi-models.mjs");
+  assert.equal(starterModel([]), STARTER_MODEL);
+  assert.equal(starterModel(null), STARTER_MODEL);
+  assert.equal(
+    starterModel([{ id: 74, slot: "body" }, { id: 3, slot: "hand" }, { id: 6, slot: "hand" }, { id: 10, slot: "head" }, { id: 9, slot: "tail" }]),
+    "Eth-Common2-Common-74-0-0-10-3-6-0",
+  );
+});
