@@ -20,10 +20,6 @@ export const MAX_COINS_PER_CELL = 400;
 // on the map is always covered. Unplaced budget stays in the treasury.
 export const CELL_COINS = 10;
 export const ARENA_COINS = 50;
-<<<<<<< HEAD
-export const COIN_TARGET = 100_000;
-export const MIN_COIN_U = 1;
-=======
 // The city demo (Test Layer) gathers its coins round the start: they fill
 // outwards from the demo centre, 60-100 m apart, and a picked-up coin comes
 // back at its spot after ARENA_REFILL_MS while the day's coin budget has room
@@ -31,8 +27,8 @@ export const MIN_COIN_U = 1;
 // plan and its leaves do not change.
 export const ARENA_COIN_SPACING_M = Object.freeze({ min: 60, max: 100 });
 export const ARENA_REFILL_MS = 25 * 60_000;
-export const COIN_TARGET = 200;
->>>>>>> 052e7bb8a1000772a37f69e2af061d335d766902
+export const COIN_TARGET = 100_000;
+export const MIN_COIN_U = 1;
 // Coin tiers are only drawing sizes now: "small" is a normal coin, "medium" a
 // pioneer coin worth two shares.
 export const COIN_TIER = "small";
