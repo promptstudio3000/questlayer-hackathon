@@ -1,6 +1,6 @@
 # Second-city playbook (CityPack)
 
-Plan slice 8 (`docs/PLAN-FOR-OPUS.md`). Written 1 November 2026. This is the order of work to bring a second city
+Plan slice 8. Written 1 November 2026. This is the order of work to bring a second city
 next to Plzeň, what is already automated, and what is still hard-wired to Plzeň in code.
 
 ## What a CityPack is
