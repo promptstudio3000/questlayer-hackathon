@@ -29,3 +29,22 @@ export function parseQgoldPrice(input: string): string {
   if (!Number.isSafeInteger(q) || q < 1_000_000 || q > 1_000_000_000_000) throw Error("Choose a price between 1M and 1,000B QGOLD.");
   return (BigInt(q) * 10n ** 15n).toString();
 }
+
+/** A NEAR yocto amount (string or bigint) as short QGOLD: "500M", "2B". */
+export function qgoldOfYocto(yocto: string | bigint | null | undefined): string {
+  if (yocto === null || yocto === undefined || !/^\d+$/.test(String(yocto))) return "0";
+  return qgoldOfNear(Number(BigInt(yocto) / 10n ** 15n) / 1e9);
+}
+
+/** A QGOLD amount typed by a player as NEAR yocto, within [min, max] QGOLD; "" or "0" is 0 when `free`. */
+export function parseQgoldAmount(input: string, min: number, max: number, free = false): string {
+  const t = input.replace(/[\s\u00a0_]/g, "");
+  if (free && (!t || /^0+([.,]0*)?$/.test(t))) return "0";
+  const m = /^(\d+(?:[.,]\d+)?)([kmb]?)$/i.exec(t);
+  if (!m) throw Error("Enter a QGOLD amount like 500M.");
+  const unit = { "": 1, k: 1e3, m: 1e6, b: 1e9 }[m[2].toLowerCase()] ?? 1;
+  const q = Math.round(Number(m[1].replace(",", ".")) * unit);
+  if (!Number.isSafeInteger(q) || q < min || q > max)
+    throw Error(`Choose between ${qgoldOfNear(min / 1e9)} and ${qgoldOfNear(max / 1e9)} QGOLD.`);
+  return (BigInt(q) * 10n ** 15n).toString();
+}
