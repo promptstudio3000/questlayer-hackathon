@@ -28,3 +28,11 @@ runtime.env
 *.tgz
 *.tar.gz
 build-id.txt
+
+# Browser sign-in state (Playwright storageState) holds live session cookies.
+# A script that writes to `${undefined}/...` lands in undefined/: never commit it.
+undefined/
+playwright/.auth/
+*storage-state*.json
+*storageState*.json
+*auth-state*.json
