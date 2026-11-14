@@ -255,6 +255,11 @@ test("a premium buy settles on NEAR Intents for that exact token, and the trader
     { side: trade.intents.side, price: trade.intents.price, verifier: trade.intents.verifier },
     { side: "sell", price: offer.terms.price, verifier: VERIFIER },
   );
+  // The vault may sign exactly this sale's token_diff without a popup.
+  assert.deepEqual(
+    service.signingGrants(alice).intents.map(({ tradeId, side, tokenId, price, verifier, feePips }) => ({ tradeId, side, tokenId, price, verifier, feePips })),
+    [{ tradeId: trade.tradeId, side: "sell", tokenId: trade.tokenId, price: trade.price, verifier: VERIFIER, feePips: trade.intents.feePips }],
+  );
   // Accepting reserves the deal and signs nothing; the trader's intent is never listed.
   assert.equal(intents.list().length, 0);
   const again = await service.accept({ player: alice, actor: ACTOR, encounter: enc, offerId: offer.id });
@@ -369,6 +374,11 @@ test("trader trades carry their on-chain proof: hand-over hashes and the fill", 
   const trade = await service.accept({ player: alice, actor: ACTOR, encounter: enc, offerId: offer.id });
   // The relayer may sponsor exactly these three hand-overs to the trader.
   assert.deepEqual(service.handoversFor(alice), [{ accountId: "alice.testnet", receiver: NPC, tokens: trade.tokens }]);
+  // The player's signing vault hands exactly these Auras over without a popup.
+  assert.deepEqual(service.signingGrants(alice).handovers, [
+    { tradeId: trade.tradeId, accountId: "alice.testnet", receiver: NPC, nftContract: NFTS, tokens: trade.tokens },
+  ]);
+  assert.deepEqual(service.signingGrants(player("Eve", "eve.testnet")), { handovers: [], intents: [] });
   // Relayed nft_transfer jobs (as the relayer records them) become the proof.
   db.exec(`CREATE TABLE IF NOT EXISTS relay_jobs(account_id TEXT, receiver_id TEXT, method_name TEXT, transaction_hash TEXT, call TEXT, state TEXT, created_at INTEGER)`);
   const hashes = ["4Wn3n9sZ7nK5YbYdH1Wf3pX6c8fQx2mKjv9JQw7sCq1a", "5Wn3n9sZ7nK5YbYdH1Wf3pX6c8fQx2mKjv9JQw7sCq1b", "6Wn3n9sZ7nK5YbYdH1Wf3pX6c8fQx2mKjv9JQw7sCq1c"];

@@ -545,3 +545,58 @@ test("the approval window asks one plain question", () => {
   assert.equal(reviewQuestion({ operation: "setupRecovery", account: "alice.testnet" }, c), "Create recovery passkey?");
   assert.equal(reviewQuestion(call(action("odd_method")), c), "Allow this account action?");
 });
+
+test("NPC trades sign silently only when the server issued that exact deal", async () => {
+  const { messageNeedsProtection } = await import("../src/signing-vault/policy.ts");
+  const cfg = {
+    ...config,
+    contracts: { ...config.contracts, intents: "intents.testnet", wnear: "wrap.testnet" },
+  };
+  const grants = async () => ({
+    handovers: [
+      { tradeId: "nt_1", accountId: "alice.testnet", receiver: "trader.testnet", nftContract: "nft.testnet", tokens: ["aura:a:1", "aura:a:2"] },
+    ],
+    intents: [
+      { tradeId: "nt_2", accountId: "alice.testnet", verifier: "intents.testnet", nftContract: "nft.testnet", wnear: "wrap.testnet", side: "sell", tokenId: "aura:b:3", price: "45000000000000000000000", feePips: 0 },
+      { tradeId: "nt_3", accountId: null, verifier: "intents.testnet", nftContract: "nft.testnet", wnear: "wrap.testnet", side: "buy", tokenId: "aura:c:4", price: "1000000", feePips: 20000 },
+    ],
+  });
+  const handover = (args) =>
+    call(action("nft_transfer", { receiver_id: "trader.testnet", token_id: "aura:a:1", approval_id: null, memo: "questlayer trade-up nt_1", ...args }), "nft.testnet");
+  assert.equal(await needsProtection(handover({}), cfg, async () => proof, undefined, grants), false);
+  for (const changed of [
+    { receiver_id: "eve.testnet" },
+    { token_id: "aura:a:9" },
+    { memo: "questlayer trade-up nt_9" },
+    { memo: null },
+  ])
+    assert.equal(await needsProtection(handover(changed), cfg, async () => proof, undefined, grants), true);
+  // Without the server's word the window still asks.
+  assert.equal(await needsProtection(handover({}), cfg, async () => proof), true);
+  const now = Date.parse("2026-11-14T19:00:00Z");
+  const msg = (intents, extra = {}) => ({
+    accountId: "alice.testnet",
+    recipient: "intents.testnet",
+    message: JSON.stringify({ signer_id: "alice.testnet", deadline: new Date(now + 60_000).toISOString(), intents, ...extra }),
+  });
+  const sell = { intent: "token_diff", diff: { "nep171:nft.testnet:aura:b:3": "-1", "nep141:wrap.testnet": "45000000000000000000000" } };
+  // 1_000_000 * 1e6 / 980_000, rounded up.
+  const buy = { intent: "token_diff", diff: { "nep171:nft.testnet:aura:c:4": "1", "nep141:wrap.testnet": "-1020409" } };
+  const withdraw = { intent: "native_withdraw", receiver_id: "alice.testnet", amount: "45000000000000000000000" };
+  assert.equal(await messageNeedsProtection(msg([sell]), cfg, grants, now), false);
+  assert.equal(await messageNeedsProtection(msg([buy]), cfg, grants, now), false);
+  assert.equal(await messageNeedsProtection(msg([withdraw]), cfg, undefined, now), false);
+  for (const bad of [
+    msg([{ ...sell, diff: { ...sell.diff, "nep141:wrap.testnet": "1" } }]),
+    msg([{ ...buy, diff: { ...buy.diff, "nep141:wrap.testnet": "-1000000" } }]),
+    msg([sell, withdraw]),
+    msg([{ ...withdraw, receiver_id: "eve.testnet" }]),
+    msg([sell], { extra: 1 }),
+    { ...msg([sell]), recipient: "market.testnet" },
+    { ...msg([sell]), accountId: "bob.testnet" },
+  ])
+    assert.equal(await messageNeedsProtection(bad, cfg, grants, now), true);
+  assert.equal(await messageNeedsProtection(msg([sell]), cfg, undefined, now), true);
+  const late = { ...msg([sell]), message: JSON.stringify({ signer_id: "alice.testnet", deadline: new Date(now + 30 * 3600_000).toISOString(), intents: [sell] }) };
+  assert.equal(await messageNeedsProtection(late, cfg, grants, now), true);
+});
