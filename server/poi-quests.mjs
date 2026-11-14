@@ -389,11 +389,11 @@ export function planCellPoiQuests({
 // ---------------------------------------------------------------------------
 // Materialisation into a street world.
 
-// POI zones are irregular blobs, not circles (Lubos, 11 Nov 2026). The blob
+// POI zones are irregular blobs, not circles (11 Nov 2026). The blob
 // stays at least ~0.73× the radius from the spot, wider than the 25 m visit check.
 const blob = (p, seed, radius = POI_TARGET_RADIUS_M) => organicRing(p, radius, seed, 20);
 
-// One place per street-world cell is a Tier 3 zone (Lubos, 11 Nov 2026): shown
+// One place per street-world cell is a Tier 3 zone (11 Nov 2026): shown
 // on the map but locked until the explorer reaches Tier 3 in the vault
 // (server/staker-gates.mjs placeTier). It is a plain visit, never the chest,
 // a hunt or a clue, and only when the cell has at least three quests so the

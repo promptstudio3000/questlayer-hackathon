@@ -1,5 +1,5 @@
 // Retired schema module "season" v1. The season was removed on 14 Nov 2026
-// (Lubos: no time-limited events for now); nothing reads or writes this table.
+// (no time-limited events for now); nothing reads or writes this table.
 // It stays registered only because live databases already hold it and the
 // schema check refuses unknown tables. The planned testnet DB wipe drops it,
 // together with this module.

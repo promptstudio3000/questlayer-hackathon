@@ -67,7 +67,7 @@ test("every mix option stays inside the treasury-mix hard limits", () => {
     assert.ok(targets.lst <= 2 * s.maxProtocolBps);
     assert.ok(targets.staked <= 3 * s.maxProtocolBps);
   }
-  // Lubos 11 Nov 2026: on testnet only validator staking earns: 90 % staked, 5 % USDC, 5 % USDT.
+  // 11 Nov 2026: on testnet only validator staking earns: 90 % staked, 5 % USDC, 5 % USDT.
   assert.equal(RECOMMENDED_MIX, "staking-first");
   assert.deepEqual(mixPreset("staking-first").targets, { staked: 9000, lst: 0, stable: 1000, near: 0 });
   assert.equal(mixPreset("balanced").targets.lst, 5000, "polls filed before the change still tally");

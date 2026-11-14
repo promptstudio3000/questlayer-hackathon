@@ -121,7 +121,7 @@ real deployed receipt shapes, callback failure paths and gas margins before acti
    and the dry-run keeper starts recording after the next VPS deploy.
 2. Mac: `node scripts/qgold-rhea-pool-testnet.mjs` (plan), then `--create --near 5`. Commit the pool manifest and
    deploy the VPS.
-3. Keeper trading (Lubos approved on 4 Nov):
+3. Keeper trading (approved on 4 Nov):
    - `QGOLD_KEEPER_MIN_POOL_NEAR=5` in runtime.env, so the keeper is active on the 5 NEAR testnet pool.
    - On the Mac, `node scripts/qgold-keeper-testnet.mjs` prints the plan; `--create` sets up the keeper.
      - It creates `qgold-keeper.<operator>.testnet` with 3 NEAR and a full-access key in `.data/qgold-keeper.json`.

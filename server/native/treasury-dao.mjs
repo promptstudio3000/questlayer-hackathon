@@ -34,7 +34,7 @@ export const NEVER = "1000000000000";
 export const EXPLORER_RULE = Object.freeze({ minLevel: 3, minXp: 400, activeDays: 7 });
 
 /**
- * Voting power (Lubos 14 Nov 2026): not one explorer one vote. Every vote an
+ * Voting power (14 Nov 2026): not one explorer one vote. Every vote an
  * explorer casts on chain counts with their voting power at the tally, earned
  * by play and never for sale. Four parts, each capped, 100 at most:
  *   days      days in the last 30 on which the explorer earned XP, 1 each, up to 30
@@ -69,7 +69,7 @@ export function powerFromCounts({ days = 0, xp = 0, followers = 0, plays = 0 }, 
 
 /**
  * Weekly treasury mix options (staked NEAR / stablecoins / NEAR reserve).
- * Since 11 Nov 2026 (Lubos): on testnet only validator staking earns, so the
+ * Since 11 Nov 2026: on testnet only validator staking earns, so the
  * recommended mix is 90 % staked, 5 % USDC and 5 % USDT on Rhea Lend. All of
  * them stay inside the hard limits of server/native/treasury-mix.mjs: at most
  * 40 % per protocol, where every validator pool is its own protocol and the

@@ -16,7 +16,7 @@ import { Account, KeyPair, KeyPairSigner, actions } from "near-api-js";
 import { createNearProvider, rpcErrorText } from "../server/near-provider.mjs";
 
 const NEAR = 10n ** 24n;
-// Placeholder testnet economy, for Lubos to review before mainnet. MetaGold uses
+// Placeholder testnet economy, for the owner to review before mainnet. MetaGold uses
 // the QGOLD scale: 1 NEAR = 1,000,000,000 units, and 1 QGOLD unit = 1 MetaGold unit.
 const ECONOMY = {
   metagold_per_near: "1000000000",

@@ -196,12 +196,12 @@ test("public profile names the worn original from a day-old snapshot, never the 
   const address = "0x" + "c".repeat(40);
   db.prepare("INSERT INTO external_links VALUES (?,?,?,?)").run(
     address, b,
-    JSON.stringify({ gotchis: [{ tokenId: "1126", name: "Coinmandeer", brs: 630, svg: "<svg/>", equipped: ["0", "0", "0", "0", "0", "26", "0", "0"] }] }),
+    JSON.stringify({ gotchis: [{ tokenId: "1126", name: "Sparkfang", brs: 630, svg: "<svg/>", equipped: ["0", "0", "0", "0", "0", "26", "0", "0"] }] }),
     now - 3600_000,
   );
   db.prepare("UPDATE players SET appearance=? WHERE id=?").run(JSON.stringify({ originTokenId: "1126", address }), b);
   const card = playerCard(db, a, b, null, now);
-  assert.deepEqual(card.gotchi, { name: "Coinmandeer", brs: 630 });
+  assert.deepEqual(card.gotchi, { name: "Sparkfang", brs: 630 });
   assert.equal(card.original, true);
   assert.equal(card.slots.length, 7);
   assert.deepEqual(card.slots.find((s) => s.slot === "handRight").item?.name, "Thaave Hammer");

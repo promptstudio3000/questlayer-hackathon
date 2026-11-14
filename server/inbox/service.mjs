@@ -34,7 +34,7 @@ export const INBOX_LIMITS = Object.freeze({
   muteWindowMs: 7 * 86_400_000,
   pendingMs: 15 * 60_000,
   // Explorers within this distance of each other (both sharing a position in
-  // the same realm) may write right away (Lubos, 11 Nov 2026).
+  // the same realm) may write right away (11 Nov 2026).
   nearMeters: 1000,
   nearFreshMs: 10 * 60_000,
 });

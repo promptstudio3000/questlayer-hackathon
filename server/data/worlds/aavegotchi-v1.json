@@ -299,7 +299,7 @@
   },
   "provenance": {
     "authoredBy": [
-      "human:lubos",
+      "human:owner",
       "claude"
     ],
     "promptHashes": []

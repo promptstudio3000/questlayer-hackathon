@@ -12,7 +12,7 @@ type CoinCounts = { radiusM: number; near: number | null; global: number };
 const SCOPE_KEY = "questlayer.coinScope";
 
 /**
- * One compact line above "Places today" (Lubos, 10 Nov 2026): coins still on
+ * One compact line above "Places today" (10 Nov 2026): coins still on
  * the map within 10 km (or everywhere) and what is left in today's pot. The
  * full pot card with its books check opens under the chevron.
  */

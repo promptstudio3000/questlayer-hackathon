@@ -408,7 +408,7 @@ export default function App() {
     [toast, setToast] = useState<{ text: string; error: boolean } | null>(null),
     [online, setOnline] = useState(navigator.onLine),
     // Being seen by nearby explorers is on unless the explorer switched it
-    // off in Settings (Lubos 11 Nov: three players on one VPS never saw each
+    // off in Settings (11 Nov: three players on one VPS never saw each
     // other because sharing was a hidden 15-minute opt-in).
     [sharePosition, setSharePosition] = useState(readSharePosition),
     [pageVisible, setPageVisible] = useState(
@@ -571,7 +571,7 @@ export default function App() {
   // Ask the creator status as soon as the explorer is known, so "Create a
   // quest" sits in Actions from the start. Before, only the Community screen
   // read it, and Actions lacked the button until Community had been opened
-  // once (Lubos, 14 Nov 2026).
+  // once (14 Nov 2026).
   useEffect(() => {
     const id = player?.id;
     if (!id) return;
@@ -1095,7 +1095,7 @@ export default function App() {
     return () => clearTimeout(t);
   }, [bursts]);
   // Every XP gain flies a "+N XP" chip to the XP counter beside the avatar,
-  // which then bumps (Lubos 14 Nov). The first read of a player never does.
+  // which then bumps (14 Nov). The first read of a player never does.
   const shownXp = useRef<{ key?: string; xp?: number }>({});
   const [xpPulse, setXpPulse] = useState(0);
   useEffect(() => {
@@ -1966,7 +1966,7 @@ export default function App() {
   );
   // City demo only: the pad / arrows / WASD walk the explorer the way it
   // faces. Real play has no manual movement; the position is the GPS fix.
-  // GotchiGO is GPS only (Lubos, 14 Nov 2026): the pad belongs to the Test Layer.
+  // GotchiGO is GPS only (14 Nov 2026): the pad belongs to the Test Layer.
   const demoPad = TEST_LAYER || (!!gameLayer && !gameLayer.gpsOnly);
   const demoWalk = useDemoWalk({
     enabled: !!player && arena && demoPad && !nativePlay && !globe && tab === "explore" && !sheetExpanded && !actorOpen && !showNpc && !discovery && !findInspect && !walletChoices,
@@ -2162,7 +2162,7 @@ export default function App() {
     if (arena && !nativePlay) faceToward(start, target.title);
   }
   // A creator quest opened from the map (its pin or the goal chip) shows
-  // only that quest in a dialog over the map (Lubos, 13 Nov 2026). The
+  // only that quest in a dialog over the map (13 Nov 2026). The
   // Community screen with its tabs opens only from its own button.
   const [mapQuestId, setMapQuestId] = useState<string | null>(null);
   function openCommunityGoal() {
@@ -4131,7 +4131,7 @@ export default function App() {
   const showNearby = !!near && canOfferNearbyAction(objective, coachStep, dismissedObjective === objectiveKey, !!zoneQuest && (selectedQuestId === zoneQuest.id || startedQuestKey === `${player?.id}:${world?.id}:${zoneQuest.id}`), near.kind === "quest" && near.quest.id === zoneQuest?.id);
   const compactHidden = tab === "explore" && !sheetExpanded && (showNearby || objective === "empty" || dismissedObjective === objectiveKey);
   // One helper switch in Settings: Pip where the tour runs, and with it the
-  // older first-time tips, so "off" means no hints at all (Lubos, 13 Nov 2026).
+  // older first-time tips, so "off" means no hints at all (13 Nov 2026).
   function chooseGuide(on: boolean) {
     learning.enable(on);
     if (on && !gameLayer?.tour) {
@@ -4866,7 +4866,7 @@ export default function App() {
                   onFilter={setNearbyFilter}
                   // A quest row opens its detail at once (Go guides on the map from
                   // there); before, the sheet closed and the detail waited
-                  // behind the next Explore tap (Lubos, 14 Nov 2026).
+                  // behind the next Explore tap (14 Nov 2026).
                   onZone={(z, questId) => selectZone(z, questId)}
                   onActor={(actor, distanceM) => {
                     if (distanceM <= 35) setActorOpen(actor);
@@ -5281,7 +5281,7 @@ export default function App() {
                       ]);
                     }}
                   />
-                  {/* Owner-only switches and notes, kept out of the way (Lubos, 10 Nov 2026). */}
+                  {/* Owner-only switches and notes, kept out of the way (10 Nov 2026). */}
                   <details className="advanced-settings settings-developer">
                     <summary><Code size={16} aria-hidden="true" />{tr("Developer")}</summary>
                     <p className="fine-print">{tr("Reward ledger")}</p>

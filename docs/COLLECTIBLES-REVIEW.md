@@ -118,7 +118,7 @@ Reproduced on Linux x86_64 with native rustup Rust 1.97.0 and `bash scripts/buil
 
 ## Level editions L5–L10 (2026-11-01)
 
-The contract changed after the N5 review. Diff: `git diff 26550b1 <this PR head> -- contracts/collectibles` (source plus six new asset files and `WASM_SHA256`). Owner approval: Lubos approved the level item editions on 1 Nov ("Ano, podle návrhu").
+The contract changed after the N5 review. Diff: `git diff 26550b1 <this PR head> -- contracts/collectibles` (source plus six new asset files and `WASM_SHA256`). Owner approval: approved the level item editions on 1 Nov ("Ano, podle návrhu").
 
 - Six editions added to `AURA_EDITIONS` (`stride`, `kindle`, `compass`, `quill`, `laurel`, `summit`); the table grows from 15 to 21 rows. Existing rows, titles and media files are unchanged.
 - The same six are added to `CLAIM_ONLY_EDITIONS` with prefix `earned:level:` and the description "Earned by reaching QuestLayer level N." (5–10). The server already issues level claims as `earned:level:<sha256>` (`nativeLevelClaimId` in `server/native/progression.mjs`); the L2–L4 chest editions stay ungated, so existing level claims and their replays behave as before.
@@ -169,7 +169,7 @@ Reproduced on Linux x86_64 in Docker `rust:1.97.0` (`linux/amd64`) with `bash sc
 ## NEP-199 royalties (2026-11-04)
 
 The contract changed after the patron and season review. Diff: `git diff e2be467 <this PR head> -- contracts/collectibles`
-(source and `WASM_SHA256`). Owner approval: Lubos approved the QGOLD tokenomics on 4 Nov 2026 12:58, including
+(source and `WASM_SHA256`). Owner approval: approved the QGOLD tokenomics on 4 Nov 2026 12:58, including
 Mintbase/Paras integration and 2 % on P2P trades to the treasury (thread "Put every trade on chain"); testnet only.
 
 - New owner-only `set_royalty(royalty: Option<Royalty>)`: 1 yocto, predecessor must be `tokens.owner_id`, `bps` in
@@ -227,7 +227,7 @@ target directory): `questlayer_collectibles.wasm` 398,418 bytes, matching `contr
 
 ## Uncapped editions (2026-11-12)
 
-Owner decision: Lubos, 11 Nov 2026 ("Aury by neměly mít capped supply") and 12 Nov 00:55 ("odstraň tu limitaci edicí"); testnet.
+Owner decision: 11 Nov 2026 ("Aury by neměly mít capped supply") and 12 Nov 00:55 ("odstraň tu limitaci edicí"); testnet.
 Diff: `git diff 94f4c06 -- contracts/collectibles/src/lib.rs` (branch `claude/project-thread-xnwsia`).
 
 - `next_aura` no longer asserts `n < 256` ("Edition exhausted"); serials keep counting `aura:<edition>:<n+1>`.

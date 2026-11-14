@@ -1,6 +1,6 @@
 # Treasury DAO: players vote, the council approves every run
 
-Status 11 Nov 2026: testnet. Approved by Lubos on 11 Nov 2026 (plan "QuestLayer DAO: plán treasury pro track Social
+Status 11 Nov 2026: testnet. Approved by the owner on 11 Nov 2026 (plan "QuestLayer DAO: plán treasury pro track Social
 Money", his answers: automatic daily approval, a weekly mix vote whose recommended option gets the automatic vote,
 extra votes listed under it, Explorers at level 3+ who played in the last 7 days, the QGOLD vault council moves to the
 DAO once it keeps working and collecting yield).
@@ -22,9 +22,9 @@ tests `tests/treasury-dao.test.mjs`.
 | Approver | the council | approve or reject decisions and money moves | 2 of 3 |
 | Explorers | players who qualify, plus the keeper | approve poll options only (`vote:VoteApprove`) | never finalizes (see Polls) |
 
-The council is `questlayer-dev-20261101.testnet` (Lubos's seat) plus `council-a.` and `council-b.` sub-accounts of the
-operator. The two `council-*` keys are the **automatic approvals** Lubos chose: the daily script approves with them,
-but only what it checked (below). Lubos's seat can reject, and with one of the automatic keys he can change the
+The council is `questlayer-dev-20261101.testnet` (the owner's seat) plus `council-a.` and `council-b.` sub-accounts of the
+operator. The two `council-*` keys are the **automatic approvals** the owner chose: the daily script approves with them,
+but only what it checked (below). The owner's seat can reject, and with one of the automatic keys the owner can change the
 policy, remove the automatic keys or add his own wallet, in Trezu or with any NEAR CLI.
 
 DAO: `questlayer-treasury.sputnik-v2.testnet`. Factory: `sputnik-v2.testnet` (Sputnik DAO v2, the one Trezu's testnet
@@ -42,7 +42,7 @@ automatic council keys approve. So a player who reaches level 3 can vote from th
 
 ## Voting power (since 14 Nov 2026)
 
-Not one explorer one vote (Lubos, 14 Nov 2026): every vote counts with the explorer's **voting power**, a published
+Not one explorer one vote (14 Nov 2026): every vote counts with the explorer's **voting power**, a published
 reputation score earned by play and never for sale. Four parts, each capped so that nobody dominates, 100 at most:
 
 | Part | Counts | Points | Cap |
@@ -115,7 +115,7 @@ DAO `FunctionCall` proposal; it is the next step and needs no change to the gove
 
 ## QGOLD vault council
 
-Lubos approved moving the QGOLD vault council to the DAO, provided the vault keeps working and collecting yield.
+The owner approved moving the QGOLD vault council to the DAO, provided the vault keeps working and collecting yield.
 `node scripts/treasury-dao-testnet.mjs qgold-council --execute` proposes `SetCouncil { members: [DAO], threshold: 1 }`
 from the current council (the operator); after the vault's timelock a second run executes it. The script refuses while
 any other QGOLD proposal is open (the pending upgrade's approvals belong to the current council), so it runs after that
@@ -154,13 +154,13 @@ never in git or chat. `TREASURY_DAO_ENABLED=0` hides the DAO on a host.
 
 ## Limits
 
-- Testnet only. Mainnet needs Lubos's explicit go, a real custody move and its own review.
+- Testnet only. Mainnet needs the owner's explicit go, a real custody move and its own review.
 - The Explorer rule is a testnet sybil defence (level and recent play). Mainnet needs stronger proof of personhood.
 - The Explorers role lists every voter in the policy: fine for hundreds, for thousands the vote moves to token weight
   or to one DAO per community layer (the long-term plan: each layer gets its own DAO and share of the yield).
 - Since 11 Nov 2026 the daily step runs on the VPS (docs/TREASURY-WORKERS-VPS.md) with function-call keys for the
   keeper and council-a (and council-b if the owner allows both automatic approvals); the full-access council keys
-  and the operator seat stay on the Mac. Adding Lubos's own wallet as the third seat is one Admin proposal.
+  and the operator seat stay on the Mac. Adding the owner's own wallet as the third seat is one Admin proposal.
 
 ## Staking first (11 Nov 2026)
 

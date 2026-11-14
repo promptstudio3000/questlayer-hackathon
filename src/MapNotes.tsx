@@ -649,7 +649,7 @@ export function MapNotes({
       )}
     </>
   );
-  // Compact create dialog (Lubos, 10 Nov 2026): the illustration of a note
+  // Compact create dialog (10 Nov 2026): the illustration of a note
   // pinned into the ground, the text, a small "how long" switch, and one
   // button. The map stays where it was.
   const composeDialog = view === "compose" && (

@@ -1,7 +1,7 @@
 // EXPERIMENTAL: self-deploy the NEAR Intents verifier (github.com/near/intents,
 // tag defuse/v0.4.5) on TESTNET and prove Aura <-> wNEAR trades through it.
 // There is no official testnet Intents endpoint; this is our own copy for a
-// compatibility test. Mainnet uses intents.near and needs Lubos's explicit go
+// compatibility test. Mainnet uses intents.near and needs the owner's explicit go
 // (docs/NEAR-INTENTS-MARKET.md, "Mainnet proof").
 //
 // Runs on the operator's Mac only (reads .data/near-operator.json). One

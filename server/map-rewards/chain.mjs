@@ -65,7 +65,7 @@ export function ensureMapChainSchema(db) {
 }
 
 // Testnet only: the contract's map_claim_message is fixed to testnet and
-// mainnet needs Lubos's explicit go.
+// mainnet needs the owner's explicit go.
 export function mapChainEnabled(env = process.env) {
   return env.MAP_CHAIN === "1" && NETWORK === "testnet";
 }

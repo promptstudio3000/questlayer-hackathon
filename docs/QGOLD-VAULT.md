@@ -1,7 +1,7 @@
 # QGOLD vault
 
 Stream 1 of the approved QGOLD build (`/mnt/project-files/tokenomics/QGOLD-BUILD-PLAN.md`, design doc
-"QGOLD: návrh ekonomiky"). Testnet only and unaudited. Mainnet needs Lubos's explicit go, an external
+"QGOLD: návrh ekonomiky"). Testnet only and unaudited. Mainnet needs the owner's explicit go, an external
 audit of this contract and a legal opinion on the token.
 
 ## What it is
@@ -76,7 +76,7 @@ The deposit and redeem fees are 1 % each. Of every fee, 10 % goes to the insuran
 `treasury_due`. `flush_treasury()` sends `treasury_due` to the fixed treasury account. Anyone may call it,
 and it pays nobody else.
 
-## Safety rules (Lubos's hard requirements)
+## Safety rules (hard requirements)
 
 - **Nobody gets what is not theirs.** Every payout follows a burn of the payee's own QGOLD, at most
   their exact share. There is no admin withdraw, and no method sends NEAR to an address the contract

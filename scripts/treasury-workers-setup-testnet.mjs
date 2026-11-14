@@ -5,7 +5,7 @@
 //
 //   node scripts/treasury-workers-setup-testnet.mjs                       # dry run: what would happen
 //   node scripts/treasury-workers-setup-testnet.mjs --execute             # keeper + council-a on the VPS
-//   node scripts/treasury-workers-setup-testnet.mjs --execute --council-b # also council-b (Lubos's choice)
+//   node scripts/treasury-workers-setup-testnet.mjs --execute --council-b # also council-b (the owner's choice)
 //   node scripts/treasury-workers-setup-testnet.mjs --execute --sweep     # move what reached the operator after the move
 //
 // What --execute does, idempotently:
@@ -125,7 +125,7 @@ log({
   launchAgentInstalled: existsSync(launchAgent),
 });
 if (!execute) {
-  log({ note: "Dry run. Remove the Mac LaunchAgent, then re-run with --execute (add --council-b if Lubos allowed both council keys on the VPS)." });
+  log({ note: "Dry run. Remove the Mac LaunchAgent, then re-run with --execute (add --council-b if the owner allowed both council keys on the VPS)." });
   process.exit(0);
 }
 mkdirSync(bundle, { recursive: true, mode: 0o700 });

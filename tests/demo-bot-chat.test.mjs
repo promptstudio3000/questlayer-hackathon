@@ -7,7 +7,7 @@ function db() {
   const d = new DatabaseSync(":memory:");
   d.exec("CREATE TABLE players (id TEXT PRIMARY KEY, name TEXT)");
   d.prepare("INSERT INTO players VALUES (?,?)").run("seed-p-vera", "Vera");
-  d.prepare("INSERT INTO players VALUES (?,?)").run("player_00000000-0000-0000-0000-000000000001", "Lubos");
+  d.prepare("INSERT INTO players VALUES (?,?)").run("player_00000000-0000-0000-0000-000000000001", "Tester");
   return d;
 }
 const me = "player_00000000-0000-0000-0000-000000000001";
@@ -18,7 +18,7 @@ test("a demo bot greets back by name and stores nothing", () => {
   assert.equal(r.from, "Vera");
   assert.equal(r.intent, "greet");
   assert.equal(r.stored, false);
-  assert.match(r.reply, /Lubos|explorer/);
+  assert.match(r.reply, /Tester|explorer/);
   assert.doesNotMatch(r.reply, /\{/);
   assert.equal(d.prepare("SELECT COUNT(*) AS n FROM sqlite_master WHERE type='table'").get().n, 1);
 });

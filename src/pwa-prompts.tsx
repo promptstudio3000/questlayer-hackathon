@@ -174,7 +174,7 @@ function useInstallMoment(eligible: boolean) {
   return ready;
 }
 
-// The home-screen offer is off for now (Lubos, 14 Nov 2026): it covered the
+// The home-screen offer is off for now (14 Nov 2026): it covered the
 // map right after sign-in. Flip back to true to bring it back.
 const INSTALL_OFFER_ENABLED = false;
 

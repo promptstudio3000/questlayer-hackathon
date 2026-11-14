@@ -5,7 +5,7 @@ the whole world on their own hardware and hands it over ready to plug in. Everyt
 here; you should not need to read the rest of the repository, although the code paths are linked.
 
 > **Decision in force: Czechia only until 14 November 2026.** You can build, validate and hand over a world release
-> now, but it is switched on for players only after Lubos says go. Until then a world file may be checked on the
+> now, but it is switched on for players only after the owner says go. Until then a world file may be checked on the
 > VPS (validator, coverage report) without being made live. The first delivery that matters is a **Czechia shard**
 > that matches our own import (acceptance test A2), because it proves your pipeline before you scale it.
 
@@ -438,12 +438,12 @@ violations are each rejected with a reason).
 
 ## 9. Hand-over and swap-in on the VPS
 
-The VPS (`questlayer.promptstudio3000.com`) is reached only from Lubos's Mac (SSH from the cloud is blocked). The
+The VPS (`questlayer.promptstudio3000.com`) is reached only from the owner's Mac (SSH from the cloud is blocked). The
 world release lives in **its own directory**, so the Czechia worker and auto cities keep running untouched and a
 rollback is one symlink.
 
 1. **Transfer** (from the Mac): `rsync --partial --progress poi-world-<version>/ <vps>:/var/lib/questlayer-poi-world/incoming/<version>/`.
-   Never through git or a public bucket without Lubos's say-so (ODbL is fine to share with attribution, but the
+   Never through git or a public bucket without the owner's say-so (ODbL is fine to share with attribution, but the
    file is large and the hand-over should be private).
 2. **Verify on the VPS**, in `/opt/ps3000/apps/questlayer-hackathon/current`:
    `sha256sum -c SHA256SUMS`, then
@@ -458,7 +458,7 @@ rollback is one symlink.
    so `/api/health` reports `ready`, not `import-failed`. Keep the previous release; delete older ones.
 4. **First time only (after the go for worldwide play)**: add
    `POI_DB_PATH=/var/lib/questlayer-poi-world/current.sqlite` to the game's `runtime.env` and restart the game
-   service. Lubos must ask for this change himself in the deploy thread (agent-requested `runtime.env` changes are
+   service. The owner must ask for this change in the deploy thread (agent-requested `runtime.env` changes are
    blocked on the Mac). Every later swap is step 3 only: readers notice the new symlink target within a minute.
 5. **Smoke**: `curl -s https://questlayer.promptstudio3000.com/api/health | jq .poiWorld` shows `status: "ready"`,
    your `version` and counts; open the game with the demo pad in Brno and in one foreign city of your shards and
@@ -495,4 +495,4 @@ rollback is one symlink.
 - [ ] Coverage reports per shard (A4), safety sample reviewed (A6), determinism checked (A5).
 - [ ] Manifest with shards, inputs (url, version, sha256, licence), builder commit; `ATTRIBUTION.md`; `SHA256SUMS`.
 - [ ] Size checked against free disk on the VPS (2.5 ×).
-- [ ] Hand-over through the Mac with rsync; swap-in steps in section 9; worldwide go from Lubos before step 4.
+- [ ] Hand-over through the Mac with rsync; swap-in steps in section 9; worldwide go from the owner before step 4.

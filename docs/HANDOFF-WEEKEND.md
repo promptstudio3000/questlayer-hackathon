@@ -5,7 +5,7 @@ similar) working on QuestLayer while the owner's Claude limit is spent. It lists
 how to deliver a change, and a prioritized task list with acceptance criteria. Read `AGENTS.md` first; it
 still applies in full.
 
-Owner: Lubos (`@promptstudio3000`). Main integration branch: `claude/upbeat-gauss-5czir7`. Public testnet host:
+Owner: `@promptstudio3000`. Main integration branch: `claude/upbeat-gauss-5czir7`. Public testnet host:
 https://questlayer.promptstudio3000.com (read-only for you: `GET /api/health`, the game in a browser).
 
 ## 1. Hard rules (never break these)

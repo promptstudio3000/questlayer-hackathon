@@ -134,7 +134,7 @@ layer is `aavegotchi` and is the implicit layer of every existing world.
     "cities": ["*"],                   // or an allowlist of city/region ids
     "densityCapPerCell": 6, "killSwitch": "WORLD_PUNKS_CITY=0"
   },
-  "provenance": { "authoredBy": ["human:lubos", "codex", "ollama:deepseek-v4.1-flash"], "promptHashes": ["…"] }
+  "provenance": { "authoredBy": ["human:owner", "codex", "ollama:deepseek-v4.1-flash"], "promptHashes": ["…"] }
 }
 ```
 

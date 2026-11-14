@@ -284,7 +284,7 @@ export class ManagedAccounts {
     );
   }
   /**
-   * Testnet only (Lubos, 11 Nov 2026): an explorer whose account keys live on no
+   * Testnet only (11 Nov 2026): an explorer whose account keys live on no
    * device they still have, and who has no recovery passkey, starts a new
    * account on this device. The old account stays on chain untouched (the
    * service never held its keys); the game forgets it and creates a new one

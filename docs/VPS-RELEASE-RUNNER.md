@@ -1,6 +1,6 @@
 # VPS release runner
 
-Owner decision (Lubos, 11–12 Nov 2026): the Mac is a development machine only and the VPS executes
+Owner decision (11–12 Nov 2026): the Mac is a development machine only and the VPS executes
 everything on testnet: app deploys, contract upgrades and deploys, and one-off operator jobs. The testnet
 operator key moves to the VPS (variant A of the plan). Mainnet is excluded; the runner refuses it.
 
