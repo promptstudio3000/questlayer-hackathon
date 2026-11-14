@@ -32,31 +32,6 @@ html.eco-root body {
   outline: 3px solid var(--eco-coin);
   outline-offset: 2px;
 }
-.eco-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 14px 0;
-  gap: 12px;
-}
-.eco-top nav {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-}
-.eco-brand {
-  font-weight: 700;
-  text-decoration: none;
-  color: var(--eco-text) !important;
-}
-.eco-play {
-  background: var(--eco-accent);
-  color: #1a0335 !important;
-  padding: 4px 14px;
-  border-radius: 999px;
-  text-decoration: none;
-  font-weight: 700;
-}
 .eco-hero h1 {
   font-size: clamp(28px, 6vw, 44px);
   margin: 12px 0 6px;
