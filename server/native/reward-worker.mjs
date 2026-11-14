@@ -41,6 +41,29 @@ export function allowedWorkerMethods(names) {
       return set;
   return null;
 }
+// Prepaid gas per worker call. A function-call key's allowance must cover the
+// prepaid gas at NEAR's pessimistic gas price, which grows exponentially with
+// the gas attached (280 TGas reserved ~0.28 NEAR per transaction, so a 1 NEAR
+// key stalled with 0.28 NEAR still unspent). Unused gas is refunded, so this is
+// headroom, not cost: attach only what each method needs.
+const TGAS = 10n ** 12n;
+export const PAYOUT_CLAIM_TGAS = { base: 20n, perLeaf: 15n + 10n + 6n, headroom: 10n };
+export function workerGas(method, args) {
+  if (method === "claim_payout") {
+    // contracts/rewards payouts.rs: CLAIM_BASE_GAS + leaves x (MINT + CALLBACK + CLAIM_LEAF).
+    const n = BigInt(Math.max(1, args?.claims?.length || 0));
+    return (PAYOUT_CLAIM_TGAS.base + n * PAYOUT_CLAIM_TGAS.perLeaf + PAYOUT_CLAIM_TGAS.headroom) * TGAS;
+  }
+  // maintain_vault forwards 220 TGas to the vault.
+  if (method === "maintain_vault") return 280n * TGAS;
+  // claim mints through the QGOLD vault (30 TGas) with a 20 TGas callback.
+  if (method === "claim") return 100n * TGAS;
+  // Closing frees per-chunk storage; moving a world day publishes a payout day.
+  if (method.startsWith("close_") || method === "move_world_to_payout") return 150n * TGAS;
+  // Everything else only writes the contract's own state.
+  return 100n * TGAS;
+}
+export const LOW_ALLOWANCE_YOCTO = 35n * 10n ** 22n; // 0.35 NEAR
 export async function rewardTransport(
   provider,
   contractId,
@@ -88,23 +111,41 @@ export async function rewardTransport(
     "Worker key must have only bounded reward methods.",
     503,
   );
-  const account = new Account(contractId, provider, signer);
+  // Rebuilt after a failed send, so a key re-added with a fresh allowance
+  // (scripts/refresh-reward-worker-key.mjs) gets its new nonce without a restart.
+  let account = new Account(contractId, provider, signer);
   const send = async (method, args) => {
     assert(allowed.includes(method), "Unsupported worker method.");
-    const result = await account.callFunctionRaw({
-      contractId,
-      methodName: method,
-      args,
-      gas: 280n * 10n ** 12n,
-      deposit: 0n,
-      waitUntil: "FINAL",
-    });
+    let result;
+    try {
+      result = await account.callFunctionRaw({
+        contractId,
+        methodName: method,
+        args,
+        gas: workerGas(method, args),
+        deposit: 0n,
+        waitUntil: "FINAL",
+      });
+    } catch (error) {
+      account = new Account(contractId, provider, signer);
+      throw error;
+    }
     assert(
       !result.status?.Failure,
       "The native worker transaction failed.",
       503,
     );
     return result.transaction?.hash || result.transaction_outcome?.id;
+  };
+  // Remaining allowance of the function-call key (yocto string), for health.
+  send.allowance = async () => {
+    const key = await provider.query({
+      request_type: "view_access_key",
+      account_id: contractId,
+      public_key: publicKey,
+      finality: "final",
+    });
+    return key.permission?.FunctionCall?.allowance ?? null;
   };
   send.mapDays = allowed.length > METHODS.length;
   send.payouts = allowed.includes('claim_payout');
@@ -458,7 +499,25 @@ export function startRewardWorker(
   let stopped = false,
     running = null,
     send = null,
+    allowanceAt = 0,
     timer;
+  // Every 10 minutes: the key's remaining allowance goes to /api/health
+  // (nativeRewards.allowance) and a warning to the journal while it is low.
+  async function checkAllowance(send) {
+    if (Date.now() - allowanceAt < 600000 || !send.allowance) return;
+    allowanceAt = Date.now();
+    try {
+      const yocto = await send.allowance();
+      const low = yocto !== null && BigInt(yocto) < LOW_ALLOWANCE_YOCTO;
+      native.workerAllowance = { yocto, checkedAt: allowanceAt, low };
+      if (low)
+        console.error(
+          `Native reward worker: key allowance low (${yocto} yocto). Refresh it with scripts/refresh-reward-worker-key.mjs.`,
+        );
+    } catch (error) {
+      console.error("Native reward worker allowance:", String(error.message).slice(0, 200));
+    }
+  }
   async function tick() {
     if (stopped || running) return;
     const startedAt = Date.now();
@@ -472,6 +531,7 @@ export function startRewardWorker(
           native.config.codeHash,
         );
         enteredWorker = true;
+        await checkAllowance(send);
         await runRewardWorker(native, send).catch(error=>console.error('Native settlement:',String(error.message).slice(0,200)));
         await runConfiguredGlobalRewards(native,send).catch(error=>console.error('Global reward worker:',String(error.message).slice(0,300)));
         // Map days ride on the same key once it allows the map methods.
