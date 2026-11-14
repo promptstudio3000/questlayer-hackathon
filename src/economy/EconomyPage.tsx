@@ -7,6 +7,7 @@ import { CheckCircle, XCircle } from "@phosphor-icons/react";
 import { exactNear, priceLabel, shortAccount, shortHash, shortNear } from "./format";
 import "./economy.css";
 import "../public-polish.css";
+import { PublicHeader } from "../PublicHeader";
 import { scrollRegionKeys } from "../scroll-region";
 import QgoldSection from "./QgoldSection";
 import TreasuryMix from "./TreasuryMix";
@@ -176,15 +177,9 @@ export default function EconomyPage() {
   }, []);
 
   return (
+    <>
+    <PublicHeader current="economy" />
     <main className="eco">
-      <header className="eco-top">
-        <a className="eco-brand" href="/">QuestLayer</a>
-        <nav>
-          <a href="/treasury">Treasury</a>
-          <a href="/how-it-works">How it works</a>
-          <a className="eco-play" href="/">Play</a>
-        </nav>
-      </header>
       <section className="eco-hero">
         <h1>Prize pool ledger</h1>
         <p>
@@ -559,5 +554,6 @@ export default function EconomyPage() {
         </>
       ) : null}
     </main>
+    </>
   );
 }

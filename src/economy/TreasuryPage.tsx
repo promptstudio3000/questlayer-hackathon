@@ -23,6 +23,7 @@ import { FAQ_ICONS, FaqList, GLOSSARY, InfoTip, Pots, Projection, STAKING_APR, T
 import "./economy.css";
 import "./treasury.css";
 import "../public-polish.css";
+import { PublicHeader } from "../PublicHeader";
 import { shortNear } from "./format";
 import { TIER_NEAR } from "../tier-stake";
 import { arc, blendedApr, niceScale, num, qgoldCount, QGOLD_B_TOKENS, rateB, simulate, tickLabel, toNear, toUnits } from "./treasury-model";
@@ -1196,19 +1197,9 @@ export default function TreasuryPage() {
   ];
 
   return (
+    <>
+    <PublicHeader current="treasury" />
     <main className="eco tr">
-      <header className="eco-top">
-        <a className="eco-brand" href="/">
-          QuestLayer
-        </a>
-        <nav>
-          <a href="/economy">Ledger</a>
-          <a href="/how-it-works">How it works</a>
-          <a className="eco-play" href="/">
-            Play
-          </a>
-        </nav>
-      </header>
 
       <section className="tr-hero" aria-label="Treasury at a glance">
         <div className="tr-hero-top">
@@ -1558,5 +1549,6 @@ export default function TreasuryPage() {
         ) : null}
       </div>
     </main>
+    </>
   );
 }

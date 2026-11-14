@@ -51,44 +51,6 @@ html.wk-root body {
 }
 
 /* ---- top + hero ---- */
-.wk-top {
-  position: sticky;
-  top: 0;
-  z-index: 5;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 16px;
-  background: rgba(23, 2, 48, 0.92);
-  backdrop-filter: blur(8px);
-  border-bottom: 1px solid var(--wk-line);
-}
-.wk-brand {
-  font-weight: 700;
-  text-decoration: none;
-  color: var(--wk-text) !important;
-  white-space: nowrap;
-}
-.wk-brand span {
-  color: var(--wk-accent);
-}
-.wk-top nav {
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-  font-size: 14px;
-}
-.wk-play {
-  background: var(--wk-accent);
-  color: #170230 !important;
-  padding: 4px 14px;
-  border-radius: 999px;
-  text-decoration: none;
-  font-weight: 700;
-}
 .wk-hero {
   max-width: 1180px;
   margin: 0 auto;
@@ -971,14 +933,6 @@ html.wk-root body {
   .wk-matrix-row {
     grid-template-columns: 64px repeat(4, minmax(0, 1fr));
     gap: 4px;
-  }
-  .wk-top nav a:not(.wk-play) {
-    font-size: 13px;
-  }
-}
-@media (max-width: 480px) {
-  .wk-top nav a[href="/how-it-works"] {
-    display: none;
   }
 }
 .wk-chapter > p,
