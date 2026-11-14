@@ -52,7 +52,7 @@
 .app-shell .sheet-compact .recommended-art { width: 40px; height: 40px; }
 .app-shell .sheet-compact .adventure-result-resume, .app-shell .sheet-compact .adventure-notice, .app-shell .sheet-compact .native-objective { padding-inline-end: 48px; }
 .app-shell.sheet-open .main-panel { position: fixed; inset: 0; width: auto; height: 100dvh; max-width: none; max-height: none; margin: 0; border: 0; border-radius: 0; overflow-y: auto; overscroll-behavior: contain; padding: calc(12px + env(safe-area-inset-top)) max(16px, calc((100vw - 960px) / 2)) calc(24px + env(safe-area-inset-bottom)); background: var(--surface); z-index: 30; }
-.app-shell.sheet-open .topbar, .app-shell.sheet-open .nav-rail, .app-shell.sheet-open .presence-chip, .app-shell.sheet-open .demo-pad, .app-shell.sheet-open .demo-pad-open { visibility: hidden; pointer-events: none; }
+.app-shell.sheet-open .topbar, .app-shell.sheet-open .nav-rail, .app-shell.sheet-open .demo-pad, .app-shell.sheet-open .demo-pad-open { visibility: hidden; pointer-events: none; }
 .app-shell.sheet-open .panel-heading { display: flex; }
 .app-shell .panel-heading .panel-close, .app-shell .panel-back { min-width: 48px; min-height: 48px; }
 .app-shell .map-sky-chip { top: calc(132px + env(safe-area-inset-top)); left: 12px; right: auto; padding: 6px 10px; max-width: calc(100vw - 84px); font-size: 14px; }
@@ -117,7 +117,6 @@
 .app-shell.map-full .nav-rail,
 .app-shell.map-full .main-panel,
 .app-shell.map-full .map-sky-chip,
-.app-shell.map-full .presence-chip,
 body:has(.app-shell.map-full) .pwa-install {
   display: none !important;
 }

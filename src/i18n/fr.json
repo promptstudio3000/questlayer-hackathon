@@ -2834,8 +2834,6 @@
   "It didn't finish. If it was sent, it shows here in a minute.": "Ça n'a pas abouti. Si c'est parti, cela apparaîtra ici dans une minute.",
   "Show me to nearby explorers": "Me montrer aux explorateurs proches",
   "While the game is open on your screen, explorers within about 1.5 km see your name, look and position on their map. Your profile never shows where you are. Players you blocked never see you, and you never see them.": "Tant que le jeu est ouvert à l’écran, les explorateurs dans un rayon d’environ 1,5 km voient ton nom, ton apparence et ta position sur leur carte. Ton profil ne montre jamais où tu es. Les joueurs que tu as bloqués ne te voient jamais, et tu ne les vois pas.",
-  "Stop showing me to nearby explorers": "Ne plus me montrer aux explorateurs proches",
-  "Visible nearby · {0} near": "Visible à proximité · {0} proches",
   "Link this device": "Associer cet appareil",
   "Messages open with your explorer account, which you get with your first find or quest.": "Les messages s’ouvrent avec ton compte d’explorateur, obtenu avec ta première trouvaille ou quête.",
   "This device is not linked to your explorer account yet, so it cannot send or read messages. Add it with your recovery passkey.": "Cet appareil n’est pas encore associé à ton compte d’explorateur, il ne peut donc ni envoyer ni lire de messages. Ajoute-le avec ta passkey de récupération.",

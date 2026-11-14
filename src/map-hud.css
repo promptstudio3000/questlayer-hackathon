@@ -461,7 +461,6 @@ html[data-motion="reduce"] .app-shell .main-panel.settings-panel { animation: no
 .app-shell[data-screen]:has(.zone-presence) { --hs-zone: 56px; }
 .app-shell[data-screen] .topbar > .stake-tier-chip { top: calc(var(--hs-top) + var(--hs-guide)); }
 .app-shell[data-screen] .zone-presence { top: calc(var(--hs-top) + var(--hs-guide) + var(--hs-chip)); }
-.app-shell[data-screen] .presence-chip { top: calc(var(--hs-top) + var(--hs-guide) + var(--hs-chip) + var(--hs-zone)); left: 12px; right: auto; }
 .app-shell[data-screen] .tour-helper:not(.tour-strip) { top: var(--hs-top); }
 @media (max-width: 760px) {
   .app-shell[data-screen]:has(.map-guide-key) { --hs-guide: 54px; }

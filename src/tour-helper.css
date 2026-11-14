@@ -8,7 +8,6 @@
   .tour-helper .tour-buttons { gap: 6px; }
   .tour-helper .tour-go, .tour-helper .tour-quiet { padding: 0 10px; font-size: 13px; }
   /* One thing at a time: the "Visible nearby" chip waits while Pip's card is open. */
-  html:has(.tour-helper:not(.is-folded):not(.tour-strip)) .presence-chip { display: none; }
 }
 .tour-helper.is-fresh { animation: tour-pop .5s ease-out; border-color: #ffd35c; }
 .tour-helper.is-folded { width: auto; padding: 6px; border-radius: 40px; }
