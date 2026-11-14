@@ -14,7 +14,7 @@ audit of this contract and a legal opinion on the token.
   R = backing / supply, in yoctoNEAR per whole QGOLD. The initial R is 0.001 NEAR.
 - **Why one contract.** The burn, the payout and R are all decided in one synchronous call, so a
   cross-contract race can never pay out against a burn that did not happen. The minter is the vault itself.
-  The ledger no longer mints QGOLD (see "Hand-off" below).
+  The ledger no longer mints QGOLD (see "Follow-ups" below).
 
 ## Money in
 
@@ -165,11 +165,11 @@ The script does these steps in order:
 
 Then commit both manifests and `contracts/wasm-sha256.json`, and deploy the VPS.
 
-## Hand-off
+## Follow-ups
 
 - **Ledger (PR #163).** QGOLD is no longer minted by the ledger. Keep `set_gold_token(None)`; the ledger
   records the GOLD amount in its memos only. The old soulbound `questlayer-qgold-20261104.testnet` and
-  `contracts/soulbound-ft` are retired. The ledger thread removes them from its deploy script.
+  `contracts/soulbound-ft` are retired. They are removed from the ledger deploy script.
 - **Token page and market (stream 2).**
   - Buy with `deposit`. Sell with `redeem`.
   - Read numbers from `/api/qgold`.

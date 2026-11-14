@@ -170,7 +170,7 @@ Reproduced on Linux x86_64 in Docker `rust:1.97.0` (`linux/amd64`) with `bash sc
 
 The contract changed after the patron and season review. Diff: `git diff e2be467 <this PR head> -- contracts/collectibles`
 (source and `WASM_SHA256`). Owner approval: approved the QGOLD tokenomics on 4 Nov 2026 12:58, including
-Mintbase/Paras integration and 2 % on P2P trades to the treasury (thread "Put every trade on chain"); testnet only.
+Mintbase/Paras integration and 2 % on P2P trades to the treasury; testnet only.
 
 - New owner-only `set_royalty(royalty: Option<Royalty>)`: 1 yocto, predecessor must be `tokens.owner_id`, `bps` in
   1..=1000 (at most 10 %); `None` removes it. `get_royalty()` reads it.
@@ -228,7 +228,7 @@ target directory): `questlayer_collectibles.wasm` 398,418 bytes, matching `contr
 ## Uncapped editions (2026-11-12)
 
 Owner decision: 11 Nov 2026 ("Aury by neměly mít capped supply") and 12 Nov 00:55 ("odstraň tu limitaci edicí"); testnet.
-Diff: `git diff 94f4c06 -- contracts/collectibles/src/lib.rs` (branch `claude/project-thread-xnwsia`).
+Diff: `git diff 94f4c06 -- contracts/collectibles/src/lib.rs`.
 
 - `next_aura` no longer asserts `n < 256` ("Edition exhausted"); serials keep counting `aura:<edition>:<n+1>`.
   `minted` stays `LookupMap<String, u32>`; with `overflow-checks = true` it would panic, not wrap, at u32::MAX.

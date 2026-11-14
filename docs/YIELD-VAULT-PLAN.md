@@ -60,9 +60,9 @@ without debt needs no oracle prices. Our contract never borrows.
 
 ## Work split
 
-1. Contract `questlayer-yield-vault` + tests + Docker build + `wasm-sha256.json` (worker thread).
-2. Treasury in stNEAR + daily harvester script on the Mac (needs the operator key; worker thread).
-3. Rhea markets reader and staker integration (this thread).
+1. Contract `questlayer-yield-vault` + tests + Docker build + `wasm-sha256.json`.
+2. Treasury in stNEAR + daily harvester script on the Mac (needs the operator key).
+3. Rhea markets reader and staker integration.
 
 ## App wiring (done, 2 Nov)
 

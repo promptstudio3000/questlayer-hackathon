@@ -70,7 +70,7 @@ The DAO approves with 2 of [operator (owner), council-a, council-b]. Two set-ups
   updates) or from the operator seat. Until then the day's rebalance waits; the hourly retry runs it once approved.
   Harvest and `keep` do not wait for the DAO.
 
-## Moving it (Mac, by the Deploy thread)
+## Moving it (from the Mac)
 
 ```sh
 git pull                                                        # this branch merged
