@@ -3344,5 +3344,16 @@
   "Night": "Ночь",
   "Day view, chosen by you. Tap to follow the real sun again.": "Дневной вид по твоему выбору. Нажми, чтобы снова следовать за настоящим солнцем.",
   "Night view, chosen by you. Tap to follow the real sun again.": "Ночной вид по твоему выбору. Нажми, чтобы снова следовать за настоящим солнцем.",
-  "Tap to switch day and night.": "Нажми, чтобы переключить день и ночь."
+  "Tap to switch day and night.": "Нажми, чтобы переключить день и ночь.",
+  "How to complete": "Как выполнить",
+  "Tap Take this task to claim it; it is yours for 3 hours.": "Нажми «Взять это задание»; оно твоё на 3 часа.",
+  "Make your way to the pinned place.": "Отправляйся к отмеченному месту.",
+  "Make your way to the hidden chest.": "Отправляйся к спрятанному сундуку.",
+  "Do as the poster asks, then tap I'm here within {0} m of the pin.": "Сделай, что просит автор, и нажми «Я на месте» не дальше {0} м от метки.",
+  "Seek the answer there, then type it in the answer box here. The game checks it at once.": "Найди там ответ и введи его здесь в поле ответа. Игра сразу его проверит.",
+  "Do the deed, then tell of it in the proof box here. The poster checks it and pays you.": "Выполни задание и опиши его здесь в поле доказательства. Автор проверит и заплатит.",
+  "Tap Go to begin; the map then lights your way.": "Нажми «Идти»; карта осветит тебе путь.",
+  "No place to visit; you may do this from anywhere.": "Никуда идти не нужно; это можно сделать откуда угодно.",
+  "Walk the {0} stops in order.": "Пройди {0} остановок по порядку.",
+  "Then write your answer to the question above in the answer box here. A reviewer checks it.": "Затем напиши здесь ответ на вопрос выше. Его проверит рецензент."
 }

@@ -1100,6 +1100,7 @@ export const CHAPTERS: Chapter[] = [
           "Failed transfers keep the credit and retry after verification; only payments with an unknown outcome pause the queue.",
           "The funder holds a small NEAR storage deposit on the escrow (about 0.01 NEAR per agreement record); the relayer can top it up in 0.05 NEAR steps, at most 0.5 NEAR.",
           "**Community · Tasks** is one list of these player tasks: open nearby, the ones you are taking, the ones you posted, and a type filter. Every row shows who posted it with their avatar. The older practice-QGOLD tasks and the separate sponsored NEAR task contract are no longer in the app.",
+          "**How to complete:** every task and every creator quest opens with the same short numbered steps: claim it (Take this task, or Go for a quest), walk to the pinned place with its distance and a Show me the way button, then where to finish. Place tasks (go, meet, collect, event, deliver) finish with I'm here within the pin's radius; a question task with its answer box right in the task; photo and make tasks with a short proof the poster checks; a creator quest with the answer box under its question, read by a reviewer. A quest with no place says it can be done from anywhere.",
         ],
       },
       { h: "Creators" },

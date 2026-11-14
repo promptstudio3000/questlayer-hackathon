@@ -3344,5 +3344,16 @@
   "Night": "Noc",
   "Day view, chosen by you. Tap to follow the real sun again.": "Denní vzhled podle tvé volby. Klepnutím se vrátíš ke skutečnému slunci.",
   "Night view, chosen by you. Tap to follow the real sun again.": "Noční vzhled podle tvé volby. Klepnutím se vrátíš ke skutečnému slunci.",
-  "Tap to switch day and night.": "Klepnutím přepneš den a noc."
+  "Tap to switch day and night.": "Klepnutím přepneš den a noc.",
+  "How to complete": "Jak splnit",
+  "Tap Take this task to claim it; it is yours for 3 hours.": "Klepni na Vzít tento úkol; 3 hodiny je jen tvůj.",
+  "Make your way to the pinned place.": "Vydej se na označené místo.",
+  "Make your way to the hidden chest.": "Vydej se ke skryté truhle.",
+  "Do as the poster asks, then tap I'm here within {0} m of the pin.": "Udělej, oč zadavatel žádá, pak klepni na Jsem tady do {0} m od špendlíku.",
+  "Seek the answer there, then type it in the answer box here. The game checks it at once.": "Najdi tam odpověď a napiš ji sem do pole pro odpověď. Hra ji hned ověří.",
+  "Do the deed, then tell of it in the proof box here. The poster checks it and pays you.": "Splň úkol a popiš ho sem do pole pro důkaz. Zadavatel ho zkontroluje a zaplatí.",
+  "Tap Go to begin; the map then lights your way.": "Klepni na Jít; mapa ti pak posvítí na cestu.",
+  "No place to visit; you may do this from anywhere.": "Žádné místo navštívit nemusíš; zvládneš to odkudkoli.",
+  "Walk the {0} stops in order.": "Projdi {0} zastávek popořadě.",
+  "Then write your answer to the question above in the answer box here. A reviewer checks it.": "Pak napiš odpověď na otázku výše sem do pole pro odpověď. Zkontroluje ji recenzent."
 }

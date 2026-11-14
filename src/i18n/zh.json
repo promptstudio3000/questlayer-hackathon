@@ -3344,5 +3344,16 @@
   "Night": "夜晚",
   "Day view, chosen by you. Tap to follow the real sun again.": "你选择的白天视图。轻点以重新跟随真实的太阳。",
   "Night view, chosen by you. Tap to follow the real sun again.": "你选择的夜晚视图。轻点以重新跟随真实的太阳。",
-  "Tap to switch day and night.": "轻点切换白天和夜晚。"
+  "Tap to switch day and night.": "轻点切换白天和夜晚。",
+  "How to complete": "如何完成",
+  "Tap Take this task to claim it; it is yours for 3 hours.": "点“接下这个任务”认领，它在3小时内归你。",
+  "Make your way to the pinned place.": "前往标记的地点。",
+  "Make your way to the hidden chest.": "前往隐藏的宝箱。",
+  "Do as the poster asks, then tap I'm here within {0} m of the pin.": "按发布者的要求完成，然后在距图钉{0}米内点“我到了”。",
+  "Seek the answer there, then type it in the answer box here. The game checks it at once.": "在那里找到答案，然后填进这里的答案框。游戏会立刻核对。",
+  "Do the deed, then tell of it in the proof box here. The poster checks it and pays you.": "完成后，在这里的证明框里说明。发布者核对后付款。",
+  "Tap Go to begin; the map then lights your way.": "点“前往”开始，地图会为你照亮道路。",
+  "No place to visit; you may do this from anywhere.": "无需前往任何地点，在哪里都能完成。",
+  "Walk the {0} stops in order.": "按顺序走完{0}个站点。",
+  "Then write your answer to the question above in the answer box here. A reviewer checks it.": "然后在这里的答案框写下你对上面问题的回答。审核员会检查。"
 }
