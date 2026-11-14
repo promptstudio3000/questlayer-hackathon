@@ -1459,15 +1459,16 @@ export function GameMap(props: GameMapProps) {
     },
     [],
   );
-  const wearing2D = !props.skinUrl && !!props.wearables?.length;
+  // Wearable clones on the starter: the official renderer draws the dressed
+  // ghost as one 3D model; until that look exists the 2D marker shows them.
+  const starterLook = props.skinUrl ? "" : (props.wearables || []).map((w) => w.id).join(",");
   useEffect(() => {
     const m = map.current,
       element = avatar.current?.getElement();
-    // Aavegotchi wearable clones are drawn on the 2D starter only.
     // The 3D look stays while a sheet covers the map (a find, an NPC, a
     // zone): it renders only on map moves, so it costs nothing in between,
     // and tearing it down made every collect fall back to the 2D sprite.
-    if (!m || !element || !ready || props.map3D === false || wearing2D) return;
+    if (!m || !element || !ready || props.map3D === false) return;
     const controller = new AbortController(),
       host = document.createElement("div");
     host.className = "map-character-model";
@@ -1554,7 +1555,7 @@ export function GameMap(props: GameMapProps) {
       show2D();
       host.remove();
     };
-  }, [props.skinUrl, props.map3D, wearing2D, ready]);
+  }, [props.skinUrl, props.map3D, starterLook, ready]);
   useEffect(() => {
     const m = map.current;
     if (!m || !ready) return;

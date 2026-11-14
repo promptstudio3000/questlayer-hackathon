@@ -5,6 +5,21 @@ import { optimizeModelTextures } from "./model-textures.mjs";
 
 export const MODEL_CDN = "https://dzqjok0x69zbl.cloudfront.net";
 export const STARTER_MODEL = "Eth-Common2-Common-0-0-0-0-0-0-0";
+// Renderer slots 0-6 of the starter look: body, face, eyes, head, hands, pet.
+const STARTER_SLOTS = { body: [0], face: [1], eyes: [2], head: [3], hand: [4, 5], pet: [6] };
+/**
+ * The starter look dressed in wearable clones ({id, slot}): the official
+ * renderer draws the whole dressed ghost as one model, slots 0-6 in its name.
+ */
+export function starterModel(wearables) {
+  const slots = [0, 0, 0, 0, 0, 0, 0];
+  for (const w of wearables || []) {
+    const free = (STARTER_SLOTS[w?.slot] || []).find((i) => !slots[i]);
+    const id = Number(w?.id);
+    if (free !== undefined && Number.isInteger(id) && id > 0 && id <= 65535) slots[free] = id;
+  }
+  return `Eth-Common2-Common-${slots.join("-")}`;
+}
 export const MAX_MODEL_BYTES = 6 * 1024 * 1024;
 // Official renders of fully dressed originals reach ~11 MB and ~115 Mpx of
 // 2048 px textures; they are shrunk to the mobile budget before serving.
@@ -358,8 +373,8 @@ export class GotchiModels {
    * in-game outfit (slot index -> item id over slots 0-6, server/gotchi-outfit.mjs)
    * swaps those slots in the renderer identity.
    */
-  async describe({ tokenId = null, expectedWearables, outfit = null } = {}) {
-    let source = { hash: STARTER_MODEL, complete: true };
+  async describe({ tokenId = null, expectedWearables, outfit = null, starterWearables = null } = {}) {
+    let source = { hash: starterModel(starterWearables), complete: true };
     if (tokenId) {
       const traits = await this.traits(tokenId);
       source = deriveGotchiModel(traits);
