@@ -60,19 +60,27 @@ flowchart LR
 
 ### Three minutes in the Test Layer
 
-1. Type a name and press **Start**. Pip, the guide, offers a short tour; follow it or skip it.
-2. On desktop move with the **demo pad** (arrows or WASD); on a phone walk with GPS or use the pad.
-3. Walk over **coins** on the paths. They disappear for every player and pay XP; the Test Layer gives a one-time
-   welcome of Test QGOLD after the first coin.
-4. Open a **zone**: beat the guardian (a riddle, rhythm or duel), open the chest, receive an **Aura**, wear it and
-   **secure** it. Securing mints the NFT to your own NEAR account in the background.
-5. Talk to an **NPC** (Talk, Tasks, Profile). NPC conversations run on **NEAR AI Cloud** with signed, attested replies.
-6. Open a **creator quest** (the big pins with a photo): Go, then rate and discuss it.
-7. Open **Profile → Stake** to see the tiers and what a stake costs, then open **/treasury**. The Test Layer has no
-   treasury of its own: its /treasury page shows GotchiGO's live treasury (one treasury for the whole game), and says
-   so. A temporary Test Layer explorer holds only the 0.02 test NEAR for its account, so it cannot place a stake;
-   staking is shown with a funded testnet account on GotchiGO. Settings → Account and devices shows the NEAR
-   account, the on-chain feed and the 12-word export.
+1. Type a name and press **Start exploring**, then **Let's explore**. Pip, the guide, offers a tour: **Start the
+   tour** or **Not now**.
+2. On desktop move with the **demo pad** (drag the stick, or arrows / WASD); on a phone walk with GPS or use the pad.
+3. Walk over a **coin** on a path: "+2 XP · +250,000 QGOLD". A coin disappears for every player once it is taken, so
+   the nearest one can be a short walk away (**Point me there** turns you towards it). The first find also creates
+   your NEAR account in the background, and the Test Layer adds a one-time welcome of Test QGOLD.
+4. Tap the banner of the **zone** you start in (náměstí Republiky): the sheet lists today's activities. Pick
+   **Path chest**, walk to it, press **Open Path chest** and **Open chest**. "Nice find!" shows your **Aura**;
+   **Try it on** puts it on your ghost. To make it an NFT open **Inventory → Wardrobe → Advanced** and press
+   **Secure this Aura**: the mint to your own NEAR account runs in the background, gas is sponsored, and
+   **Check claim** refreshes the card.
+5. Walk up to a **monster** on the map and tap it: pick a challenge (riddles, a rune path, rhythm or a duel,
+   depending on the day), press **Start challenge** and win with skill. Money never helps.
+6. Talk to an **NPC** (Talk, Tasks, Profile). NPC conversations run on **NEAR AI Cloud** with signed, attested replies.
+7. Open a **creator quest** (the big pins with a photo, or **Community → Quests**): **Go**, then rate and discuss it.
+8. Tap your avatar at the top and open **Stake** to see the tiers and what a stake costs, then open **/treasury**.
+   The Test Layer has no treasury of its own: its /treasury page shows GotchiGO's live treasury (one treasury for
+   the whole game), and says so. A temporary Test Layer explorer holds only the 0.02 test NEAR for its account, so
+   it cannot place a stake; staking is shown with a funded testnet account on GotchiGO. **Settings → Account**
+   shows your NEAR account under **NEAR wallet**, with **Open in a wallet** for the 12 words; **Settings →
+   Advanced** has the **On-chain feed** with explorer links.
 
 A longer judge guide with "do X, see Y" steps and terminal checks is [docs/JUDGE-WALKTHROUGH.md](docs/JUDGE-WALKTHROUGH.md).
 
