@@ -17,7 +17,6 @@ import {
   ZoneActivities,
   Layer,
   DailyBoard,
-  SeasonCard,
   QuestBrief,
   GameIntro,
   WearableMoment,
@@ -4371,6 +4370,7 @@ export default function App() {
               <div className="hud-bubble">
                 <button
                   className="profile-pill"
+                  aria-label={tr("Profile of {0}", { 0: player.name })}
                   onClick={() => chooseProfileTab("character")}
                 >
                   <span className="sr-only">{tr("Profile")}</span>
@@ -4999,9 +4999,6 @@ export default function App() {
               )}
               {tab === "explore" && nativePlay && (
                 <TodaysPot practice={false} onOpen={() => setTab("funding")} />
-              )}
-              {tab === "explore" && nativePlay && (
-                <SeasonCard signedIn={!!player} refreshKey={player?.xp} onClaimed={() => void me()} />
               )}
               <NativeExpeditions
                 onBusyChange={setNativeVisitBusy}

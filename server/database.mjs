@@ -12,7 +12,6 @@ import "./ai/schema.mjs";
 import "./daily-board/schema.mjs";
 import "./badges/schema.mjs";
 import "./chain-ledger/schema.mjs";
-import "./season/schema.mjs";
 import "./map-read-indexes.mjs";
 import "./hot-path-indexes.mjs";
 import "./coin-spots.mjs";
