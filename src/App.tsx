@@ -5516,6 +5516,27 @@ export default function App() {
               <ArrowsIn size={22} weight="bold" />
             </button>
           )}
+          {tab === "explore" && !globe && !communityGoal && creatorView.page === "edit" && (
+            <div className="community-goal" role="group" aria-label={tr("Quest draft")}>
+              <button type="button" className="community-goal-open" onClick={() => { setTab("community"); setSheetExpanded(true); }}>
+                <img src={mapKitUrl("quests/trail.png")} width={32} height={32} alt="" aria-hidden="true" />
+                <span>
+                  <strong>{tr("Quest draft")}</strong>
+                  <small>{tr("Walk on, then tap to pin the next spot.")}</small>
+                </span>
+                <ArrowRight size={20} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="community-goal-close"
+                aria-label={tr("Hide draft")}
+                title={tr("Hide draft")}
+                onClick={() => setCreatorView({ page: "mine" })}
+              >
+                <X size={18} weight="bold" aria-hidden="true" />
+              </button>
+            </div>
+          )}
           {tab === "explore" && !globe && communityGoal?.points[0] && (
             <div className="community-goal" role="group" aria-label={tr("Creator quests")}>
               <button type="button" className="community-goal-open" onClick={openCommunityGoal}>

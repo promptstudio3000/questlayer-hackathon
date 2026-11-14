@@ -580,7 +580,7 @@ function CreatorCommunitySession({
     { page: "following", label: tr("Following"), section: "quests" },
     { page: "participations", label: tr("Started"), section: "quests" },
     { page: "creators", label: tr("Creators"), section: "creators" },
-    { page: "mine", label: tr("My creations"), section: "creators" },
+    { page: "mine", label: tr("My quests"), section: "creators" },
   ] as const;
   type Chip = (typeof allTabs)[number]["page"];
   const chips = allTabs
@@ -679,8 +679,8 @@ function CreatorCommunitySession({
                       : nearOnly
                         ? !position
                           ? tr("Turn on location on the map to see creator places nearby.")
-                          : tr("No creator places within 5 km yet. Pin the first one in My creations.")
-                        : tr("No reviewed creator quests are published yet. Explore the map, or start a draft in My creations.")
+                          : tr("No creator places within 5 km yet. Pin the first one in My quests.")
+                        : tr("No reviewed creator quests are published yet. Explore the map, or start a draft in My quests.")
                   }
                 />
                 {data.quests?.nextCursor && (
@@ -700,6 +700,14 @@ function CreatorCommunitySession({
             )}
             {(view.page === "creators" || view.page === "creator") && (
               <>
+                <div className="creator-heading">
+                  <h3>{tr("Creators")}</h3>
+                  <button
+                    className="primary-button"
+                    onClick={() => navigate({ page: "edit", questId: null })}
+                  >
+                    <Plus size={20} /> {" "}{tr("New quest")}</button>
+                </div>
                 {!data.creators?.items.length ? (
                   <Empty>
                     {tr("Creators appear here after they deliberately publish a profile.")}</Empty>
@@ -813,7 +821,7 @@ function CreatorCommunitySession({
             {view.page === "mine" && (
               <>
                 <div className="creator-heading">
-                  <h3>{tr("My creations")}</h3>
+                  <h3>{tr("My quests")}</h3>
                   <button
                     className="primary-button"
                     onClick={() => navigate({ page: "edit", questId: null })}
@@ -902,7 +910,7 @@ function CreatorCommunitySession({
             {view.page === "blocked" && (
               <>
                 <Back onClick={() => navigate({ page: "mine" })}>
-                  {tr("My creations")}</Back>
+                  {tr("My quests")}</Back>
                 <h3>{tr("Blocked creators")}</h3>
                 <p className="creator-hint">
                   {tr("This private list includes shared player blocks you set, including explorers without a public creator profile. Blocks also affect public notes, profiles, follows and presence in both directions. They do not erase your accepted quest instructions or resolve participant obligations.")}</p>
@@ -1975,7 +1983,7 @@ function ProfileEditor({
   }
   return (
     <>
-      <Back onClick={() => navigate({ page: "mine" })}>{tr("My creations")}</Back>
+      <Back onClick={() => navigate({ page: "mine" })}>{tr("My quests")}</Back>
       <h3>{tr("Your creator profile")}</h3>
       <p>
         {tr("Choose the name and bio other explorers may see. Your private account name is not copied here.")}</p>
@@ -2104,17 +2112,51 @@ function QuestEditor({
   position?: Point;
 }) {
   const savedPlace = quest?.draft.place;
-  const [template, setTemplate] = useState<CreatorPlaceTemplate | null>(
-    savedPlace?.template ?? (quest ? null : "visit"),
-  );
-  const [points, setPoints] = useState<Point[]>(savedPlace?.points ?? []);
-  const [placeError, setPlaceError] = useState("");
   const savedPrice =
     quest?.draft.price && quest.draft.price !== "0" ? quest.draft.price : "";
-  const [paid, setPaid] = useState(!!savedPrice);
-  const [priceText, setPriceText] = useState(
-    savedPrice ? qgoldOfYocto(savedPrice) : "",
-  );
+  // Pinned stops, kind and price survive leaving the editor (Lubos, 14 Nov
+  // 2026: walking to trail stop 2 closed Community and lost stop 1).
+  const placeBase = JSON.stringify({
+    template: savedPlace?.template ?? (quest ? null : "visit"),
+    points: savedPlace?.points ?? [],
+    paid: !!savedPrice,
+    priceText: savedPrice ? qgoldOfYocto(savedPrice) : "",
+  });
+  const placeDraft = useFormDraft({
+    playerId,
+    form: "creator-quest-place",
+    realm: `demo:quest:${quest?.id || "new"}`,
+    fields: { place: 1500 },
+    initial: { place: placeBase },
+  });
+  const restoredPlace = useMemo(() => {
+    try {
+      const v = JSON.parse(placeDraft.values.place || placeBase);
+      return {
+        template: (v.template && v.template in PLACE_TEMPLATES ? v.template : null) as CreatorPlaceTemplate | null,
+        points: (Array.isArray(v.points) ? v.points : []).filter(
+          (p: Point) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng),
+        ) as Point[],
+        paid: !!v.paid,
+        priceText: typeof v.priceText === "string" ? v.priceText : "",
+      };
+    } catch {
+      return JSON.parse(placeBase);
+    }
+    // Read once per editor; later edits write through the effect below.
+  }, []);
+  const [template, setTemplate] = useState<CreatorPlaceTemplate | null>(restoredPlace.template);
+  const [points, setPoints] = useState<Point[]>(restoredPlace.points);
+  const [placeError, setPlaceError] = useState("");
+  const [paid, setPaid] = useState<boolean>(restoredPlace.paid);
+  const [priceText, setPriceText] = useState<string>(restoredPlace.priceText);
+  const placeNow = JSON.stringify({ template, points, paid, priceText });
+  useEffect(() => {
+    if (!editable) return;
+    if (placeNow === placeBase) {
+      if (placeDraft.hasDraft) placeDraft.discard();
+    } else if (placeNow !== placeDraft.values.place) placeDraft.setField("place", placeNow);
+  }, [placeNow]);
   let priceValue = "0",
     priceProblem = "";
   try {
@@ -2274,6 +2316,7 @@ function QuestEditor({
       (stillHere) => {
         draft.discard(revision);
         requirementDraft.discard(requirementRevision);
+        placeDraft.discard();
         newIdentity?.clear();
         if (stillHere) navigate({ page: "edit", questId });
       },
@@ -2305,7 +2348,7 @@ function QuestEditor({
   }
   return (
     <>
-      <Back onClick={() => navigate({ page: "mine" })}>{tr("My creations")}</Back>
+      <Back onClick={() => navigate({ page: "mine" })}>{tr("My quests")}</Back>
       <div className="creator-heading">
         <h3>{quest ? quest.draft.title : tr("Write a free quest")}</h3>
         {quest && (
@@ -2313,7 +2356,7 @@ function QuestEditor({
         )}
       </div>
       <p className="creator-hint">
-        {tr("Pick a template, pin it where you stand, then write clear and safe instructions. Only places you pin are shown; your live location is never shared.")}</p>
+        {tr("Pick a kind, pin it where you stand, then write what to do. Your live location is never shared.")}</p>
       {quest && hasChanges && !editable && (
         <details className="creator-saved-version">
           <summary>{tr("View saved revision")}{" "}{quest.latestRevision}</summary>
@@ -2323,7 +2366,8 @@ function QuestEditor({
           <p className="creator-instructions">{quest.draft.description}</p>
         </details>
       )}
-      <form className="creator-form" onSubmit={save}>
+      <div className="qe-wrap">
+      <form className="creator-form qe-form" onSubmit={save}>
         {editable && (
           <AiQuestDraft
             template={template}
@@ -2342,6 +2386,7 @@ function QuestEditor({
             }}
           />
         )}
+        <div className="qe-col qe-col-place">
         <div className={`qe-photo${photo ? " has-photo" : ""}`}>
           {photo && <img src={photo} alt="" />}
           <label className={`secondary-button${!editable || busy || photoBusy ? " is-disabled" : ""}`}>
@@ -2366,7 +2411,7 @@ function QuestEditor({
           )}
           {photoError && <p role="alert">{photoError}</p>}
         </div>
-        <fieldset className="creator-templates" disabled={!editable || busy}>
+        <fieldset className="creator-templates qe-kinds" disabled={!editable || busy}>
           <legend>{tr("Template")}</legend>
           {(Object.keys(PLACE_TEMPLATES) as CreatorPlaceTemplate[]).map(
             (key) => (
@@ -2383,6 +2428,7 @@ function QuestEditor({
                     setAccepted(false);
                   }}
                 />
+                <img className="qe-art" src={mapKitUrl(`quests/${key}.png`)} width={48} height={48} alt="" draggable={false} />
                 <span>
                   <strong>{PLACE_TEMPLATES[key].name}</strong>
                   <small>{PLACE_TEMPLATES[key].hint}</small>
@@ -2390,6 +2436,7 @@ function QuestEditor({
               </label>
             ),
           )}
+          {template && <p className="creator-hint qe-kind-hint">{PLACE_TEMPLATES[template].hint}</p>}
         </fieldset>
         {template && (
           <div className="creator-pins">
@@ -2417,6 +2464,10 @@ function QuestEditor({
                   </li>
                 ))}
               </ol>
+            )}
+            {template === "trail" && points.length > 0 && points.length < PLACE_TEMPLATES.trail.max && (
+              <p className="creator-hint">
+                {tr("Walk to the next stop. You can close this; your draft waits on the map.")}</p>
             )}
             {template === "trail" && points.length > 1 && (
               <p className="creator-hint">
@@ -2457,7 +2508,7 @@ function QuestEditor({
             {placeError && <p role="alert">{placeError}</p>}
           </div>
         )}
-        <fieldset className="creator-templates" disabled={!editable || busy}>
+        <fieldset className="creator-templates qe-access" disabled={!editable || busy}>
           <legend>{tr("Access")}</legend>
           <label className="creator-template">
             <input
@@ -2505,6 +2556,8 @@ function QuestEditor({
               {qgoldOfYocto(priceValue)} {" "}{tr("QGOLD. The price goes live after review; people who already unlocked keep access.")}</p>
           )}
         </fieldset>
+        </div>
+        <div className="qe-col qe-col-words">
         <label htmlFor="creator-quest-title">
           {tr("Quest title")}<input
             id="creator-quest-title"
@@ -2599,6 +2652,7 @@ function QuestEditor({
             onClick={() => {
               draft.discard();
               requirementDraft.discard();
+              placeDraft.discard();
               setObservation(!!quest?.draft.requirement);
               setTemplate(savedPlace?.template ?? (quest ? null : "visit"));
               setPoints(savedPlace?.points ?? []);
@@ -2611,7 +2665,9 @@ function QuestEditor({
           >
             {tr("Discard local text changes")}</button>
         )}
+        </div>
       </form>
+      </div>
       {createUncertain && !quest && (
         <div className="creator-quote">
           <p>
