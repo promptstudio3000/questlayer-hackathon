@@ -547,7 +547,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "The catalogue is read from the Aavegotchi contract on Base and the artwork is served from the contract, never copied. A find shows that pixel art inside the rarity ring of its map marker; unreadable art falls back to a sparkle.",
           "Picking one up is a normal street claim (GPS check, travel guard, XP caps). The clone is a database row, never an NFT: not tradable, no QGOLD value. It lands in Inventory → Wardrobe.",
-          "One item per slot (head, face, eyes, body, hand, pet), drawn at its official canvas place. **Try it on** shows it at once on the map character, the profile button, the Wardrobe and the profile; on the starter ghost the map shows the flat 2D look while something is worn.",
+          "One item per slot (head, face, eyes, body, hand, pet), drawn at its official canvas place. **Try it on** shows it at once on the map character, the profile button, the Wardrobe and the profile; in 3D the official Aavegotchi renderer draws the whole dressed ghost as one model (slots 0-6 in its name), asked for the first time a look is worn; until it exists the map shows the dressed 2D ghost.",
           "Wearing one of your own Aavegotchis, Try it on puts the item into that gotchi's in-game outfit (a hand item takes a free hand); Take it off gives the slot back to the gotchi's real gear.",
           "**Verified originals:** link a Base wallet with a signed message and every clone whose original is in that wallet gets a gold check for 24 hours after the last read. Others see only verified, never the address.",
         ],

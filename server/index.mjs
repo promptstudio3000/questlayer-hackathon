@@ -3802,7 +3802,8 @@ async function api(req, res, url) {
         }),
       );
     }
-    return respond(res, await gotchiModels.describe());
+    // Worn clones on the starter are part of its official 3D look.
+    return respond(res, await gotchiModels.describe({ starterWearables: wornWearables(db, player) }));
   }
   if (path.startsWith("/api/character/assets/") && method === "GET") {
     const digest = path.match(
