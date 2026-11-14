@@ -9,7 +9,7 @@ import { goldCompact } from "./reward-funding";
 import "./season.css";
 import { tr } from "./i18n";
 
-// Hackathon season (docs/SEASON.md): a cosmetic leaderboard of hunts, zone
+// Season (docs/SEASON.md): a cosmetic leaderboard of hunts, zone
 // visits and NPC lines, a season mark and Aura at the goal, and a meter of the
 // reward pot that funded the season's days. Ranks never change rewards or odds.
 type Row = {

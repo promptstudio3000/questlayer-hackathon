@@ -132,7 +132,7 @@ forwarding or a tunnel), because geolocation and passkeys require a secure origi
 
 Real iOS/Android field play, the relayer on a public host, a complete staking yield cycle and the App Store
 track remain open. Mainnet is not live; the gate and the minimal slice are in `docs/MAINNET-PLAN.md`.
-See `docs/STATUS.md`.
+See the [README](../README.md) and the in-game wiki (`/wiki`).
 
 ## 8. Cities
 

@@ -60,6 +60,7 @@ import { NativeEconomy } from "./native/economy.mjs";
 import { questTemplateCatalog } from "./quest-templates.mjs";
 import { NativeRewards } from "./native/rewards.mjs";
 import { startRewardWorker } from "./native/reward-worker.mjs";
+import { createWorldTreasuryMirror } from "./native/world-treasury-mirror.mjs";
 import { payoutsEnabled, payoutStatus, pendingPayout } from "./payouts/worker.mjs";
 import { allocationSettings } from "./native/allocation.mjs";
 import { AUTO_CITIES, LIVE_CITIES, cityStatus, playableCityById } from "./spatial/city-pack.mjs";
@@ -849,6 +850,15 @@ const treasuryMix = treasuryMixConfig.enabled
         : null,
     })
   : null;
+// The Test Layer has no treasury of its own: its /treasury page reads GotchiGO's
+// public treasury views (server/native/world-treasury-mirror.mjs), read-only,
+// ahead of any local view (the Test Layer holds no treasury account or vaults).
+const worldTreasury = TEST_LAYER && NETWORK === "testnet" ? createWorldTreasuryMirror({ origin: linkOrigin(process.env.WORLD_ORIGIN) }) : null;
+const mirrored = async (res, path, cache) => {
+  const body = await worldTreasury.read(path);
+  assert(body, "GotchiGO's treasury did not answer. Try again in a minute.", 503, "TREASURY_MIRROR_DOWN");
+  return respond(res, body, 200, { "Cache-Control": cache });
+};
 // Treasury history (docs/TREASURY-PAGE.md): one point per UTC day for /treasury.
 const treasuryHistory = treasuryMix
   ? createTreasuryHistory(db, {
@@ -1726,6 +1736,8 @@ async function api(req, res, url) {
       "Cache-Control": "public, max-age=30",
     });
   if (path === "/api/treasury/dao" && method === "GET") {
+    // Votes are cast on GotchiGO, so only the public tally is mirrored.
+    if (worldTreasury && !url.searchParams.get("account")) return mirrored(res, path, "public, max-age=30");
     assert(treasuryDao, "The treasury DAO is not set up on this host.", 503, "TREASURY_DAO_DISABLED");
     const account = String(url.searchParams.get("account") || "");
     return respond(res, await treasuryDao.read({ account: /^[a-z0-9._-]{2,64}$/.test(account) ? account : null }), 200, { "Cache-Control": account ? "no-store" : "public, max-age=30" });
@@ -1735,10 +1747,12 @@ async function api(req, res, url) {
     return respond(res, { dao: treasuryDao.contractId, rule: EXPLORER_RULE, accounts: eligibleExplorers(db, { network: NETWORK }), generatedAt: Date.now() }, 200, { "Cache-Control": "public, max-age=300" });
   }
   if (path === "/api/treasury/mix" && method === "GET") {
+    if (worldTreasury) return mirrored(res, path, "public, max-age=60");
     assert(treasuryMix, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
     return respond(res, await readTreasuryMix(), 200, { "Cache-Control": "public, max-age=60" });
   }
   if (path === "/api/treasury/history" && method === "GET") {
+    if (worldTreasury) return mirrored(res, path, "public, max-age=300");
     assert(treasuryHistory, "The treasury mix is not configured on this network.", 503, "TREASURY_MIX_DISABLED");
     await readTreasuryMix().catch(() => null); // today's point, when the chain answers
     return respond(res, treasuryHistory.read({ days: Number(url.searchParams.get("days")) || 90 }), 200, { "Cache-Control": "public, max-age=300" });
