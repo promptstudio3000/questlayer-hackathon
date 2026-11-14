@@ -694,6 +694,36 @@ export function createTraderService({
       .map((t) => ({ accountId: t.account_id, receiver: t.data.receiver, tokens: [...t.data.tokens] }));
   }
 
+  /**
+   * What the player's own signing vault may sign without a separate approval
+   * window (src/signing-vault/policy.ts): the Auras of issued trade-ups go to
+   * that trader, and the exact token_diff of each accepted buy or sale. These
+   * deals were offered by the game's own trader and pay the player back, so a
+   * tap on the NPC sheet is the decision.
+   */
+  function signingGrants(player) {
+    const now = clock();
+    const open = ledger.openTrades().filter((t) => t.player_id === player && t.deadline_ms > now);
+    return {
+      handovers: open
+        .filter((t) => t.kind === "trade_up")
+        .map((t) => ({ tradeId: t.id, accountId: t.account_id, receiver: t.data.receiver, nftContract: nftId, tokens: [...t.data.tokens] })),
+      intents: open
+        .filter((t) => t.kind !== "trade_up")
+        .map((t) => ({
+          tradeId: t.id,
+          accountId: t.account_id || null,
+          verifier: verifierId,
+          nftContract: nftId,
+          wnear: intents.wnear,
+          side: t.kind === "trade_sell" ? "buy" : "sell",
+          tokenId: t.token_id,
+          price: String(t.price),
+          feePips: t.data.feePips ?? 0,
+        })),
+    };
+  }
+
   /** The player's trades with every trader, with their on-chain proof. */
   const myTrades = (player, limit = 20) => ledger.playerTrades(player, limit).map((t) => ({ ...tradeView(t), trader: t.trader, createdAt: t.created_at, settledAt: t.settled_at }));
 
@@ -747,6 +777,7 @@ export function createTraderService({
     reconcile,
     recordTx,
     handoversFor,
+    signingGrants,
     myTrades,
     books,
   };

@@ -25,6 +25,8 @@ import {
   approvalTtl,
   describeReview,
   needsProtection,
+  messageNeedsProtection,
+  type NpcSigningGrants,
   reviewQuestion,
   trustedVaultMessage,
   validateVaultCall,
@@ -95,6 +97,13 @@ async function api<T = Record<string, unknown>>(
     throw Error(result.error ?? "The game could not verify this action.");
   return result;
 }
+// The player's open NPC trades, straight from the game server (never from
+// the game page): what a tap on the trader's sheet already decided.
+// Unreadable (signed out, traders off) means no grant: the window asks.
+const npcGrants = () =>
+  api<NpcSigningGrants>("/npc/trades/signing").catch(
+    (): NpcSigningGrants => ({ handovers: [], intents: [] }),
+  );
 function nearAction(a: VaultAction) {
   if (a.kind === "functionCall")
     return actions.functionCall(
@@ -149,7 +158,15 @@ async function reviewed(request: Request, record: PlayerKeyRecord) {
       "Invalid account authorization.",
     );
     return {
-      protected: true,
+      protected: await messageNeedsProtection(
+        {
+          accountId: record.accountId!,
+          message: i.message as string,
+          recipient: i.recipient as string,
+        },
+        config,
+        npcGrants,
+      ),
       review: {
         account: record.accountId,
         recipient: i.recipient,
@@ -190,6 +207,7 @@ async function reviewed(request: Request, record: PlayerKeyRecord) {
     config,
     (memo) => api(`/gold/burn/intent?memo=${encodeURIComponent(memo)}`),
     record.publicKey,
+    npcGrants,
   );
   return { protected: protectedAction, review: call };
 }
