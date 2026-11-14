@@ -55,7 +55,9 @@ test("settings: defaults, overrides, validation and mainnet off by default", () 
   const d = seasonSettings({});
   assert.equal(d.enabled, true);
   assert.equal(d.id, "hackathon-2026");
-  assert.equal(new Date(d.endsAt).toISOString(), "2026-11-14T23:59:59.000Z");
+  assert.equal(new Date(d.endsAt).toISOString(), "2026-11-30T23:59:59.000Z");
+  assert.equal(d.name, "Season of First Light");
+  assert.doesNotMatch(d.name, /hackathon/i);
   assert.equal(d.goal, DEFAULT_GOAL);
   assert.deepEqual({ ...d.points }, { hunt: 1, visit: 2, line: 3 });
   assert.equal(d.potTarget, (10n ** 24n).toString());
@@ -126,12 +128,12 @@ test("claim: goal required, once per explorer, season mark recorded, closed afte
   // XP is untouched: the season pays nothing but the cosmetic mark.
   assert.equal(db.prepare("SELECT xp FROM players WHERE id=?").get(alice).xp, 0);
   hunt(db, bob, 6);
-  setClock(Date.parse("2026-11-15T00:00:01Z"));
+  setClock(Date.parse("2026-12-01T00:00:01Z"));
   assert.throws(() => season.claim(bob), (e) => e.code === "SEASON_ENDED");
   const ended = season.view(bob);
   assert.equal(ended.phase, "ended");
   // Activity after the end does not move the frozen standings.
-  hunt(db, bob, 10, Date.parse("2026-11-15T00:00:00Z"));
+  hunt(db, bob, 10, Date.parse("2026-12-01T00:00:00Z"));
   assert.equal(season.standing(bob).hunts, 6);
 });
 

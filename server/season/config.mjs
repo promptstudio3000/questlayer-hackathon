@@ -1,10 +1,10 @@
-// Hackathon season settings (docs/SEASON.md, docs/GAME-LOOPS.md P1-3). Every
+// Season settings (docs/SEASON.md, docs/GAME-LOOPS.md P1-3). Every
 // default can be changed in the runtime environment without a code change:
 //   SEASON=0|1                 off / on (default on, except on mainnet: off)
 //   SEASON_ID                  stable id, never reuse (default hackathon-2026)
-//   SEASON_NAME                shown to players (default "Hackathon season")
+//   SEASON_NAME                shown to players (default "Season of First Light")
 //   SEASON_STARTS_AT           ISO time (default 2026-11-01T00:00:00Z)
-//   SEASON_ENDS_AT             ISO time (default 2026-11-14T23:59:59Z)
+//   SEASON_ENDS_AT             ISO time (default 2026-11-30T23:59:59Z)
 //   SEASON_GOAL                season points for the season mark and Aura (default 30)
 //   SEASON_POINTS              points per action, "hunt:1,visit:2,line:3"
 //   SEASON_POT_TARGET_NEAR     meter target in NEAR (default 1)
@@ -12,8 +12,9 @@
 // The leaderboard is cosmetic: it counts hunts, visits and NPC lines, never
 // money, and its rank never changes GOLD, XP, odds or payouts.
 export const DEFAULT_SEASON_ID = "hackathon-2026";
+export const DEFAULT_SEASON_NAME = "Season of First Light";
 export const DEFAULT_STARTS_AT = "2026-11-01T00:00:00Z";
-export const DEFAULT_ENDS_AT = "2026-11-14T23:59:59Z";
+export const DEFAULT_ENDS_AT = "2026-11-30T23:59:59Z";
 export const DEFAULT_GOAL = 30;
 export const DEFAULT_POINTS = Object.freeze({ hunt: 1, visit: 2, line: 3 });
 export const DEFAULT_POT_TARGET_NEAR = "1";
@@ -61,7 +62,7 @@ export function seasonSettings(env = process.env, network = "testnet") {
   const startsAt = time(env.SEASON_STARTS_AT, DEFAULT_STARTS_AT, "SEASON_STARTS_AT");
   const endsAt = time(env.SEASON_ENDS_AT, DEFAULT_ENDS_AT, "SEASON_ENDS_AT");
   if (endsAt <= startsAt) throw new Error("SEASON_ENDS_AT must be after SEASON_STARTS_AT.");
-  const name = String(env.SEASON_NAME || "Hackathon season").slice(0, 60);
+  const name = String(env.SEASON_NAME || DEFAULT_SEASON_NAME).slice(0, 60);
   const aura = env.SEASON_AURA === undefined ? "season" : String(env.SEASON_AURA);
   return Object.freeze({
     enabled,

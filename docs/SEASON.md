@@ -1,7 +1,7 @@
 # Hackathon season
 
 GAME-LOOPS P1-3 (owner decision 1 Nov 2026, settled in no-ask mode): a two-week season frame
-until **14 Nov 2026 23:59:59 UTC** with a cosmetic leaderboard, a season mark and Aura for everyone
+until **30 Nov 2026 23:59:59 UTC** (extended 14 Nov 2026; players see it as "Season of First Light") with a cosmetic leaderboard, a season mark and Aura for everyone
 who reaches the goal, and a meter of the reward pot that funded the season.
 
 ## Rules
@@ -47,8 +47,8 @@ later published days and would otherwise be counted twice. Days quarantined as `
 | --- | --- |
 | `SEASON` | on, except mainnet (off) |
 | `SEASON_ID` | `hackathon-2026` (never reuse) |
-| `SEASON_NAME` | `Hackathon season` |
-| `SEASON_STARTS_AT` / `SEASON_ENDS_AT` | `2026-11-01T00:00:00Z` / `2026-11-14T23:59:59Z` |
+| `SEASON_NAME` | `Season of First Light` |
+| `SEASON_STARTS_AT` / `SEASON_ENDS_AT` | `2026-11-01T00:00:00Z` / `2026-11-30T23:59:59Z` |
 | `SEASON_GOAL` | 30 |
 | `SEASON_POINTS` | `hunt:1,visit:2,line:3` |
 | `SEASON_POT_TARGET_NEAR` | 1 |
