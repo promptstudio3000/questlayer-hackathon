@@ -3314,5 +3314,8 @@
   "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "Ta mise reste à toi. Son rendement sème du QGOLD dans les rues et ouvre les lieux à palier.",
   "Staker soon": "Bientôt Staker",
   "Your staking tier": "Ton palier de staking",
-  "Staking tier: {0}. Open staking": "Palier de staking : {0}. Ouvrir le staking"
+  "Staking tier: {0}. Open staking": "Palier de staking : {0}. Ouvrir le staking",
+  "Your voice in the treasury: {0} of {1}": "Ta voix au trésor : {0} sur {1}",
+  "{0} voting power": "{0} de poids de vote",
+  "Forged by play, never for sale: {0} from days of adventure, {1} from experience, {2} from followers, {3} from quests others undertook.": "Forgé par le jeu, jamais à vendre : {0} pour les jours d'aventure, {1} pour l'expérience, {2} pour les abonnés, {3} pour les quêtes jouées par d'autres."
 }

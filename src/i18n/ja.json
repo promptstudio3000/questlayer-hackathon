@@ -3314,5 +3314,8 @@
   "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "ステークはあなたのもののまま。その利回りが街にQGOLDをまき、ティアの場所を開きます。",
   "Staker soon": "まもなくステーカー",
   "Your staking tier": "あなたのステーキングのティア",
-  "Staking tier: {0}. Open staking": "ステーキングのティア: {0}。ステーキングを開く"
+  "Staking tier: {0}. Open staking": "ステーキングのティア: {0}。ステーキングを開く",
+  "Your voice in the treasury: {0} of {1}": "宝物庫でのあなたの発言力: {1} 中 {0}",
+  "{0} voting power": "投票力 {0}",
+  "Forged by play, never for sale: {0} from days of adventure, {1} from experience, {2} from followers, {3} from quests others undertook.": "遊んで鍛えたもので、売り物ではありません: 冒険の日々から {0}、経験から {1}、フォロワーから {2}、他の人が遊んだクエストから {3}。"
 }

@@ -3314,5 +3314,8 @@
   "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "يبقى رهانك ملكك. عائده ينثر QGOLD في الشوارع ويفتح أماكن المستويات.",
   "Staker soon": "ستصبح Staker قريبًا",
   "Your staking tier": "مستوى الستيكينغ الخاص بك",
-  "Staking tier: {0}. Open staking": "مستوى الستيكينغ: {0}. افتح الستيكينغ"
+  "Staking tier: {0}. Open staking": "مستوى الستيكينغ: {0}. افتح الستيكينغ",
+  "Your voice in the treasury: {0} of {1}": "صوتك في الخزينة: {0} من {1}",
+  "{0} voting power": "{0} من قوة التصويت",
+  "Forged by play, never for sale: {0} from days of adventure, {1} from experience, {2} from followers, {3} from quests others undertook.": "صيغت باللعب ولا تُباع أبدًا: {0} من أيام المغامرة، {1} من الخبرة، {2} من المتابعين، {3} من مهام لعبها آخرون."
 }
