@@ -7,6 +7,7 @@ import React from "react";
 import {
   ArrowsClockwise,
   Backpack,
+  Bank,
   ChatsCircle,
   Coins,
   Compass,
@@ -84,6 +85,7 @@ const CARDS: FactCard[] = [
     icon: UsersThree,
     title: "Players create",
     facts: [
+      "quests on your own street: trails, chests, visits and stories; a paid one settles **80 %** to its creator",
       "tasks paid in QGOLD through an on-chain escrow",
       "Secrets: the finder pays to reveal, the author gets **90 %**",
       "map notes that fade after a day or a week, topics, recommended places",
@@ -111,6 +113,16 @@ const CARDS: FactCard[] = [
     ],
   },
   {
+    icon: Bank,
+    title: "Players run the bank",
+    facts: [
+      "the treasury follows a stock **Sputnik DAO v2**",
+      "explorers at **level 3+** vote every week on the treasury mix",
+      "voting power is earned by play (active days, level, followers, quests others played), at most **100**, never for sale",
+      "a **2 of 3** council approves each daily run, only when it matches the adopted mix",
+    ],
+  },
+  {
     icon: Stack,
     title: "One mechanic, many layers",
     facts: [
@@ -122,13 +134,13 @@ const CARDS: FactCard[] = [
   },
 ];
 
-/** The TL;DR of the whole game: five steps a coin walks through, then the facts in five cards. */
+/** The TL;DR of the whole game: five steps a coin walks through, then the facts in six cards. */
 export function BigPicture() {
   const motion = useMotion();
   return (
     <section className="wk-bp" aria-labelledby="wk-bp-title">
       <h2 id="wk-bp-title">
-        <span className="wk-tldr-tag">TL;DR</span> QuestLayer in 30 seconds
+        <span className="wk-tldr-tag">TL;DR</span> QuestLayer in 30 seconds: follow the coin
       </h2>
       <p className="wk-bp-lead">
         <b>Pokémon GO + Geocaching + PoolTogether.</b> A stake-to-play game where your stake stays yours: by playing, exploring and creating, players win back the yield
