@@ -1,0 +1,6 @@
+{
+  "id": "e3-testlayer-379-382",
+  "deployTarget": "testlayer",
+  "installKeys": [],
+  "note": "Test Layer at the World release with #379 (Create a quest in Actions), #380 (worn wearables on the avatar), #381 (day/night toggle), #382 (Test Layer default per session, GotchiGO GPS-only)."
+}
