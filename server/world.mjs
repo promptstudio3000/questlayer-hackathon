@@ -64,6 +64,7 @@ import {
   hiddenCoinIds,
   mapRewardsEnabled,
   materializeCellRewards,
+  refillArenaCoins,
   nextWave,
 } from "./map-rewards/service.mjs";
 import { ensureMapRewardsSchema } from "./map-rewards/schema.mjs";
@@ -642,6 +643,9 @@ export function worldView(db, id, player = null, options = {}) {
       .map((q) => q.zone_id),
   );
   mark("wquests");
+  // The city demo puts a fresh coin back where one was picked up (map-rewards).
+  if (manifest.arena && manifest.mapRewards)
+    refillArenaCoins(db, JSON.parse(row.manifest), now);
   let rows;
   if (query.limit) {
     const after = readQueryCursor(id, query),

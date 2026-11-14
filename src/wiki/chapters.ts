@@ -830,7 +830,7 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "map-formula",
     status: "live",
-    updated: "2026-11-13",
+    updated: "2026-11-14",
     sources: ["docs/MAP-REWARDS.md", "docs/GLOBAL-TREASURY.md", "server/map-rewards/policy.mjs", "server/map-rewards/budget.mjs", "server/map-rewards/chain.mjs"],
     blocks: [
       { h: "How a day is planned" },
@@ -841,6 +841,7 @@ export const CHAPTERS: Chapter[] = [
           "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area; what a capped cell cannot take goes to the others.",
           "**Every zone prize is paid out on chain.** Plzeň's reviewed zones share their cell's zone budget as the first-finisher prize (only the first world to open the cell that day funds it, so GPS and the demo never spend it twice); the game treasury funds no prize.",
           "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest.",
+          "**City demo coins stay near the start.** On the Test Layer the demo's coins fill outwards from the starting square, 60–100 m apart, instead of across the whole cell. About 25 minutes after a demo coin is picked up, a fresh one of the same value appears at the same spot while the day's coin budget has room, so every visitor finds coins close by. GPS play is unchanged.",
           "The city demo pays the same backed coins. Outside Czechia a street cell gets up to 10 coins of the same value, drawn from the same day budget until it is placed, and paid through the payout rounds (`MAP_WORLD_COINS=off` stops it). Funded cell zones and pioneer bonuses stay in Czechia.",
         ],
       },

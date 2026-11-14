@@ -72,6 +72,13 @@ writes its rewards once (`map_cell_drops`):
    day pays two shares per coin and adds a pioneer chest (XP, Aura while edition supply lasts).
 5. The demo arena (no GPS, arrow keys) places a fixed number of coins per cell at the same backed value as the map; payout rounds pay them in QGOLD (Lubos, 10 Nov 2026: the demo behaves like reality, only movement differs). Outside Czechia a cell gets no coins until more
    countries have a plan; its POI quests still give XP.
+6. **City demo near the start** (Test Layer, 14 Nov 2026): the demo arena fills its coins outwards from the
+   start (the compact demo centre, else the city centre) instead of across the whole ~5 km² cell, 60-100 m
+   apart (`ARENA_COIN_SPACING_M`), so a new explorer finds coins round the square. `ARENA_REFILL_MS` (25 min)
+   after a demo coin is picked up, `refillArenaCoins` puts a fresh coin of the same value at the same spot
+   (a new row with a new id, nudged 1e-7° so it is its own spot for coin-spots), while `coinRoom` still has
+   room. Its value is added to the cell's `map_cell_drops` row, so the day budget holds; the picked-up row
+   keeps its claimant, because payouts use the coin id. GPS worlds are unchanged.
 
 ## 3. On the map
 
