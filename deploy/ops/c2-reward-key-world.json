@@ -1,0 +1,6 @@
+{
+  "id": "c2-reward-key-world",
+  "script": "scripts/refresh-reward-worker-key.mjs",
+  "args": ["--account", "questlayer-rewards-20261101b.testnet", "--key-file", ".data/near-operator.json"],
+  "note": "World reward worker key at 0.53 NEAR allowance: re-add the same key with 1 NEAR before it stalls too."
+}

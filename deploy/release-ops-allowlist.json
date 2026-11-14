@@ -253,6 +253,11 @@
       "env": [
         "FUND_NEAR"
       ]
+    },
+    "scripts/refresh-reward-worker-key.mjs": {
+      "execute": "--execute",
+      "contracts": false,
+      "env": []
     }
   },
   "keyDirs": {
