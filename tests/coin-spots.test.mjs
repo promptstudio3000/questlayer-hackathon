@@ -10,7 +10,9 @@ const PLZEN = { lat: 49.7477, lng: 13.3776 };
 
 // 11 Nov 2026: two explorers at one street coin, one in the GPS city world and
 // one in the city demo arena. Both worlds drop the same cell with the same day
-// seed, so each held its own row at the same spot and both were paid.
+// seed, so each held its own row at the same spot and both were paid. (The
+// arena now gathers its coins round the start, so the test copies one GPS
+// coin into the arena the way the old identical drop did.)
 test("a street coin in two worlds is picked up once", async () => {
   setPotentialSource(() => new Map());
   const db = openDatabase(":memory:");
@@ -22,7 +24,15 @@ test("a street coin in two worlds is picked up once", async () => {
     assert.notEqual(gps.id, arena.id);
     const late = gps.endsAt - 120_000;
     const gpsCoins = worldView(db, gps.id, first, { now: late }).coins,
-      arenaCoins = worldView(db, arena.id, second, { now: late }).coins;
+      seedCoin = gpsCoins[0],
+      copyId = `${arena.id}:coin:copy`;
+    db.prepare("INSERT INTO coins(id,world_id,lat,lng,value_u) VALUES(?,?,?,?,?)").run(
+      copyId, arena.id, seedCoin.lat, seedCoin.lng, seedCoin.value_u,
+    );
+    db.prepare("INSERT INTO map_coin_meta SELECT ?,?,cell,tier,0,0 FROM map_coin_meta WHERE coin_id=?").run(
+      copyId, arena.id, seedCoin.id,
+    );
+    const arenaCoins = worldView(db, arena.id, second, { now: late }).coins;
     const twin = gpsCoins.find((c) =>
       arenaCoins.some((a) => a.lat === c.lat && a.lng === c.lng),
     );

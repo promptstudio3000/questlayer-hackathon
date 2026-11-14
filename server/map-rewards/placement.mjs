@@ -56,6 +56,8 @@ function grid(cell = 60) {
   };
 }
 
+const ORIGIN_JITTER_M = 80;
+
 /**
  * Pick coin spots. Candidates are visited in a seeded order; a spot is kept
  * when every kept coin is at least the mean of both spacings away.
@@ -63,16 +65,22 @@ function grid(cell = 60) {
 export function spaceCoins(
   samples,
   zones = [],
-  { seed, max = MAX_COINS_PER_CELL } = {},
+  { seed, max = MAX_COINS_PER_CELL, spacing = COIN_SPACING_M, origin = null } = {},
 ) {
+  // With an origin (the city demo start) spots fill outwards from it: the
+  // seeded draw only shuffles points within ORIGIN_JITTER_M of each other.
   const order = samples
     .filter((p) => Number.isFinite(p?.lat) && Number.isFinite(p?.lng))
-    .map((p, i) => ({
-      lat: p.lat,
-      lng: p.lng,
-      k: unit(seed, `spot:${p.lat.toFixed(6)},${p.lng.toFixed(6)}:${i}`),
-    }))
-    .sort((a, b) => a.k - b.k);
+    .map((p, i) => {
+      const k = unit(seed, `spot:${p.lat.toFixed(6)},${p.lng.toFixed(6)}:${i}`);
+      return {
+        lat: p.lat,
+        lng: p.lng,
+        k,
+        at: origin ? distance(origin, p) + ORIGIN_JITTER_M * k : k,
+      };
+    })
+    .sort((a, b) => a.at - b.at);
   const kept = [],
     g = grid();
   for (const p of order) {
@@ -80,10 +88,9 @@ export function spaceCoins(
     const near = nearZone(p, zones);
     const r = near
       ? COIN_SPACING_NEAR_ZONE_M
-      : COIN_SPACING_M.min +
-        (COIN_SPACING_M.max - COIN_SPACING_M.min) * unit(seed, `r:${p.k}`);
+      : spacing.min + (spacing.max - spacing.min) * unit(seed, `r:${p.k}`);
     if (
-      g.near(p, COIN_SPACING_M.max).some((q) => distance(p, q) < (r + q.r) / 2)
+      g.near(p, Math.max(spacing.max, COIN_SPACING_NEAR_ZONE_M)).some((q) => distance(p, q) < (r + q.r) / 2)
     )
       continue;
     const coin = { lat: p.lat, lng: p.lng, r, nearZone: near };
@@ -107,11 +114,13 @@ export function placeCellCoins({
   valueU = 0,
   tier = COIN_TIER,
   waves = WAVES.count,
+  spacing = COIN_SPACING_M,
+  origin = null,
 }) {
   const max = Math.max(0, Math.min(MAX_COINS_PER_CELL, Math.floor(count)));
   const value = Math.max(0, Math.floor(Number(valueU) || 0));
   if (max < 1 || !samples?.length) return { coins: [], spentU: 0 };
-  const spots = spaceCoins(samples, zones, { seed, max });
+  const spots = spaceCoins(samples, zones, { seed, max, spacing, origin });
   const coins = spots.map((s, i) => ({
     i,
     lat: Number(s.lat.toFixed(7)),
