@@ -15,6 +15,7 @@ import {
   Compass,
   Crown,
   Eye,
+  Fire,
   Footprints,
   HandCoins,
   Key,
@@ -31,6 +32,7 @@ import {
   Sword,
   UserCircle,
   Vault,
+  type Icon,
 } from "@phosphor-icons/react";
 import { ArrowRight } from "../dir-icons";
 import { Ghost } from "../Ghost";
@@ -616,10 +618,12 @@ const PRINCIPLES = [
   { icon: Coins, get title() { return tr("Prizes from real yield"); }, get text() { return tr("Prizes come from received staking yield or sponsors, never from deposits."); } },
   { icon: Compass, get title() { return tr("Free first"); }, get text() { return tr("The first adventure works solo, with no wallet and no deposit."); } },
 ] as const;
-function FairScene() {
+type Card = Readonly<{ icon: Icon; title: string; text: string }>;
+/** A row of icon cards: one idea each, in the order it happens. */
+function CardsScene({ cards }: { cards: readonly Card[] }) {
   return (
     <ul className="hiw-principles">
-      {PRINCIPLES.map((p, i) => (
+      {cards.map((p, i) => (
         <li key={p.title} style={stagger(i)}>
           <p.icon size={30} weight="duotone" />
           <b>{p.title}</b>
@@ -629,6 +633,25 @@ function FairScene() {
     </ul>
   );
 }
+function FairScene() {
+  return <CardsScene cards={PRINCIPLES} />;
+}
+
+// Quests made by players (wiki: Community; contracts/creators settles a paid unlock 80 / 20).
+const CREATOR_STEPS = [
+  { icon: Scroll, get title() { return tr("Publish"); }, get text() { return tr("Pick a real place and write the quest."); } },
+  { icon: Footprints, get title() { return tr("Others play"); }, get text() { return tr("They walk it, rate it and discuss it."); } },
+  { icon: HandCoins, get title() { return tr("You earn"); }, get text() { return tr("XP for every run, 80 % of every paid unlock."); } },
+] as const;
+
+// The path of one coin (wiki: The money model, QGOLD token and vault, Who decides).
+const COIN_STEPS = [
+  { icon: Vault, get title() { return tr("Stake"); }, get text() { return tr("Your NEAR, in your own vault."); } },
+  { icon: Coins, get title() { return tr("Yield"); }, get text() { return tr("Only the yield leaves, into one treasury."); } },
+  { icon: MapPin, get title() { return tr("Map"); }, get text() { return tr("Each day it lands on real streets as QGOLD."); } },
+  { icon: Fire, get title() { return tr("Burn"); }, get text() { return tr("Spent QGOLD is gone; the rest is backed by more."); } },
+  { icon: Scales, get title() { return tr("Vote"); }, get text() { return tr("Players set the treasury mix every week."); } },
+] as const;
 
 const JOIN_STEPS = [
   { icon: UserCircle, get title() { return tr("Pick a name"); }, get text() { return tr("No sign-up, no e-mail, no deposit."); } },
@@ -849,8 +872,19 @@ export default function HowItWorks() {
         />
 
         <Chapter
+          id="creators"
+          seen={seen}
+          eyebrow={tr("Player quests")}
+          title={tr("Then players take over.")}
+          lead={tr("Anyone can publish a quest on their own street: a trail, a chest, a visit or a story. Others play it, rate it and talk about it, and every run earns its creator XP. A paid quest sends 80 % to its creator.")}
+          chips={[tr("Your street, your quest"), tr("Ratings and discussion"), tr("80 % to the creator")]}
+          scene={<CardsScene cards={CREATOR_STEPS} />}
+        />
+
+        <Chapter
           id="staking"
           seen={seen}
+          flip
           eyebrow={tr("Staking")}
           title={tr("Stake a little. Unlock a lot more.")}
           lead={
@@ -868,8 +902,19 @@ export default function HowItWorks() {
         />
 
         <Chapter
+          id="coin"
+          seen={seen}
+          eyebrow={tr("Follow the coin")}
+          title={tr("Where the money comes from, and who runs the bank.")}
+          lead={tr("A stake sits in its owner's own vault and stays theirs. Only its yield flows into one shared treasury, and every day that yield, and nothing else, lands on the map as QGOLD. Spending QGOLD burns it, so every coin left is backed by more. The treasury follows a DAO on NEAR: explorers vote every week on how it is held, with voting power earned by playing and never for sale.")}
+          chips={[tr("Principal stays yours"), tr("Minted only from real yield"), tr("Spend = burn"), tr("Voting power earned by play")]}
+          scene={<CardsScene cards={COIN_STEPS} />}
+        />
+
+        <Chapter
           id="fair-play"
           seen={seen}
+          flip
           eyebrow={tr("Fair play")}
           title={tr("Fair by design.")}
           lead={tr("Skill and walking win here. What you own makes you look good, and money never buys a better chance.")}

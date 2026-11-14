@@ -12,8 +12,40 @@ currency backed by real yield, not an income: at today's testnet yield a coin is
 is paid out anyway, in rounds every few minutes, with nothing too small to pay.
 
 Built for the [NEAR Hackathon](https://nearhackathon.com/) (1–14 November 2026), tracks **Games With Real
-Economies**, **Social Money** and **Open Innovation**. Everything runs on NEAR **testnet**; nothing here has
-monetary value yet.
+Economies**, **Social Money**, **NFTs That Do Something** and **Open Innovation**. Everything runs on NEAR
+**testnet**; nothing here has monetary value yet.
+
+## Follow the coin (the whole idea in one loop)
+
+**QuestLayer is a real-world GPS game whose prize pool is staking yield.** Players stake NEAR and keep the
+principal; only the yield lands on real streets as QGOLD, under a treasury the players govern through a Sputnik DAO.
+
+```mermaid
+flowchart LR
+  P["Explorer<br/>stakes NEAR once"] -->|"principal, always withdrawable"| V["Personal keyless vault"]
+  V -->|delegates| VAL["NEAR validators"]
+  VAL -->|"realized yield only"| T["Shared treasury<br/>target 90 % staked NEAR, 10 % stablecoins"]
+  T -->|"mints at the backing price"| Q["QGOLD (NEP-141)<br/>1 NEAR = 1B QGOLD"]
+  Q -->|"every day: half coins, half zones"| M["The real map<br/>coins, zones, quests"]
+  M -->|"walk, solve, create"| P
+  M -->|"spent QGOLD burns"| B(("burn"))
+  D["Sputnik DAO v2<br/>explorers vote weekly, council 2 of 3"] -->|"sets the mix, approves every run"| T
+```
+
+1. **Play.** Type a name and you are in: no wallet, no seed phrase, no gas. The city is the board and GPS is the
+   controller. Coins lie on real paths, zones open every day on real streets, monsters are beaten with riddles,
+   rhythm and duels, never with money. Loot is wearable: a secured Aura is an NFT in the player's own account.
+2. **Locals.** Characters stand at real places and talk through NEAR AI Cloud; the model writes the words, the
+   server decides the rewards. The merchant has his own NEAR account and resells Auras through NEAR Intents.
+3. **Creators.** Any explorer can publish a quest on their own street (a trail, a chest, a visit, a story). Others
+   play it, rate it and discuss it on NEAR Social. A paid quest settles 80 % to its creator, 20 % to the treasury.
+4. **The coin.** A stake sits in the staker's own keyless vault and can only be withdrawn by them. Only the
+   realized yield flows into one shared treasury and is scattered over the map as QGOLD, minted only against yield
+   that already arrived. Spending QGOLD burns it, so every coin left is backed by more.
+5. **The bank.** The treasury follows a stock Sputnik DAO v2. Explorers vote every week on its mix, and a 2-of-3
+   council approves each daily run only when it matches the adopted mix.
+6. **Layers.** That whole machine is one layer. GotchiGO runs it on real streets, MetaLayer in a voxel world, and
+   the next game can plug into the same treasury, the same QGOLD and the same DAO.
 
 ## Try it now (no install, no wallet)
 
@@ -79,6 +111,9 @@ military or private ground). Live numbers: `/api/health` → `poiWorld` and `aut
   council approves every run. [docs/TREASURY-DAO.md](docs/TREASURY-DAO.md)
 - **NFTs and markets.** Auras and avatars are NEP-171 with royalties; a fixed-price escrow market and a QGOLD escrow
   for player-to-player tasks; badges for visited places.
+- **NEAR Intents.** Auras trade peer to peer through a self-deployed open-source NEAR Intents verifier (v0.4.5):
+  both sides sign, one transaction settles both, 2 % goes to the treasury. The NPC merchant keeps his stock and
+  purse in the verifier under his own account. [docs/NEAR-INTENTS-MARKET.md](docs/NEAR-INTENTS-MARKET.md)
 - **NEAR Social.** Public map notes and quest ratings are written under the player's own namespace.
 - **NEAR AI Cloud.** NPC dialogue runs in TDX/confidential-GPU enclaves; each reply's signature is checked.
   [docs/NEAR-AI-CLOUD.md](docs/NEAR-AI-CLOUD.md)
@@ -189,6 +224,27 @@ public/     assets, testnet manifests and proofs
 docs/       rules, economy, layers, operations, audits
 deploy/     systemd units and the VPS release runner
 ```
+
+## How it was built: AI and libraries
+
+- **AI-generated code.** Nearly all code, tests and documents in this repository were written with AI coding
+  agents (Anthropic Claude Code for the game, server, contracts and operations; OpenAI Codex for the MetaLayer
+  voxel world and reviews), directed, reviewed and tested by the author, who made the game design, economy and
+  release decisions. The working rules those agents follow are in [AGENTS.md](AGENTS.md).
+- **AI at runtime.** On the live layers NPC dialogue runs on NEAR AI Cloud models; the code also keeps optional
+  Anthropic and Ollama providers and plain template lines as fallbacks. Rewards, prices and outcomes are always
+  decided by server rules and contracts, never by a model.
+- **Client libraries.** React 19, TypeScript, Vite, MapLibre GL JS (OpenFreeMap vector tiles), three.js with
+  glTF-Transform (characters and the voxel world), Phosphor Icons, Turf, h3-js, tz-lookup.
+- **NEAR and crypto libraries.** near-api-js, NEAR Connect (`@hot-labs/near-connect`), borsh, noble curves, hashes
+  and ciphers, `@scure/bip39`, SimpleWebAuthn (passkeys), viem (reads Aavegotchi appearances on Base).
+- **Server.** Node.js 24 with built-in SQLite and `node --test`, sharp for images, `@anthropic-ai/sdk` for the
+  optional provider; no web framework.
+- **Contracts.** Rust with `near-sdk` and `near-contract-standards`; stock Sputnik DAO v2 for governance and the
+  open-source NEAR Intents (defuse) verifier v0.4.5, both deployed unmodified.
+- **Data and art.** OpenStreetMap, Overture Maps, Wikidata and GeoNames for places; Aavegotchi characters and
+  Gotchiverse models under the terms in [THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), which lists every
+  source and licence.
 
 ## Honest state
 
