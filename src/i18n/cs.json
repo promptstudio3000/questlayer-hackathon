@@ -1133,7 +1133,6 @@
   "Opens in {0}": "Otevře se za {0}",
   "Opens later": "Otevře se později",
   "Opens later today": "Otevře se později dnes",
-  "Opens the inner vault and patron lines.": "Otevře vnitřní trezor a linie patronů.",
   "Operational policy creator-observation-v1: private text up to 1,000 characters, up to 3 attempts, one pending review. A third independent rejection resolves as NOT completed. No automatic expiry, GPS verification or reward. Only new starts on an independently approved structured revision use this requirement; existing plain starts stay legacy.": "Provozní pravidla creator-observation-v1: soukromý text do 1 000 znaků, až 3 pokusy, jedno čekající posouzení. Třetí nezávislé zamítnutí znamená NESPLNĚNO. Žádné automatické vypršení, ověření GPS ani odměna. Požadavek platí jen pro nové začátky na nezávisle schválené strukturované verzi; stávající běžné začátky zůstávají ve starém režimu.",
   "Operators paused today's world for a moment. Your progress is safe.": "Provozovatelé na chvíli pozastavili dnešní svět. Tvůj postup je v bezpečí.",
   "Optimized for a lighter mobile preview.": "Optimalizováno pro lehčí náhled na mobilu.",
@@ -1813,7 +1812,6 @@
   "The guide can't hear you right now. Keep exploring; your coins and visits still count.": "Průvodce tě teď neslyší. Prozkoumávej dál; mince i návštěvy se počítají.",
   "The highest rank. It stays yours.": "Nejvyšší hodnost. Zůstane ti.",
   "The inner vault": "Vnitřní trezor",
-  "The inner vault opens for stakers.": "Vnitřní trezor se otevírá stakerům.",
   "The like did not save.": "Like se neuložil.",
   "The map could not open.": "Mapu se nepodařilo otevřít.",
   "The market action could not finish. Try again.": "Akci na trhu se nepodařilo dokončit. Zkus to znovu.",
@@ -3311,7 +3309,6 @@
   "Open to you": "Otevřeno pro tebe",
   "Profile of {0}": "Profil hráče {0}",
   "Why stake?": "Proč stakovat?",
-  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "Vklad zůstává tvůj. Jeho výnos rozsype QGOLD po ulicích a odemkne místa vyšších stupňů.",
   "Staker soon": "Brzy Staker",
   "Your staking tier": "Tvůj staking tier",
   "Staking tier: {0}. Open staking": "Staking tier: {0}. Otevřít staking",
@@ -3341,5 +3338,8 @@
   "A stake sits in its owner's own vault and stays theirs. Only its yield flows into one shared treasury, and every day that yield, and nothing else, lands on the map as QGOLD. Spending QGOLD burns it, so every coin left is backed by more. The treasury follows a DAO on NEAR: explorers vote every week on how it is held, with voting power earned by playing and never for sale.": "Stake leží ve vlastním trezoru svého majitele a zůstává jeho. Do jedné společné pokladny teče jen výnos a každý den tento výnos, a nic jiného, dopadne na mapu jako QGOLD. Utracený QGOLD se pálí, takže každá zbylá mince je krytá víc. Pokladna se řídí DAO na NEAR: průzkumníci každý týden hlasují o jejím složení a sílu hlasu získávají hraním, nikdy koupí.",
   "Spent QGOLD is gone; the rest is backed by more.": "Utracený QGOLD zmizí; zbytek je krytý víc.",
   "80 % to the creator": "80 % tvůrci",
-  "Your NEAR, in your own vault.": "Tvůj NEAR ve tvém vlastním trezoru."
+  "Your NEAR, in your own vault.": "Tvůj NEAR ve tvém vlastním trezoru.",
+  "Shows stakers their stake and its yield.": "Stakerům ukazuje jejich vklad a jeho výnos.",
+  "Extra NPC story quests, and the Keeper shows your stake.": "Další příběhové úkoly od NPC a Strážce ti ukáže tvůj vklad.",
+  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "Vklad zůstává tvůj. Jeho výnos dává QGOLD na mapu všem a vyšší stupně otevírají žluté a červené zóny."
 }

@@ -1133,7 +1133,6 @@
   "Opens in {0}": "{0}後に開放",
   "Opens later": "近日開放",
   "Opens later today": "今日このあと開放",
-  "Opens the inner vault and patron lines.": "内なるボールトとパトロンラインを開放します。",
   "Operational policy creator-observation-v1: private text up to 1,000 characters, up to 3 attempts, one pending review. A third independent rejection resolves as NOT completed. No automatic expiry, GPS verification or reward. Only new starts on an independently approved structured revision use this requirement; existing plain starts stay legacy.": "運用ポリシー creator-observation-v1：非公開テキストは最大1,000文字、挑戦は最大3回、保留中の審査は1件まで。第三者による3回目の却下で「未完了」として確定します。自動失効、GPS検証、報酬はありません。この条件が適用されるのは、第三者に承認された構造化リビジョンでの新規開始のみです。既存の通常の開始は旧形式のままです。",
   "Operators paused today's world for a moment. Your progress is safe.": "運営が今日のワールドを少しだけ一時停止しました。進行状況は安全です。",
   "Optimized for a lighter mobile preview.": "軽量なモバイルプレビュー向けに最適化。",
@@ -1813,7 +1812,6 @@
   "The guide can't hear you right now. Keep exploring; your coins and visits still count.": "ガイドには今きみの声が届きません。探検を続けよう。コインと訪問はちゃんとカウントされます。",
   "The highest rank. It stays yours.": "最高ランク。ずっとあなたのものです。",
   "The inner vault": "奥の金庫",
-  "The inner vault opens for stakers.": "奥の金庫はステーカーに開かれます。",
   "The like did not save.": "いいねを保存できませんでした。",
   "The map could not open.": "マップを開けませんでした。",
   "The market action could not finish. Try again.": "マーケットの操作を完了できませんでした。もう一度お試しください。",
@@ -3311,7 +3309,6 @@
   "Open to you": "あなたに開放中",
   "Profile of {0}": "{0} のプロフィール",
   "Why stake?": "なぜステークするの？",
-  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "ステークはあなたのもののまま。その利回りが街にQGOLDをまき、ティアの場所を開きます。",
   "Staker soon": "まもなくステーカー",
   "Your staking tier": "あなたのステーキングのティア",
   "Staking tier: {0}. Open staking": "ステーキングのティア: {0}。ステーキングを開く",
@@ -3341,5 +3338,8 @@
   "A stake sits in its owner's own vault and stays theirs. Only its yield flows into one shared treasury, and every day that yield, and nothing else, lands on the map as QGOLD. Spending QGOLD burns it, so every coin left is backed by more. The treasury follows a DAO on NEAR: explorers vote every week on how it is held, with voting power earned by playing and never for sale.": "ステークは持ち主自身の金庫に置かれ、持ち主のもののまま。利回りだけがひとつの共有トレジャリーに流れ、毎日その利回りだけが QGOLD としてマップに降りる。QGOLD を使うとバーンされるので、残りのコインの裏付けが厚くなる。トレジャリーは NEAR 上の DAO に従う：探索者が毎週その配分に投票し、投票力はプレイで得るもので、決して買えない。",
   "Spent QGOLD is gone; the rest is backed by more.": "使った QGOLD は消え、残りの裏付けが厚くなる。",
   "80 % to the creator": "80 % を作者へ",
-  "Your NEAR, in your own vault.": "あなたの NEAR は、あなた自身の金庫に。"
+  "Your NEAR, in your own vault.": "あなたの NEAR は、あなた自身の金庫に。",
+  "Shows stakers their stake and its yield.": "ステーカーにステークと利回りを見せます。",
+  "Extra NPC story quests, and the Keeper shows your stake.": "NPCの追加ストーリークエスト。キーパーがあなたのステークを見せます。",
+  "Your stake stays yours. Its yield puts QGOLD on the map for everyone, and higher tiers open the yellow and red zones.": "ステークはあなたのもの。その利回りが全員のためにマップへQGOLDを置き、上位ティアで黄と赤のゾーンが開きます。"
 }
