@@ -1,0 +1,7 @@
+{
+  "id": "c4-testlayer-rewards-storage",
+  "script": "scripts/topup-rewards-storage.mjs",
+  "args": ["--testlayer", "--send"],
+  "env": { "TOPUP_EXTRA_DAYS": "1" },
+  "note": "Test Layer publish_day for 15 Nov traps in reserve_storage (two open days hold 512 slots): plain transfer from the operator so tomorrow's day fits."
+}
