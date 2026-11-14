@@ -52,6 +52,7 @@ import { npcStrings } from "./npc-i18n";
 import { ApiError } from "./api";
 import { chainTradesReady, explorerTxUrl, fillOnChain, handOverOnChain, secureTradeAura } from "./chain-trades";
 import { InnerVault, StakeTodayCard, seenCeremony, seenRank } from "./StakeToday";
+import { guideTo } from "./guide-to";
 import "./npc-sheet.css";
 
 // The Talk tab's thread (src/NpcChat.tsx) loads with the first greeting.
@@ -253,6 +254,17 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
         <span className="npc-place-topic">{t.topic[place.topic] || place.topic}</span>
         {Number.isFinite(place.distanceM) && <span className="npc-place-distance">{distanceLabel(place.distanceM!)}</span>}
       </span>
+      {Number.isFinite(place.lat) && Number.isFinite(place.lng) && (
+        <button
+          type="button"
+          className="npc-place-go"
+          aria-label={`${tr("Show me the way")}: ${place.name}`}
+          title={tr("Show me the way")}
+          onClick={() => { onClose(); guideTo({ lat: place.lat!, lng: place.lng!, label: place.name }); }}
+        >
+          <ArrowRight aria-hidden="true" />
+        </button>
+      )}
     </li>
   );
 
@@ -383,8 +395,13 @@ export default function NpcSheet({ actorId, playerId, draftRealm, encounter, onC
                   <ul>
                     {line.steps.map((s) => (
                       <li key={s.questId} className={s.done ? "done" : ""}>
-                        {s.done ? "✓" : "○"} {s.title}
-                        {s.zone ? ` · ${s.zone}` : ""}
+                        {s.done || !onQuest ? (
+                          <>{s.done ? "✓" : "○"} {s.title}{s.zone ? ` · ${s.zone}` : ""}</>
+                        ) : (
+                          <button type="button" className="npc-step-go" title={tr("Show me the way")} onClick={() => { onClose(); onQuest(s.questId); }}>
+                            ○ {s.title}{s.zone ? ` · ${s.zone}` : ""} <ArrowRight aria-hidden="true" />
+                          </button>
+                        )}
                       </li>
                     ))}
                   </ul>
