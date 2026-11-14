@@ -1247,7 +1247,16 @@ export function GameMap(props: GameMapProps) {
     node.setAttribute("aria-label", t.label);
     const marker = new maplibregl.Marker({ element: node, anchor: "center" }).setLngLat([t.lng, t.lat]).addTo(m);
     latest.current.onPan();
-    m.easeTo({ center: [t.lng, t.lat], zoom: Math.max(m.getZoom(), 16), duration: prefersReducedMotion() ? 0 : 900 });
+    // Frame the explorer and the target together, so the guide line shows whole.
+    const from = props.position;
+    if (Number.isFinite(from.lat) && Number.isFinite(from.lng) && !props.globe) {
+      const box = el.current?.getBoundingClientRect();
+      const phone = window.innerWidth <= 900;
+      m.fitBounds(new maplibregl.LngLatBounds([t.lng, t.lat], [t.lng, t.lat]).extend([from.lng, from.lat]), {
+        padding: { top: Math.min(170, (box?.height || 600) * .3), bottom: phone ? 190 : 120, left: 48, right: 48 },
+        maxZoom: 17, duration: prefersReducedMotion() ? 0 : 900,
+      });
+    } else m.easeTo({ center: [t.lng, t.lat], zoom: Math.max(m.getZoom(), 16), duration: prefersReducedMotion() ? 0 : 900 });
     return () => { marker.remove(); };
   }, [props.pointTarget?.revision, ready]);
   // Player tasks and Secrets around the explorer (~55 m steps, like Nearby).
