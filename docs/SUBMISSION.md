@@ -6,11 +6,11 @@ Nothing in this file is sent automatically; the owner confirms the exact payload
 
 ## Demo post on X (the owner publishes, then pastes the link)
 
-Main post (271 characters; attach the demo video itself, not a link):
+Main post (275 characters; attach the demo video itself, not a link):
 
 > Location games earn billions and pay players nothing. Play-to-earn paid players with other players' money.
 >
-> QuestLayer pays from staking yield: stake NEAR, keep all of it, and the yield lands on real streets as QGOLD.
+> QuestLayer pays from staking yield: stake NEAR, keep the principal, and the yield lands on real streets as QGOLD.
 >
 > Built at NEAR HACKATHON @NEARProtocol #NEARHackathon
 
@@ -31,7 +31,7 @@ Second reply (next step and a question):
 >
 > @NearLegion @NearBuilders
 
-The video is 2:07 and under 512 MB, so it fits an X account without Premium (140 seconds). Every sentence is on
+The video is 2:15 and under 512 MB, so it fits an X account without Premium (140 seconds). Every sentence is on
 screen as text, because X plays video muted until it is tapped. Keep the post pinned through judging.
 
 ## Demo video and judge walkthrough
@@ -42,7 +42,7 @@ screen as text, because X plays video muted until it is tapped. Keep the post pi
 
 ## Submission payload (fill in, then the owner runs the curl from HACKATHON.md)
 
-`idea` is the "What did you build?" field: 1,960 characters of the 2,000 allowed.
+`idea` is the "What did you build?" field: 1,991 characters of the 2,000 allowed.
 
 ```json
 {
@@ -60,7 +60,7 @@ screen as text, because X plays video muted until it is tapped. Keep the post pi
   "nearAddress": "<mainnet payout account, e.g. team.near>",
   "projectUrl": "https://github.com/promptstudio3000/questlayer-hackathon",
   "demoUrl": "https://x.com/<owner>/status/<id>",
-  "idea": "QuestLayer is a real-world GPS game whose prize pool is staking yield. Players stake NEAR, keep 100% of the principal, and only the realized yield is paid out on real streets as QGOLD. Free-to-play location games pay players nothing; play-to-earn paid them with other players' deposits. Here rewards can never exceed income that has already arrived.\n\nTry it (no wallet, no install): open questlayer.promptstudio3000.com, type a name, move with the demo pad. Collect coins on real paths in Plzeň, open a daily zone, beat a monster at riddles, wear the Aura you win, talk to an NPC, play a quest another player made. Then open /treasury to see where the money sits.\n\nHow NEAR is used:\n- Invisible accounts: a name creates a sponsored NEAR sub-account. The key stays on the device; a NEP-366 relayer pays gas.\n- QGOLD: a NEP-141 token that is its own vault, minted only against realized staking yield, fully backed by NEAR, no admin withdraw. Spending burns it.\n- Stake to play: keyless staking vaults. A one-time stake of 10 or 50 NEAR opens Tier 2 and Tier 3 zones and can only be withdrawn, never spent.\n- Social money: a stock Sputnik DAO v2 with Trezu role names governs the treasury. Explorers vote weekly on its mix. Voting power is earned by play (active days, level, followers, quests others played), never bought. A 2-of-3 council approves each daily run only if it matches the vote and the hard limits.\n- NPCs: dialogue runs on NEAR AI Cloud in attested enclaves; the server alone decides rewards. A merchant NPC has his own NEAR account and trades Auras through a NEAR Intents verifier.\n- NFTs: Auras are NEP-171 with royalties, visited places mint badges, MetaLayer land is an NFT.\n- Creators: players publish quests, tasks and secrets. Ratings go to NEAR Social; paid quests send 80% to the creator.\n\n16 contracts with reproducible builds, all on testnet. Layers: Test Layer (demo), GotchiGO (real GPS play) and MetaLayer (voxel world, first slice).",
+  "idea": "QuestLayer is a stake-to-play game platform: a real-world GPS game whose prize pool is staking yield. Players stake NEAR, keep 100% of the principal, and only the realized yield is paid out on real streets as QGOLD. Free-to-play location games pay players nothing; play-to-earn paid them with other players' deposits. Here rewards can never exceed income that has already arrived.\n\nTry it (no wallet, no install): open questlayer.promptstudio3000.com, type a name, move with the demo pad. Collect coins on real paths in Plzeň, open a daily zone, beat a monster at riddles, wear the Aura you win, talk to an NPC, play a quest another player made. Then open /treasury to see where the money sits.\n\nHow NEAR is used:\n- Invisible accounts: a name creates a sponsored NEAR sub-account. The key stays on the device; a NEP-366 relayer pays gas.\n- QGOLD: a NEP-141 token that is its own vault, minted only against realized staking yield, fully backed by NEAR, no admin withdraw. Spending burns it.\n- Stake to play: keyless staking vaults. A one-time stake of 10 or 50 NEAR opens Tier 2 and Tier 3 zones and can only be withdrawn, never spent.\n- Social money: a stock Sputnik DAO v2 with Trezu role names governs the treasury. Explorers vote weekly on its mix. Voting power is earned by play (active days, level, followers, quests others played), never bought. A 2-of-3 council approves each daily run only if it matches the vote and the hard limits.\n- NPCs: dialogue runs on NEAR AI Cloud in attested enclaves; the server alone decides rewards. A merchant NPC has his own NEAR account and trades Auras through a NEAR Intents verifier.\n- NFTs: Auras are NEP-171 with royalties, visited places mint badges, MetaLayer land is an NFT.\n- Creators: players publish quests, tasks and secrets. Ratings go to NEAR Social; paid quests send 80% to the creator.\n\n16 contracts with reproducible builds, all on testnet. Layers: Test Layer (demo), GotchiGO (real GPS play) and MetaLayer (voxel world, first slice).",
   "consent": true
 }
 ```

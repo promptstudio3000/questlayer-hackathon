@@ -1,7 +1,7 @@
 # QuestLayer
 
-**Little adventures. Real discoveries.** QuestLayer is a game platform on NEAR for walk-and-discover games on the
-real map. Players start with a name only. Behind the scenes each player gets their own NEAR account, the rewards
+**Little adventures. Real discoveries.** QuestLayer is a stake-to-play game platform on NEAR for walk-and-discover
+games on the real map. Players start with a name only. Behind the scenes each player gets their own NEAR account, the rewards
 and items settle on chain, and the gas is sponsored, so there are no wallet popups, seed phrases or gas prompts.
 The chain lives in Settings and on the public treasury page, not in the game.
 

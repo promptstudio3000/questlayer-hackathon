@@ -36,7 +36,7 @@ type Step = { icon: React.ReactNode; title: string; text: string };
 const STEPS: Step[] = [
   {
     icon: <Vault size={36} weight="duotone" />,
-    title: "Stake, lose nothing",
+    title: "Stake, keep the principal",
     text: "Stake NEAR if you like: the principal stays yours, only the share of its yield you choose goes to the game.",
   },
   {
