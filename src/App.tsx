@@ -17,7 +17,6 @@ import {
   ZoneActivities,
   Layer,
   DailyBoard,
-  SeasonCard,
   QuestBrief,
   GameIntro,
   WearableMoment,
@@ -4993,9 +4992,6 @@ export default function App() {
               )}
               {tab === "explore" && nativePlay && (
                 <TodaysPot practice={false} onOpen={() => setTab("funding")} />
-              )}
-              {tab === "explore" && nativePlay && (
-                <SeasonCard signedIn={!!player} refreshKey={player?.xp} onClaimed={() => void me()} />
               )}
               <NativeExpeditions
                 onBusyChange={setNativeVisitBusy}

@@ -359,31 +359,22 @@ export const CHAPTERS: Chapter[] = [
   {
     id: "progression",
     group: "play",
-    title: "XP, levels, season and badges",
-    tldr: `${MAX_LEVEL} levels on a \`100 × (level − 1)²\` curve. Every level unlocks something to do or wear, **never better odds or bigger payouts**. Seasons and badges are cosmetic.`,
+    title: "XP, levels and badges",
+    tldr: `${MAX_LEVEL} levels on a \`100 × (level − 1)²\` curve. Every level unlocks something to do or wear, **never better odds or bigger payouts**. Badges are cosmetic.`,
     keyFacts: [
       [String(MAX_LEVEL), "levels"],
       [topXp.toLocaleString("en-US"), "XP for the top level"],
-      ["1 month", "the Season of First Light, goal 30 points"],
       [String(PLACE_BADGES), "place badges, soulbound NFTs"],
     ],
     hero: "xp-curve",
     status: "live",
     updated: "2026-11-11",
-    sources: ["docs/LEVELS.md", "docs/GAME-LOOPS.md", "docs/NATIVE-PROGRESSION.md", "docs/SEASON.md", "docs/BADGES.md", "server/data/level-table.json", "server/data/place-badges.json", "src/levels.ts"],
+    sources: ["docs/LEVELS.md", "docs/GAME-LOOPS.md", "docs/NATIVE-PROGRESSION.md", "docs/BADGES.md", "server/data/level-table.json", "server/data/place-badges.json", "src/levels.ts"],
     blocks: [
       { h: "Levels" },
       { p: "Levels add to monster duel power alongside skill. Equipment stays cosmetic. The table comes straight from `server/data/level-table.json`, the file the server uses." },
       { table: { head: ["Level", "XP needed", "Unlock", "Level Aura"], rows: levelRows } },
       { p: "A linked NEAR account shows its own confirmed XP, read from the rewards contract." },
-      { h: "Season" },
-      {
-        list: [
-          "The Season of First Light runs 1–30 Nov 2026 with a cosmetic leaderboard. Points: monster hunt 1, zone visit 2, NPC line 3. Goal 30.",
-          "Ranks: Explorer, Season finisher (goal), Trailblazer (2×), Season legend (3×). A rank changes how the row looks and nothing else.",
-          "Finishers claim a season mark and the season Aura once. Only play counts: never QGOLD, NEAR, stake or purchases.",
-        ],
-      },
       { h: "Badges" },
       {
         list: [
@@ -510,7 +501,7 @@ export const CHAPTERS: Chapter[] = [
             ["level", "Reaching L5–L10, once", "`earned:level:`"],
             ["npc", "NPC lines, chapters, trades, wisp rolls, patron path", "`earned:npc:`"],
             ["monster", "First guardian win, boss hits", "`earned:monster:`"],
-            ["season", "Reaching the season goal", "`earned:season:`"],
+            ["season", "A keepsake from the explorers' first days; no longer awarded (the edition stays in the contract)", "`earned:season:`"],
           ],
         },
       },

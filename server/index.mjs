@@ -242,9 +242,6 @@ import { defaultPoiSource } from "./poi-quests.mjs";
 import { chainLedgerSettings, createChainLedger } from "./chain-ledger/service.mjs";
 import { createLedgerChain, startLedgerWorker } from "./chain-ledger/chain.mjs";
 import { createChainLedgerRoutes } from "./chain-ledger/routes.mjs";
-import { seasonSettings } from "./season/config.mjs";
-import { createSeason } from "./season/service.mjs";
-import { createSeasonRoutes } from "./season/routes.mjs";
 import { ensureFairPlaySchema, guardTravel } from "./fair-play.mjs";
 import { DEFAULT_LAYER, WORLD_REGISTRY, layerSummary } from "./worlds/registry.mjs";
 import { poiWorldStatus } from "./poi/coverage.mjs";
@@ -1138,12 +1135,6 @@ const chainLedgerRoutes = createChainLedgerRoutes(chainLedger, {
   chain: () => ledgerChain,
   linkedAccount: (player) => linkedAccount(player),
 });
-// Hackathon season (docs/SEASON.md): cosmetic leaderboard of hunts, visits and
-// NPC lines, season mark + Aura at the goal, pot meter. Off by default on
-// mainnet; SEASON_* settings change the window, goal and points.
-const seasonConfig = seasonSettings(process.env, NETWORK);
-const season = seasonConfig.enabled ? createSeason(db, seasonConfig) : null;
-const seasonRoutes = createSeasonRoutes(season);
 const testSeed = createTestSeed(db, {
   creators: creatorRuntime.services
     ? {
@@ -1674,7 +1665,6 @@ async function api(req, res, url) {
           }
         : { status: "not-configured" },
       dailyBoard: dailyBoard ? dailyBoard.status() : { status: "off" },
-      season: season ? season.status() : { status: "off" },
       badges: badgeService ? badgeService.status() : { status: "off" },
       qgoldVault: qgoldVault ? qgoldVault.status() : { status: "not-configured" },
       marketEscrow: escrowHealth(db),
@@ -2404,8 +2394,6 @@ async function api(req, res, url) {
   if (await goldSpendRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (await chainLedgerRoutes.handle(req, res, url, { player, body, respond, assert }))
-    return;
-  if (await seasonRoutes.handle(req, res, url, { player, body, respond, assert }))
     return;
   if (
     await npcRollRoutes.handle(req, res, url, { player, body, respond, assert })
