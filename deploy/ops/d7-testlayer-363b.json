@@ -1,0 +1,6 @@
+{
+  "id": "d7-testlayer-363b",
+  "deployTarget": "testlayer",
+  "installKeys": [],
+  "note": "Test Layer at the World release with #363 head 1921cac9: season removed, review leftovers (zone tier, bot tag, welcome line)."
+}
