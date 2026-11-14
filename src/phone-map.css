@@ -37,6 +37,7 @@
 .app-shell .main-panel[hidden] { display: none !important; }
 .app-shell .main-panel.explore-panel.sheet-compact { position: fixed; inset: auto 12px calc(12px + env(safe-area-inset-bottom)); width: auto; max-width: 430px; height: auto; max-height: min(32dvh, 240px); overflow-y: auto; margin: 0 auto; padding: 12px; border: 1px solid var(--control-border); border-radius: 16px; background: var(--surface); box-shadow: 0 4px 20px #1a03352b; }
 .app-shell .sheet-compact > :not(.objective-dismiss-bar):not(.sheet-peek):not(.native-objective):not(.adventure-notice):not(.first-session):not(.adventure-result-resume) { display: none !important; }
+.app-shell .main-panel.explore-panel.sheet-compact:not(:has(> :is(.sheet-peek, .native-objective, .adventure-notice, .first-session, .adventure-result-resume))) { display: none; }
 .objective-dismiss-bar { position: sticky; top: 0; height: 0; display: flex; justify-content: flex-end; z-index: 2; pointer-events: none; }
 .objective-dismiss { pointer-events: auto; display: grid; place-items: center; width: 48px; height: 48px; padding: 0; border: 0; border-radius: 12px; background: var(--surface); color: var(--ink-secondary); }
 .app-shell .sheet-compact .first-session { margin: 0; padding: 0 48px 0 0; border: 0; box-shadow: none; background: none; gap: 8px; }
