@@ -71,44 +71,6 @@ html.hiw-root {
   transform-origin: left;
   transform: scaleX(var(--p, 0));
 }
-.hiw-top {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 8px max(16px, env(safe-area-inset-right)) 8px max(16px, env(safe-area-inset-left));
-  padding-top: max(8px, env(safe-area-inset-top));
-  background: color-mix(in srgb, var(--hiw-bg) 82%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid #ffffff14;
-}
-.hiw-brand {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  min-height: 48px;
-  font-weight: 700;
-  font-size: 18px;
-  text-decoration: none;
-}
-.hiw-brand img {
-  border-radius: 8px;
-}
-.hiw-top-play {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 44px;
-  padding: 0 16px;
-  border-radius: 999px;
-  background: var(--hiw-coin);
-  color: var(--hiw-bg) !important;
-  font-weight: 600;
-  text-decoration: none;
-}
 .hiw-rail {
   display: none;
 }
