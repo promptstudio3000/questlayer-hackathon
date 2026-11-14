@@ -106,7 +106,9 @@ const paths = [...new Set([...changed, ...renamedFrom])];
 
 const problems = [];
 
-for (const p of paths) {
+// Deleting a leaked file is the fix, so only paths that exist at head count.
+const present = git("diff", "--name-only", "--no-renames", "--diff-filter=d", range).split("\n").filter(Boolean);
+for (const p of present) {
   if (FORBIDDEN_FILES.some((re) => re.test(p))) problems.push(`${p}: secret or state file, never commit it`);
 }
 
