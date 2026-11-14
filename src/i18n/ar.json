@@ -3344,5 +3344,16 @@
   "Night": "ليل",
   "Day view, chosen by you. Tap to follow the real sun again.": "عرض النهار باختيارك. انقر للعودة إلى اتباع الشمس الحقيقية.",
   "Night view, chosen by you. Tap to follow the real sun again.": "عرض الليل باختيارك. انقر للعودة إلى اتباع الشمس الحقيقية.",
-  "Tap to switch day and night.": "انقر للتبديل بين النهار والليل."
+  "Tap to switch day and night.": "انقر للتبديل بين النهار والليل.",
+  "How to complete": "كيف تُنجزها",
+  "Tap Take this task to claim it; it is yours for 3 hours.": "اضغط خذ هذه المهمة لحجزها؛ هي لك لمدة 3 ساعات.",
+  "Make your way to the pinned place.": "توجّه إلى المكان المحدد.",
+  "Make your way to the hidden chest.": "توجّه إلى الصندوق المخبأ.",
+  "Do as the poster asks, then tap I'm here within {0} m of the pin.": "افعل ما يطلبه الناشر، ثم اضغط أنا هنا على بُعد {0} م من الدبوس.",
+  "Seek the answer there, then type it in the answer box here. The game checks it at once.": "ابحث عن الإجابة هناك واكتبها هنا في خانة الإجابة. تتحقق منها اللعبة فورًا.",
+  "Do the deed, then tell of it in the proof box here. The poster checks it and pays you.": "أنجز المهمة واكتب عنها هنا في خانة الإثبات. يراجعها الناشر ويدفع لك.",
+  "Tap Go to begin; the map then lights your way.": "اضغط اذهب للبدء؛ ثم تُنير لك الخريطة الطريق.",
+  "No place to visit; you may do this from anywhere.": "لا مكان لزيارته؛ يمكنك إنجازها من أي مكان.",
+  "Walk the {0} stops in order.": "امشِ عبر {0} محطات بالترتيب.",
+  "Then write your answer to the question above in the answer box here. A reviewer checks it.": "ثم اكتب هنا إجابتك عن السؤال أعلاه. يراجعها مراجع."
 }

@@ -1,0 +1,6 @@
+.howto { display: grid; gap: 8px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line, rgba(127, 127, 127, 0.25)); background: var(--surface); }
+section.howto > h3 { margin: 0; font-size: 15px; letter-spacing: 0.02em; color: var(--ink); }
+.howto ol { margin: 0; padding-inline-start: 22px; display: grid; gap: 6px; color: var(--ink-secondary); font-size: 15px; line-height: 1.4; }
+.howto li::marker { font-weight: 700; color: var(--action); }
+.howto-away { color: var(--ink); white-space: nowrap; }
+.howto > button { justify-self: start; }
