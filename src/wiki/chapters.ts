@@ -763,8 +763,8 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "coverage-tiers",
     status: "live",
-    updated: "2026-11-13",
-    sources: ["docs/WORLDS-PLAN.md", "docs/POI-PIPELINE.md", "scripts/poi/demo-cities.mjs", "scripts/poi/demo-capitals.json", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "docs/GLOBAL-WORLD-PREPARATION.md", "server/world-preparation/worker.mjs", "server/world-preparation/geography.mjs", "server/world-preparation/export.mjs", "server/world-preparation/collector.mjs", "server/world-preparation/launch-scope.mjs", "server/world-preparation/source-audit.mjs", "server/global-activities.mjs", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
+    updated: "2026-11-14",
+    sources: ["docs/WORLDS-PLAN.md", "docs/GLOBE-CLUSTERS.md", "server/globe-content.mjs", "src/globe-clusters-layer.ts", "docs/POI-PIPELINE.md", "scripts/poi/demo-cities.mjs", "scripts/poi/demo-capitals.json", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "docs/GLOBAL-WORLD-PREPARATION.md", "server/world-preparation/worker.mjs", "server/world-preparation/geography.mjs", "server/world-preparation/export.mjs", "server/world-preparation/collector.mjs", "server/world-preparation/launch-scope.mjs", "server/world-preparation/source-audit.mjs", "server/global-activities.mjs", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
     blocks: [
       { h: "Coverage tiers" },
       {
@@ -805,6 +805,15 @@ export const CHAPTERS: Chapter[] = [
           "Atlas visits and three-stop hunts use the normal GPS checks and give personal XP. Without a separately confirmed financial day they promise no money or item.",
           "The launch selection covers European and US extracts with national-capital footprints elsewhere (Russia, North Korea and Iran excluded). The first active phase is EU-only: all 27 member countries. Completing it never reports a complete planet.",
           "A bulk collector continues from verified map downloads to real polygon selection and isolated checks, and reports unsafe or oversized areas instead of dropping them. This is map-derived coverage, not field verification.",
+        ],
+      },
+      { h: "The globe" },
+      {
+        list: [
+          "Zoom all the way out with **Globe** and bubbles show where the world can be played. A **gold** bubble counts player quests (quests other explorers made and published), because what players make matters most; a **violet** bubble counts playable cities where no player quest waits yet.",
+          "Bubbles group by distance on screen: one per country or cluster of small neighbours when the whole Earth is visible, one per region (a Czech kraj, a US state) a few steps closer, one per city closer still. A tap on a bubble flies one step in.",
+          "Numbers come from a public summary rounded to about 1 km, refreshed every five minutes, with no titles, names or authors.",
+          "Pale patches on the base map are built-up areas from OpenStreetMap. They take the building colour of the current sky, so at night they are a soft violet rather than white.",
         ],
       },
       { h: "Theme layers, day and night" },
