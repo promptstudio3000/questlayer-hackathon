@@ -601,7 +601,7 @@ export const CHAPTERS: Chapter[] = [
     tldr: "Local chat is **the chat of the place you are in**: a distance filter (1–100 km), the most active shouts and topics on top, free messages below. Everything is created from **small dialogs over the map**. Messages and places are free; shouts and topics are paid. Reports and blocks work both ways.",
     keyFacts: [
       ["1–100 km", "how far Local chat reaches"],
-      ["1 day · 1 week · keep", "how long a chat message stays"],
+      ["1 day · 1 week", "how long a chat message stays"],
       ["7 days", "longest shout"],
       ["6 authors", "make a topic free for good"],
     ],
@@ -619,7 +619,7 @@ export const CHAPTERS: Chapter[] = [
       },
       {
         list: [
-          "**Chat messages** (map notes) are free. The author picks 1 day, 1 week (default) or Keep until removed; expired messages leave every list. Authors can edit their own text; pin, photo and time stay.",
+          "**Chat messages** (map notes) are free. The author picks 1 day or 1 week (default); no message stays for good, and expired messages leave every list. Authors can edit their own text; pin, photo and time stay.",
           "Every message near you (about 3 km) also stands **on the map** as a small paper pin with its text (your own with a coloured edge), refreshed every 30 seconds and right after you leave, edit or remove one. Tapping a pin opens Local chat with that message highlighted.",
           "Every message shows author, how long ago, time left, the text and a **GPS line** with the pin and its distance. Tapping it shows the spot on a plain map with only the pin and your position.",
           "**Shouts** are short paid bubbles for up to 7 days; a **topic** becomes free for good once 6 different players wrote in it (see Fees and spending). The game checks your QGOLD before anything is paid: if it does not cover the price, you see **Not enough QGOLD in your account** and nothing is taken.",
