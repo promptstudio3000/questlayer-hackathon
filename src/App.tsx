@@ -3342,6 +3342,10 @@ export default function App() {
     signer: NativeSigner,
     accountId: string,
   ): Promise<boolean> {
+    // A claim already in flight may have minted while the card was closed:
+    // check first so "Finish securing" never re-sends a used voucher.
+    if (item.native_claim_state === "issued" && (await syncAuraClaim(item)))
+      return true;
     const claim = await api<NativeAuraClaim>("/native/claims", {
       itemId: item.id,
       accountId,
@@ -3349,42 +3353,54 @@ export default function App() {
     if (claim.state !== "minted") {
       if (!onNearNetwork(claim.contractId))
         throw Error("Securing Auras is not available on this network.");
-      await signer.send(
-        {
-          network: NEAR_NETWORK,
-          signerId: accountId,
-          receiverId: claim.contractId,
-          actions: [
-            {
-              type: "FunctionCall",
-              params: {
-                methodName: "redeem_aura",
-                args: {
-                  claim_id: claim.claim_id,
-                  edition: claim.edition,
-                  receiver_id: claim.receiver_id,
-                  expires_at_ms: claim.expires_at,
-                  signature: claim.signature,
+      try {
+        await signer.send(
+          {
+            network: NEAR_NETWORK,
+            signerId: accountId,
+            receiverId: claim.contractId,
+            actions: [
+              {
+                type: "FunctionCall",
+                params: {
+                  methodName: "redeem_aura",
+                  args: {
+                    claim_id: claim.claim_id,
+                    edition: claim.edition,
+                    receiver_id: claim.receiver_id,
+                    expires_at_ms: claim.expires_at,
+                    signature: claim.signature,
+                  },
+                  gas: "100000000000000",
+                  deposit: (5n * 10n ** 22n).toString(),
                 },
-                gas: "100000000000000",
-                deposit: (5n * 10n ** 22n).toString(),
               },
-            },
-          ],
-        },
-        { playerId: player!.id },
-      );
+            ],
+          },
+          { playerId: player!.id },
+        );
+      } catch (e) {
+        // Already secured (or being secured) on NEAR: confirm it below
+        // instead of showing the relay's refusal.
+        const code = (e as { code?: string }).code;
+        if (code !== "RELAY_CLAIM_USED" && code !== "RELAY_CLAIM_PENDING")
+          throw e;
+      }
     }
-    for (let attempt = 0; attempt < 5; attempt++) {
-      const result = await api<{ claim: NativeAuraClaim; player: Player }>(
-        "/native/claims/confirm",
-        { itemId: item.id },
-      );
-      updateOwnedPlayer(result.player);
-      if (result.claim.state === "minted") return true;
-      await new Promise((resolve) => setTimeout(resolve, 800));
+    for (let attempt = 0; attempt < 8; attempt++) {
+      if (await syncAuraClaim(item)) return true;
+      await new Promise((resolve) => setTimeout(resolve, 1500));
     }
     return false;
+  }
+  /** Asks the server whether an Aura claim minted; true once it has. */
+  async function syncAuraClaim(item: Item): Promise<boolean> {
+    const result = await api<{ claim: NativeAuraClaim; player: Player }>(
+      "/native/claims/confirm",
+      { itemId: item.id },
+    );
+    updateOwnedPlayer(result.player);
+    return result.claim.state === "minted";
   }
   /**
    * Lists a secured Aura for sale. NEAR Intents is the default market: the
@@ -4912,6 +4928,12 @@ export default function App() {
                       onConnect={activateExplorer}
                       onMint={mintEarnedAura}
                       onConfirm={checkAuraClaim}
+                      onSync={(item) =>
+                        syncAuraClaim(item).then(
+                          () => undefined,
+                          () => undefined,
+                        )
+                      }
                       onRestore={restoreDemoAura}
                     />
                     <NativeProfilePanel

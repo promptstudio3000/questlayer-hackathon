@@ -105,6 +105,43 @@ function relayItem(row) {
   };
 }
 
+// One-time calls: a failed attempt stops mattering once the same thing
+// succeeded (a retried Aura claim, a second explorer mint).
+const onceKey = (item) =>
+  item.kind === "aura" && item.ref
+    ? item.ref
+    : item.kind === "avatar" || item.kind === "account"
+      ? `${item.kind}:${item.account}`
+      : null;
+
+/**
+ * Removes failed relay rows whose action later succeeded, so the feed does not
+ * show "Not saved" next to the "Final" row of the same Aura or explorer.
+ */
+function dropSuperseded(db, have, items) {
+  const done = new Set(
+    items
+      .filter((i) => i.status === "confirmed")
+      .map(onceKey)
+      .filter(Boolean),
+  );
+  if (have.has("native_awards"))
+    for (const ref of items
+      .filter((i) => i.status === "failed" && i.kind === "aura" && i.ref)
+      .map((i) => i.ref))
+      if (
+        db
+          .prepare(
+            "SELECT 1 FROM native_awards WHERE claim_id=? AND state='minted'",
+          )
+          .get(ref.slice("aura:".length))
+      )
+        done.add(ref);
+  for (let i = items.length - 1; i >= 0; i--)
+    if (items[i].status === "failed" && done.has(onceKey(items[i])))
+      items.splice(i, 1);
+}
+
 /**
  * The newest on-chain actions of one player. `limit` caps the list (1..100).
  */
@@ -119,6 +156,7 @@ export function chainFeed(db, playerId, { limit = 50 } = {}) {
       )
       .all(playerId, n))
       items.push(relayItem(row));
+  dropSuperseded(db, have, items);
   if (have.has("native_reward_claims"))
     for (const row of db
       .prepare(
