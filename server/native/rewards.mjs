@@ -616,6 +616,14 @@ export class NativeRewards extends NativeContractReader {
         .get().n,
       // Published days of an earlier rewards contract, skipped by the worker.
       foreignDays: foreignNativeDays(this.db).map((d) => d.id),
+      // The worker key's remaining allowance (checked every 10 minutes).
+      allowance: this.workerAllowance
+        ? {
+            near: Number(BigInt(this.workerAllowance.yocto ?? 0) / 10n ** 18n) / 1e6,
+            checkedAt: this.workerAllowance.checkedAt,
+            low: this.workerAllowance.low,
+          }
+        : null,
     };
   }
 }
