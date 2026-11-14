@@ -254,9 +254,10 @@ export function NearbyList({
   const communityByRef = new Map(community.map((c) => [`${c.type}:${c.id}`, c]));
   const openMarket = (kind: "task" | "secret", id: string) => {
     const hash = `${kind}=${encodeURIComponent(id)}`;
-    // The same row twice: the hash does not change, so announce it again.
-    if (location.hash === `#${hash}`) dispatchEvent(new HashChangeEvent("hashchange"));
-    else location.hash = hash;
+    // Replace, never push: a new history entry fires popstate, which
+    // restored the folded sheet, so the dialog opened hidden inside it.
+    history.replaceState(history.state, "", `#${hash}`);
+    dispatchEvent(new HashChangeEvent("hashchange"));
   };
 
   function row(e: NearbyEntry) {

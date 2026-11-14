@@ -267,8 +267,15 @@ export function NearbyMarket({
   useEffect(() => {
     void load();
   }, [load]);
+  // The link of the dialog just closed: the dialog's own Back lands on the
+  // history entry that still carries it, which must not open it again.
+  const closedLink = useRef("");
   useEffect(() => {
-    const read = () => {
+    const read = (event?: Event) => {
+      if (event?.isTrusted && location.hash === closedLink.current) {
+        history.replaceState(history.state, "", location.pathname + location.search);
+        return;
+      }
       const link = marketLinkFromHash();
       if (link?.kind === "task") setOpenTask({ id: link.id, k: link.k });
       if (link?.kind === "secret") setOpenSecret({ id: link.id, k: link.k });
@@ -307,7 +314,9 @@ export function NearbyMarket({
     }
   }
   const closeLink = () => {
-    if (marketLinkFromHash()) history.replaceState(null, "", location.pathname + location.search);
+    if (!marketLinkFromHash()) return;
+    closedLink.current = location.hash;
+    history.replaceState(history.state, "", location.pathname + location.search);
   };
 
   if (!data && !listed) return null;
