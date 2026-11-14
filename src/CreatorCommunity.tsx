@@ -2090,6 +2090,61 @@ function DraftHint({
   );
 }
 
+/** Live card of the quest being written: what explorers will see. */
+function QuestPreview({
+  template,
+  photo,
+  title,
+  description,
+  points,
+  paid,
+  priceText,
+  xp,
+}: {
+  template: CreatorPlaceTemplate | null;
+  photo: string;
+  title: string;
+  description: string;
+  points: Point[];
+  paid: boolean;
+  priceText: string;
+  xp: number;
+}) {
+  const kind = template || "visit";
+  return (
+    <aside className="qe-preview" data-qe-step="3" aria-label={tr("Preview")}>
+      <div className={`qe-preview-hero${photo ? " has-photo" : ""}`}>
+        {photo ? (
+          <img src={photo} alt="" />
+        ) : (
+          <img className="qe-preview-art" src={mapKitUrl(`quests/${kind}.png`)} width={72} height={72} alt="" draggable={false} />
+        )}
+        <span className="qd-kind">{PLACE_TEMPLATES[kind].badge}</span>
+      </div>
+      <div className="qe-preview-body">
+        <strong className={title.trim() ? "" : "is-empty"}>{title.trim() || tr("Your quest title")}</strong>
+        <p className={description.trim() ? "" : "is-empty"}>
+          {description.trim()
+            ? description.trim().slice(0, 160) + (description.trim().length > 160 ? "…" : "")
+            : tr("What explorers do there shows here.")}
+        </p>
+        <ul className="qe-preview-facts">
+          <li>
+            {template === "trail"
+              ? points.length === 1 ? tr("1 stop") : tr("{0} stops", { 0: points.length })
+              : points.length
+                ? tr("Spot pinned")
+                : tr("No spot yet")}
+            {template === "trail" && points.length > 1 ? ` · ${distanceText(trailLength(points))}` : ""}
+          </li>
+          <li>{paid ? `${priceText} QGOLD` : tr("Free")}</li>
+          {xp > 0 && <li>{tr("+{0} XP for you", { 0: xp })}</li>}
+        </ul>
+      </div>
+    </aside>
+  );
+}
+
 function QuestEditor({
   playerId,
   quest,
@@ -2121,6 +2176,7 @@ function QuestEditor({
     points: savedPlace?.points ?? [],
     paid: !!savedPrice,
     priceText: savedPrice ? qgoldOfYocto(savedPrice) : "",
+    step: 0,
   });
   const placeDraft = useFormDraft({
     playerId,
@@ -2139,6 +2195,7 @@ function QuestEditor({
         ) as Point[],
         paid: !!v.paid,
         priceText: typeof v.priceText === "string" ? v.priceText : "",
+        step: Number.isInteger(v.step) ? Math.min(3, Math.max(0, v.step)) : 0,
       };
     } catch {
       return JSON.parse(placeBase);
@@ -2150,7 +2207,11 @@ function QuestEditor({
   const [placeError, setPlaceError] = useState("");
   const [paid, setPaid] = useState<boolean>(restoredPlace.paid);
   const [priceText, setPriceText] = useState<string>(restoredPlace.priceText);
-  const placeNow = JSON.stringify({ template, points, paid, priceText });
+  // New quests are a four-step wizard (Lubos, 14 Nov 2026): kind, place,
+  // words, check. Saved quests keep the one-page editor.
+  const [step, setStep] = useState<number>(quest ? 0 : restoredPlace.step);
+  const [stepError, setStepError] = useState("");
+  const placeNow = JSON.stringify({ template, points, paid, priceText, step: quest ? 0 : step });
   useEffect(() => {
     if (!editable) return;
     if (placeNow === placeBase) {
@@ -2247,6 +2308,41 @@ function QuestEditor({
     (["draft", "published", "rejected"].includes(quest.state) &&
       quest.latestState !== "pending_review");
   const pendingReview = quest?.latestState === "pending_review";
+  const wizard = !quest;
+  const stepNames = [tr("Kind"), tr("Place"), tr("Words"), tr("Check")];
+  function stepProblem(at: number): string {
+    if (at === 0 && !template) return tr("Pick what kind of quest it is.");
+    if (at === 1 && template && points.length < PLACE_TEMPLATES[template].min)
+      return template === "trail"
+        ? tr("Pin at least 2 stops. Walk between them; your draft waits on the map.")
+        : tr("Pin the spot where you stand.");
+    if (at === 2 && (!draft.values.title.trim() || !draft.values.description.trim()))
+      return tr("Give it a title and say what explorers should do.");
+    if (at === 2 && observation && !requirementDraft.values.prompt.trim())
+      return tr("Write the observation requirement, or untick it.");
+    return "";
+  }
+  function goStep(to: number) {
+    for (let at = 0; at < Math.min(to, 3); at++) {
+      const problem = stepProblem(at);
+      if (problem) {
+        setStep(at);
+        setStepError(problem);
+        return;
+      }
+    }
+    setStepError("");
+    setStep(to);
+    requestAnimationFrame(() =>
+      document.querySelector(".qe-wizard")?.scrollIntoView({ block: "start", behavior: "smooth" }),
+    );
+  }
+  const xpTable = me.creatorXp;
+  const xpReward =
+    xpTable && template
+      ? xpTable.publish[template] +
+        (template === "trail" ? xpTable.trailStopBonus * points.length : 0)
+      : 0;
   async function reviewQuote() {
     if (!quest || quoteBusy) return;
     setQuoteBusy(true);
@@ -2355,8 +2451,10 @@ function QuestEditor({
           <span className="creator-state">{statusName(quest.state)}</span>
         )}
       </div>
-      <p className="creator-hint">
-        {tr("Pick a kind, pin it where you stand, then write what to do. Your live location is never shared.")}</p>
+      {!wizard && (
+        <p className="creator-hint">
+          {tr("Pick a kind, pin it where you stand, then write what to do. Your live location is never shared.")}</p>
+      )}
       {quest && hasChanges && !editable && (
         <details className="creator-saved-version">
           <summary>{tr("View saved revision")}{" "}{quest.latestRevision}</summary>
@@ -2367,8 +2465,49 @@ function QuestEditor({
         </details>
       )}
       <div className="qe-wrap">
-      <form className="creator-form qe-form" onSubmit={save}>
+      <form
+        className={`creator-form qe-form${wizard ? " qe-wizard" : ""}`}
+        data-step={wizard ? step : undefined}
+        onSubmit={(event) => {
+          if (wizard && step < 3) {
+            event.preventDefault();
+            goStep(step + 1);
+            return;
+          }
+          void save(event);
+        }}
+      >
+        {wizard && (
+          <div className="qe-steps">
+            <ol aria-label={tr("Steps")}>
+              {stepNames.map((name, at) => (
+                <li key={name} className={at === step ? "is-now" : at < step ? "is-done" : ""}>
+                  <button
+                    type="button"
+                    aria-current={at === step ? "step" : undefined}
+                    disabled={busy || at > step}
+                    onClick={() => goStep(at)}
+                  >
+                    <span aria-hidden="true">{at < step ? <Check size={14} weight="bold" /> : at + 1}</span>
+                    {name}
+                  </button>
+                </li>
+              ))}
+            </ol>
+            <h4>
+              {
+                [
+                  tr("What will explorers do?"),
+                  tr("Where is it?"),
+                  tr("What should they do there?"),
+                  tr("Looks good? Save it."),
+                ][step]
+              }
+            </h4>
+          </div>
+        )}
         {editable && (
+          <div className="qe-ai" data-qe-step="0">
           <AiQuestDraft
             template={template}
             disabled={busy}
@@ -2383,11 +2522,16 @@ function QuestEditor({
               setPlaceError("");
               setQuote(null);
               setAccepted(false);
+              if (wizard) {
+                setStepError("");
+                setStep(2);
+              }
             }}
           />
+          </div>
         )}
         <div className="qe-col qe-col-place">
-        <div className={`qe-photo${photo ? " has-photo" : ""}`}>
+        <div className={`qe-photo${photo ? " has-photo" : ""}`} data-qe-step="1">
           {photo && <img src={photo} alt="" />}
           <label className={`secondary-button${!editable || busy || photoBusy ? " is-disabled" : ""}`}>
             <Camera size={20} aria-hidden="true" />
@@ -2411,7 +2555,7 @@ function QuestEditor({
           )}
           {photoError && <p role="alert">{photoError}</p>}
         </div>
-        <fieldset className="creator-templates qe-kinds" disabled={!editable || busy}>
+        <fieldset className="creator-templates qe-kinds" data-qe-step="0" disabled={!editable || busy}>
           <legend>{tr("Template")}</legend>
           {(Object.keys(PLACE_TEMPLATES) as CreatorPlaceTemplate[]).map(
             (key) => (
@@ -2420,6 +2564,13 @@ function QuestEditor({
                   type="radio"
                   name="creator-template"
                   checked={template === key}
+                  onClick={(e) => {
+                    // A tap on a tile moves on; arrow keys only select.
+                    if (wizard && e.detail > 0) {
+                      setStepError("");
+                      setStep(1);
+                    }
+                  }}
                   onChange={() => {
                     setTemplate(key);
                     setPoints((old) => old.slice(0, PLACE_TEMPLATES[key].max));
@@ -2439,7 +2590,7 @@ function QuestEditor({
           {template && <p className="creator-hint qe-kind-hint">{PLACE_TEMPLATES[template].hint}</p>}
         </fieldset>
         {template && (
-          <div className="creator-pins">
+          <div className="creator-pins" data-qe-step="1">
             {points.length > 0 && (
               <ol>
                 {points.map((p, i) => (
@@ -2508,7 +2659,7 @@ function QuestEditor({
             {placeError && <p role="alert">{placeError}</p>}
           </div>
         )}
-        <fieldset className="creator-templates qe-access" disabled={!editable || busy}>
+        <fieldset className="creator-templates qe-access" data-qe-step="3" disabled={!editable || busy}>
           <legend>{tr("Access")}</legend>
           <label className="creator-template">
             <input
@@ -2558,7 +2709,7 @@ function QuestEditor({
         </fieldset>
         </div>
         <div className="qe-col qe-col-words">
-        <label htmlFor="creator-quest-title">
+        <label htmlFor="creator-quest-title" data-qe-step="2">
           {tr("Quest title")}<input
             id="creator-quest-title"
             value={draft.values.title}
@@ -2572,7 +2723,7 @@ function QuestEditor({
             readOnly={!editable || busy}
           />
         </label>
-        <label htmlFor="creator-quest-description">
+        <label htmlFor="creator-quest-description" data-qe-step="2">
           {tr("Instructions")}<textarea
             id="creator-quest-description"
             value={draft.values.description}
@@ -2587,7 +2738,7 @@ function QuestEditor({
             readOnly={!editable || busy}
           />
         </label>
-        <label className="creator-check">
+        <label className="creator-check" data-qe-step="2">
           <input
             type="checkbox"
             checked={observation}
@@ -2603,7 +2754,7 @@ function QuestEditor({
         </label>
         {observation && (
           <>
-            <label htmlFor="creator-observation-prompt">
+            <label htmlFor="creator-observation-prompt" data-qe-step="2">
               {tr("Observation requirement")}<textarea
                 id="creator-observation-prompt"
                 maxLength={500}
@@ -2618,18 +2769,31 @@ function QuestEditor({
                 }}
               />
             </label>
-            <p className="creator-hint">
+            <p className="creator-hint" data-qe-step="2">
               {tr("Operational policy creator-observation-v1: private text up to 1,000 characters, up to 3 attempts, one pending review. A third independent rejection resolves as NOT completed. No automatic expiry, GPS verification or reward. Only new starts on an independently approved structured revision use this requirement; existing plain starts stay legacy.")}</p>
           </>
         )}
+        <div className="qe-draft-hint" data-qe-step="3">
         <DraftHint
           restored={draft.restored || requirementDraft.restored}
           available={
             draft.storageAvailable && requirementDraft.storageAvailable
           }
         />
+        </div>
+        {wizard && <QuestPreview
+          template={template}
+          photo={photo}
+          title={draft.values.title}
+          description={draft.values.description}
+          points={points}
+          paid={paid && !priceProblem}
+          priceText={paid && !priceProblem ? qgoldOfYocto(priceValue) : ""}
+          xp={xpReward}
+        />}
+        {wizard && stepError && <p className="creator-error qe-step-error" role="alert">{stepError}</p>}
         {editable ? (
-          <button className="primary-button" type="submit" disabled={busy}>
+          <button className="primary-button" type="submit" data-qe-step="3" disabled={busy}>
             {busy
               ? tr("Saving…")
               : quest
@@ -2648,8 +2812,11 @@ function QuestEditor({
           <button
             className="text-button"
             type="button"
+            data-qe-step="3"
             disabled={busy}
             onClick={() => {
+              setStep(0);
+              setStepError("");
               draft.discard();
               requirementDraft.discard();
               placeDraft.discard();
@@ -2664,6 +2831,20 @@ function QuestEditor({
             }}
           >
             {tr("Discard local text changes")}</button>
+        )}
+        {wizard && (
+          <div className="qe-nav">
+            {step > 0 && (
+              <button type="button" className="secondary-button" disabled={busy} onClick={() => goStep(step - 1)}>
+                <ArrowLeft size={20} aria-hidden="true" /> {tr("Back")}
+              </button>
+            )}
+            {step < 3 && (
+              <button type="button" className="primary-button" disabled={busy} onClick={() => goStep(step + 1)}>
+                {tr("Next")} <ArrowRight size={20} aria-hidden="true" />
+              </button>
+            )}
+          </div>
         )}
         </div>
       </form>
