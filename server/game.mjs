@@ -19,6 +19,9 @@ import {
   GPS_MAX_AGE_MS,
   splitYield,
   COIN_ARENA_RADIUS_M,
+  COIN_GPS_MAX_ACCURACY_M,
+  COIN_GPS_MAX_AGE_MS,
+  coinPickupRadius,
 } from "./domain.mjs";
 import { AURA_SUPPLY, entitledEditions } from "./aura-catalog.mjs";
 import { contains } from "./spatial/city-pack.mjs";
@@ -138,7 +141,11 @@ export function claimCoin(db, player, coinId, fix, now = Date.now()) {
     assertPlaceOpen(closedPlaces(db, world.cityId), null, coin);
     assertWorldActive(db, world.cityId, world.day);
     if (!world.arena) {
-      validateFix(fix, coin, now);
+      // Coins forgive a poor GPS fix: reach grows with the reported accuracy.
+      validateFix(fix, coin, now, coinPickupRadius(fix?.accuracy), {
+        maxAccuracy: COIN_GPS_MAX_ACCURACY_M,
+        maxAge: COIN_GPS_MAX_AGE_MS,
+      });
       guardTravel(db, player, fix, now);
     } else {
       point(fix);

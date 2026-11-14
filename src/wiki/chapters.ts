@@ -250,12 +250,12 @@ export const CHAPTERS: Chapter[] = [
       ["95–120 m", "between coins on a path (60 m near a zone)"],
       ["6 waves", "of coins between 07:00 and 22:00 local"],
       ["15 km/h", "GPS travel cap (the demo is exempt)"],
-      ["25 m", "range to confirm a quest stop"],
+      ["35–60 m", "GPS coin reach, wider when the fix is poor"],
     ],
     hero: "core-loop",
     status: "live",
-    updated: "2026-11-11",
-    sources: ["docs/MAP-REWARDS.md", "docs/NATIVE-AUTO-COLLECT.md", "docs/NATIVE-GAME-MAP.md", "docs/PEER-APPEARANCES.md", "docs/FIRST-SESSION.md", "src/useDemoWalk.ts", "src/play-here.ts", "server/poi/live-source.mjs", "src/map-motion.ts", "src/gps-facing.ts", "src/quest-route.ts", "src/QuestBrief.tsx", "src/GameMap.tsx", "src/RewardBursts.tsx"],
+    updated: "2026-11-14",
+    sources: ["docs/MAP-REWARDS.md", "docs/NATIVE-AUTO-COLLECT.md", "docs/NATIVE-GAME-MAP.md", "docs/PEER-APPEARANCES.md", "docs/FIRST-SESSION.md", "src/useDemoWalk.ts", "src/play-here.ts", "server/poi/live-source.mjs", "src/map-motion.ts", "src/gps-facing.ts", "src/quest-route.ts", "src/QuestBrief.tsx", "src/GameMap.tsx", "src/RewardBursts.tsx", "src/coin-pickup.ts"],
     blocks: [
       { h: "Movement" },
       {
@@ -277,6 +277,7 @@ export const CHAPTERS: Chapter[] = [
           "Six waves between 07:00 and 22:00 local time, each start shifted by up to ±30 min from the day seed. A later wave's coins stay hidden and cannot be claimed early.",
           "The city demo has no waves, so visitors in any time zone can play; its coins carry the same backed value.",
           "**One coin, one pick-up.** A coin can show in more than one world at the same spot (the GPS city map and the city demo share their street cells). Whoever picks it up first, in any world, takes it: every other explorer gets \"Another explorer got this coin first\", and the coin leaves their map at once.",
+          "**Forgiving GPS pick-up.** A phone between houses often reports ±30–50 m, so a coin on the edge of the pavement could stay out of reach. With GPS the reach is 25 m plus the reported accuracy: at least 35 m, at most 60 m. Fixes up to ±65 m and up to 30 s old count. The app and the server use the same rule, and the travel guard and XP caps still apply. The city demo keeps its 18 m reach.",
           "Every claim is confirmed by the server before the floating reward chip appears. Retrying a request returns the original receipt.",
         ],
       },

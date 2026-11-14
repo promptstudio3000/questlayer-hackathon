@@ -1,4 +1,5 @@
 import { currentZone, zoneInteriorMargin } from "./zone-presence";
+import { clientCoinReach } from "./coin-pickup";
 import { ZonePresence } from "./ZonePresence";
 import { MapSurface } from "./MapSurface";
 import type { CreatorCommunityView } from "./creator-community-types";
@@ -1715,7 +1716,9 @@ export default function App() {
       collectionRun.current = request;
       const timeout = setTimeout(() => request.abort(), 15000);
       try {
-        const radius = (state.world.coinRadius ?? 18) - 1;
+        // GPS reach grows with the fix accuracy, like the server check.
+        const radius = clientCoinReach(!!state.arena, state.world.coinRadius, state.fix, Date.now());
+        if (radius === null) return;
         const nearby = state.world.coins
           .filter(
             (c) =>
