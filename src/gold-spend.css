@@ -128,6 +128,11 @@
   gap: 6px;
   margin-top: 6px;
 }
+/* Name on top, price and stock under it: a long price line never squeezes the
+   name into one letter per line. */
+.npc-gear .npc-action { grid-template-columns: 36px minmax(0, 1fr); }
+.npc-gear-text { display: grid; gap: 4px; min-width: 0; }
+.npc-gear-text small { justify-self: start; max-width: 100%; white-space: normal; border-radius: 10px; }
 .npc-gear-title {
   margin: 0;
   display: flex;

@@ -165,7 +165,7 @@ export const CHAPTERS: Chapter[] = [
     id: "overview",
     group: "start",
     title: "What QuestLayer is",
-    tldr: "Pokémon GO, Geocaching and PoolTogether in one: **stake to play and lose nothing**. Your principal stays yours, a share of its yield goes to one global treasury, and every day that yield becomes rewards on real streets, paid as **QGOLD**, fully backed by NEAR.",
+    tldr: "Pokémon GO, Geocaching and PoolTogether in one: a **stake-to-play game platform**. Your principal stays yours, a share of its yield goes to one global treasury, and every day that yield becomes rewards on real streets, paid as **QGOLD**, fully backed by NEAR.",
     keyFacts: [
       ["100 %", "of your stake's principal stays yours"],
       ["1 coin", "QGOLD in every layer, whatever a layer names it"],
@@ -519,6 +519,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "Chest, roll and level Auras are secured automatically: the device key signs `redeem_aura` and the relayer pays gas. A worn Aura is secured too and put straight back on (`equip_aura`), and the explorer record it needs (`mint_avatar`) is created silently as soon as the explorer owns an Aura, so nothing has to be tapped.",
+          "An Aura secured by hand (Wardrobe → Advanced → Secure this Aura) checks its claim by itself: opening the card again asks NEAR whether it minted and shows it as secured, and Finish securing on a claim NEAR already used confirms it instead of failing. Settings → On chain hides a failed attempt once the same Aura claim or explorer mint succeeded.",
           "Selling lists the Aura on NEAR Intents (see the Intents chapter). The secure account window asks to approve the sale first, right after the Sell tap; only then does the Aura move to the verifier, so a declined sale leaves it in the collection. A 2 % NEP-199 royalty goes to the treasury on outside marketplaces such as Mintbase.",
           "Planned: trading real Aavegotchi wearables through the Aavegotchi marketplace and its engine. Today wearables on the map are free clones and originals stay in the wallet.",
         ],
@@ -573,7 +574,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "Tap any explorer for their profile: name, level, the original Aavegotchi they wear with its BRS, play stats and equipment slots. A gold seal marks an original their wallet holds. A profile never shows a position, a wallet or the rest of a collection.",
           "Waves are six ready phrases. Limits: one per pair per minute, 20 sent and 30 received per hour; deleted after an hour.",
-          "**Write a message** opens the encrypted inbox. Block hides presence, notes, waves, messages and the card both ways.",
+          "**Message** opens the encrypted inbox. Block hides presence, notes, waves, messages and the card both ways.",
           "Demo bots in the test world carry a **demo-bot** tag on their card and a small **bot** tag next to their name on the map; they take no waves and cannot be blocked. **Message** on a demo bot opens a short demo chat: the bot answers with ready in-character lines, nothing is stored and nothing goes on chain (bots have no inbox key). At most 12 lines a minute.",
           "Without a usable explorer account on this device **Message** stays off and the card says why: still being set up, earned with the first find, or the device is not linked yet (then **Link this device** opens Account and devices for the recovery passkey or, on testnet, a new account).",
         ],
@@ -653,7 +654,7 @@ export const CHAPTERS: Chapter[] = [
     sources: ["docs/PLAYER-INBOX.md", "server/inbox/crypto.mjs", "src/signing-vault/inbox.ts", "server/inbox/service.mjs", "server/inbox/routes.mjs", "src/inbox/Inbox.tsx", "server/relayer/accounts.mjs", "src/DeviceKeys.tsx"],
     blocks: [
       { h: "Where to find it" },
-      { p: "The inbox opens from the map's inbox pill, from the Messages tile in Profile → Character and from **Write a message** on an explorer's profile." },
+      { p: "The inbox opens from the map's inbox pill, from the Messages tile in Profile → Character and from **Message** on an explorer's profile." },
       { h: "Who may write" },
       {
         list: [
@@ -838,7 +839,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "At the first request of a local day the server builds the plan once from the **real daily budget**: the map's share of the rewards contract's per-date cap, priced in micro-QGOLD at the vault's rate R.",
-          "**Few coins, each worth something.** One coin = the day's coin budget ÷ 200 (`MAP_COIN_TARGET`). An opened street cell places 10 coins, the Plzeň city demo 50, and placement stops once the whole day budget is on the map, so every coin is covered. With yield-only days (`NATIVE_YIELD_BACKED_DAYS=1`) the budget is the day's drip of realized staking yield, shared with city days: 0.0005 NEAR for coins at 1 QGOLD = 1 microNEAR is 500 QGOLD, 2.5 QGOLD a coin.",
+          "**Coins everywhere, each worth at least 1 QGOLD.** One coin = the day's coin budget ÷ 100,000 (`MAP_COIN_TARGET`), never less than 1 QGOLD. An opened street cell places 10 coins, the Plzeň city demo 50, and placement stops once the whole day budget is on the map, so every coin is covered. With yield-only days (`NATIVE_YIELD_BACKED_DAYS=1`) the budget is the day's drip of realized staking yield, shared with city days: a coin budget of 806,710 QGOLD gives 8-QGOLD coins for about 10,000 opened cells; a smaller budget gives 1-QGOLD coins until it is placed.",
           "Zone caps: at most 1 % of the zone budget per cell and 25 % per H3 res-5 area; what a capped cell cannot take goes to the others.",
           "**Every zone prize is paid out on chain.** Plzeň's reviewed zones share their cell's zone budget as the first-finisher prize (only the first world to open the cell that day funds it, so GPS and the demo never spend it twice); the game treasury funds no prize.",
           "**Pioneer cells** (nobody visited for 30 days) show gold fog; their first drop pays two shares per coin and adds a pioneer chest.",
@@ -960,16 +961,16 @@ export const CHAPTERS: Chapter[] = [
     id: "treasury-dao",
     group: "economy",
     title: "Who decides: the treasury DAO",
-    tldr: "Explorers vote every week on how the treasury is held, one explorer one vote. A **Sputnik DAO** council approves every daily run, and only after checking it against the adopted mix and the safety limits.",
+    tldr: "Explorers vote every week on how the treasury is held, each vote weighted by voting power earned by play. A **Sputnik DAO** council approves every daily run, and only after checking it against the adopted mix and the safety limits.",
     keyFacts: [
       ["2 of 3", "council approvals pass a proposal"],
       ["L3+", "and played in the last 7 days to vote"],
       ["3", "mix options each week"],
-      ["1 : 1", "one explorer, one vote; XP cannot be bought"],
+      ["1–100", "voting power earned by play, capped, never for sale"],
     ],
     hero: "dao-flow",
     status: "live",
-    updated: "2026-11-11",
+    updated: "2026-11-14",
     sources: ["docs/TREASURY-DAO.md", "docs/TREASURY-WORKERS-VPS.md", "server/native/treasury-dao.mjs", "scripts/treasury-dao-testnet.mjs", "scripts/treasury-worker-vps.sh", "src/economy/TreasuryVoteCard.tsx"],
     blocks: [
       { p: "The treasury follows a stock **Sputnik DAO v2**, `questlayer-treasury.sputnik-v2.testnet`, with the role names Trezu uses: a keeper that only files proposals (Requestor), a council of three that approves with **2 of 3** (Admin, Approver), and **Explorers**, the players who may vote." },
@@ -979,7 +980,7 @@ export const CHAPTERS: Chapter[] = [
           rows: [
             ["Weekly mix vote opens (Monday)", "keeper", "one `Vote` proposal per option; the recommended option gets one automatic vote"],
             ["Explorers vote", "players at level 3+ who played in the last 7 days", "`act_proposal(VoteApprove)` from the explorer account, sponsored, no pop-up"],
-            ["Tally (next Monday)", "keeper files the result, council approves", "an approved Adopt treasury mix proposal with the counts"],
+            ["Tally (next Monday)", "keeper files the result, council approves", "an approved Adopt treasury mix proposal with the weighted counts and each voter's voting power"],
             ["Every morning", "keeper files the day's run, two council keys approve", "the run happens only once it is approved"],
           ],
         },
@@ -989,6 +990,7 @@ export const CHAPTERS: Chapter[] = [
           "**Options** (staked NEAR / stablecoins / NEAR reserve): Staking first 90 / 10 / 0 (recommended, the stables split 5 % USDC + 5 % USDT), More stables 70 / 20 / 10, Bigger reserve 60 / 20 / 20. Every option stays inside the treasury limits. Polls filed before 11 Nov 2026 (50 / 40 / 10 and friends) still tally to their own targets.",
           "**Owner decision:** `treasury-dao-testnet.mjs adopt <preset> --execute` has the council adopt a preset at once (prepared on 11 Nov 2026 for 90 / 5 / 5); it closes this week's open mix poll and re-files today's run with the new target.",
           "**Checked automatic approval:** the council keys approve a daily run only when its target is the adopted mix and it moves at most 25 % of the treasury.",
+          "**Voting power**, not one explorer one vote: days with XP in the last 30 (1 each, up to 30) + 3 per level (up to 30) + 2 per follower at level 2+ (up to 20) + 1 per time another explorer took on one of your quests or tasks in the last 30 days (up to 20). At least 1, at most 100. The keeper's automatic vote counts 10. The tally adds up voting power; the result proposal carries a snapshot of every voter's power, so anyone can recount it.",
           "Extra votes of the week appear under the mix vote and are counted the same way. New voters join the DAO once a day.",
           "Custody stays with the treasury-ops account on testnet for now; the DAO decides the target and approves every run. The QGOLD vault council moves to the DAO next.",
           "**Where it runs:** the keeper and the automatic council keys run on the game server every morning, each a function-call key that can only file or vote on DAO proposals. If only council-a runs there, the second approval comes from the owner (`approve-pending` re-checks every open proposal first) and the day's rebalance waits for it.",
