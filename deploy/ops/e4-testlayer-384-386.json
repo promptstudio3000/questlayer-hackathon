@@ -1,0 +1,6 @@
+{
+  "id": "e4-testlayer-384-386",
+  "deployTarget": "testlayer",
+  "installKeys": [],
+  "note": "Test Layer at the World release with #384 (trader Aura trade signs automatically; signing vault rebuilt), #385 (route guidance to every target), #386 (XP in the avatar pill)."
+}
