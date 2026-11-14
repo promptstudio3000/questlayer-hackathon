@@ -482,7 +482,7 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "aura-catalog",
     status: "live",
-    updated: "2026-11-11",
+    updated: "2026-11-14",
     sources: ["docs/NATIVE-AURA-CLAIMS.md", "docs/COLLECTIBLES-REVIEW.md", "docs/ASSET-CATALOG.md", "server/data/aura-catalog.json", "server/earned-editions.mjs", "src/Inventory.tsx", "src/MarketBoard.tsx", "src/GoldShop.tsx", "src/AdventureResults.tsx", "src/WearableMoment.tsx"],
     blocks: [
       { h: "Inventory: Wardrobe and Shop" },
@@ -504,7 +504,6 @@ export const CHAPTERS: Chapter[] = [
             ["level", "Reaching L5–L10, once", "`earned:level:`"],
             ["npc", "NPC lines, chapters, trades, wisp rolls, patron path", "`earned:npc:`"],
             ["monster", "First guardian win, boss hits", "`earned:monster:`"],
-            ["season", "A keepsake from the explorers' first days; no longer awarded (the edition stays in the contract)", "`earned:season:`"],
           ],
         },
       },
