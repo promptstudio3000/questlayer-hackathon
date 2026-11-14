@@ -32,6 +32,7 @@ import type { NearbyExplorer, WornWearable } from "./types";
 import type { ActorView } from "./actor-types";
 import type { ActorsLayer } from "./actors-layer";
 import type { MapRewardsLayer } from "./map-rewards-layer";
+import type { GlobeClustersLayer } from "./globe-clusters-layer";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { api } from "./api";
@@ -1109,6 +1110,36 @@ export function GameMap(props: GameMapProps) {
   useEffect(() => {
     rewardsLayer.current?.setVisible(!props.overview && !props.globe);
   }, [ready, props.overview, props.globe]);
+  // Globe clusters: player quests and playable cities worldwide. Own chunk,
+  // loaded the first time the globe opens (src/globe-clusters-layer.ts).
+  const globeClusters = useRef<GlobeClustersLayer | null>(null);
+  useEffect(() => {
+    const m = map.current;
+    if (!m || !ready) return;
+    if (globeClusters.current) {
+      globeClusters.current.setVisible(props.globe);
+      return;
+    }
+    if (!props.globe) return;
+    let gone = false;
+    import("./globe-clusters-layer")
+      .then(({ attachGlobeClustersLayer }) => {
+        if (gone || globeClusters.current || !m.getStyle()) return;
+        globeClusters.current = attachGlobeClustersLayer(m);
+        globeClusters.current.setVisible(latest.current.globe);
+      })
+      .catch(() => {});
+    return () => {
+      gone = true;
+    };
+  }, [ready, props.globe]);
+  useEffect(
+    () => () => {
+      globeClusters.current?.destroy();
+      globeClusters.current = null;
+    },
+    [ready],
+  );
   useEffect(() => {
     if (props.active === false) map.current?.stop();
   }, [props.active, ready]);
