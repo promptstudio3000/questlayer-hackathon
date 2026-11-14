@@ -4864,7 +4864,10 @@ export default function App() {
                   arena={arena}
                   filter={nearbyFilter}
                   onFilter={setNearbyFilter}
-                  onZone={(z, questId) => { const q = questId ? world.quests.find(x => x.id === questId) : null; if (q) startQuest(q); else selectZone(z); }}
+                  // A quest row opens its detail at once (Go guides on the map from
+                  // there); before, the sheet closed and the detail waited
+                  // behind the next Explore tap (Lubos, 14 Nov 2026).
+                  onZone={(z, questId) => selectZone(z, questId)}
                   onActor={(actor, distanceM) => {
                     if (distanceM <= 35) setActorOpen(actor);
                     else showActor({ actorId: actor.id });
