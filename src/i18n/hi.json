@@ -3348,5 +3348,16 @@
   "Quest draft": "क्वेस्ट ड्राफ़्ट",
   "Walk on, then tap to pin the next spot.": "आगे चलें, फिर अगला स्थान पिन करने के लिए टैप करें।",
   "Hide draft": "ड्राफ़्ट छिपाएँ",
-  "Walk to the next stop. You can close this; your draft waits on the map.": "अगले पड़ाव तक चलें। इसे बंद कर सकते हैं; आपका ड्राफ़्ट मैप पर इंतज़ार करेगा।"
+  "Walk to the next stop. You can close this; your draft waits on the map.": "अगले पड़ाव तक चलें। इसे बंद कर सकते हैं; आपका ड्राफ़्ट मैप पर इंतज़ार करेगा।",
+  "Tap Go to begin; the map then lights your way.": "शुरू करने के लिए चलें दबाओ; फिर नक्शा तुम्हारी राह रोशन करेगा।",
+  "Then write your answer to the question above in the answer box here. A reviewer checks it.": "फिर ऊपर के सवाल का जवाब यहाँ जवाब वाले खाने में लिखो। एक समीक्षक जाँचता है।",
+  "Make your way to the hidden chest.": "छिपे संदूक की ओर चलो।",
+  "Make your way to the pinned place.": "चिह्नित जगह की ओर चलो।",
+  "No place to visit; you may do this from anywhere.": "कहीं जाने की ज़रूरत नहीं; यह कहीं से भी कर सकते हो।",
+  "Walk the {0} stops in order.": "{0} पड़ाव क्रम से चलो।",
+  "Tap Take this task to claim it; it is yours for 3 hours.": "इसे लेने के लिए यह टास्क लो दबाओ; 3 घंटे तक यह तुम्हारा है।",
+  "Do the deed, then tell of it in the proof box here. The poster checks it and pays you.": "काम करो और यहाँ सबूत वाले खाने में बताओ। पोस्ट करने वाला जाँचकर भुगतान करता है।",
+  "Seek the answer there, then type it in the answer box here. The game checks it at once.": "वहाँ जवाब खोजो और यहाँ जवाब वाले खाने में लिखो। खेल तुरंत जाँचता है।",
+  "How to complete": "कैसे पूरा करें",
+  "Do as the poster asks, then tap I'm here within {0} m of the pin.": "पोस्ट करने वाले के कहे अनुसार करो, फिर पिन से {0} मी के भीतर मैं यहाँ हूँ दबाओ।"
 }

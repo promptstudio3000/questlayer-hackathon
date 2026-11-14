@@ -32,7 +32,9 @@ The page is short first and every number can be checked by a click.
   yield per day at that rate, and R.
 - **Swap card** (`src/economy/QgoldExchange.tsx`, also on /economy): buy QGOLD
   at R + 1 % or sell at R − 1 % (instant or queued), the player's balance from
-  `GET /api/qgold/account`, signed with the game key on this device. Purple
+  `GET /api/qgold/account`. Sell signs with the game key on this device; buy
+  uses the game key only when that account holds the NEAR, else the player's
+  NEAR wallet pays and the QGOLD is minted to the game account. Purple
   buttons always use white text (`--on-action`). Desktop: beside the headline;
   phone: under the stats.
 - Info buttons (`InfoTip`) explain a number in place; Escape or a tap outside

@@ -3348,5 +3348,16 @@
   "Quest draft": "مسودة المهمة",
   "Walk on, then tap to pin the next spot.": "تابع المشي، ثم انقر لتثبيت النقطة التالية.",
   "Hide draft": "إخفاء المسودة",
-  "Walk to the next stop. You can close this; your draft waits on the map.": "امشِ إلى المحطة التالية. يمكنك إغلاق هذا؛ مسودتك تنتظر على الخريطة."
+  "Walk to the next stop. You can close this; your draft waits on the map.": "امشِ إلى المحطة التالية. يمكنك إغلاق هذا؛ مسودتك تنتظر على الخريطة.",
+  "Tap Go to begin; the map then lights your way.": "اضغط اذهب للبدء؛ ثم تُنير لك الخريطة الطريق.",
+  "Then write your answer to the question above in the answer box here. A reviewer checks it.": "ثم اكتب هنا إجابتك عن السؤال أعلاه. يراجعها مراجع.",
+  "Make your way to the hidden chest.": "توجّه إلى الصندوق المخبأ.",
+  "Make your way to the pinned place.": "توجّه إلى المكان المحدد.",
+  "No place to visit; you may do this from anywhere.": "لا مكان لزيارته؛ يمكنك إنجازها من أي مكان.",
+  "Walk the {0} stops in order.": "امشِ عبر {0} محطات بالترتيب.",
+  "Tap Take this task to claim it; it is yours for 3 hours.": "اضغط خذ هذه المهمة لحجزها؛ هي لك لمدة 3 ساعات.",
+  "Do the deed, then tell of it in the proof box here. The poster checks it and pays you.": "أنجز المهمة واكتب عنها هنا في خانة الإثبات. يراجعها الناشر ويدفع لك.",
+  "Seek the answer there, then type it in the answer box here. The game checks it at once.": "ابحث عن الإجابة هناك واكتبها هنا في خانة الإجابة. تتحقق منها اللعبة فورًا.",
+  "How to complete": "كيف تُنجزها",
+  "Do as the poster asks, then tap I'm here within {0} m of the pin.": "افعل ما يطلبه الناشر، ثم اضغط أنا هنا على بُعد {0} م من الدبوس."
 }

@@ -83,6 +83,8 @@ import {
 import "./creator-community.css";
 import "./quest-detail.css";
 import { tr } from "./i18n";
+import { HowToSteps, placeStep } from "./HowToSteps";
+import { distanceLabel } from "./app-bits";
 
 export type { CreatorCommunityView } from "./creator-community-types";
 type Props = {
@@ -1475,6 +1477,22 @@ function QuestDetail({
           )}
         </div>
       )}
+      <HowToSteps
+        steps={[
+          !part && !own && quest && tr("Tap Go to begin; the map then lights your way."),
+          !place
+            ? tr("No place to visit; you may do this from anywhere.")
+            : placeStep(
+                place.template === "trail"
+                  ? tr("Walk the {0} stops in order.", { 0: place.points.length })
+                  : place.template === "chest"
+                    ? tr("Make your way to the hidden chest.")
+                    : tr("Make your way to the pinned place."),
+                distance !== null ? distanceLabel(distance) : "",
+              ),
+          requirement && tr("Then write your answer to the question above in the answer box here. A reviewer checks it."),
+        ]}
+      />
       {part ? (
         <QuestProgress
           part={part}

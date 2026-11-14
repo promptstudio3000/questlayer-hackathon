@@ -53,6 +53,7 @@ import {
 } from "./content";
 import "./how-it-works.css";
 import "../public-polish.css";
+import { PublicHeader } from "../PublicHeader";
 import { tr } from "../i18n";
 
 const PLAY_URL = "/";
@@ -741,15 +742,7 @@ export default function HowItWorks() {
   return (
     <div className={`hiw ${reduce ? "hiw-still" : ""}`}>
       <div className="hiw-progress" ref={progress} aria-hidden="true" />
-      <header className="hiw-top">
-        <a className="hiw-brand" href={PLAY_URL}>
-          <img src="/icon.svg" alt="" width={32} height={32} />
-          <span>QuestLayer</span>
-        </a>
-        <a className="hiw-top-play" href={PLAY_URL}>
-          {tr("Play now")}{" "}<ArrowRight size={18} weight="bold" />
-        </a>
-      </header>
+      <PublicHeader current="how-it-works" />
 
       <nav className="hiw-rail" aria-label={tr("Chapters")}>
         <ol>

@@ -1298,9 +1298,10 @@ export function GameMap(props: GameMapProps) {
       node.addEventListener("click", (e) => {
         e.stopPropagation();
         const hash = `${pin.kind}=${encodeURIComponent(pin.id)}${pin.k ? `&k=${encodeURIComponent(pin.k)}` : ""}`;
-        // The same pin twice: the hash does not change, so announce it again.
-        if (location.hash === `#${hash}`) dispatchEvent(new HashChangeEvent("hashchange"));
-        else location.hash = hash;
+        // Replace, never push: a new history entry fires popstate, which
+        // restored the folded sheet, so the dialog opened hidden inside it.
+        history.replaceState(history.state, "", `#${hash}`);
+        dispatchEvent(new HashChangeEvent("hashchange"));
         latest.current.onMarketPin?.(pin);
       });
       return new maplibregl.Marker({ element: node, anchor: "bottom" })
