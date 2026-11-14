@@ -572,7 +572,7 @@ export const CHAPTERS: Chapter[] = [
         list: [
           "Tap any explorer for their profile: name, level, the original Aavegotchi they wear with its BRS, play stats and equipment slots. A gold seal marks an original their wallet holds. A profile never shows a position, a wallet or the rest of a collection.",
           "Waves are six ready phrases. Limits: one per pair per minute, 20 sent and 30 received per hour; deleted after an hour.",
-          "**Write a message** opens the encrypted inbox. Block hides presence, notes, waves, messages and the card both ways.",
+          "**Message** opens the encrypted inbox. Block hides presence, notes, waves, messages and the card both ways.",
           "Demo bots in the test world carry a **demo-bot** tag on their card and a small **bot** tag next to their name on the map; they take no waves and cannot be blocked. **Message** on a demo bot opens a short demo chat: the bot answers with ready in-character lines, nothing is stored and nothing goes on chain (bots have no inbox key). At most 12 lines a minute.",
           "Without a usable explorer account on this device **Message** stays off and the card says why: still being set up, earned with the first find, or the device is not linked yet (then **Link this device** opens Account and devices for the recovery passkey or, on testnet, a new account).",
         ],
@@ -652,7 +652,7 @@ export const CHAPTERS: Chapter[] = [
     sources: ["docs/PLAYER-INBOX.md", "server/inbox/crypto.mjs", "src/signing-vault/inbox.ts", "server/inbox/service.mjs", "server/inbox/routes.mjs", "src/inbox/Inbox.tsx", "server/relayer/accounts.mjs", "src/DeviceKeys.tsx"],
     blocks: [
       { h: "Where to find it" },
-      { p: "The inbox opens from the map's inbox pill, from the Messages tile in Profile → Character and from **Write a message** on an explorer's profile." },
+      { p: "The inbox opens from the map's inbox pill, from the Messages tile in Profile → Character and from **Message** on an explorer's profile." },
       { h: "Who may write" },
       {
         list: [
