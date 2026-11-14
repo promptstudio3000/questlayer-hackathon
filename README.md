@@ -74,7 +74,7 @@ flowchart LR
 5. Walk up to a **monster** on the map and tap it: pick a challenge (riddles, a rune path, rhythm or a duel,
    depending on the day), press **Start challenge** and win with skill. Money never helps.
 6. Talk to an **NPC** (Talk, Tasks, Profile). NPC conversations run on **NEAR AI Cloud** with signed, attested replies.
-7. Open a **creator quest** (the big pins with a photo, or **Community → Quests**): **Go**, then rate and discuss it.
+7. Open a **creator quest** (the big pins with a photo, or **Community → Quests**): **Go**, then rate and discuss it. To publish your own, press **Actions** (bottom right) → **Create a quest**.
 8. Tap your avatar at the top and open **Stake** to see the tiers and what a stake costs, then open **/treasury**.
    The Test Layer has no treasury of its own: its /treasury page shows GotchiGO's live treasury (one treasury for
    the whole game), and says so. A temporary Test Layer explorer holds only the 0.02 test NEAR for its account, so

@@ -307,7 +307,8 @@ function WispRoll() {
 
 const RARITY_TONE: Record<string, Tone> = { common: "muted", rare: "world", epic: "ai", legendary: "money" };
 function AuraCatalog() {
-  const sources = ["chest", "level", "npc", "monster", "season"];
+  const sources = ["chest", "level", "npc", "monster"];
+  const shown = EDITIONS.filter((e) => sources.includes(e.source));
   const rarities = ["common", "rare", "epic", "legendary"];
   return (
     <figure className="wk-fig">
@@ -337,7 +338,7 @@ function AuraCatalog() {
           </div>
         ))}
       </div>
-      <figcaption>Every gem is one edition from the live catalog ({EDITIONS.length} in total).</figcaption>
+      <figcaption>Every gem is one edition that can be earned today, from the live catalog ({shown.length} in total).</figcaption>
     </figure>
   );
 }

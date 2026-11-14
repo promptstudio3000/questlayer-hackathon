@@ -24,6 +24,7 @@ import "./economy.css";
 import "./treasury.css";
 import "../public-polish.css";
 import { shortNear } from "./format";
+import { TIER_NEAR } from "../tier-stake";
 import { arc, blendedApr, niceScale, num, qgoldCount, QGOLD_B_TOKENS, rateB, simulate, tickLabel, toNear, toUnits } from "./treasury-model";
 
 type Bucket = { bucket: "staked" | "lst" | "stable" | "near"; current: string; currentBps: number; policyBps: number };
@@ -1215,6 +1216,9 @@ export default function TreasuryPage() {
           {network ? <span className="tr-chip">{network === "mainnet" ? "NEAR mainnet" : "NEAR testnet"}</span> : null}
         </div>
         <p className="tr-hero-sub">The game's shared money, all of it on chain. The treasury is never spent: only its yield pays for the coins on the map.</p>
+        <p className="tr-hero-sub">
+          Want to add to it? Stake NEAR in the game under your avatar → <strong>Stake</strong>. The stake stays in your own vault and you can withdraw it; only its yield joins this treasury. {TIER_NEAR.tier2} NEAR reaches Tier 2 and {TIER_NEAR.tier3} NEAR reaches Tier 3, which opens the sealed Tier 3 places on the map.
+        </p>
         {m?.mirroredFrom ? (
           <p className="tr-hero-sub tr-mirror-note">
             You are on the Test Layer, the practice copy of the game. There is one treasury, and it belongs to{" "}

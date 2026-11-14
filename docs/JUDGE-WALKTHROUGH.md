@@ -52,7 +52,7 @@ giver), Vojtěch (Trader), Běla (Storyteller), Gate Keeper (Keeper).
 | # | Do | See |
 | --- | --- | --- |
 | B1 | Walk to **Ráda** and tap her | A dialog with three tabs. **Talk**: she asks you a question (**Answer · +30 XP**), and you can type your own and press **Send**. **Tasks**: the walks she offers. **Profile**: her story and the places she knows. Offers and rewards are computed by the server; the language model on NEAR AI Cloud only words the reply |
-| B2 | Walk to **Vojtěch** | The same three tabs; **Tasks** is what he sells for QGOLD and **Profile** says "Travelling Merchant". His own account is `npc-kupec-vojtech.questlayer-dev-20261101.testnet` (C4) |
+| B2 | Walk to **Vojtěch** | The same three tabs; **Tasks** is what he sells for QGOLD and **Profile** says "Travelling merchant". A deal with him settles with one tap, with no wallet window. His own account is `npc-kupec-vojtech.questlayer-dev-20261101.testnet` (C4) |
 | B3 | **Inventory → Shop → Market**, then **More trading tools** | Auras other explorers sell, priced in QGOLD; below it the secured-Aura market marked "TEST NETWORK" and "NEAR Intents (test)" |
 | B4 | Open https://questlayer.promptstudio3000.com/treasury | What is held on chain right now (treasury, prize pool, QGOLD vault), the yield per day, what 1B QGOLD is backed by and the treasury mix; the tabs **Vote**, **Money flow**, **QGOLD**, **Model** and **Safety** go deeper |
 | B5 | Tap another explorer on the map (bots wander the demo, tagged "bot") | The player card: level, XP, finds, what they wear, **Message** and **Wave**. Bots carry a **demo-bot** label; **Message** on a bot opens a short demo chat, nothing is stored |
