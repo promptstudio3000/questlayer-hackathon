@@ -129,3 +129,24 @@ test("history rows carry their chain proof in the player view", () => {
   assert.equal(rows.h5, undefined, "a roll without a relayed job shows no proof");
   assert.equal(historyChain({ meta: "not json" }), null);
 });
+
+test("a failed Aura claim or explorer mint hides once the same one succeeded", () => {
+  const { db, alice, job } = setup();
+  job(alice, "alice.qlx.testnet", { method: "redeem_aura", args: { claim_id: "c1" }, state: "failed", at: T0 + 1 });
+  job(alice, "alice.qlx.testnet", { method: "redeem_aura", args: { claim_id: "c1" }, tx: TX1, at: T0 + 2 });
+  job(alice, "alice.qlx.testnet", { method: "redeem_aura", args: { claim_id: "c2" }, state: "failed", at: T0 + 3 });
+  job(alice, "alice.qlx.testnet", { method: "mint_avatar", state: "failed", at: T0 + 4 });
+  job(alice, "alice.qlx.testnet", { method: "mint_avatar", tx: TX2, at: T0 + 5 });
+  job(alice, "alice.qlx.testnet", { method: "equip_aura", state: "failed", at: T0 + 6 });
+  const { items } = chainFeed(db, alice);
+  assert.deepEqual(
+    items.map((i) => [i.kind, i.status]),
+    [
+      ["wardrobe", "failed"],
+      ["avatar", "confirmed"],
+      ["aura", "failed"],
+      ["aura", "confirmed"],
+    ],
+  );
+  assert.equal(items[2].ref, "aura:c2", "an Aura that never secured keeps its failure");
+});
