@@ -1146,7 +1146,7 @@ export const CHAPTERS: Chapter[] = [
       { h: "Why it is worth it" },
       {
         list: [
-          "**You lose nothing.** The stake sits in a personal vault in your name. Only the yield is shared; the principal never pays for anything.",
+          "**Your principal stays yours.** The stake sits in a personal vault in your name. Only the yield is shared; the principal never pays for anything. The one cost is the vault setup fee, paid once and not returned.",
           "**You fill the map.** The yield share you choose (25, 50 or 100 %) goes to the one global treasury, and every day it is laid out as coins and zone prizes for every explorer.",
           "**You keep earning.** The part of the yield you keep comes back to you as QGOLD.",
         ],
