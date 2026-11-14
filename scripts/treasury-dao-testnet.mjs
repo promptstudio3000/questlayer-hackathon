@@ -33,6 +33,8 @@ import {
   mixPreset,
   mixShort,
   EXPLORER_RULE,
+  VOTING_POWER,
+  KEEPER_POWER,
   buildPolicy,
   explorersRole,
   describe,
@@ -230,12 +232,24 @@ async function setup() {
 }
 
 // ---------------------------------------------------------------- daily
-async function eligibleAccounts() {
+let explorerList = null;
+async function explorers() {
+  if (explorerList) return explorerList;
   const r = await fetch(`${apiBase}/api/treasury/dao/explorers`, { signal: AbortSignal.timeout(20000) });
   assert(r.ok, `Explorer list unavailable: HTTP ${r.status}`);
   const body = await r.json();
   assert(Array.isArray(body.accounts) && body.accounts.every((a) => typeof a === "string" && a.endsWith(".testnet")), "Invalid explorer list.");
-  return body.accounts;
+  assert(body.power && typeof body.power === "object" && Object.values(body.power).every(validPower), "Invalid voting power list.");
+  explorerList = body;
+  return body;
+}
+const eligibleAccounts = async () => (await explorers()).accounts;
+const validPower = (n) => Number.isInteger(n) && n >= 1 && n <= VOTING_POWER.max;
+/** The voting power of this poll's voters, as published by the game, for the tally. */
+async function pollPower(t) {
+  const { power } = await explorers();
+  const voters = [...new Set(t.options.flatMap((o) => o.voters))].filter((a) => a !== ids.keeper).sort();
+  return Object.fromEntries(voters.map((a) => [a, power[a] ?? 1]));
 }
 
 async function daily() {
@@ -249,19 +263,23 @@ async function daily() {
   const adoptedPolls = new Set(p.filter((x) => x.meta?.t === "adopt").flatMap((x) => [x.meta.poll, ...(Array.isArray(x.meta.supersedes) ? x.meta.supersedes : [])]));
 
   // 1. Tally every closed poll that has no result yet; the council adopts the winner.
+  // Each vote counts with the voter's voting power (VOTING_POWER), snapshotted
+  // into the result so the second council key re-checks the same numbers.
   for (const poll of pollIds(p)) {
-    const t = tallyPoll(p, poll);
-    if (adoptedPolls.has(poll) || !t.closesAt || t.closesAt > now) continue;
+    const open = tallyPoll(p, poll);
+    if (adoptedPolls.has(poll) || !open.closesAt || open.closesAt > now) continue;
+    const power = await pollPower(open);
+    const t = tallyPoll(p, poll, { power, keeper: ids.keeper });
     const win = t.options.find((o) => o.option === t.winner);
     const tally = Object.fromEntries(t.options.map((o) => [o.option, o.approvals]));
-    const meta = { t: "adopt", kind: t.kind, poll, option: win.option, tally, voters: t.voters };
+    const meta = { t: "adopt", kind: t.kind, poll, option: win.option, tally, voters: t.voters, power, keeperPower: KEEPER_POWER };
     if (t.kind === "mix") {
       // The poll carries its own targets; presets are the fallback.
       const targets = win.targets || mixPreset(win.option)?.targets;
       assert(targets, `Unknown mix option ${win.option}`);
       meta.targets = targets;
     }
-    const title = t.kind === "mix" ? `Adopt treasury mix: ${win.label} (${poll}, ${t.voters} voters)` : `Result: ${t.title}: ${win.label}`;
+    const title = t.kind === "mix" ? `Adopt treasury mix: ${win.label} (${poll}, ${t.voters} voters, ${win.approvals} voting power)` : `Result: ${t.title}: ${win.label}`;
     const id = await propose(describe(title, meta), "Vote");
     await councilApprove(id, "Vote");
   }
@@ -432,8 +450,13 @@ async function approvePending() {
       if (x.meta.date !== utcDate(now)) problem = "not today's run";
       else problem = checkDailyRun(x.meta, { adopted, settings }).join(" ") || null;
     } else if (x.meta.t === "adopt") {
-      const t = /^(mix|extra)-/.test(x.meta.poll || "") ? tallyPoll(dao.proposals, x.meta.poll) : null;
-      if (!t) problem = "only poll results are approved here; owner decisions are approved where they are filed";
+      // Re-tally with the voting power snapshot the keeper filed; each value must be a valid power.
+      const power = x.meta.power;
+      const powerOk = power && typeof power === "object" && Object.values(power).every(validPower);
+      const t = powerOk && /^(mix|extra)-/.test(x.meta.poll || "") ? tallyPoll(dao.proposals, x.meta.poll, { power, keeper: dao.keeper }) : null;
+      if (!powerOk) problem = "the result carries no valid voting power snapshot";
+      else if (!t) problem = "only poll results are approved here; owner decisions are approved where they are filed";
+      else if (t.options.some((o) => o.voters.some((v) => v !== dao.keeper && !(v in power)))) problem = "a voter is missing from the voting power snapshot";
       else if (!t.closesAt || t.closesAt > now) problem = "the poll is still open";
       else if (t.winner !== x.meta.option) problem = `the poll's winner is ${t.winner}, not ${x.meta.option}`;
     } else if (x.meta.t === "members") {

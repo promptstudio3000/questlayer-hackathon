@@ -964,7 +964,7 @@ function DaoFacts({ d }: { d: Dao }) {
       </div>
       <ol className="tr-steps-mini">
         <li>
-          <b>Explorers vote</b> each week on the mix. The recommended option gets one automatic vote, so it wins when nobody votes.
+          <b>Explorers vote</b> each week on the mix, each with voting power earned by play (up to 100). The recommended option gets one automatic vote, so it wins when nobody votes.
         </li>
         <li>
           <b>

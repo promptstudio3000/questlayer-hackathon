@@ -3309,5 +3309,8 @@
   "Keepsake · {0}": "Память · {0}",
   "Open to you": "Открыто для тебя",
   "Profile of {0}": "Профиль {0}",
-  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "Гуляй по настоящим улицам, открывай сундуки и собирай QGOLD из общей казны."
+  "Walk real streets, open chests and gather QGOLD from a shared treasury.": "Гуляй по настоящим улицам, открывай сундуки и собирай QGOLD из общей казны.",
+  "Your voice in the treasury: {0} of {1}": "Твой голос в казне: {0} из {1}",
+  "Forged by play, never for sale: {0} from days of adventure, {1} from experience, {2} from followers, {3} from quests others undertook.": "Выковано игрой, не продаётся: {0} за дни приключений, {1} за опыт, {2} за подписчиков, {3} за квесты, которые прошли другие.",
+  "{0} voting power": "{0} силы голоса"
 }

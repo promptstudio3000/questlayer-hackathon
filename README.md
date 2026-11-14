@@ -75,7 +75,8 @@ military or private ground). Live numbers: `/api/health` → `poiWorld` and `aut
   holds at most **32 stakers per layer**. Both are to be redesigned before
   mainnet.
 - **Social money.** The treasury is governed by a stock **Sputnik DAO v2** (`questlayer-treasury.sputnik-v2.testnet`)
-  with Trezu's role names: explorers at level 3+ vote weekly on the treasury mix, one explorer one vote, and the
+  with Trezu's role names: explorers at level 3+ vote weekly on the treasury mix, each vote weighted by
+  voting power earned by play (active days, XP, followers, quests others played; capped, never for sale), and the
   council approves every run. [docs/TREASURY-DAO.md](docs/TREASURY-DAO.md)
 - **NFTs and markets.** Auras and avatars are NEP-171 with royalties; a fixed-price escrow market and a QGOLD escrow
   for player-to-player tasks; badges for visited places.
