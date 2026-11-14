@@ -1,5 +1,7 @@
 # QuestLayer status
 
+> **Superseded (14 Nov 2026).** This is a dated record kept as history. Units and numbers here are out of date (the game uses QGOLD, 1 NEAR = 1B QGOLD). The current description is the [README](../README.md) and the in-game wiki at `/wiki`.
+
 Updated 6 November 2026. This is the single start page for the current state of the project. Older status
 documents (`DEVELOPMENT-STATUS.md`, `V1-REMAINING.md`, `NEXT-DEVELOPMENT-PLAN.md`, `NEAR-INTEGRATION-STATUS.md`,
 `PROJECT-REVIEW-*`) are kept as dated history and are superseded by this page.

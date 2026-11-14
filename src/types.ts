@@ -411,6 +411,8 @@ export type NativeTradeRequest = {
 export type NearbyExplorer = Point & {
   id: string;
   name: string;
+  /** A seeded test-world explorer (labelled demo-bot). */
+  demoBot?: boolean;
   color: string;
   appearance?: {
     color: string;

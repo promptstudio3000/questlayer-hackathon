@@ -17,7 +17,6 @@ import {
   ZoneActivities,
   Layer,
   DailyBoard,
-  SeasonCard,
   QuestBrief,
   GameIntro,
   WearableMoment,
@@ -4231,6 +4230,12 @@ export default function App() {
             setCardPlayer(id)
           }
           onSelf={() => player && setCardPlayer(player.id)}
+          onZoomOutToGlobe={() => {
+            setSelected(null);
+            setOverview(false);
+            setFollow(true);
+            setGlobe(true);
+          }}
           wearables={nativePlay ? undefined : player?.wearables}
           onWearableFind={(id) => {
             const coin = world?.coins.find((c) => c.id === id);
@@ -4367,7 +4372,7 @@ export default function App() {
                   className="profile-pill"
                   onClick={() => chooseProfileTab("character")}
                 >
-                  <span className="sr-only">{tr("Profile")}</span>
+                  <span className="sr-only">{tr("Profile of {0}", { 0: player.name })}</span>
                   {hudProgress ? (
                     <HudXpRing
                       name={player.name}
@@ -4993,9 +4998,6 @@ export default function App() {
               )}
               {tab === "explore" && nativePlay && (
                 <TodaysPot practice={false} onOpen={() => setTab("funding")} />
-              )}
-              {tab === "explore" && nativePlay && (
-                <SeasonCard signedIn={!!player} refreshKey={player?.xp} onClaimed={() => void me()} />
               )}
               <NativeExpeditions
                 onBusyChange={setNativeVisitBusy}

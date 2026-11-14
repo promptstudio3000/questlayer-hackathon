@@ -1,0 +1,6 @@
+{
+  "id": "c3-testlayer-update",
+  "deployTarget": "testlayer",
+  "installKeys": [],
+  "note": "Update the Test Layer to per-method reward worker gas and the allowance in /api/health (restarts it after the key refresh)."
+}
