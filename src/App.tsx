@@ -168,7 +168,7 @@ import "./compact-ui.css";
 import "./mobile-sheets.css";
 import "./arcade-ui.css";
 import { activeQuestRoute, questTarget } from "./quest-route";
-import { HudXpRing } from "./HudXpRing";
+import { HudXpCount, HudXpRing } from "./HudXpRing";
 import { RewardBursts } from "./RewardBursts";
 import { pushBurst, type RewardBurst } from "./reward-burst";
 import type { ChainRef } from "./chain-proof";
@@ -1095,6 +1095,21 @@ export default function App() {
     );
     return () => clearTimeout(t);
   }, [bursts]);
+  // Every XP gain flies a "+N XP" chip to the XP counter beside the avatar,
+  // which then bumps (Lubos 14 Nov). The first read of a player never does.
+  const shownXp = useRef<{ key?: string; xp?: number }>({});
+  const [xpPulse, setXpPulse] = useState(0);
+  useEffect(() => {
+    if (!player || hudXp === null) return;
+    const key = `${player.id}:${nativePlay ? "native" : "demo"}`, xp = Number(hudXp);
+    const seen = shownXp.current;
+    if (seen.key === key && seen.xp !== undefined && xp > seen.xp) {
+      const amount = Math.round(xp - seen.xp);
+      burst({ tone: "xp", amount, title: `+${amount.toLocaleString("en-US")} XP` });
+      setXpPulse((n) => n + 1);
+    }
+    shownXp.current = { key, xp };
+  }, [hudXp, player?.id, nativePlay]);
   // Level ups get their own burst; the first read of a player never does.
   const shownLevel = useRef<{ player?: string; level?: number }>({});
   useEffect(() => {
@@ -1818,7 +1833,7 @@ export default function App() {
                     }
                   : result.find
                   ? { tone: "find", title: tr("Street find!"), detail: paid, chain: result.chain }
-                  : { tone: "coin", title: paid, chain: result.chain },
+                  : { tone: "coin", title: `+${gold(result.value, 2)} QGOLD`, chain: result.chain },
               );
               pickupFeedback.confirm(
                 demoPickupScope(state.player.id, state.world.id, state.arena),
@@ -4474,6 +4489,7 @@ export default function App() {
                       </span>
                     </>
                   )}
+                  {hudXp !== null && <HudXpCount xp={Number(hudXp)} pulse={xpPulse} />}
                 </button>
                 <button
                   className="balance-pill"
