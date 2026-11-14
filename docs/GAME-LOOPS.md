@@ -238,9 +238,9 @@ decisions above are settled as follows:
 | Daily board | Yes. Three goals from today's world, a small XP bonus for all three, no streak and no penalty, so it is not a D29 streak mechanic. |
 | Hackathon season | Yes, until 14 Nov 23:59 UTC. Leaderboard counts hunts, visits and NPC lines, never money; a season Aura for everyone who reaches the goal. |
 
-## 8. UI direction (handed to the UI thread)
+## 8. UI direction
 
-The owner's notes (1 Nov) and this analysis agree on the same UI shape. The UI thread owns the implementation.
+The owner's notes (1 Nov) and this analysis agree on the same UI shape.
 
 - **Character screen with the photo first.** Avatar render at the top with both Aura slots, equipped gotchi
   wearables around it as slots, traits/stats beside it, level ring, patron badge and rank.

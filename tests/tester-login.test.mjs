@@ -47,18 +47,18 @@ test("faucet cleanup removes only the old demo credit and keeps the tester", (t)
     db.prepare("UPDATE players SET gold_u=? WHERE id=?").run(goldU, p);
     return p;
   };
-  const owner = credit("coinmandeer", FAUCET_U),
+  const owner = credit("owner-tester", FAUCET_U),
     earner = credit("Earner", FAUCET_U + 5_000),
     spender = credit("Spender", 1_000),
     fresh = createPlayer(db, "Fresh");
   history(db, earner, "coin", "Coin", 5_000, {});
   db.close();
   const run = (...args) => JSON.parse(execFileSync(process.execPath, [SCRIPT, ...args], { encoding: "utf8", env: { ...process.env, NEAR_NETWORK: "testnet" } }));
-  const dry = run("remove-faucet", "--database", file, "--keep-name", "coinmandeer");
+  const dry = run("remove-faucet", "--database", file, "--keep-name", "owner-tester");
   assert.equal(dry.applied, false);
   assert.equal(dry.changed, 2);
   assert.deepEqual(dry.kept.map((p) => p.id), [owner]);
-  const done = run("remove-faucet", "--database", file, "--keep-name", "coinmandeer", "--apply");
+  const done = run("remove-faucet", "--database", file, "--keep-name", "owner-tester", "--apply");
   assert.equal(done.removedU, FAUCET_U + 1_000);
   db = openDatabase(file);
   const gold = (p) => db.prepare("SELECT gold_u FROM players WHERE id=?").get(p).gold_u;
@@ -68,15 +68,15 @@ test("faucet cleanup removes only the old demo credit and keeps the tester", (t)
   assert.equal(gold(fresh), 0);
   assert.equal(db.prepare("SELECT gold_u FROM history WHERE player_id=? AND kind='welcome'").get(earner).gold_u, 0);
   db.close();
-  assert.equal(run("remove-faucet", "--database", file, "--keep-name", "coinmandeer", "--apply").changed, 0, "runs once");
+  assert.equal(run("remove-faucet", "--database", file, "--keep-name", "owner-tester", "--apply").changed, 0, "runs once");
   const secret = execFileSync(process.execPath, [SCRIPT, "hash"], { input: "owner-pass\n", encoding: "utf8", env: { ...process.env, NEAR_NETWORK: "testnet" } }).trim();
-  assert.equal(run("set-login", "--database", file, "--name", "coinmandeer", "--secret", secret, "--apply").player, owner);
+  assert.equal(run("set-login", "--database", file, "--name", "owner-tester", "--secret", secret, "--apply").player, owner);
   assert.equal(run("remove-faucet", "--database", file).changed, 0, "the tester login is always kept");
   db = openDatabase(file);
   initializeTesterLogin(db);
-  assert.equal(testerLogin(db, { network: "testnet", name: "coinmandeer", password: "owner-pass" }), owner);
-  // A duplicate coinmandeer is retired; the tester login holder never is.
-  const duplicate = createPlayer(db, "coinmandeer");
+  assert.equal(testerLogin(db, { network: "testnet", name: "owner-tester", password: "owner-pass" }), owner);
+  // A duplicate owner-tester is retired; the tester login holder never is.
+  const duplicate = createPlayer(db, "owner-tester");
   db.prepare("UPDATE players SET gold_u=? WHERE id=?").run(FAUCET_U, duplicate);
   db.prepare("INSERT INTO sessions VALUES (?,?,?)").run("f".repeat(64), duplicate, Date.now() + 60_000);
   db.close();

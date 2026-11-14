@@ -1,4 +1,4 @@
-/* Phone map first (Lubos, 4 Nov 2026): on a phone the map is the game, so
+/* Phone map first (4 Nov 2026): on a phone the map is the game, so
    everything around it folds away. Loaded after mobile-sheets.css; rules use
    an .app-shell prefix so they also beat lazily loaded stylesheets. */
 

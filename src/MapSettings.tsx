@@ -3,7 +3,7 @@ import { tr } from "./i18n";
 
 /**
  * The gear in the top right corner opens Settings (src/SettingsScreen.tsx),
- * where the map controls are the first part (Lubos, 13 Nov 2026). The class
+ * where the map controls are the first part (13 Nov 2026). The class
  * name stays from the old map flyout.
  */
 export function MapSettings({ demo, open, onOpen }: {

@@ -1,6 +1,6 @@
 // Shared rows for Community lists (Quests, Tasks, Creators): a pixel icon for
 // what the row is, the explorer who made it with their own avatar, the place
-// on one line, and the reward on the right (Lubos, 11 Nov 2026).
+// on one line, and the reward on the right (11 Nov 2026).
 import type { ReactNode } from "react";
 import { MapPin, SealCheck, Star } from "@phosphor-icons/react";
 import { ArrowRight } from "./dir-icons";

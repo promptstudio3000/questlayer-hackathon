@@ -1,4 +1,4 @@
-# MetaLayer integration contract and owner handoff
+# MetaLayer integration contract
 
 13 November 2026. Task branch `weekend/m1-metalayer-first-expedition`, source base
 `673e9fc77c56133955e01ae32b962ec2edfff3b6`. This document describes the running

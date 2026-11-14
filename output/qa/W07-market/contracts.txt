@@ -2,7 +2,7 @@
 > questlayer@0.1.0 test:contracts
 > env PATH="$HOME/.cargo/bin:$PATH" cargo test --manifest-path contracts/Cargo.toml --workspace
 
-   Compiling questlayer-market v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/market)
+   Compiling questlayer-market v0.1.0 (/Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/market)
 warning: use of deprecated function `near_sdk::test_utils::testing_env_with_promise_results`: Use `testing_env!` macro to initialize with promise results
    --> market/src/lib.rs:436:22
     |

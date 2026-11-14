@@ -13,17 +13,17 @@
 
 ## Test Layer first until launch
 
-Until launch (Lubos, 13 Nov 2026) the main address opens the Test Layer. World's runtime.env sets
+Until launch (13 Nov 2026) the main address opens the Test Layer. World's runtime.env sets
 `DEFAULT_TEST_LAYER=1` and `TEST_LAYER_ORIGIN=https://questlayer-test.promptstudio3000.com`. `/api/config`
 then reports `gameLayer.defaultTest`, and a visitor without a saved choice is sent to the Test Layer.
 In the Test Layer, the world picker (logo, top left) links to QuestLayer World with `?world=1`. That
 choice lasts only for the tab session (`sessionStorage` `questlayer.stayWorld`; the old `localStorage` key is
-cleared, Lubos 14 Nov 2026), so every fresh start of the main address opens the Test Layer again. There is no
+cleared, 14 Nov 2026), so every fresh start of the main address opens the Test Layer again. There is no
 redirect while `TEST_LAYER_ORIGIN` is missing. Remove `DEFAULT_TEST_LAYER` at launch.
 
 ## City demo from the address
 
-Lubos, 13 Nov 2026: `/?newyork`, `/?praha` or `/?city=Buenos Aires` opens the Test Layer's demo in that city, to
+13 Nov 2026: `/?newyork`, `/?praha` or `/?city=Buenos Aires` opens the Test Layer's demo in that city, to
 see how the game looks elsewhere. The name is matched against the reviewed cities and the auto cities (Czech
 towns, the demo cities abroad and the capitals), ignoring case, spaces, dashes and diacritics; a reviewed city
 wins, then the bigger auto city. An unknown name quietly keeps Plzeň. The address keeps the name, so a reload
@@ -111,6 +111,7 @@ runs below that, the worker stalls with `AccessKeyNotEnoughAllowance` and coins 
   checked every 10 minutes); a low key also logs a warning to the journal.
 - Refresh: a release-runner job running `scripts/refresh-reward-worker-key.mjs --account <rewards account>
   --key-file .data/near-operator.json` (the operator key is the account's full-access key). It deletes the
-  same key and adds it back with the same methods and 1 NEAR, in one transaction; a rerun with 0.9 NEAR or
-  more left does nothing. The worker rebuilds its signer after a failed send, so it picks up the new nonce
+  same key and adds it back with the same methods and 8 NEAR (`--allowance-near`, the worker accepts up to
+  10 NEAR, `WORKER_ALLOWANCE_MAX`), in one transaction; a rerun with 2 NEAR or more left (`--min-near`) does
+  nothing. 8 NEAR lasts well over a week at the 14 Nov rate (World ~0.65 NEAR/day, Test Layer ~0.3). The worker rebuilds its signer after a failed send, so it picks up the new nonce
   without a restart.

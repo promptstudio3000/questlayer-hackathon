@@ -126,7 +126,15 @@ export async function sendSelfPaid(
           : "This action was not signed. Nothing was sent; try again.",
         "SELF_PAID_NOT_SENT",
       );
-    if (/NotEnoughBalance|LackBalanceForState/i.test(text))
+    // near-api-js words this "Sender … does not have enough balance …" and
+    // keeps the kind in `type`/`cause`, so match both, not just the kind name.
+    let kind = "";
+    try {
+      kind = JSON.stringify([(error as { type?: unknown })?.type, (error as { cause?: unknown })?.cause ?? null]);
+    } catch {
+      kind = String((error as { type?: unknown })?.type ?? "");
+    }
+    if (/NotEnoughBalance|LackBalanceForState|not have enough balance|enough balance to cover/i.test(`${text} ${kind}`))
       throw new SelfPaidError(
         "Your account balance does not cover this amount.",
         "SELF_PAID_INSUFFICIENT_BALANCE",

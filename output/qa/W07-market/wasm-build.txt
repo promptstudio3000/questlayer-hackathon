@@ -1,4 +1,4 @@
-   Compiling questlayer-market v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/market)
+   Compiling questlayer-market v0.1.0 (/Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/market)
 warning: trait `Nft` is never used
   --> market/src/lib.rs:52:7
    |

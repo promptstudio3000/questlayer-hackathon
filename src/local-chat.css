@@ -1,4 +1,4 @@
-/* Compact community lists and quick create dialogs (Lubos, 10 Nov 2026):
+/* Compact community lists and quick create dialogs (10 Nov 2026):
    note, topic and place rows put the GPS line straight under the message;
    creating opens a small dialog with an illustration over the map. */
 
@@ -546,7 +546,7 @@ button.community-row-open:focus-visible {
   font-size: var(--text-note);
 }
 
-/* ---- Local chat as a place chat (Lubos, 11 Nov 2026) ---- */
+/* ---- Local chat as a place chat (11 Nov 2026) ---- */
 /* Distance filter: one row of chips above everything. */
 .local-chat-range {
   display: flex;
@@ -812,7 +812,7 @@ button.chat-composer-bar:focus-visible {
   outline-offset: 2px;
 }
 
-/* ---- Places, more graphic (Lubos, 11 Nov 2026) ---- */
+/* ---- Places, more graphic (11 Nov 2026) ---- */
 .community-places {
   --kind-a: #8b5cf6;
   --kind-b: #672eeb;

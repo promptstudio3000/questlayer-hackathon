@@ -1,7 +1,7 @@
 # QGOLD vault
 
 Stream 1 of the approved QGOLD build (`/mnt/project-files/tokenomics/QGOLD-BUILD-PLAN.md`, design doc
-"QGOLD: návrh ekonomiky"). Testnet only and unaudited. Mainnet needs Lubos's explicit go, an external
+"QGOLD: návrh ekonomiky"). Testnet only and unaudited. Mainnet needs the owner's explicit go, an external
 audit of this contract and a legal opinion on the token.
 
 ## What it is
@@ -14,7 +14,7 @@ audit of this contract and a legal opinion on the token.
   R = backing / supply, in yoctoNEAR per whole QGOLD. The initial R is 0.001 NEAR.
 - **Why one contract.** The burn, the payout and R are all decided in one synchronous call, so a
   cross-contract race can never pay out against a burn that did not happen. The minter is the vault itself.
-  The ledger no longer mints QGOLD (see "Hand-off" below).
+  The ledger no longer mints QGOLD (see "Follow-ups" below).
 
 ## Money in
 
@@ -76,7 +76,7 @@ The deposit and redeem fees are 1 % each. Of every fee, 10 % goes to the insuran
 `treasury_due`. `flush_treasury()` sends `treasury_due` to the fixed treasury account. Anyone may call it,
 and it pays nobody else.
 
-## Safety rules (Lubos's hard requirements)
+## Safety rules (hard requirements)
 
 - **Nobody gets what is not theirs.** Every payout follows a burn of the payee's own QGOLD, at most
   their exact share. There is no admin withdraw, and no method sends NEAR to an address the contract
@@ -165,11 +165,11 @@ The script does these steps in order:
 
 Then commit both manifests and `contracts/wasm-sha256.json`, and deploy the VPS.
 
-## Hand-off
+## Follow-ups
 
 - **Ledger (PR #163).** QGOLD is no longer minted by the ledger. Keep `set_gold_token(None)`; the ledger
   records the GOLD amount in its memos only. The old soulbound `questlayer-qgold-20261104.testnet` and
-  `contracts/soulbound-ft` are retired. The ledger thread removes them from its deploy script.
+  `contracts/soulbound-ft` are retired. They are removed from the ledger deploy script.
 - **Token page and market (stream 2).**
   - Buy with `deposit`. Sell with `redeem`.
   - Read numbers from `/api/qgold`.

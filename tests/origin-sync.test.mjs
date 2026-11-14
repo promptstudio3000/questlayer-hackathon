@@ -24,10 +24,10 @@ test("default gotchi is the highest rarity score, ties to the lowest id, never a
 
 test("decodes only the name from a getAavegotchi tuple", () => {
   const word = (n) => n.toString(16).padStart(64, "0");
-  const name = Buffer.from("Coinmandeer").toString("hex").padEnd(64, "0");
+  const name = Buffer.from("Sparkfang").toString("hex").padEnd(64, "0");
   // offset to tuple, tokenId, offset of name inside the tuple, length, bytes
   const hex = "0x" + word(32) + word(1126) + word(64) + word(11) + name;
-  assert.equal(decodeGotchiName(hex), "Coinmandeer");
+  assert.equal(decodeGotchiName(hex), "Sparkfang");
   assert.equal(decodeGotchiName("0x" + word(32) + word(1) + word(64) + word(0)), "");
 });
 

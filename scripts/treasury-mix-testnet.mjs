@@ -16,7 +16,7 @@
 // stand-in: the operator mints the test stablecoin at the Pyth price and keeps
 // the NEAR as the counterparty would. Every stand-in is marked `route:
 // "testnet-mint"` in the public record. Mainnet needs a real route (Ref with an
-// oracle guard, or Intents 1Click) and Lubos's go.
+// oracle guard, or Intents 1Click) and the owner's go.
 import { readFileSync, writeFileSync, statSync, existsSync, renameSync } from "node:fs";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";

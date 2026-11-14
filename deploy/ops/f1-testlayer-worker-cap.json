@@ -1,0 +1,6 @@
+{
+  "id": "f1-testlayer-worker-cap",
+  "deployTarget": "testlayer",
+  "installKeys": [],
+  "note": "Test Layer at the release whose reward worker accepts a key allowance up to 10 NEAR (before f2/f3 refresh the keys to 8 NEAR)."
+}

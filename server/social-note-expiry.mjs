@@ -1,4 +1,4 @@
-// How long a map note stays (Lubos, 10 Nov 2026; Keep removed 14 Nov 2026):
+// How long a map note stays (10 Nov 2026; Keep removed 14 Nov 2026):
 // every note fades after one day or one week, one week by default. Expired
 // notes leave every list; the row is kept for audit.
 import { ensureModuleVersion, registerModuleSchema } from "./schema-compatibility.mjs";

@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 import { assert, distance, hash, id, point, validateFix } from "./domain.mjs";
 
-/** Local chat distance filter (Lubos, 11 Nov 2026): how far away notes may be. */
+/** Local chat distance filter (11 Nov 2026): how far away notes may be. */
 export const NOTE_RADIUS_KM = Object.freeze([1, 3, 10, 25, 50, 100]);
 import { backfillNoteExpiry, initSocialNoteExpiry, NOTE_DAYS, NOTE_DEFAULT_DAYS } from "./social-note-expiry.mjs";
 

@@ -11,7 +11,7 @@ import "./map-peek.css";
 maplibregl.setWorkerUrl(mapWorkerUrl);
 
 /**
- * Where is it? (Lubos, 10 Nov 2026): tapping the GPS line of a note, topic or
+ * Where is it? (10 Nov 2026): tapping the GPS line of a note, topic or
  * place shows a plain map with just its pin and your own position. No map
  * controls; the X goes back to the list it came from.
  */

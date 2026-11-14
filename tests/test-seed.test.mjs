@@ -107,7 +107,7 @@ test("starter kit, bots and purge leave no seed trace", () => {
   const { db, runtime, seed } = world(() => now);
   try {
     seed.apply();
-    const me = createPlayer(db, "Lubos", now);
+    const me = createPlayer(db, "Tester", now);
     const goldBefore = db.prepare("SELECT gold_u FROM players WHERE id=?").get(me).gold_u;
     assert.equal(seed.grantKit(me, now), true);
     assert.equal(seed.grantKit(me, now), false);

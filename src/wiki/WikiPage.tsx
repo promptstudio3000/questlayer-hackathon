@@ -9,6 +9,7 @@ import { CHAPTERS, GROUPS, STATUS_LABEL, type Block, type Chapter } from "./chap
 import { BigPicture, Viz } from "./diagrams";
 import "./wiki.css";
 import "../public-polish.css";
+import { PublicHeader } from "../PublicHeader";
 import { scrollRegionKeys } from "../scroll-region";
 
 /** **bold**, `code` and [label](/path) — the only markup chapters use. */
@@ -204,19 +205,7 @@ export default function WikiPage() {
   const live = CHAPTERS.filter((c) => c.status === "live").length;
   return (
     <div className="wk">
-      <header className="wk-top">
-        <a className="wk-brand" href="/">
-          QuestLayer <span>wiki</span>
-        </a>
-        <nav aria-label="Related pages">
-          <a href="/how-it-works">How it works</a>
-          <a href="/economy">Economy</a>
-          <a href="/treasury">Treasury</a>
-          <a className="wk-play" href="/">
-            Play
-          </a>
-        </nav>
-      </header>
+      <PublicHeader current="wiki" />
       <div className="wk-hero">
         <h1>How QuestLayer works</h1>
         <p>

@@ -13,11 +13,11 @@ export type MapAction = {
 };
 
 /**
- * Actions button in the bottom right corner (Lubos, 10 Nov 2026): one tap
+ * Actions button in the bottom right corner (10 Nov 2026): one tap
  * fans out round buttons to leave a note, change mood, post a task, hide a
  * Secret or create a quest, so these never crowd the map or the sheets.
  * It carries a small "Actions" caption and a white rim so it reads as the
- * main button on any map, and grows on desktop (Lubos, 13 Nov 2026).
+ * main button on any map, and grows on desktop (13 Nov 2026).
  */
 export function MapActions({ actions, children }: { actions: MapAction[]; children?: ReactNode }) {
   const { open, setOpen, root, opener } = usePopover();

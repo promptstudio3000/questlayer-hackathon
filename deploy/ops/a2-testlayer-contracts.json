@@ -30,5 +30,5 @@
     "public/treasury-mix-testlayer.json",
     "public/treasury-stake-testlayer.json"
   ],
-  "note": "Test Layer contract set (Test Layer thread, Lubos approved 12 Nov 00:44-00:48). Keys stay in the runner key dir until the questlayer-testlayer service exists."
+  "note": "Test Layer contract set (Test Layer thread, owner approved 12 Nov 00:44-00:48). Keys stay in the runner key dir until the questlayer-testlayer service exists."
 }

@@ -139,7 +139,7 @@ Local continuation, 1 November: the zone/map worker now rejects malformed candid
 - **Contract redeploy done**: `game.questlayer-dev-20261031.testnet`, `nfts.questlayer-dev-20261031.testnet`
   (award signer configured, claims manifest v3), market `questlayer-market-20261101.testnet`. The former
   `auratrail-dev-*` contracts are history only. Rewards/vault/tasks pilots still run under their 2026-10-31 accounts.
-- **VPS migration** from the former installation name: `docs/VPS-MIGRATION.md`, `scripts/migrate-vps-legacy.sh`.
+- **VPS migration** from the former installation name: `scripts/migrate-vps-legacy.sh`.
 
 ### Economy motor on testnet (1 November 2026, evening)
 

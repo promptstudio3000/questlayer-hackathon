@@ -1,6 +1,6 @@
 # One global treasury and prize pool
 
-Decision (Lubos, 2 Nov 2026): reward money and the treasury are **global**. Cities and places decide
+Decision (2 Nov 2026): reward money and the treasury are **global**. Cities and places decide
 *where* rewards appear on the map; they never own a budget, a pot or a share of yield. Per-city money
 would strand funds in quiet cities and starve busy ones, and every new city would need its own funding.
 

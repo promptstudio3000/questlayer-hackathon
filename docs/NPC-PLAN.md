@@ -404,8 +404,8 @@ terms_json, menu_hash, expires_at, state), `npc_relationships`, `ai_npc_requests
 
 ## 10. Hackathon roadmap (testnet only, submission 14 Nov 23:59 UTC)
 
-Slices are built to run in parallel threads. Each one merges its own PR into `claude/upbeat-gauss-5czir7` and
-asks for a VPS testnet deploy, as usual.
+Slices are built in parallel. Each one merges its own PR into `claude/upbeat-gauss-5czir7` and
+is deployed to the testnet.
 
 | Slice | Content | Depends | Est. | Exit test |
 | --- | --- | --- | --- | --- |
@@ -553,8 +553,8 @@ a Plzeň quiz, opening the zone chest; one lurker mini-game giving a loot roll.
 
 ## 14. Shared interfaces for the parallel slices (wave 1)
 
-N0+M0 own these interfaces, and the other slices build on them without changing them. Propose a change in the design
-thread instead of forking it.
+N0+M0 own these interfaces, and the other slices build on them without changing them. Propose a change to the design
+instead of forking it.
 
 **One entity model for NPCs and monsters**
 ```ts

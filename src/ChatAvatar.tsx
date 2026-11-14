@@ -1,6 +1,6 @@
 import { tr } from "./i18n";
 
-// Local chat avatars (Lubos, 11 Nov 2026): a round initial in a colour that
+// Local chat avatars (11 Nov 2026): a round initial in a colour that
 // stays the same for the same name, so a feed reads like people talking.
 const HUES = [268, 312, 200, 160, 28, 345, 225, 95, 180, 48, 290, 130];
 

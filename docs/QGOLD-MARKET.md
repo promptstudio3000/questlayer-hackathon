@@ -10,8 +10,11 @@ approved doc "QGOLD: návrh ekonomiky". Testnet only.
   - Shows R, the buy and sell prices (R + 1 % and R − 1 %), supply, burns, backing and what it is held in, the
     insurance fund, the exit paths with the instant limit left today, the exit queue, the Rhea pool, the keeper
     record, the fees and a chart of R against the pool price.
-  - Buy and sell sign with this browser's game account key (`src/economy/qgold-trade.ts`, lazy-loaded): a payable
-    `deposit({min_out})`, and `redeem({amount, path, min_out})` with 1 yocto.
+  - Sell signs with this browser's game account key (`src/economy/qgold-trade.ts`, lazy-loaded):
+    `redeem({amount, path, min_out})` with 1 yocto and 80 Tgas (fits a 0.02 NEAR game account); the card
+    blocks sales under the vault's 0.001 NEAR minimum. Buy is a payable `deposit({min_out})` from the game
+    account when it holds the NEAR plus gas; otherwise the player's NEAR wallet (near-connect: Meteor, HOT, ...)
+    pays `deposit({min_out, receiver_id: <game account>})`, so the QGOLD lands in the game account (14 Nov).
   - Before the vault exists the page shows the rules only (`status: "vault-pending"`), with no made-up numbers.
 - **Rhea pool**: QGOLD/wNEAR simple pool on `ref-finance-101.testnet`, 0.3 % fee. It opens at the vault buy price
   R + 1 %. `scripts/qgold-rhea-pool-testnet.mjs` creates it on the Mac and writes
@@ -118,7 +121,7 @@ real deployed receipt shapes, callback failure paths and gas margins before acti
    and the dry-run keeper starts recording after the next VPS deploy.
 2. Mac: `node scripts/qgold-rhea-pool-testnet.mjs` (plan), then `--create --near 5`. Commit the pool manifest and
    deploy the VPS.
-3. Keeper trading (Lubos approved on 4 Nov):
+3. Keeper trading (approved on 4 Nov):
    - `QGOLD_KEEPER_MIN_POOL_NEAR=5` in runtime.env, so the keeper is active on the 5 NEAR testnet pool.
    - On the Mac, `node scripts/qgold-keeper-testnet.mjs` prints the plan; `--create` sets up the keeper.
      - It creates `qgold-keeper.<operator>.testnet` with 3 NEAR and a full-access key in `.data/qgold-keeper.json`.

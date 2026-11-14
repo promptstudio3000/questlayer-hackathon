@@ -1,6 +1,6 @@
 # VPS release runner
 
-Owner decision (Lubos, 11–12 Nov 2026): the Mac is a development machine only and the VPS executes
+Owner decision (11–12 Nov 2026): the Mac is a development machine only and the VPS executes
 everything on testnet: app deploys, contract upgrades and deploys, and one-off operator jobs. The testnet
 operator key moves to the VPS (variant A of the plan). Mainnet is excluded; the runner refuses it.
 
@@ -38,7 +38,7 @@ Status is public and secret-free: `GET /api/release/status` and `GET /api/releas
   "wasm": { "path": "contracts/target/wasm32-unknown-unknown/release/questlayer_collectibles.wasm", "sha256": "<reviewed hash>" },
   "outputs": ["public/native-editions-testnet.json", "public/native-claims-testnet.json", "contracts/wasm-sha256.json"],
   "installKeys": [],
-  "note": "Uncap Aura editions (economy thread)"
+  "note": "Uncap Aura editions"
 }
 ```
 
@@ -51,7 +51,7 @@ Status is public and secret-free: `GET /api/release/status` and `GET /api/releas
   sha256; a mismatch stops the job before anything is signed.
 - `.data/` in the job checkout is the runner's key directory (`/var/lib/questlayer-release/keys`, mode
   700), so scripts find `.data/near-operator.json` as on the Mac and write backups there.
-- `outputs`: repository files the script rewrote come back in `/api/release/ops/<id>` so a thread can
+- `outputs`: repository files the script rewrote come back in `/api/release/ops/<id>` so a developer can
   commit them (the deploy key is read-only).
 - `installKeys`: `[{"service": "questlayer-testlayer", "file": "testlayer/work/.data/relayer-testnet.json", "to": "relayer.json"}]`
   copies a `.json` or `.pem` key the job wrote under `.data/` into that service's state directory
