@@ -124,7 +124,7 @@
     display: inline-flex;
   }
 }
-/* XP counter beside the avatar (Lubos 14 Nov): star + compact total XP. */
+/* XP counter beside the avatar (14 Nov): star + compact total XP. */
 .hud-xp-count { display: inline-flex; flex: none; align-items: center; }
 .hud-xp-count-in {
   display: inline-flex; align-items: center; gap: 3px; padding: 0 2px 0 6px;

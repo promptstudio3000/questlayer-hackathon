@@ -21,7 +21,7 @@ test at tests/http.test.mjs:102:1
   
   503 !== 200
   
-      at TestContext.<anonymous> (file:///Users/coinmandeer/.codex/worktrees/creator-quest-lifecycle/NEAR-HACKATHON/tests/http.test.mjs:448:10)
+      at TestContext.<anonymous> (file:///Users/<user>/.codex/worktrees/creator-quest-lifecycle/NEAR-HACKATHON/tests/http.test.mjs:448:10)
       at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
       at async Test.run (node:internal/test_runner/test:1409:7)
       at async startSubtestAfterBootstrap (node:internal/test_runner/harness:387:3) {

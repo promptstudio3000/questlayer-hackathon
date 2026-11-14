@@ -1,4 +1,4 @@
-// One way for any dialog to start map guidance (Lubos, 14 Nov 2026): App
+// One way for any dialog to start map guidance (14 Nov 2026): App
 // listens for this event, switches to the map, marks the point and draws the
 // same direction line with the "Guiding you to" chip as path tasks do.
 export const GUIDE_EVENT = "questlayer:navigate";

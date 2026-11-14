@@ -4,7 +4,7 @@
 // Republiky, every one within ~400 m of the demo start, so a judge reaches
 // all of them in a short walk. Each zone is the real OpenStreetMap outline of
 // its park or square, cut to a walkable size around the anchor, so zones have
-// irregular shapes instead of circles (Lubos, 11 Nov 2026). Targets are points
+// irregular shapes instead of circles (11 Nov 2026). Targets are points
 // on the CityPack's mapped public paths inside each shape, the same source
 // normal zones use.
 //

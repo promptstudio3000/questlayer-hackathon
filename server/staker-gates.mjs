@@ -231,7 +231,7 @@ export function readStakerStatus(db, player) {
 export function playerStakeTier(db, player) {
   const s = player ? readStakerStatus(db, player) : null;
   const t = Number.isInteger(s?.tier) ? Math.max(1, Math.min(3, s.tier)) : 1;
-  // The game's tier amounts (TIER_NEAR, Lubos 11 Nov 2026: 10 / 50 NEAR) are
+  // The game's tier amounts (TIER_NEAR, 11 Nov 2026: 10 / 50 NEAR) are
   // below the vault contract's view (50 / 100), so the recorded weighted
   // stake decides as well; the higher of the two counts.
   let w = 0n;
@@ -245,7 +245,7 @@ export function playerStakeTier(db, player) {
 /**
  * Tier for opening Tier 2/3 places on the map.
  * Owner decisions: 8 Nov 2026 every place was open until launch; 11 Nov 2026
- * (Lubos) Tier 3 places stay locked until the player really reaches Tier 3.
+ * Tier 3 places stay locked until the player really reaches Tier 3.
  * So by default Tier 2 places are open to everyone and Tier 3 needs the
  * vault contract's Tier 3. TIER_PLACES=stake gates Tier 2 by the vault tier
  * too; TIER_PLACES=open opens every place (the old 8 Nov behaviour).

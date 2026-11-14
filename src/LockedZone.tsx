@@ -1,4 +1,4 @@
-// A zone above the player's tier (Lubos, 11 Nov 2026): shown on the map but
+// A zone above the player's tier (11 Nov 2026): shown on the map but
 // locked. Entering one opens this dialog once per zone and visit; tapping the
 // zone shows the same card in its panel. It says which tier opens the zone and
 // how much to stake, with a Stake button (the stake sheet, amount prefilled)

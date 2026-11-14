@@ -109,7 +109,7 @@ type Props = {
    */
   section?: "quests" | "creators";
   /**
-   * Set when one quest opens on its own from the map (Lubos, 13 Nov 2026):
+   * Set when one quest opens on its own from the map (13 Nov 2026):
    * the header button closes the dialog instead of going back to the list.
    */
   onClose?: () => void;
@@ -1360,7 +1360,7 @@ function QuestHero({
 }
 
 /**
- * One quest, one goal, one button (Lubos, 12 Nov 2026): photo, title, who made
+ * One quest, one goal, one button (12 Nov 2026): photo, title, who made
  * it, what to do, and "Go". The description folds; the rules live under (i).
  * Once started the same screen is the progress: go there, answer, done.
  */
@@ -2169,7 +2169,7 @@ function QuestEditor({
   const savedPlace = quest?.draft.place;
   const savedPrice =
     quest?.draft.price && quest.draft.price !== "0" ? quest.draft.price : "";
-  // Pinned stops, kind and price survive leaving the editor (Lubos, 14 Nov
+  // Pinned stops, kind and price survive leaving the editor (14 Nov
   // 2026: walking to trail stop 2 closed Community and lost stop 1).
   const placeBase = JSON.stringify({
     template: savedPlace?.template ?? (quest ? null : "visit"),
@@ -2207,7 +2207,7 @@ function QuestEditor({
   const [placeError, setPlaceError] = useState("");
   const [paid, setPaid] = useState<boolean>(restoredPlace.paid);
   const [priceText, setPriceText] = useState<string>(restoredPlace.priceText);
-  // New quests are a four-step wizard (Lubos, 14 Nov 2026): kind, place,
+  // New quests are a four-step wizard (14 Nov 2026): kind, place,
   // words, check. Saved quests keep the one-page editor.
   const [step, setStep] = useState<number>(quest ? 0 : restoredPlace.step);
   const [stepError, setStepError] = useState("");

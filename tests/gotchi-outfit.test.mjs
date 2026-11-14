@@ -104,7 +104,7 @@ test("the profile shows the outfit: found clones without the gold seal, the dres
   const db = openDatabase(":memory:");
   const a = createPlayer(db, "Alice", now);
   const b = createPlayer(db, "Bob", now);
-  const gotchi = { tokenId: "1126", name: "Coinmandeer", brs: 630, svg: "<svg/>", equipped: [2, 0, 0, 1, 0, 0, 0], preview: null };
+  const gotchi = { tokenId: "1126", name: "Sparkfang", brs: 630, svg: "<svg/>", equipped: [2, 0, 0, 1, 0, 0, 0], preview: null };
   db.prepare("INSERT INTO external_links VALUES (?,?,?,?)").run(
     address,
     a,

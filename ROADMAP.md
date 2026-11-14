@@ -218,7 +218,7 @@ Work:
 
 **W08. Owners:** Community, editor/lifecycle, progression contract/service, creator profiles and follows. **Rules:** C01–C06, D20, G13, O03. **UI package:** U10.
 
-Implemented locally: optional creator authoring/profile/follow/accepted-revision UI and authenticated runtime, exact demo XP commitments, trusted review/resolve and once-only closure are integrated. The latest follow-up adds private exact-revision reports, bilateral blocks, an owned block list and independently audited unsafe-publication suspension preserving accepted rights and locks. Source defaults disabled and requires explicit versioned policy/trusted roles. Existing sponsored native escrow remains separate. [Current batch evidence](output/qa/W02-W10-next/README.md) and [integration history](docs/CREATOR-INTEGRATION-2026-10-31.md) separate local source from deployment. Validated creator activity/rewards, native XP commitments, production governance, paid rights and the full exit gate remain open.
+Implemented locally: optional creator authoring/profile/follow/accepted-revision UI and authenticated runtime, exact demo XP commitments, trusted review/resolve and once-only closure are integrated. The latest follow-up adds private exact-revision reports, bilateral blocks, an owned block list and independently audited unsafe-publication suspension preserving accepted rights and locks. Source defaults disabled and requires explicit versioned policy/trusted roles. Existing sponsored native escrow remains separate. [Current batch evidence](output/qa/W02-W10-next/README.md) separates local source from deployment. Validated creator activity/rewards, native XP commitments, production governance, paid rights and the full exit gate remain open.
 
 Work:
 
@@ -360,7 +360,7 @@ Keep evidence under a versioned `output/qa/<build-or-milestone>/` location. Incl
 | XP commitment schedule and creator weights/caps | W08/W09 | Published configuration; no silent confiscation or unlimited promises |
 | Creator starting percentage and routing limits | W09 | Conserved future-receipt policy; 10% remains tunable |
 | Pay now with future staking yield (pledged realized owner yield, principal locked until paid, ≤ 10 years, ≤ 50 % of principal) | W05/W09 | Proposal in `docs/YIELD-CREDIT-PROPOSAL.md`; vault v2 + creators v2 review, credit/legal review before mainnet; never backs prizes |
-| Additional native cities | W01/W05 | A second field-reviewed CityPack plus a published daily allocation across cities that the contract can verify (`docs/CONTINUATION-PLAN.md`) |
+| Additional native cities | W01/W05 | A second field-reviewed CityPack plus a published daily allocation across cities that the contract can verify |
 | Review/appeal/refund deadlines and arbitration owner | W09/W10 | Finite user rights and tested closure paths |
 | SocialDB/IPFS services and public/private retention | W10 | Available storage, pinning and disclosure/recovery design |
 | Physical device baseline and store-specific product path | W12/W14 | Actual device evidence and a viable reviewed distribution build |
@@ -437,7 +437,6 @@ work in actual isolated HTTP/CLI tests. Available demo XP/current-level reads an
 the HUD reflect active commitments while earned XP, inventory and once-only grants
 are preserved. All creator activity rewards report not configured. The 200-XP
 amounts in tests are QA fixtures, not an adopted production schedule. See
-[current creator integration](docs/CREATOR-INTEGRATION-2026-10-31.md),
 [runtime/operator evidence](output/qa/W08-runtime/README.md) and
 [actual-host browser report](output/qa/W02-W08-parallel/README.md). The author
 browser demonstrated Closing with one open obligation and disabled finalization,

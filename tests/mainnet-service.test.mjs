@@ -35,7 +35,7 @@ test("the mainnet unit shares nothing with the testnet unit", () => {
   // docs/MAINNET-PLAN.md §1 limits.
   assert.equal(m.PLAYER_FACTORY_FUND_YOCTO, "20000000000000000000000");
   assert.equal(m.RELAY_TOPUP_CAP_YOCTO, "50000000000000000000000");
-  // §7: the 2 NEAR/day sponsorship cap Lubos chose on 10 November.
+  // §7: the 2 NEAR/day sponsorship cap the owner chose on 10 November.
   assert.equal(m.SUBSIDY_DAILY_YOCTO, "2000000000000000000000000");
   assert.equal(m.SUBSIDY_DAILY_OPERATIONS, "500");
   assert.ok(BigInt(m.SUBSIDY_GAS_RESERVE_YOCTO) > 0n);

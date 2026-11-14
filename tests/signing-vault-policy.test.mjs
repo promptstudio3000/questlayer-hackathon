@@ -477,7 +477,7 @@ test("signed messages show their content; NEAR Intents are decoded with target a
   );
 });
 
-// Lubos 11 Nov: setting up a trade must not open the approval window. Only
+// 11 Nov: setting up a trade must not open the approval window. Only
 // the device key the vault holds and deposits into the player's own verifier
 // account sign silently; anything that can reach another account still asks.
 test("Intents setup on the player's own account signs silently", async () => {

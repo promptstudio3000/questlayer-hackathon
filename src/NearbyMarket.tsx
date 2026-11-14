@@ -432,7 +432,7 @@ export function NearbyMarket({
 
 type BoardFilter = "all" | "taking" | "mine";
 /**
- * Community · Tasks (Lubos, 11 Nov 2026): one list of tasks explorers post and
+ * Community · Tasks (11 Nov 2026): one list of tasks explorers post and
  * pay QGOLD for, filtered by who it is for and by type, with who posted it.
  */
 function TaskBoard({

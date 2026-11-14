@@ -17,7 +17,7 @@
 //           moves them: new stake goes through the staking script, and each
 //           validator pool is its own protocol under the 40 % cap.
 //
-// Hard limits (Lubos, 4 Nov 2026): at most 40 % of the treasury with any one
+// Hard limits (4 Nov 2026): at most 40 % of the treasury with any one
 // protocol, never supply to a market at or above 95 % utilization, approved
 // assets only. Caps win over targets: what cannot go where it should waits in
 // the NEAR reserve. A run moves at most 25 % of the treasury, so the mix
@@ -61,7 +61,7 @@ export const MIX_NETWORKS = {
       "questlayer-vault-20261101b.testnet",
     ],
   },
-  // Mainnet needs its own allowlist, a review and Lubos's go.
+  // Mainnet needs its own allowlist, a review and the owner's go.
 };
 
 // Ceilings in code: settings may only tighten them.

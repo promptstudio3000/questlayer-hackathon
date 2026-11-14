@@ -159,7 +159,7 @@
   .game-dialog.game-dialog-map:has(.map-quest-dialog) { width: calc(100vw - 16px); }
 }
 
-/* Compact quest editor (Lubos 14 Nov 2026): picture tiles for the kind,
+/* Compact quest editor (14 Nov 2026): picture tiles for the kind,
    side-by-side access choice, and two columns when the panel is wide. */
 .qe-wrap { container-type: inline-size; }
 .qe-form { gap: 12px; }
@@ -188,7 +188,7 @@
   .qe-form > :not(.qe-col) { grid-column: 1 / -1; }
 }
 
-/* New-quest wizard (Lubos 14 Nov 2026): kind → place → words → check.
+/* New-quest wizard (14 Nov 2026): kind → place → words → check.
    Every block names its step; only the current one shows. On a wide panel
    the live preview stays on the right through all steps. */
 .qe-wizard .qe-col { display: contents; }

@@ -5,7 +5,7 @@ import { PlaceMessages } from "./PlaceMessages";
 import { tr } from "./i18n";
 import "./local-chat.css";
 
-/** How far Local chat reaches (Lubos, 11 Nov 2026: "filter by distance up to 100 km"). */
+/** How far Local chat reaches (11 Nov 2026: "filter by distance up to 100 km"). */
 export const CHAT_RADII = [1, 3, 10, 25, 50, 100] as const;
 const KEY = "questlayer:local-chat-km";
 function savedRadius() {
@@ -18,7 +18,7 @@ function savedRadius() {
 }
 
 /**
- * Community · Local chat (Lubos, 11 Nov 2026): one distance filter at the top,
+ * Community · Local chat (11 Nov 2026): one distance filter at the top,
  * the most active shouts and topics around you, then the chat itself (free
  * messages pinned where they were written, newest at the bottom).
  */

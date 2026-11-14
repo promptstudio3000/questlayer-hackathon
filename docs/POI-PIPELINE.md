@@ -176,8 +176,7 @@ report and map.
 
 ## Worldwide build by an external worker
 
-The spec for a worker that builds the database for the whole world (schema contract, sharding, validation with
-`npm run poi:validate`, hand-over and swap-in) is `docs/POI-WORKER-BRIEF.md`.
+A worldwide POI database is checked with `npm run poi:validate` (`scripts/poi/validate-release.mjs`) before swap-in.
 
 ## Tests
 

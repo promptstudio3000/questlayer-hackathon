@@ -78,7 +78,7 @@ export function playerCard(db, viewer, target, appearance, now = Date.now()) {
   const self = viewer === target;
   const demoBot = isDemoBot(target);
   const theirs = sharing(db, target, now);
-  // The profile is public (Lubos, 10 Nov 2026): visible without sharing the
+  // The profile is public (10 Nov 2026): visible without sharing the
   // position, never with it. A block hides it both ways.
   assert(
     self || !isSocialBlocked(db, viewer, target),

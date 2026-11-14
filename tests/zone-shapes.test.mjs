@@ -1,4 +1,4 @@
-// Irregular zone outlines and locked Tier 3 places (Lubos, 11 Nov 2026).
+// Irregular zone outlines and locked Tier 3 places (11 Nov 2026).
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";

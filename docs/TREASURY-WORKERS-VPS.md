@@ -60,7 +60,7 @@ Rhea pays ~0 % on USDC/USDT, so nothing is lost today; the fix belongs to the cu
 
 ## Council
 
-The DAO approves with 2 of [operator (Lubos), council-a, council-b]. Two set-ups:
+The DAO approves with 2 of [operator (owner), council-a, council-b]. Two set-ups:
 
 - **Both council keys on the VPS** (`--council-b`): every checked proposal passes at once, as it did on the Mac,
   where both automatic keys already sat together. The owner's operator seat can still reject or change the policy.
@@ -70,7 +70,7 @@ The DAO approves with 2 of [operator (Lubos), council-a, council-b]. Two set-ups
   updates) or from the operator seat. Until then the day's rebalance waits; the hourly retry runs it once approved.
   Harvest and `keep` do not wait for the DAO.
 
-## Moving it (Mac, by the Deploy thread)
+## Moving it (from the Mac)
 
 ```sh
 git pull                                                        # this branch merged

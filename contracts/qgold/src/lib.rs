@@ -41,7 +41,7 @@ pub const NEAR: u128 = 1_000_000_000_000_000_000_000_000;
 pub const BPS: u128 = 10_000;
 pub const DAY_MS: u64 = 86_400_000;
 pub const HOUR_MS: u64 = 3_600_000;
-/// Fixed upgrade / parameter timelock (Lubos's hard rule: 48 h).
+/// Fixed upgrade / parameter timelock (hard rule: 48 h).
 pub const TIMELOCK_MS: u64 = 48 * HOUR_MS;
 /// Shortest council timelock on a `.testnet` account (council-set, `SetTimelock`).
 pub const MIN_TESTNET_TIMELOCK_MS: u64 = 10 * 60_000;

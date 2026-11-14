@@ -1,5 +1,5 @@
     Finished `release` profile [optimized] target(s) in 0.35s
-   Compiling questlayer-rewards v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/rewards)
+   Compiling questlayer-rewards v0.1.0 (/Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/rewards)
 warning: trait `Nft` is never used
   --> market/src/lib.rs:52:7
    |
@@ -16,7 +16,7 @@ warning: trait `Callbacks` is never used
 
 warning: `questlayer-market` (lib) generated 2 warnings
     Finished `release` profile [optimized] target(s) in 2.01s
-   Compiling questlayer-rewards v0.1.0 (/Users/coinmandeer/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/rewards)
+   Compiling questlayer-rewards v0.1.0 (/Users/<user>/WORK/AI-PROJECTS/_FINALS/NEAR-HACKATHON/contracts/rewards)
 warning: trait `Nft` is never used
   --> market/src/lib.rs:52:7
    |

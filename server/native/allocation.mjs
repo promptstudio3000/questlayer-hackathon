@@ -1,8 +1,8 @@
 // Daily reward allocation from the one global treasury, and the realized-yield
 // backing for days that claim to be paid from staking yield.
 //
-// Rules (docs/GLOBAL-TREASURY.md; docs/CONTINUATION-PLAN.md "Zones everywhere,
-// money only where it is verified"):
+// Rules (docs/GLOBAL-TREASURY.md: zones everywhere, money only where it is
+// verified):
 //   - There is one treasury and one daily budget for the whole game. Cities
 //     never own money; they only decide where today's rewards appear.
 //   - Each bucket's daily budget is the smaller of the per-day cap and a fixed

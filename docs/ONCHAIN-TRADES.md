@@ -51,7 +51,7 @@ Mac steps after the collectibles upgrade (`scripts/upgrade-collectibles-editions
 3. `node scripts/collectibles-royalty-testnet.mjs sweep` whenever the royalties account holds at least 0.01 NEAR
    above its 0.05 NEAR reserve (it can run next to the daily fee sweep).
 
-Mainnet needs the same upgrade and `set_royalty` with Lubos's go; nothing here touches mainnet.
+Mainnet needs the same upgrade and `set_royalty` with the owner's go; nothing here touches mainnet.
 
 ## On-chain proof (for the explorer link)
 

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// Acceptance check for a POI release built by any worker (docs/POI-WORKER-BRIEF.md).
+// Acceptance check for a POI release built by any worker (docs/POI-PIPELINE.md).
 // Read-only. Verifies the questlayer.poi/1 contract the game readers rely on:
 // tables and columns, meta keys, every poi row (ids, H3 cells, taxonomy,
 // safety, path target), partition counts and hashes, path cells and cities.

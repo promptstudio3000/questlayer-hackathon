@@ -1,6 +1,6 @@
 # Yield vault plan: liquid staking + stablecoins on Rhea Lend (2 Nov 2026)
 
-Owner decisions (Lubos, 2 Nov 00:41–01:04 UTC):
+Owner decisions (2 Nov 00:41–01:04 UTC):
 
 - Integrate every liquid staking token, more tokens are fine.
 - A player counts as **Staker immediately** after depositing; withdrawal only after a lock (24 h, or up to two days).
@@ -60,9 +60,9 @@ without debt needs no oracle prices. Our contract never borrows.
 
 ## Work split
 
-1. Contract `questlayer-yield-vault` + tests + Docker build + `wasm-sha256.json` (worker thread).
-2. Treasury in stNEAR + daily harvester script on the Mac (needs the operator key; worker thread).
-3. Rhea markets reader and staker integration (this thread).
+1. Contract `questlayer-yield-vault` + tests + Docker build + `wasm-sha256.json`.
+2. Treasury in stNEAR + daily harvester script on the Mac (needs the operator key).
+3. Rhea markets reader and staker integration.
 
 ## App wiring (done, 2 Nov)
 

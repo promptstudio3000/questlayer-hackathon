@@ -1,4 +1,4 @@
-// Dressing an owned Aavegotchi in the game (Lubos, 10 Nov 2026: "a player
+// Dressing an owned Aavegotchi in the game (10 Nov 2026: "a player
 // wears whatever they own or found as a clone"). The outfit is cosmetic and
 // lives only here: nothing changes on Base. It is stored in the explorer's
 // appearance as slot index -> item id (0 = slot left empty) over the gotchi's
@@ -86,7 +86,7 @@ export function setOutfitSlot(db, player, slot, itemId, now = Date.now()) {
 /**
  * Inventory "Try it on" / "Take it off" for an explorer who wears one of their
  * own Aavegotchis: the original draws its own gear, so the wearable goes into
- * the outfit too (Lubos, 14 Nov 2026: a picked-up wearable never showed on
+ * the outfit too (14 Nov 2026: a picked-up wearable never showed on
  * his avatar). Taking it off gives the slot back to the gotchi's real gear.
  * Does nothing while the explorer wears the starter.
  */

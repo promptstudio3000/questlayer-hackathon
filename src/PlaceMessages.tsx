@@ -253,7 +253,7 @@ export function PlaceMessages({
     </div>
   );
 
-  // Local chat top (Lubos, 11 Nov 2026): the most active shouts and topics
+  // Local chat top (11 Nov 2026): the most active shouts and topics
   // around you as a swipeable strip above the chat.
   if (!all)
     return (
@@ -345,7 +345,7 @@ export function PlaceMessages({
 }
 
 /**
- * Compact create dialog for a shout or a topic (Lubos, 10 Nov 2026): the
+ * Compact create dialog for a shout or a topic (10 Nov 2026): the
  * pinned-message illustration, the text, a small days switch and the price on
  * the button. Opens from Local chat and from the Actions button on the map.
  */

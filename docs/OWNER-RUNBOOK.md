@@ -84,7 +84,7 @@ ssh -o IdentitiesOnly=yes root@72.61.188.39 'ls /opt/ps3000/apps/mapos* 2>/dev/n
 `docs/SUBMISSION.md` has the post draft, video script and payload template. Make the repository public, run a
 secret scan over the history, verify the README steps on a fresh clone, then submit once.
 
-## 7. Mainnet slice: one command (needs Lubos's go, see `docs/MAINNET-PLAN.md` §5)
+## 7. Mainnet slice: one command (needs the owner's go, see `docs/MAINNET-PLAN.md` §5)
 
 State on 10 November (rewards M4, vault factory v3, QGOLD proposal 4, the encrypted inbox, relayer subsidy, the
 retired game contract): `docs/MAINNET-PLAN.md` §7. Before a mainnet inbox, write the three `SUBSIDY_*` values
@@ -176,7 +176,7 @@ The unit fixes `NEAR_NETWORK=mainnet`, `MAINNET_FEATURES=collectibles,relayer,so
 state directory and the §1 limits (0.02 NEAR per account, 0.05 NEAR daily top-up cap, 40 jobs per day).
 `runtime.env` in its app directory holds only `PLAYER_FACTORY_ACCOUNT` and, when needed, `DISABLE_RELAYER=1`.
 
-Order, after the slice is deployed on chain and Lubos has said go:
+Order, after the slice is deployed on chain and the owner has said go:
 
 1. DNS: an A record `mainnet.questlayer.promptstudio3000.com → 72.61.188.39` (Caddy needs it for TLS; the deploy's
    public health check fails and rolls back without it).

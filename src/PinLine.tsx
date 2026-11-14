@@ -9,7 +9,7 @@ import "./local-chat.css";
 const MapPeek = lazy(() => import("./MapPeek").then((m) => ({ default: m.MapPeek })));
 
 /**
- * The GPS line under a note, topic or place (Lubos, 10 Nov 2026): the pin's
+ * The GPS line under a note, topic or place (10 Nov 2026): the pin's
  * distance and coordinates in one small row; the distance reads first. Tapping it shows the spot on a
  * plain map; its X comes back here.
  */

@@ -1,4 +1,4 @@
-// Rating and discussion under a creator quest (Lubos, 12 Nov 2026): tap a
+// Rating and discussion under a creator quest (12 Nov 2026): tap a
 // star, write a line. The average shows in the quest list.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import { PaperPlaneRight, Star, Trash } from "@phosphor-icons/react";

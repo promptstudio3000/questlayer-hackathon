@@ -1,4 +1,4 @@
-// Irregular zone outlines (Lubos, 11 Nov 2026: zones should not be perfect
+// Irregular zone outlines (11 Nov 2026: zones should not be perfect
 // circles). A smooth "blob" around a point: the radius wobbles with a few
 // low-frequency waves seeded by the zone id, so the same id always gives the
 // same shape and the outline stays between ~0.73× and ~1.27× the radius.

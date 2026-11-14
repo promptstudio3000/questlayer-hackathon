@@ -13,7 +13,7 @@
 // Accounts (sub-accounts of the operator, keys in .data/treasury-dao-keys.json, chmod 600):
 //   keeper.<operator>     Requestor: files proposals, casts the automatic vote for the recommended option
 //   council-a / council-b Approver + Admin: the two automatic council keys (2 of 3 approve)
-//   <operator>            the third council seat (Lubos), can approve, reject or change the policy in Trezu
+//   <operator>            the third council seat (owner), can approve, reject or change the policy in Trezu
 //
 // The automatic keys approve only what this script checked: a tally that
 // matches the chain, a member list from the game's eligibility rule, and a
@@ -154,7 +154,7 @@ const hasKey = (id) => Object.values(keys).some((x) => x.accountId === id);
  * The automatic council keys approve a proposal this script checked. A host
  * holds only the council keys it was given: on the VPS that can be council-a
  * alone, and the second approval then comes from the Mac (`approve-pending`)
- * or from Lubos's operator seat.
+ * or from the owner's operator seat.
  */
 async function councilApprove(id, kind) {
   const seats = [ids.councilA, ids.councilB].filter(hasKey);
