@@ -1,10 +1,11 @@
 // Community → "Treasury vote": explorers at level 3+ who played this week vote
 // on the weekly treasury mix (and any extra vote of the week) on the treasury
-// DAO, a Sputnik DAO on NEAR. The vote is signed by the explorer account, so
+// DAO, a Sputnik DAO on NEAR. Each vote counts with the explorer's voting power,
+// earned by play (VOTING_POWER in server/native/treasury-dao.mjs). The vote is signed by the explorer account, so
 // there is no wallet popup. Server: server/native/treasury-dao.mjs,
 // docs/TREASURY-DAO.md. Hidden on hosts without the DAO.
 import { useCallback, useEffect, useState, type ReactNode } from "react";
-import { Bank, CheckCircle, Star } from "@phosphor-icons/react";
+import { Bank, CheckCircle, Lightning, Star } from "@phosphor-icons/react";
 import { api, ApiError } from "./api";
 import { tr } from "./i18n";
 import { closesLabel } from "./CommunityBonusVote";
@@ -16,9 +17,14 @@ export type DaoOption = {
   option: string;
   label: string;
   recommended: boolean;
+  /** Voting power behind this option (weighted). */
   approvals: number;
+  /** Explorers who chose it. */
+  votes?: number;
   mine: boolean;
 };
+export type PowerParts = { days: number; xp: number; followers: number; plays: number };
+export type VotingPower = { power: number; parts: PowerParts };
 export type DaoPoll = {
   poll: string;
   kind: "mix" | "extra";
@@ -37,7 +43,8 @@ export type DaoView = {
   weeklyMix?: DaoPoll | null;
   extras?: DaoPoll[];
   adopted?: { option: string; targets: { staked?: number; lst: number; stable: number; near: number } } | null;
-  me?: { account: string; member: boolean } | null;
+  votingPower?: { max: number };
+  me?: { account: string; member: boolean; power?: VotingPower | null } | null;
 };
 
 const pct = (bps: number) => Math.round(bps / 100);
@@ -79,6 +86,7 @@ export function TreasuryVote({
   const polls = [view.weeklyMix, ...(view.extras || [])].filter((p): p is DaoPoll => !!p);
   if (!polls.length) return empty;
   const member = !!view.me?.member;
+  const myPower = view.me?.power ?? null;
 
   async function cast(p: DaoPoll, o: DaoOption) {
     setBusy(o.proposalId);
@@ -89,8 +97,8 @@ export function TreasuryVote({
         setView((v) =>
           v && {
             ...v,
-            weeklyMix: v.weeklyMix && mark(v.weeklyMix, p.poll, o.proposalId),
-            extras: v.extras?.map((x) => mark(x, p.poll, o.proposalId)),
+            weeklyMix: v.weeklyMix && mark(v.weeklyMix, p.poll, o.proposalId, myPower?.power ?? 1),
+            extras: v.extras?.map((x) => mark(x, p.poll, o.proposalId, myPower?.power ?? 1)),
           },
         );
       }
@@ -119,6 +127,21 @@ export function TreasuryVote({
           <Star size={18} weight="fill" aria-hidden /> {tr("In force now: {0}", { 0: mixLabel(view.adopted.targets) })}
         </p>
       )}
+      {myPower && (
+        <div className="bonus-vote-power">
+          <p className="bonus-vote-winners">
+            <Lightning size={18} weight="fill" aria-hidden /> {tr("Your voice in the treasury: {0} of {1}", { 0: myPower.power, 1: view.votingPower?.max ?? 100 })}
+          </p>
+          <p className="bonus-vote-note">
+            {tr("Forged by play, never for sale: {0} from days of adventure, {1} from experience, {2} from followers, {3} from quests others undertook.", {
+              0: myPower.parts.days,
+              1: myPower.parts.xp,
+              2: myPower.parts.followers,
+              3: myPower.parts.plays,
+            })}
+          </p>
+        </div>
+      )}
       {!member && <p className="bonus-vote-note">{tr("Reach level 3 and play this week to vote. New voters join once a day.")}</p>}
       {polls.map((p, i) => {
         const voted = p.options.some((o) => o.mine);
@@ -132,7 +155,8 @@ export function TreasuryVote({
                   <span className="bonus-vote-title">
                     <b>{o.label}</b>
                     <small>
-                      {o.approvals === 1 ? tr("1 vote") : tr("{0} votes", { 0: o.approvals })}
+                      {(o.votes ?? o.approvals) === 1 ? tr("1 vote") : tr("{0} votes", { 0: o.votes ?? o.approvals })}
+                      {` · ${tr("{0} voting power", { 0: o.approvals })}`}
                       {o.recommended ? ` · ${tr("Recommended")}` : ""}
                     </small>
                   </span>
@@ -165,11 +189,11 @@ export function TreasuryVote({
   );
 }
 
-function mark(p: DaoPoll, poll: string, proposalId: number): DaoPoll {
+function mark(p: DaoPoll, poll: string, proposalId: number, power: number): DaoPoll {
   if (p.poll !== poll) return p;
   return {
     ...p,
-    options: p.options.map((o) => (o.proposalId === proposalId ? { ...o, mine: true, approvals: o.approvals + 1 } : o)),
+    options: p.options.map((o) => (o.proposalId === proposalId ? { ...o, mine: true, approvals: o.approvals + power, votes: (o.votes ?? 0) + 1 } : o)),
   };
 }
 

@@ -3333,5 +3333,13 @@
   "Principal stays yours": "O principal continua seu",
   "Minted only from real yield": "Cunhado só com rendimento real",
   "Spend = burn": "Gastar = queimar",
-  "Voting power earned by play": "Poder de voto ganho jogando"
+  "Voting power earned by play": "Poder de voto ganho jogando",
+  "{0} voting power": "{0} de poder de voto",
+  "Staking tier: {0}. Open staking": "Faixa de staking: {0}. Abrir staking",
+  "Staker soon": "Staker em breve",
+  "Why stake?": "Por que fazer stake?",
+  "Your voice in the treasury: {0} of {1}": "A tua voz no tesouro: {0} de {1}",
+  "Your staking tier": "Sua faixa de staking",
+  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "Seu stake continua seu. O rendimento espalha QGOLD pelas ruas e abre os lugares de faixa.",
+  "Forged by play, never for sale: {0} from days of adventure, {1} from experience, {2} from followers, {3} from quests others undertook.": "Forjado a jogar, nunca à venda: {0} de dias de aventura, {1} de experiência, {2} de seguidores, {3} de missões que outros jogaram."
 }

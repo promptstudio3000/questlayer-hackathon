@@ -3333,5 +3333,13 @@
   "Principal stays yours": "मूलधन तुम्हारा ही रहता है",
   "Minted only from real yield": "सिर्फ़ असली यील्ड से मिंट",
   "Spend = burn": "खर्च = बर्न",
-  "Voting power earned by play": "खेलकर कमाई गई वोट की ताक़त"
+  "Voting power earned by play": "खेलकर कमाई गई वोट की ताक़त",
+  "{0} voting power": "{0} वोटिंग शक्ति",
+  "Staking tier: {0}. Open staking": "स्टेकिंग टियर: {0}. स्टेकिंग खोलें",
+  "Staker soon": "जल्द ही स्टेकर",
+  "Why stake?": "स्टेक क्यों करें?",
+  "Your voice in the treasury: {0} of {1}": "खज़ाने में आपकी आवाज़: {1} में से {0}",
+  "Your staking tier": "आपका स्टेकिंग टियर",
+  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "आपका स्टेक आपका ही रहता है। उसकी कमाई गलियों में QGOLD बिखेरती है और टियर वाली जगहें खोलती है।",
+  "Forged by play, never for sale: {0} from days of adventure, {1} from experience, {2} from followers, {3} from quests others undertook.": "खेल से गढ़ी, कभी बिक्री के लिए नहीं: रोमांच के दिनों से {0}, अनुभव से {1}, फ़ॉलोअर्स से {2}, दूसरों द्वारा खेले गए क्वेस्ट से {3}।"
 }

@@ -3333,5 +3333,13 @@
   "Principal stays yours": "Основная сумма остаётся твоей",
   "Minted only from real yield": "Чеканится только из реального дохода",
   "Spend = burn": "Трата = сжигание",
-  "Voting power earned by play": "Сила голоса зарабатывается игрой"
+  "Voting power earned by play": "Сила голоса зарабатывается игрой",
+  "{0} voting power": "{0} силы голоса",
+  "Staking tier: {0}. Open staking": "Уровень стейкинга: {0}. Открыть стейкинг",
+  "Staker soon": "Скоро стейкер",
+  "Why stake?": "Зачем стейкать?",
+  "Your voice in the treasury: {0} of {1}": "Твой голос в казне: {0} из {1}",
+  "Your staking tier": "Ваш уровень стейкинга",
+  "Your stake stays yours. Its yield scatters QGOLD through the streets and unseals the Tier places.": "Ваш стейк остаётся вашим. Его доход рассыпает QGOLD по улицам и открывает места уровней.",
+  "Forged by play, never for sale: {0} from days of adventure, {1} from experience, {2} from followers, {3} from quests others undertook.": "Выковано игрой, не продаётся: {0} за дни приключений, {1} за опыт, {2} за подписчиков, {3} за квесты, которые прошли другие."
 }
