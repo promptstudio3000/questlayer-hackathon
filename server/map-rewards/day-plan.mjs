@@ -37,6 +37,7 @@ import {
   CELL_COINS,
   CELL_ZONE_STEPS,
   COIN_TARGET,
+  MIN_COIN_U,
   DEMAND_DAYS,
   FORMULA,
   MAP_REWARDS_POLICY,
@@ -83,11 +84,15 @@ export function coinTarget(env = process.env) {
 }
 
 /**
- * One coin's value: the coin budget split into `target` equal coins.
- * Integer micro-QGOLD, rounded down.
+ * One coin's value: the coin budget split into `target` equal coins, never
+ * under MIN_COIN_U while the budget covers one coin. Integer micro-QGOLD,
+ * rounded down. A small budget therefore means fewer 1-QGOLD coins (placement
+ * stops once the budget is placed), never coins worth nothing.
  */
 export function coinValue(coinsU, target = coinTarget()) {
-  return target > 0 ? Math.floor(Math.max(0, coinsU) / target) : 0;
+  const budget = Math.max(0, Math.floor(coinsU));
+  if (target <= 0 || budget < MIN_COIN_U) return 0;
+  return Math.max(MIN_COIN_U, Math.floor(budget / target));
 }
 
 /**
