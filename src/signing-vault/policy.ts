@@ -98,6 +98,131 @@ export function validateVaultCall(call: VaultCall, accountId: string) {
   }
   return call;
 }
+/**
+ * The player's open trades with the game's own NPC traders, read by the vault
+ * from the game server (GET /api/npc/trades/signing). A tap on the NPC sheet
+ * is the decision for these: the counterparty is the game's trader and every
+ * deal pays the player back (server/npc/trader.mjs).
+ */
+export type NpcSigningGrants = {
+  handovers: {
+    tradeId: string;
+    accountId: string | null;
+    receiver: string;
+    nftContract: string;
+    tokens: string[];
+  }[];
+  intents: {
+    tradeId: string;
+    accountId: string | null;
+    verifier: string;
+    nftContract: string;
+    wnear: string;
+    side: "buy" | "sell";
+    tokenId: string;
+    price: string;
+    feePips: number;
+  }[];
+};
+export type NpcGrantsReader = () => Promise<NpcSigningGrants>;
+const TRADE_UP_MEMO = /^questlayer trade-up ([A-Za-z0-9_:-]{1,64})$/;
+/** Same rule as the verifier: the buyer gives ceil(p * 1e6 / (1e6 - fee)). */
+function grossForNet(price: string, feePips: number) {
+  const max = 1_000_000n,
+    d = max - BigInt(feePips || 0);
+  return ((BigInt(price) * max + d - 1n) / d).toString();
+}
+/** An issued trade-up hands exactly these Auras to that trader. */
+async function npcHandover(
+  call: VaultCall,
+  a: Extract<VaultAction, { kind: "functionCall" }>,
+  config: VaultConfig,
+  grants?: NpcGrantsReader,
+) {
+  const args = a.args,
+    memo = typeof args.memo === "string" ? args.memo.match(TRADE_UP_MEMO) : null;
+  if (
+    !grants ||
+    !memo ||
+    call.receiverId !== config.contracts.collectibles ||
+    a.methodName !== "nft_transfer" ||
+    a.deposit !== "1" ||
+    Object.keys(args).sort().join() !== "approval_id,memo,receiver_id,token_id" ||
+    args.approval_id !== null ||
+    typeof args.receiver_id !== "string" ||
+    typeof args.token_id !== "string"
+  )
+    return false;
+  const { handovers } = await grants();
+  return handovers.some(
+    (h) =>
+      h.tradeId === memo[1] &&
+      h.accountId === call.accountId &&
+      h.nftContract === call.receiverId &&
+      h.receiver === args.receiver_id &&
+      h.tokens.includes(args.token_id as string),
+  );
+}
+/**
+ * NEP-413 messages for the Intents verifier that sign silently: withdrawing
+ * the player's own NEAR back to the player's own account, and the exact
+ * token_diff of an accepted NPC buy or sale. Every other message (an order on
+ * the open book, a login proof, ...) is still confirmed in the window.
+ */
+export async function messageNeedsProtection(
+  input: { accountId: string; message: string; recipient: string },
+  config: VaultConfig,
+  grants?: NpcGrantsReader,
+  now = Date.now(),
+) {
+  const verifier = config.contracts.intents;
+  if (!verifier || input.recipient !== verifier) return true;
+  let body: Record<string, unknown>;
+  try {
+    body = JSON.parse(input.message);
+  } catch {
+    return true;
+  }
+  if (
+    !body ||
+    typeof body !== "object" ||
+    Object.keys(body).sort().join() !== "deadline,intents,signer_id" ||
+    body.signer_id !== input.accountId ||
+    !Array.isArray(body.intents) ||
+    body.intents.length !== 1
+  )
+    return true;
+  const deadline = Date.parse(String(body.deadline));
+  if (!(deadline > now && deadline <= now + 25 * 60 * 60 * 1000)) return true;
+  const intent = body.intents[0] as Record<string, unknown>;
+  if (!intent || typeof intent !== "object") return true;
+  const keys = Object.keys(intent).sort().join();
+  if (intent.intent === "native_withdraw")
+    return !(
+      keys === "amount,intent,receiver_id" &&
+      intent.receiver_id === input.accountId &&
+      typeof intent.amount === "string" &&
+      /^[1-9][0-9]{0,38}$/.test(intent.amount)
+    );
+  if (intent.intent !== "token_diff" || keys !== "diff,intent" || !grants)
+    return true;
+  const diff = intent.diff as Record<string, unknown>;
+  if (!diff || typeof diff !== "object" || Object.keys(diff).length !== 2)
+    return true;
+  const { intents } = await grants();
+  return !intents.some((g) => {
+    if (
+      g.verifier !== verifier ||
+      (g.accountId !== null && g.accountId !== input.accountId)
+    )
+      return false;
+    const nft = `nep171:${g.nftContract}:${g.tokenId}`,
+      ft = `nep141:${g.wnear}`;
+    return g.side === "sell"
+      ? diff[nft] === "-1" && diff[ft] === g.price
+      : diff[nft] === "1" && diff[ft] === `-${grossForNet(g.price, g.feePips)}`;
+  });
+}
 /** The isolated origin, rather than the game window, makes this decision. */
 export async function needsProtection(
   call: VaultCall,
@@ -113,10 +238,12 @@ export async function needsProtection(
   }>,
   /** The vault's own device key for this account (never one the game names). */
   devicePublicKey?: string,
+  npcGrants?: NpcGrantsReader,
 ) {
   const a = call.actions[0];
   if (a.kind !== "functionCall") return true;
   if (selfCustody(call, a, config, devicePublicKey)) return false;
+  if (await npcHandover(call, a, config, npcGrants)) return false;
   if (
     call.receiverId === config.contracts.qgold &&
     a.methodName === "ft_burn"
