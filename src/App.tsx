@@ -2147,13 +2147,17 @@ export default function App() {
   }
   // One tap on a quest, from any list, pin or dialog: straight to the map
   // with the direction guide, or to the confirm button when already there.
-  function startQuest(q: Quest) {
+  function startQuest(q: Quest, opts?: { guideAnyway?: boolean }) {
     setPointTarget(null);
     const zone = world?.zones.find(z => z.id === q.zone_id);
-    if (!world || !player || !zone) return;
+    if (!world || !player) return;
+    // Someone (an NPC) sent the player there: the way is drawn even when the
+    // quest cannot be played yet, so "Guiding you to" always has its line.
+    if (!zone) { if (opts?.guideAnyway) navigateTo({ ...questPoint(q), label: questDisplayTitle(q.title) }); return; }
     const t = Date.now();
     const playable = !q.completed && zone.tier <= player.tier && !zone.operatorPause && zone.placeStatus !== "closed" && q.placeStatus !== "closed" &&
       zone.opensAt <= t && zone.closesAt > t && q.opens_at <= t && q.closes_at > t;
+    if (!playable && opts?.guideAnyway && !q.completed && meters(latest.current.position, questPoint(q)) > 25) { navigateTo({ ...questPoint(q), label: questDisplayTitle(q.title) }); return; }
     if (!playable) { selectZone(zone, q.id); return; }
     const here = meters(latest.current.position, questPoint(q)) <= 25 && !(zone.geometry && zoneInteriorMargin(zone, latest.current.position) === null);
     setCatalogView(null);
@@ -4225,6 +4229,8 @@ export default function App() {
             (communityGoal?.points[0]
               ? { ...communityGoal.points[0], label: communityGoal.title }
               : null) ||
+            // Secrets, player tasks, NPC places, tour stops: the same line and chip.
+            (pointTarget && !selected ? { lat: pointTarget.lat, lng: pointTarget.lng, label: pointTarget.label } : null) ||
             (findTarget
               ? {
                   lat: findTarget.lat,
@@ -4293,7 +4299,7 @@ export default function App() {
           goldMap={goldMapData}
           selectedQuestId={selectedQuestId}
           guideLabel={selected ? (zoneQuest ? questDisplayTitle(zoneQuest.title) : selected.name) : undefined}
-          onGuideStop={selected ? closeZone : findTarget ? () => setStreetFindTarget(null) : undefined}
+          onGuideStop={selected ? closeZone : nativeTarget ? undefined : communityGoal?.points[0] ? () => { setCommunityGoal(null); setDemoTarget(null); } : pointTarget ? clearPointTarget : findTarget ? () => setStreetFindTarget(null) : undefined}
           guideRequest={guideRequest && guideRequest.worldId === world?.id && guideRequest.playerId === player?.id && selected && zoneQuest?.id === guideRequest.questId && zoneQuests.some(q => q.id === guideRequest.questId && !q.completed && q.opens_at <= now && q.closes_at > now) ? guideRequest : null}
           route={questRoute}
           onPlacePin={(id) => {
@@ -5805,7 +5811,7 @@ export default function App() {
           }
           onQuest={(id) => {
             const quest = world.quests.find(q => q.id === id);
-            if (quest) startQuest(quest);
+            if (quest) startQuest(quest, { guideAnyway: true });
           }}
           onShow={() => {
             const id = actorOpen.id;

@@ -146,11 +146,13 @@
 .npc-about h3:first-child { font-size: var(--text-body, 16px); text-transform: none; letter-spacing: 0; color: var(--ink, #1a0335); }
 .npc-likes { color: var(--ink-secondary, #5b4a75); font-size: 14px; }
 .npc-places { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
-.npc-place { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 12px; background: var(--surface-soft, #f3eefc); color: var(--ink, #1a0335); }
+.npc-place { display: grid; grid-template-columns: 24px minmax(0, 1fr) auto auto; gap: 10px; align-items: start; padding: 10px 12px; border-radius: 12px; background: var(--surface-soft, #f3eefc); color: var(--ink, #1a0335); }
 .npc-place > svg { margin-top: 2px; font-size: 22px; color: var(--action, #672eeb); }
 .npc-place-text { display: grid; gap: 2px; min-width: 0; }
 .npc-place-text small { color: var(--ink-secondary, #5b4a75); font-size: 13px; line-height: 1.3; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .npc-place-meta { display: grid; justify-items: end; gap: 4px; font-size: 13px; white-space: nowrap; }
 .npc-place-topic { padding: 1px 8px; border-radius: 99px; background: var(--surface-raised, #fff); color: var(--ink-secondary, #5b4a75); }
 .npc-place-distance { font-weight: 700; color: var(--action, #672eeb); }
+.npc-place-go { align-self: center; display: grid; place-items: center; width: 40px; height: 40px; padding: 0; border: 0; border-radius: 50%; background: var(--action, #672eeb); color: #fff; font-size: 20px; cursor: pointer; }
+.npc-step-go { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 2px 0; border: 0; background: none; color: inherit; font: inherit; text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
 .npc-panel[hidden] { display: none; }
