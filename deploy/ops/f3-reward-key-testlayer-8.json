@@ -1,0 +1,6 @@
+{
+  "id": "f3-reward-key-testlayer-8",
+  "script": "scripts/refresh-reward-worker-key.mjs",
+  "args": ["--account", "questlayer-rewards-tl1112.testnet", "--key-file", ".data/near-operator.json", "--allowance-near", "8", "--min-near", "2"],
+  "note": "Test Layer reward worker key: re-add the same key with 8 NEAR for a week+ of judging. Do not roll back to a release older than this one: the old worker refuses a key above 1 NEAR."
+}
