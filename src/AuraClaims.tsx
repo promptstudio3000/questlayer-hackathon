@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { EmptyState } from "./EmptyState";
 import type { Item, Player } from "./types";
 import { AuraArt } from "./Ghost";
@@ -9,6 +10,7 @@ export function AuraClaims({
   onConnect,
   onMint,
   onConfirm,
+  onSync,
   onRestore,
 }: {
   player: Player;
@@ -17,6 +19,8 @@ export function AuraClaims({
   onConnect: () => Promise<void>;
   onMint: (item: Item) => Promise<unknown>;
   onConfirm: (item: Item) => Promise<void>;
+  /** Quiet claim check; resolves an Aura that minted while the card was closed. */
+  onSync?: (item: Item) => Promise<void>;
   onRestore: (item: Item) => Promise<void>;
 }) {
   const linked = player.wallets.length > 0,
@@ -26,6 +30,18 @@ export function AuraClaims({
         i.native_claim_state !== "minted" &&
         ((enabled && linked) || i.native_claim_state === "issued"),
     );
+  const pending = items
+    .filter((i) => i.native_claim_state === "issued")
+    .map((i) => i.id)
+    .join(",");
+  // Check claims in flight once when the card opens, so a minted Aura shows
+  // as secured without the explorer pressing Check claim.
+  useEffect(() => {
+    if (!pending || !onSync) return;
+    for (const item of items)
+      if (item.native_claim_state === "issued") void onSync(item);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pending]);
   return (
     <section className="aura-claims">
       <h2>{tr("Secure your Auras")}</h2>
