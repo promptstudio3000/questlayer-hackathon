@@ -78,6 +78,6 @@ No contract source changed in this slice; Rust tests were not rerun. No new depe
 
 ### Original next-slice handoff
 
-Use [the Community handoff](CREATOR-COMMUNITY-HANDOFF.md) and [lifecycle details](CREATOR-LIFECYCLE-HANDOFF.md). Select the versioned XP policy, compose the actual host session/roles, wire all relevant level reads to available XP while preserving once-only rewards, build the Community editor/discovery/participation interface and integrate authoritative activity validation/receipts. Rehearse migration/restore and governance before enabling routes. Paid access, sponsored payouts and native XP rights need their own implemented obligations; this adapter does not represent them.
+Use the Community handoff and lifecycle details. Select the versioned XP policy, compose the actual host session/roles, wire all relevant level reads to available XP while preserving once-only rewards, build the Community editor/discovery/participation interface and integrate authoritative activity validation/receipts. Rehearse migration/restore and governance before enabling routes. Paid access, sponsored payouts and native XP rights need their own implemented obligations; this adapter does not represent them.
 
 Source integration and the W08 acceptance gate remain separate. W08 stays **building**; screenshots/device playtests and live native creator rights are not established by this merge.

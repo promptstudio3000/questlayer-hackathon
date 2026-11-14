@@ -5,7 +5,7 @@ Updated 31 October 2026. Accepted product direction for a future integration pha
 The integrated delivery order is in [ROADMAP.md](ROADMAP.md), especially W08 and W09.
 The [rule register](docs/GAME-RULES.md) connects these requirements to the design and city-world work.
 
-Implementation boundary: the [current creator integration](docs/CREATOR-INTEGRATION-2026-10-31.md) mounts optional demo authoring, immutable quotes, profile/follow services, independent local operator review/resolve and available-XP/current-level reads. Default configuration leaves publication disabled and creates no creator tables. [Runtime](output/qa/W08-runtime/README.md) and [isolated restore](output/qa/W08-runtime/restore/README.md) evidence use explicit QA-only policies; no production amount has been adopted. Activity rewards, native locks, payments and production governance remain unconfigured. Use [the combined development status](docs/DEVELOPMENT-STATUS.md) for remaining acceptance work; financial mechanisms below stay planned.
+Implementation boundary: the [current creator integration](docs/CREATOR-INTEGRATION-2026-10-31.md) mounts optional demo authoring, immutable quotes, profile/follow services, independent local operator review/resolve and available-XP/current-level reads. Default configuration leaves publication disabled and creates no creator tables. [Runtime](output/qa/W08-runtime/README.md) and [isolated restore](output/qa/W08-runtime/restore/README.md) evidence use explicit QA-only policies; no production amount has been adopted. Activity rewards, native locks, payments and production governance remain unconfigured. Use the combined development status for remaining acceptance work; financial mechanisms below stay planned.
 
 ## Product and navigation
 
