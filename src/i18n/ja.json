@@ -3341,5 +3341,9 @@
   "Minted only from real yield": "実際の利回りからのみ発行",
   "Burn": "バーン",
   "Principal stays yours": "元本はあなたのまま",
-  "XP for every run, 80 % of every paid unlock.": "クリアごとに XP、有料アンロックごとに 80 %。"
+  "XP for every run, 80 % of every paid unlock.": "クリアごとに XP、有料アンロックごとに 80 %。",
+  "Night": "夜",
+  "Day view, chosen by you. Tap to follow the real sun again.": "あなたが選んだ昼の表示。タップすると本物の太陽に戻ります。",
+  "Night view, chosen by you. Tap to follow the real sun again.": "あなたが選んだ夜の表示。タップすると本物の太陽に戻ります。",
+  "Tap to switch day and night.": "タップで昼と夜を切り替えます。"
 }

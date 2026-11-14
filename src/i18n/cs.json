@@ -3341,5 +3341,9 @@
   "Minted only from real yield": "Raženo jen ze skutečného výnosu",
   "Burn": "Spálení",
   "Principal stays yours": "Jistina zůstává tvoje",
-  "XP for every run, 80 % of every paid unlock.": "XP za každé dohrání, 80 % z každého placeného odemčení."
+  "XP for every run, 80 % of every paid unlock.": "XP za každé dohrání, 80 % z každého placeného odemčení.",
+  "Night": "Noc",
+  "Day view, chosen by you. Tap to follow the real sun again.": "Denní vzhled podle tvé volby. Klepnutím se vrátíš ke skutečnému slunci.",
+  "Night view, chosen by you. Tap to follow the real sun again.": "Noční vzhled podle tvé volby. Klepnutím se vrátíš ke skutečnému slunci.",
+  "Tap to switch day and night.": "Klepnutím přepneš den a noc."
 }

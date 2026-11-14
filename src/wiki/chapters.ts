@@ -813,7 +813,7 @@ export const CHAPTERS: Chapter[] = [
       {
         list: [
           "A world layer is a JSON pack (default `aavegotchi-v1`) that sets actor models, object kinds and design tokens. Layers never create money: the validator refuses any pack whose rewards are not `none`.",
-          "The map follows the real sun at the city (day, dusk, dawn, night), and actors have day, night or any-time casts.",
+          "The map follows the real sun at the city (day, dusk, dawn, night), and actors have day, night or any-time casts. A tap on the sky chip next to the avatar shows the other look (day or night) by choice, marked with a dashed ring; the next tap follows the real sun again. Only the look changes: the casts stay on the real sun.",
           "Buildings rise in 3D up to 16 m so pins stay readable over the roofs. Churches, castles and monuments keep their real height from OpenStreetMap (St. Bartholomew in Plzeň: 102 m) or are lifted to at least 22–30 m, in a warmer colour, so you can find your way by them.",
         ],
       },
