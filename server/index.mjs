@@ -64,6 +64,7 @@ import { createWorldTreasuryMirror } from "./native/world-treasury-mirror.mjs";
 import { payoutsEnabled, payoutStatus, pendingPayout } from "./payouts/worker.mjs";
 import { allocationSettings } from "./native/allocation.mjs";
 import { AUTO_CITIES, LIVE_CITIES, cityStatus, playableCityById } from "./spatial/city-pack.mjs";
+import { createGlobeContent } from "./globe-content.mjs";
 import { findDemoCity } from "./spatial/demo-city.mjs";
 import { relayerConfiguration } from "./relayer/config.mjs";
 import { loadServiceAccount } from "./relayer/key-transport.mjs";
@@ -270,6 +271,7 @@ const db = openDatabase();
 const layerEnabled = process.env.LAYER_ENABLED === "1" && NETWORK !== "mainnet";
 // MetaLayer economy (server/layer/economy.mjs): created once the NEAR provider
 // and wallet links exist below; the store reaches it through this holder.
+let globeContent = null;
 let metaLayerEconomy = null;
 const layerRoutes = layerEnabled
   ? createLayerRoutes({
@@ -1691,6 +1693,11 @@ async function api(req, res, url) {
     assert(nativeRewards, "Native rewards are not configured yet.", 503);
     // Public chain facts only; fresh on request, cached result otherwise.
     return respond(res, await readPublicDistribution(url.searchParams.get("refresh") === "1"));
+  }
+  if (path === "/api/globe" && method === "GET") {
+    // Player quests and playable cities worldwide, for the globe's clusters.
+    globeContent ||= createGlobeContent({ db, cities: () => [...LIVE_CITIES, ...AUTO_CITIES.entries] });
+    return respond(res, globeContent(), 200, { "Cache-Control": "public, max-age=300" });
   }
   if (path === "/api/map/rewards" && method === "GET") {
     // Coin counts and value per area for the map overlay and heatmap.

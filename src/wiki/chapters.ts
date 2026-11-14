@@ -192,7 +192,7 @@ export const CHAPTERS: Chapter[] = [
           "One dismissible objective holds the next action. Confirmed results, recovery notices and the first equipment step come before nearby suggestions.",
           "One tap on a quest (in Nearby, in a zone, from an NPC or from Today's board) goes straight to the map: the target is marked, a direction line points to it, other map content dims, and the X on the target chip clears it. The line shows only for a quest or place you started yourself: the chip under the header reads **Guiding you to** with its name, and its X ends the guidance. The nearest-discovery card at the bottom is only a suggestion and draws no line. No reward is reserved or claimed by choosing. At the place the same tap opens one confirm button. A plain map point (a tour stop, for example) can be the target too: it gets a pulsing ring and the same chip with distance and X, and clears itself within 15 m.",
           "Walking into a zone greets you for a few seconds: **Welcome to** with the zone's name and how many quests wait there, once per visit. Then the name stays under the QuestLayer button as plain words over the map (no card); a tap opens the zone dialog. It never starts a quest by itself.",
-          "While you walk, the camera that follows you moves closer behind you and steps back a few seconds after you stop. Your own zoom is the level it returns to; with reduced motion on it does not move.",
+          "While you walk, the camera that follows you moves closer behind you and steps back a few seconds after you stop. Your own zoom is the level it returns to; with reduced motion on it does not move. Zooming the map far out no longer ends in a flat strip of tiles: at country scale it turns into the 3D globe, and My location brings you back to the street.",
           "**Actions** sits in the bottom right corner on every map (Test Layer, GotchiGO and MetaLayer): a round purple button with a white rim and the word ACTIONS under its icon, bigger on desktop. One tap fans out notes, mood, tasks, Secrets and, for creators, new quests.",
           "When a quest, find or character is in reach, the **Open …** button at the bottom gets a gold rim that gently pulses; with reduced motion on, the rim stays and the pulse is off.",
           "A zone dialog is the title, one row of icon facts (tier, open window, done today, XP, QGOLD and Auras left) and a list of one-tap quests.",
@@ -636,7 +636,7 @@ export const CHAPTERS: Chapter[] = [
       { h: "Quests, tasks and creators" },
       {
         list: [
-          "**Quests** is one compact list with filter chips: All, Near me (5 km), Following and Started. Each row shows the quest's pixel icon (visit, trail, chest or story), the creator's own avatar and name, the distance and type on one line, and the price or Free.",
+          "**Quests** is one compact list with filter chips: All, Near me (5 km), Following and Started. Each row shows the quest's pixel icon (visit, trail, chest or story), the creator's own avatar and name, the distance and type on one line, and the price or Free. A paid unlock, gifts and a creator's earnings all read in QGOLD (a price is typed as 10M to 10B QGOLD, gifts 10M to 100B); the payment itself still settles in NEAR at 1 NEAR = 1B QGOLD and the confirmation window shows that.",
           "**Tasks** lists the QGOLD tasks explorers post for each other in the same rows, with a type badge, who posted it, the reward and places left. **Post a task** takes three short steps; the reward is at least 100 QGOLD per completion and the form says so if it is lower.",
           "**Creators** shows each creator's avatar (their map character), short bio, quests and followers, and a Follow button. Tapping a creator opens their profile as a dialog: level, quests, followers, finished runs and creator XP, a large Follow button, an (i) button with the safety notes and Block, and their quests in the same rows as the Quests list.",
           "The test world adds demo-bot creators, quests and example tasks labelled demo-bot; example tasks hold no QGOLD and cannot be taken. Each demo-bot quest carries a credited photo of its real place (Wikimedia Commons, CC BY-SA).",
@@ -763,8 +763,8 @@ export const CHAPTERS: Chapter[] = [
     ],
     hero: "coverage-tiers",
     status: "live",
-    updated: "2026-11-13",
-    sources: ["docs/WORLDS-PLAN.md", "docs/POI-PIPELINE.md", "scripts/poi/demo-cities.mjs", "scripts/poi/demo-capitals.json", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "docs/GLOBAL-WORLD-PREPARATION.md", "server/world-preparation/worker.mjs", "server/world-preparation/geography.mjs", "server/world-preparation/export.mjs", "server/world-preparation/collector.mjs", "server/world-preparation/launch-scope.mjs", "server/world-preparation/source-audit.mjs", "server/global-activities.mjs", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
+    updated: "2026-11-14",
+    sources: ["docs/WORLDS-PLAN.md", "docs/GLOBE-CLUSTERS.md", "server/globe-content.mjs", "src/globe-clusters-layer.ts", "docs/POI-PIPELINE.md", "scripts/poi/demo-cities.mjs", "scripts/poi/demo-capitals.json", "docs/POI-SAFETY.md", "docs/WORLD-COVERAGE.md", "docs/SECOND-CITY-PLAYBOOK.md", "docs/WORLD-WORKER.md", "docs/OPERATOR-WORLD-CONTROLS.md", "docs/GLOBAL-WORLD-PREPARATION.md", "server/world-preparation/worker.mjs", "server/world-preparation/geography.mjs", "server/world-preparation/export.mjs", "server/world-preparation/collector.mjs", "server/world-preparation/launch-scope.mjs", "server/world-preparation/source-audit.mjs", "server/global-activities.mjs", "server/data/cities.json", "server/spatial/auto-cities.mjs", "server/poi/index.mjs"],
     blocks: [
       { h: "Coverage tiers" },
       {
@@ -805,6 +805,15 @@ export const CHAPTERS: Chapter[] = [
           "Atlas visits and three-stop hunts use the normal GPS checks and give personal XP. Without a separately confirmed financial day they promise no money or item.",
           "The launch selection covers European and US extracts with national-capital footprints elsewhere (Russia, North Korea and Iran excluded). The first active phase is EU-only: all 27 member countries. Completing it never reports a complete planet.",
           "A bulk collector continues from verified map downloads to real polygon selection and isolated checks, and reports unsafe or oversized areas instead of dropping them. This is map-derived coverage, not field verification.",
+        ],
+      },
+      { h: "The globe" },
+      {
+        list: [
+          "Zoom all the way out with **Globe** and bubbles show where the world can be played. A **gold** bubble counts player quests (quests other explorers made and published), because what players make matters most; a **violet** bubble counts playable cities where no player quest waits yet.",
+          "Bubbles group by distance on screen: one per country or cluster of small neighbours when the whole Earth is visible, one per region (a Czech kraj, a US state) a few steps closer, one per city closer still. A tap on a bubble flies one step in.",
+          "Numbers come from a public summary rounded to about 1 km, refreshed every five minutes, with no titles, names or authors.",
+          "Pale patches on the base map are built-up areas from OpenStreetMap. They take the building colour of the current sky, so at night they are a soft violet rather than white.",
         ],
       },
       { h: "Theme layers, day and night" },

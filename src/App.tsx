@@ -4231,6 +4231,12 @@ export default function App() {
             setCardPlayer(id)
           }
           onSelf={() => player && setCardPlayer(player.id)}
+          onZoomOutToGlobe={() => {
+            setSelected(null);
+            setOverview(false);
+            setFollow(true);
+            setGlobe(true);
+          }}
           wearables={nativePlay ? undefined : player?.wearables}
           onWearableFind={(id) => {
             const coin = world?.coins.find((c) => c.id === id);
